@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import type { SlideGroup } from '@/types'
 import { useEditorStore } from '@/store'
 import { getStage } from '@/utils/stageRegistry'
 import {
@@ -16,21 +17,17 @@ export function CanvasSizeModal({ open, onClose }: CanvasSizeModalProps) {
   const project = useEditorStore((s) => s.project)
   const activeId = useEditorStore((s) => s.activeSlideGroupId)
   const group = project.slideGroups.find((item) => item.id === activeId)
-  const [width, setWidth] = useState('1600')
-  const [height, setHeight] = useState('900')
+  if (!open) return null
+  // Unmounting the dialog when closed naturally resets dimensions on reopen,
+  // without a setState-in-effect render cascade.
+  return <CanvasSizeDialog key={group?.id ?? 'none'} group={group} onClose={onClose} />
+}
+
+function CanvasSizeDialog({ group, onClose }: { group: SlideGroup | undefined; onClose: () => void }) {
+  const [width, setWidth] = useState(String(group?.slideWidth ?? 1600))
+  const [height, setHeight] = useState(String(group?.slideHeight ?? 900))
   const [mode, setMode] = useState<CanvasResizeMode>('center')
   const [error, setError] = useState<string | null>(null)
-
-  // Fresh defaults whenever this dialog is opened or the active canvas changes.
-  useEffect(() => {
-    if (!open || !group) return
-    setWidth(String(group.slideWidth))
-    setHeight(String(group.slideHeight))
-    setError(null)
-    setMode('center')
-  }, [open, group?.id]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  if (!open) return null
 
   const newWidth = Number(width)
   const newHeight = Number(height)
