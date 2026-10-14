@@ -24,14 +24,15 @@ export function applyTemplateAppearance(template: Template, destination: SlideGr
   if (!source) throw new Error('This template does not contain a slide.')
   if (source.numSlides !== 1) throw new Error('Panoramic templates cannot be applied as a single-canvas style.')
 
-  let templateBackground: Extract<Layer, { type: 'background' }> | undefined
+  const templateBackgrounds: Extract<Layer, { type: 'background' }>[] = []
   const templatePhones: PhoneLayer[] = []
   const templateTexts: TextLayer[] = []
   forEachLayerTree(source.layers, (layer) => {
-    if (layer.type === 'background' && !templateBackground) templateBackground = layer
+    if (layer.type === 'background') templateBackgrounds.push(layer)
     if (layer.type === 'phone') templatePhones.push(layer)
     if (layer.type === 'text') templateTexts.push(layer)
   })
+  const templateBackground = templateBackgrounds[0]
   const templatePrimaryPhone = findScreenshotTarget(source.layers) ?? templatePhones[0]
   let textIndex = 0
   const sx = destination.slideWidth / source.slideWidth
