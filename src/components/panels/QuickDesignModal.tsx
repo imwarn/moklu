@@ -42,9 +42,10 @@ function QuickDesignDialog({ activeGroup, onClose }: { activeGroup: SlideGroup |
   const initialMockup = QUICK_MOCKUPS.find((item) => item.id === (currentMockup?.type === 'phone' ? currentMockup.model : undefined))
   const [mockup, setMockup] = useState<QuickMockup>(initialMockup?.id ?? 'browser-chrome')
   const currentBackground = activeGroup?.layers.find((layer) => layer.type === 'background')
-  const initialTheme = currentBackground?.type === 'background' && currentBackground.fill.type === 'linear'
+  const backgroundFill = currentBackground?.type === 'background' ? currentBackground.fill : null
+  const initialTheme = backgroundFill && typeof backgroundFill !== 'string' && backgroundFill.type === 'linear'
     ? (Object.keys(QUICK_THEMES).find((key) =>
-        QUICK_THEMES[key as QuickTheme].top === currentBackground.fill.stops[0]?.color) as QuickTheme | undefined)
+        QUICK_THEMES[key as QuickTheme].top === backgroundFill.stops[0]?.color) as QuickTheme | undefined)
     : undefined
   const [theme, setTheme] = useState<QuickTheme>(initialTheme ?? 'aurora')
   const [imageFile, setImageFile] = useState<File | null>(null)
