@@ -14,7 +14,7 @@ const sourceCanvas = () => {
   } as import('@/types').SlideGroup
 }
 
-const sampleTemplate = (source: import('@/types').SlideGroup): Template => ({
+const sampleTemplate = (): Template => ({
   id: 't1', name: 'Test', description: 'Test style', kind: 'template',
   schemaVersion: 1, slideGroups: [{
     name: 'Demo', numSlides: 1, slideWidth: 1080, slideHeight: 1920,
@@ -30,7 +30,7 @@ describe('template slots', () => {
   it('maps a template to current dimensions, retaining screenshot reference', () => {
     const original = sourceCanvas()
     const oldPhone = findScreenshotTarget(original.layers)
-    const template = sampleTemplate(original)
+    const template = sampleTemplate()
     const result = applyTemplateToCanvas(template, original)
     const target = findScreenshotTarget(result.layers)
     expect(target?.screenshotPath).toBe('screenshot-A.png')
@@ -44,6 +44,6 @@ describe('template slots', () => {
   })
   it('rejects panoramic targets without mutating them', () => {
     const original = { ...sourceCanvas(), numSlides: 2 }
-    expect(() => applyTemplateToCanvas(sampleTemplate(original), original)).toThrow('single-slide')
+    expect(() => applyTemplateToCanvas(sampleTemplate(), original)).toThrow('single-slide')
   })
 })
