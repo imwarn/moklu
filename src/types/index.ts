@@ -304,6 +304,8 @@ export interface PhoneBorder {
 
 export interface PhoneLayer extends BaseLayer {
   type: 'phone';
+  /** Editable template binding; legacy layers without a slot use the first device. */
+  templateSlot?: 'primary-screenshot' | 'secondary-screenshot';
   model: PhoneModel;
   scale: number;
   /** Filename key in AssetStore (preferred over screenshotDataUrl) */
