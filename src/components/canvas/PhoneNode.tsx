@@ -4,14 +4,7 @@ import type Konva from 'konva'
 import { useCachedImage } from '@/hooks/useCachedImage'
 import type { PhoneLayer } from '@/types'
 import { getPhoneSpec } from '@/assets/mockups/specs'
-import { IPHONE_16_PRO_SVG } from '@/assets/mockups/iphone-16-pro'
-import { IPHONE_16_PRO_PLAIN_SVG } from '@/assets/mockups/iphone-16-pro-plain'
-import { PIXEL_9_SVG } from '@/assets/mockups/pixel-9'
-import { PIXEL_9_PLAIN_SVG } from '@/assets/mockups/pixel-9-plain'
-import { APPLE_WATCH_SVG } from '@/assets/mockups/apple-watch'
-import { WEAR_OS_SVG } from '@/assets/mockups/wear-os'
-import { IPAD_SVG } from '@/assets/mockups/ipad'
-import { ANDROID_TABLET_SVG } from '@/assets/mockups/android-tablet'
+import { getMockupSvg } from '@/assets/mockups/registry'
 import { useAssetStore } from '@/store/assets'
 import { resolveBrandColor } from '@/utils/brandColors'
 import { useBrandColors } from '@/hooks/useBrandColors'
@@ -34,17 +27,7 @@ interface PhoneNodeProps {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function getSvgString(model: string): string {
-  if (model === 'apple-watch') return APPLE_WATCH_SVG
-  if (model === 'wear-os') return WEAR_OS_SVG
-  if (model === 'ipad-13') return IPAD_SVG
-  if (model === 'android-tablet') return ANDROID_TABLET_SVG
-  if (model === 'screen-16-9' || model === 'screen-16-10') return '<svg/>'
-  if (model === 'pixel-9') return PIXEL_9_SVG
-  if (model === 'pixel-9-plain') return PIXEL_9_PLAIN_SVG
-  if (model === 'iphone-16-pro-plain') return IPHONE_16_PRO_PLAIN_SVG
-  return IPHONE_16_PRO_SVG
-}
+
 
 /**
  * Draw a rounded-rect clip path with independent per-corner radii.
@@ -87,7 +70,7 @@ export function PhoneNode({ layer, onSelect, onDragEnd, onTransformEnd, forceNot
   const sr = spec.screen.cornerRadius * scale
 
   // Load SVG frame
-  const svgString = getSvgString(layer.model)
+  const svgString = getMockupSvg(layer.model)
   const svgDataUrl = useMemo(
     () => `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgString)))}`,
     [svgString],

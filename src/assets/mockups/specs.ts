@@ -125,9 +125,35 @@ export const SCREEN_16_10: PhoneModelSpec = {
   statusBar: { height: 0, platform: 'ios', contentY: 0 },
 }
 
+
+// ─── Moklu browser-window surfaces ──────────────────────────────────────────
+// Browser frames share the existing screenshot clipping/export pipeline.
+// The fixed screen region leaves space for native-looking browser chrome.
+export const BROWSER_CHROME: PhoneModelSpec = {
+  id: 'browser-chrome', label: 'Chrome · Browser',
+  frameWidth: 1200, frameHeight: 750,
+  screen: { x: 12, y: 70, width: 1176, height: 668, cornerRadius: 5 },
+  statusBar: { height: 0, platform: 'ios', contentY: 0 },
+}
+
+export const BROWSER_SAFARI: PhoneModelSpec = {
+  id: 'browser-safari', label: 'Safari · Browser',
+  frameWidth: 1200, frameHeight: 750,
+  screen: { x: 12, y: 70, width: 1176, height: 668, cornerRadius: 5 },
+  statusBar: { height: 0, platform: 'ios', contentY: 0 },
+}
+
+export const BROWSER_MINIMAL: PhoneModelSpec = {
+  id: 'browser-minimal', label: 'Minimal · Window',
+  frameWidth: 1200, frameHeight: 750,
+  screen: { x: 12, y: 47, width: 1176, height: 691, cornerRadius: 5 },
+  statusBar: { height: 0, platform: 'ios', contentY: 0 },
+}
+
 export const PHONE_MODELS: PhoneModelSpec[] = [
   IPHONE_16_PRO, IPHONE_16_PRO_PLAIN, PIXEL_9, PIXEL_9_PLAIN,
   APPLE_WATCH, WEAR_OS, IPAD_13, ANDROID_TABLET, SCREEN_16_9, SCREEN_16_10,
+  BROWSER_CHROME, BROWSER_SAFARI, BROWSER_MINIMAL,
 ]
 
 export function getPhoneSpec(model: string): PhoneModelSpec {

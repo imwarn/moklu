@@ -116,7 +116,7 @@ export function PhoneProperties({ layer }: { layer: PhoneLayer }) {
     <div className="space-y-4">
       <div className={panelSectionCls}>
         <div className="flex items-center mb-1">
-          <label className={labelCls + ' !mb-0'}>Phone Model</label>
+          <label className={labelCls + ' !mb-0'}>Device / Browser Model</label>
           <OverrideDot layerId={layer.id} propKey="model" />
         </div>
         <select

@@ -54,7 +54,7 @@ export interface CustomFontRef {
 
 // ─── Phone Models ────────────────────────────────────────────────────────────
 
-export type PhoneModel = 'iphone-16-pro' | 'iphone-16-pro-plain' | 'pixel-9' | 'pixel-9-plain' | 'apple-watch' | 'wear-os' | 'ipad-13' | 'android-tablet' | 'screen-16-9' | 'screen-16-10';
+export type PhoneModel = 'iphone-16-pro' | 'iphone-16-pro-plain' | 'pixel-9' | 'pixel-9-plain' | 'apple-watch' | 'wear-os' | 'ipad-13' | 'android-tablet' | 'screen-16-9' | 'screen-16-10' | 'browser-chrome' | 'browser-safari' | 'browser-minimal';
 
 // ─── Canvas Formats ──────────────────────────────────────────────────────────
 
