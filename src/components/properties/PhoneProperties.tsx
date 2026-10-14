@@ -268,7 +268,7 @@ export function PhoneProperties({ layer }: { layer: PhoneLayer }) {
           {previewSrc ? <img src={previewSrc} alt="Screenshot" className="mx-auto max-h-24 rounded-lg object-contain" /> : <span className="text-xs text-[#6b6b7a]">Click or drag to upload screenshot</span>}
         </FileUploadButton>
         {screenshotLabel && <p className="mt-2 truncate text-[10px] text-[#6b6b7a]">{screenshotLabel}</p>}
-        {screenshotError && <p role="alert" className="mt-2 text-[10px] text-red-400">{screenshotError}</p>
+        {screenshotError && <p role="alert" className="mt-2 text-[10px] text-red-400">{screenshotError}</p>}
       </div>
 
       <div className={panelSectionCls}>
