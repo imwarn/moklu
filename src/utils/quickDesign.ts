@@ -83,6 +83,7 @@ export function makeQuickLayers(
     type: 'phone',
     ...placement,
     model: mockup,
+    templateSlot: 'primary-screenshot',
     visible: true,
     locked: false,
     opacity: 1,

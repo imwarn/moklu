@@ -46,6 +46,14 @@ npm test
 npm run build
 ```
 
+## v0.2 screenshot-first workflow
+
+- The toolbar's **Replace Screenshot** button updates the primary screenshot slot without changing the existing frame, background, text or artboard.
+- The **Templates** gallery now offers **Use on current canvas** as well as the original **Add slides to project** action. The first suitable template slide is scaled to the active artboard, and the primary screenshot is rebound to the imported style.
+- In the gallery, applying a style can replace text and decorations; use **Canvas Size** for non-destructive aspect-ratio adjustments.
+- Screenshot uploads use distinct asset IDs so two images named `screenshot.png` do not overwrite each other in project storage.
+- Template slots are an optional field on editable phone layers (`primary-screenshot` / `secondary-screenshot`), allowing backward-compatible template JSON and future multi-slot workflows.
+
 ## Roadmap
 
 - **v0.1:** browser/device mockups, quick templates, common aspect ratios, local PNG export, editable source
