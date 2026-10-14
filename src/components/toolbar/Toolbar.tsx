@@ -7,6 +7,7 @@ import { BrandKitButton } from '@/components/toolbar/BrandKitButton'
 import { Logo } from '@/components/toolbar/Logo'
 import { QuickDesignModal } from '@/components/panels/QuickDesignModal'
 import { CanvasSizeModal } from '@/components/panels/CanvasSizeModal'
+import { ReplaceScreenshotButton } from '@/components/toolbar/ReplaceScreenshotButton'
 import { getStage } from '@/utils/stageRegistry'
 import { exportSlide, downloadDataUrl } from '@/utils/export'
 import { runExclusiveCapture, waitForStageSettled } from '@/utils/stageCapture'
@@ -229,6 +230,8 @@ export function Toolbar({ mode, onSetMode }: ToolbarProps) {
       <button type="button" onClick={() => setQuickOpen(true)} title="Create a quick screenshot mockup" className="shrink-0 rounded-lg border border-[#8276e8]/60 bg-[#8276e8]/20 px-3 py-1.5 text-xs font-semibold text-[#d6d1ff] hover:bg-[#8276e8]/30">✦ Quick Design</button>
 
       <button type="button" onClick={() => setCanvasSizeOpen(true)} title="Change canvas size and aspect ratio without losing layers" className="shrink-0 rounded-lg border border-white/15 px-3 py-1.5 text-xs text-[#d6d6e4] hover:border-white/30 hover:bg-white/5">▣ Canvas Size<span className="ml-1 hidden text-[#888a9d] min-[1350px]:inline">{project.slideGroups.find((g) => g.id === useEditorStore.getState().activeSlideGroupId)?.slideWidth}×{project.slideGroups.find((g) => g.id === useEditorStore.getState().activeSlideGroupId)?.slideHeight}</span></button>
+
+      <ReplaceScreenshotButton />
 
       {/* Templates button */}
       <button

@@ -1,0 +1,57 @@
+import { useRef, useState } from 'react'
+import { useEditorStore } from '@/store'
+import { useAssetStore } from '@/store/assets'
+import { prepareScreenshotUpload } from '@/utils/screenshotAssets'
+import { findScreenshotTarget } from '@/utils/templateSlots'
+
+/** Replace the primary screenshot without disturbing its frame, artwork or canvas size. */
+export function ReplaceScreenshotButton() {
+  const project = useEditorStore((s) => s.project)
+  const activeSlideGroupId = useEditorStore((s) => s.activeSlideGroupId)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [working, setWorking] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const canvas = project.slideGroups.find((g) => g.id === activeSlideGroupId)
+  const target = canvas ? findScreenshotTarget(canvas.layers) : undefined
+
+  const onUpload = async (file: File | undefined) => {
+    if (!file || !target || !canvas) return
+    setWorking(true)
+    setError(null)
+    try {
+      const { key, dataUrl } = await prepareScreenshotUpload(file)
+      useAssetStore.getState().addAsset(key, dataUrl)
+      useEditorStore.getState().updateLayerInSlideGroup(canvas.id, target.id, {
+        screenshotPath: key, screenshotDataUrl: dataUrl,
+      })
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Unable to replace screenshot.')
+    } finally {
+      setWorking(false)
+    }
+  }
+
+  return (
+    <span className="inline-flex shrink-0 items-center gap-1">
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        className="hidden"
+        aria-label="Choose replacement screenshot"
+        onChange={(e) => {
+          void onUpload(e.target.files?.[0])
+          e.currentTarget.value = ''
+        }}
+      />
+      <button type="button" onClick={() => inputRef.current?.click()}
+        disabled={!target || working}
+        title={target ? 'Replace the primary screenshot, keeping the current frame and layout' : 'Add a device or browser frame first'}
+        className="rounded-lg border border-white/15 px-3 py-1.5 text-xs text-[#d6d6e4] hover:border-white/30 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        {working ? 'Uploading…' : '↺ Replace Screenshot'}
+      </button>
+      {error && <span role="alert" title={error} className="max-w-28 truncate text-[10px] text-red-400">Upload failed</span>}
+    </span>
+  )
+}

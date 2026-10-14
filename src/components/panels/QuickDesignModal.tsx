@@ -2,8 +2,7 @@ import { useState } from 'react'
 import type { SlideGroup } from '@/types'
 import { useEditorStore } from '@/store'
 import { useAssetStore } from '@/store/assets'
-import { fileToDataUrl } from '@/utils/files'
-import { nanoid } from 'nanoid'
+import { prepareScreenshotUpload } from '@/utils/screenshotAssets'
 import {
   getQuickMockupPlacement, makeQuickLayers, QUICK_MOCKUPS, QUICK_SIZES, QUICK_THEMES,
   type QuickMockup, type QuickSize, type QuickTheme,
@@ -85,12 +84,11 @@ function QuickDesignDialog({ activeGroup, onClose }: { activeGroup: SlideGroup |
       }
       setApplying(true)
       try {
-        const dataUrl = await fileToDataUrl(imageFile)
-        const assetId = `${nanoid(10)}-${imageFile.name}`
-        useAssetStore.getState().addAsset(assetId, dataUrl)
+        const { key, dataUrl } = await prepareScreenshotUpload(imageFile)
+        useAssetStore.getState().addAsset(key, dataUrl)
         const layer = layers[1]
         if (layer.type === 'phone') {
-          layer.screenshotPath = assetId
+          layer.screenshotPath = key
           layer.screenshotDataUrl = dataUrl
         }
         setUploadError(null)

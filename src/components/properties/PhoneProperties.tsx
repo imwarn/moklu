@@ -1,9 +1,9 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useEditorStore } from '@/store'
 import { useAssetStore } from '@/store/assets'
 import type { PhoneLayer, Layer } from '@/types'
-import { fileToDataUrl } from '@/utils/files'
+import { prepareScreenshotUpload } from '@/utils/screenshotAssets'
 import { ColorField, SliderField } from '@/components/properties/PropertyControls'
 import { OverrideDot } from '@/components/properties/OverrideDot'
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch'
@@ -94,14 +94,17 @@ export function PhoneProperties({ layer }: { layer: PhoneLayer }) {
   const screenshotInputRef = useRef<HTMLInputElement>(null)
   const addAsset = useAssetStore((s) => s.addAsset)
   const assets = useAssetStore((s) => s.assets)  // reactive to IDB hydration
+  const [screenshotError, setScreenshotError] = useState<string | null>(null)
 
   const handleScreenshotFile = async (file: File) => {
-    const dataUrl = await fileToDataUrl(file)
-    addAsset(file.name, dataUrl)
-    // Keep the inline data URL as a last-resort fallback. The asset store lives
-    // in IndexedDB and can fail/hydrate late; without this, phone screenshots
-    // can render blank in the editor, previews, or exports.
-    upd({ screenshotPath: file.name, screenshotDataUrl: dataUrl })
+    try {
+      const { key, dataUrl } = await prepareScreenshotUpload(file)
+      addAsset(key, dataUrl)
+      upd({ screenshotPath: key, screenshotDataUrl: dataUrl })
+      setScreenshotError(null)
+    } catch (error) {
+      setScreenshotError(error instanceof Error ? error.message : 'Could not read screenshot.')
+    }
   }
 
   const previewSrc = layer.screenshotPath ? assets[layer.screenshotPath]?.dataUrl ?? layer.screenshotDataUrl : layer.screenshotDataUrl
@@ -265,6 +268,7 @@ export function PhoneProperties({ layer }: { layer: PhoneLayer }) {
           {previewSrc ? <img src={previewSrc} alt="Screenshot" className="mx-auto max-h-24 rounded-lg object-contain" /> : <span className="text-xs text-[#6b6b7a]">Click or drag to upload screenshot</span>}
         </FileUploadButton>
         {screenshotLabel && <p className="mt-2 truncate text-[10px] text-[#6b6b7a]">{screenshotLabel}</p>}
+        {screenshotError && <p role="alert" className="mt-2 text-[10px] text-red-400">{screenshotError}</p>}
       </div>
 
       <div className={panelSectionCls}>
@@ -331,9 +335,14 @@ export function PhoneProperties({ layer }: { layer: PhoneLayer }) {
                     locale={locale}
                     previewSrc={previewSrc}
                     onUpload={async (file) => {
-                      const dataUrl = await fileToDataUrl(file)
-                      addAsset(file.name, dataUrl)
-                      setLocaleContent(activeSlideGroupId, layer.id, locale, { screenshotPath: file.name, screenshotDataUrl: dataUrl })
+                      try {
+                        const { key, dataUrl } = await prepareScreenshotUpload(file)
+                        addAsset(key, dataUrl)
+                        setLocaleContent(activeSlideGroupId, layer.id, locale, { screenshotPath: key, screenshotDataUrl: dataUrl })
+                        setScreenshotError(null)
+                      } catch (error) {
+                        setScreenshotError(error instanceof Error ? error.message : 'Could not read screenshot.')
+                      }
                     }}
                     onClear={() => clearLocaleContent(activeSlideGroupId, layer.id, locale)}
                   />
