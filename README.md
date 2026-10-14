@@ -54,6 +54,15 @@ npm run build
 - Screenshot uploads use distinct asset IDs so two images named `screenshot.png` do not overwrite each other in project storage.
 - Template slots are an optional field on editable phone layers (`primary-screenshot` / `secondary-screenshot`), allowing backward-compatible template JSON and future multi-slot workflows.
 
+## v0.3 template appearance options
+
+The Templates gallery offers two deliberate ways to apply a style to an existing canvas:
+
+- **Use template layout** (the original v0.2 behavior): recompose the active slide using the selected template and keep its main screenshot.
+- **Style only · keep content**: copy the template background colors, frame shadow/border and text typography while preserving every existing screenshot, text string, image, group, position and layer ID.
+
+The original **+ Add slides to project** still works. Style-only does not change canvas dimensions or source device model, and does not remove user-uploaded background images.
+
 ## Roadmap
 
 - **v0.1:** browser/device mockups, quick templates, common aspect ratios, local PNG export, editable source

@@ -3,6 +3,8 @@ import { forEachLayerTree, mapLayerTree } from '@/utils/layerTree'
 import { applyTemplate } from '@/utils/templates'
 import { findScreenshotTarget } from '@/utils/templateSlots'
 
+export type TemplateApplyMode = 'layout' | 'appearance'
+
 /**
  * Apply only a template's appearance, not its layout.
  *

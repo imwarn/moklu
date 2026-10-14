@@ -203,7 +203,7 @@ export interface EditorStore {
   exportActiveAsTemplate: (opts: { name: string; description?: string; category?: string; slideGroupIds?: string[] }) => Template
   importTemplateAsNewProject: (tpl: Template) => void
   addTemplateSlideGroups: (tpl: Template) => void
-  applyTemplateToActiveCanvas: (tpl: Template) => void
+  applyTemplateToActiveCanvas: (tpl: Template, mode?: import('@/utils/templateAppearance').TemplateApplyMode) => void
 }
 
 // ─── Zustand set/get type aliases ────────────────────────────────────────────

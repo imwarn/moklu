@@ -2,6 +2,7 @@ import type { BrandColor, Template } from '@/types'
 import { normalizeProjectFormats, BASE_CANVAS_FORMAT, getGroupFamilyKey } from '@/utils/canvasFormats'
 import { projectToTemplate, applyTemplate, extractInlineScreenshots } from '@/utils/templates'
 import { applyTemplateToCanvas } from '@/utils/templateSlots'
+import { applyTemplateAppearance } from '@/utils/templateAppearance'
 import { isProjectExportBundle } from '@/utils/projectAssets'
 import type { EditorStore, EditorSet, EditorGet } from '../types'
 import { useAssetStore } from '../assets'
@@ -156,11 +157,13 @@ export const createProjectSlice = (
   /** Apply a template's first suitable slide onto the current artboard.
    * The canvas dimensions, ID and user screenshot remain intact.
    */
-  applyTemplateToActiveCanvas: (tpl: Template) => {
+  applyTemplateToActiveCanvas: (tpl: Template, mode = 'layout') => {
     const { project, activeSlideGroupId } = get()
     const current = project.slideGroups.find((g) => g.id === activeSlideGroupId)
     if (!current) throw new Error('Choose a canvas before applying a template.')
-    const result = applyTemplateToCanvas(tpl, current)
+    const result = mode === 'appearance'
+      ? applyTemplateAppearance(tpl, current)
+      : applyTemplateToCanvas(tpl, current)
     set((s) => {
       const existing = s.project.settings.brandColors ?? []
       const known = new Set(existing.map((color) => color.id))
@@ -171,13 +174,15 @@ export const createProjectSlice = (
             ? { ...s.project.settings, brandColors: [...existing, ...incoming] }
             : s.project.settings,
           slideGroups: s.project.slideGroups.map((group) => group.id === activeSlideGroupId
-            ? { ...group, layers: result.layers, formats: undefined }
+            ? { ...group, layers: result.layers, ...(mode === 'layout' ? { formats: undefined } : {}) }
             : group),
         }),
-        selection: result.selectedLayerId ? { slideGroupId: activeSlideGroupId, layerId: result.selectedLayerId } : null,
-        selectedLayerIds: [],
-        editingGroupId: null,
-        activeCanvasFormat: BASE_CANVAS_FORMAT,
+        ...(mode === 'layout' ? {
+          selection: result.selectedLayerId ? { slideGroupId: activeSlideGroupId, layerId: result.selectedLayerId } : null,
+          selectedLayerIds: [],
+          editingGroupId: null,
+          activeCanvasFormat: BASE_CANVAS_FORMAT,
+        } : {}),
       }
     })
   },
