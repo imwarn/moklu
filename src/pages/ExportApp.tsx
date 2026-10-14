@@ -93,15 +93,15 @@ export function ExportApp() {
   const addAsset = useAssetStore((s) => s.addAsset)
   const addFont = useFontStore((s) => s.addFont)
   const getFont = useFontStore((s) => s.getFont)
-  // The CLI explicitly targets base (single-format headless export); browser
-  // exports use the same planner with the configured active formats.
+  // Headless export should follow the project's active format matrix; the base
+  // sentinel alone excludes format-family-scoped groups (PixelDeck issue #58).
   // NOTE (v0.4.x): CLI output filenames use the shared planner naming —
   // `<group>__<slide>.png`, sanitized and collision-safe. This intentionally
   // replaced the old raw `<slide>.png` naming, which let two groups with the
   // same slide names overwrite each other's files. See cli/README.md.
   const exportPlan = useMemo(
     () => buildExportPlan(project, {
-      formatIds: [getProjectBaseFormat(project)],
+      formatIds: project.settings.activeFormats?.length ? project.settings.activeFormats.filter((id) => id !== 'base') : [getProjectBaseFormat(project)],
       locales: [activeLocale],
       scope: 'project',
     }),

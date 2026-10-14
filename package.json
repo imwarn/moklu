@@ -1,32 +1,32 @@
 {
-  "name": "pixeldeck",
-  "version": "0.8.3",
+  "name": "moklu",
+  "version": "0.1.0",
   "private": true,
-  "description": "Visual editor for designing polished App Store & Play Store screenshots. Drag-and-drop device mockups, text, shapes, and gradients, then export PNGs from the browser or batch-export via CLI.",
+  "description": "Open-source screenshot and mockup studio with editable browser/device frames, quick styles, customizable canvases and advanced multi-format export.",
   "keywords": [
-    "app-store",
-    "screenshots",
+    "screenshot",
     "mockup",
-    "canvas",
+    "browser-frame",
+    "image-editor",
     "konva",
+    "canvas",
     "react",
-    "vite",
-    "cli",
-    "playwright",
-    "localization"
+    "open-source",
+    "app-store"
   ],
   "license": "MIT",
-  "author": "PixelDeck contributors",
+  "author": "Moklu contributors (based on PixelDeck)",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Pr0xS/PixelDeck.git"
+    "url": "https://github.com/imwarn/moklu.git"
   },
-  "homepage": "https://github.com/Pr0xS/PixelDeck#readme",
+  "homepage": "https://moklu.app",
   "bugs": {
-    "url": "https://github.com/Pr0xS/PixelDeck/issues"
+    "url": "https://github.com/imwarn/moklu/issues"
   },
   "type": "module",
   "bin": {
+    "moklu": "./cli/index.mjs",
     "pixeldeck": "./cli/index.mjs"
   },
   "scripts": {

@@ -22,7 +22,7 @@ export function AppLoadingScreen({ visible }: AppLoadingScreenProps) {
     <div
       role="status"
       aria-live="polite"
-      aria-label="Loading PixelDeck"
+      aria-label="Loading Moklu"
       className={`fixed inset-0 z-[10000] flex items-center justify-center overflow-hidden bg-[#0f0f13] transition-opacity duration-200 ease-out ${
         visible ? 'opacity-100' : 'pointer-events-none opacity-0'
       }`}
