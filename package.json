@@ -1,0 +1,91 @@
+{
+  "name": "pixeldeck",
+  "version": "0.8.3",
+  "private": true,
+  "description": "Visual editor for designing polished App Store & Play Store screenshots. Drag-and-drop device mockups, text, shapes, and gradients, then export PNGs from the browser or batch-export via CLI.",
+  "keywords": [
+    "app-store",
+    "screenshots",
+    "mockup",
+    "canvas",
+    "konva",
+    "react",
+    "vite",
+    "cli",
+    "playwright",
+    "localization"
+  ],
+  "license": "MIT",
+  "author": "PixelDeck contributors",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Pr0xS/PixelDeck.git"
+  },
+  "homepage": "https://github.com/Pr0xS/PixelDeck#readme",
+  "bugs": {
+    "url": "https://github.com/Pr0xS/PixelDeck/issues"
+  },
+  "type": "module",
+  "bin": {
+    "pixeldeck": "./cli/index.mjs"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "typecheck": "tsc -b --noEmit",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "cli": "node cli/index.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@playwright/test": "^1.61.1",
+    "js-yaml": "^4.3.1",
+    "jszip": "^3.10.1",
+    "konva": "^10.3.0",
+    "nanoid": "^5.1.16",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "react-konva": "^19.2.4",
+    "react-markdown": "10.1.0",
+    "rehype-raw": "7.0.0",
+    "remark-gfm": "4.0.1",
+    "use-image": "^1.1.4",
+    "zundo": "^2.3.0",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^24.19.1",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.1.1",
+    "eslint": "^10.12.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "fake-indexeddb": "^6.2.5",
+    "globals": "^17.13.0",
+    "tailwindcss": "^4.3.1",
+    "typescript": "~6.0.2",
+    "typescript-eslint": "^8.71.0",
+    "vite": "^8.3.2",
+    "vitest": "^4.1.11"
+  },
+  "overrides": {
+    "postcss": {
+      "nanoid": "^3.3.18"
+    },
+    "minimatch": {
+      "brace-expansion": "^5.0.9"
+    }
+  }
+}
