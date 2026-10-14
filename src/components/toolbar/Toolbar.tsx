@@ -5,6 +5,10 @@ import { notifyProjectConflict, useProjectsStore } from '@/store/projects'
 import { ProjectConflictError } from '@/store/storage/types'
 import { BrandKitButton } from '@/components/toolbar/BrandKitButton'
 import { Logo } from '@/components/toolbar/Logo'
+import { QuickDesignModal } from '@/components/panels/QuickDesignModal'
+import { getStage } from '@/utils/stageRegistry'
+import { exportSlide, downloadDataUrl } from '@/utils/export'
+import { runExclusiveCapture, waitForStageSettled } from '@/utils/stageCapture'
 
 // Lazy-load heavy modals — only fetched when the user opens them for the first time.
 const ProjectsModal = lazy(() =>
@@ -77,6 +81,24 @@ export function Toolbar({ mode, onSetMode }: ToolbarProps) {
   }, [editingName])
   const [projectsOpen, setProjectsOpen] = useState(false)
   const [templatesOpen, setTemplatesOpen] = useState(false)
+  const [quickOpen, setQuickOpen] = useState(false)
+  const [quickExportError, setQuickExportError] = useState<string | null>(null)
+
+  const exportQuickPng = async () => {
+    const stage = getStage()
+    const group = project.slideGroups.find((g) => g.id === useEditorStore.getState().activeSlideGroupId)
+    if (!stage || !group) return
+    try {
+      setQuickExportError(null)
+      await runExclusiveCapture(async () => {
+        await waitForStageSettled(stage, { timeoutMs: 1800 })
+        const png = await exportSlide(stage, 0, group)
+        downloadDataUrl(png, 'moklu.png')
+      })
+    } catch (error) {
+      setQuickExportError(error instanceof Error ? error.message : String(error))
+    }
+  }
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
 
@@ -107,6 +129,7 @@ export function Toolbar({ mode, onSetMode }: ToolbarProps) {
     >
       {/* Projects / Templates / API modals — lazy loaded on first open */}
       <Suspense>
+        <QuickDesignModal open={quickOpen} onClose={() => setQuickOpen(false)} />
         <ProjectsModal open={projectsOpen} onClose={() => setProjectsOpen(false)} />
         <TemplatesModal open={templatesOpen} onClose={() => setTemplatesOpen(false)} />
         <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
@@ -200,6 +223,8 @@ export function Toolbar({ mode, onSetMode }: ToolbarProps) {
         <span className="max-[1099px]:hidden">Projects</span>
       </button>
 
+      <button type="button" onClick={() => setQuickOpen(true)} title="Create a quick screenshot mockup" className="shrink-0 rounded-lg border border-[#8276e8]/60 bg-[#8276e8]/20 px-3 py-1.5 text-xs font-semibold text-[#d6d1ff] hover:bg-[#8276e8]/30">✦ Quick Design</button>
+
       {/* Templates button */}
       <button
         onClick={() => setTemplatesOpen(true)}
@@ -231,6 +256,9 @@ export function Toolbar({ mode, onSetMode }: ToolbarProps) {
       </button>
 
       <BrandKitButton />
+
+      <button type="button" onClick={() => { void exportQuickPng() }} title="Export the active canvas at its original size" className="shrink-0 rounded-lg border border-white/15 px-3 py-1.5 text-xs text-white hover:bg-white/10">↓ PNG</button>
+      {quickExportError && <span title={quickExportError} className="max-w-32 truncate text-xs text-red-400">Export error</span>}
 
       {/* Save indicator */}
       {saveLabel && (
@@ -318,7 +346,7 @@ export function Toolbar({ mode, onSetMode }: ToolbarProps) {
 
         {/* GitHub link */}
         <a
-          href="https://github.com/Pr0xS/PixelDeck"
+          href="https://github.com/imwarn/moklu"
           target="_blank"
           rel="noopener noreferrer"
           title="View on GitHub"
