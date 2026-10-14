@@ -27,6 +27,20 @@ export const QUICK_MOCKUPS: { id: QuickMockup; label: string }[] = [
   { id: 'pixel-9', label: 'Google Pixel 9' },
 ]
 
+/** Fit a mockup inside an arbitrary independent canvas, without platform-format projection. */
+export function getQuickMockupPlacement(model: QuickMockup, width: number, height: number) {
+  const spec = getPhoneSpec(model)
+  const isBrowser = model.startsWith('browser-')
+  const fitWidth = isBrowser ? 0.85 : 0.66
+  const fitHeight = isBrowser ? 0.75 : 0.78
+  const scale = Math.min(width * fitWidth / spec.frameWidth, height * fitHeight / spec.frameHeight, 1.5)
+  return {
+    scale,
+    x: Math.round((width - spec.frameWidth * scale) / 2),
+    y: Math.round((height - spec.frameHeight * scale) / 2),
+  }
+}
+
 /**
  * Create an editable, single-canvas quick mockup from existing layers.
  * The primary screenshot stays attached when switching visual themes or frames.
@@ -43,13 +57,8 @@ export function makeQuickLayers(
   const previousBackground = oldLayers.find((layer): layer is BackgroundLayer => layer.type === 'background')
   const oldMockup = oldLayers.find((layer): layer is PhoneLayer => layer.type === 'phone')
   const oldImage = oldLayers.find((layer) => layer.type === 'image')
-  const spec = getPhoneSpec(mockup)
   const isBrowser = mockup.startsWith('browser-')
-  const fitWidth = isBrowser ? 0.85 : 0.66
-  const fitHeight = isBrowser ? 0.75 : 0.78
-  const scale = Math.min(width * fitWidth / spec.frameWidth, height * fitHeight / spec.frameHeight, 1.5)
-  const frameWidth = spec.frameWidth * scale
-  const frameHeight = spec.frameHeight * scale
+  const placement = getQuickMockupPlacement(mockup, width, height)
 
   const background: BackgroundLayer = {
     id: previousBackground?.id ?? nanoid(10),
@@ -72,9 +81,7 @@ export function makeQuickLayers(
     id: oldMockup?.id ?? nanoid(10),
     name: isBrowser ? 'Browser Mockup' : 'Device Mockup',
     type: 'phone',
-    x: Math.round((width - frameWidth) / 2),
-    y: Math.round((height - frameHeight) / 2),
-    scale,
+    ...placement,
     model: mockup,
     visible: true,
     locked: false,

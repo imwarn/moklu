@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useEditorStore } from '@/store'
 import {
-  makeQuickLayers, QUICK_MOCKUPS, QUICK_SIZES, QUICK_THEMES,
+  getQuickMockupPlacement, makeQuickLayers, QUICK_MOCKUPS, QUICK_SIZES, QUICK_THEMES,
   type QuickMockup, type QuickSize, type QuickTheme,
 } from '@/utils/quickDesign'
 
@@ -32,28 +32,21 @@ export function QuickDesignModal({ open, onClose }: QuickDesignModalProps) {
     const { updateSlideGroup, setActiveCanvasFormat, select } = useEditorStore.getState()
     const width = custom ? Number(customWidth) : QUICK_SIZES[size].width
     const height = custom ? Number(customHeight) : QUICK_SIZES[size].height
-    if (!Number.isInteger(width) || !Number.isInteger(height) || width < 240 || height < 240 || width > 8192 || height > 8192) {
-      window.alert('Canvas width and height must each be whole numbers from 240 to 8192.')
+    if (!Number.isInteger(width) || !Number.isInteger(height) || width < 240 || height < 240 || width > 4096 || height > 4096 || width * height > 16_777_216) {
+      window.alert('Canvas width and height must each be whole numbers from 240 to 4096, with a 16MP maximum.')
       return
     }
-    // The helper accepts a preset size for proportional artwork. Custom
-    // dimensions use a follow-up scale to fit the generated layers exactly.
-    const preset = QUICK_SIZES[size]
     const layers = makeQuickLayers(activeGroup.layers, size, theme, mockup)
     if (custom) {
-      const sx = width / preset.width
-      const sy = height / preset.height
-      for (const layer of layers) {
-        if (layer.type === 'phone') {
-          const factor = Math.min(sx, sy)
-          layer.scale *= factor
-          layer.x = Math.round((width - (layer.x * 0 + width * 0 + layer.scale * (mockup.startsWith('browser-') ? 1200 : mockup === 'pixel-9' ? 380 : 390))) / 2)
-          // vertical positioning uses the frame's declared intrinsic height
-          const frameH = mockup.startsWith('browser-') ? 750 : mockup === 'pixel-9' ? 820 : 844
-          layer.y = Math.round((height - frameH * layer.scale) / 2)
-        } else if (layer.type === 'background') {
-          layer.accents = layer.accents.map((accent) => ({ ...accent, rx: accent.rx * sx, ry: accent.ry * sy }))
-        }
+      const layer = layers[1]
+      if (layer.type === 'phone') Object.assign(layer, getQuickMockupPlacement(mockup, width, height))
+      const sx = width / QUICK_SIZES[size].width
+      const sy = height / QUICK_SIZES[size].height
+      const background = layers[0]
+      if (background.type === 'background') {
+        background.accents = background.accents.map((accent) => ({
+          ...accent, rx: accent.rx * sx, ry: accent.ry * sy,
+        }))
       }
     }
     updateSlideGroup(activeGroup.id, {
@@ -97,8 +90,8 @@ export function QuickDesignModal({ open, onClose }: QuickDesignModalProps) {
           <input type="checkbox" checked={custom} onChange={(e) => setCustom(e.target.checked)} /> Use custom canvas dimensions
         </label>
         {custom && <div className="mt-2 grid grid-cols-2 gap-2">
-          <label className="text-xs text-[#aeb0c3]">Width<input className={controlClass + ' mt-1'} type="number" min={240} max={8192} value={customWidth} onChange={(e) => setCustomWidth(e.target.value)} /></label>
-          <label className="text-xs text-[#aeb0c3]">Height<input className={controlClass + ' mt-1'} type="number" min={240} max={8192} value={customHeight} onChange={(e) => setCustomHeight(e.target.value)} /></label>
+          <label className="text-xs text-[#aeb0c3]">Width<input className={controlClass + ' mt-1'} type="number" min={240} max={4096} value={customWidth} onChange={(e) => setCustomWidth(e.target.value)} /></label>
+          <label className="text-xs text-[#aeb0c3]">Height<input className={controlClass + ' mt-1'} type="number" min={240} max={4096} value={customHeight} onChange={(e) => setCustomHeight(e.target.value)} /></label>
         </div>}
         <div className="mt-5 text-xs font-semibold uppercase tracking-widest text-[#aeb0c3]">Style templates</div>
         <div className="mt-3 grid grid-cols-3 gap-3">
