@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { SlideGroup } from '@/types'
 import { useEditorStore } from '@/store'
 import { useAssetStore } from '@/store/assets'
 import { fileToDataUrl } from '@/utils/files'
@@ -18,20 +19,37 @@ interface QuickDesignModalProps {
  * Templates are real layers, so the result remains editable in Advanced mode.
  */
 export function QuickDesignModal({ open, onClose }: QuickDesignModalProps) {
-  const [size, setSize] = useState<QuickSize>('wide')
-  const [theme, setTheme] = useState<QuickTheme>('aurora')
-  const [mockup, setMockup] = useState<QuickMockup>('browser-chrome')
-  const [customWidth, setCustomWidth] = useState('1600')
-  const [customHeight, setCustomHeight] = useState('900')
-  const [custom, setCustom] = useState(false)
-  const [imageFile, setImageFile] = useState<File | null>(null)
-  const [uploadError, setUploadError] = useState<string | null>(null)
-  const [applying, setApplying] = useState(false)
   const project = useEditorStore((s) => s.project)
   const activeGroupId = useEditorStore((s) => s.activeSlideGroupId)
   const activeGroup = project.slideGroups.find((group) => group.id === activeGroupId)
-
   if (!open) return null
+  return <QuickDesignDialog key={activeGroup?.id ?? 'none'} activeGroup={activeGroup} onClose={onClose} />
+}
+
+function QuickDesignDialog({ activeGroup, onClose }: { activeGroup: SlideGroup | undefined; onClose: () => void }) {
+  // Reopening Quick Design starts from the actual canvas rather than silently
+  // reverting an existing Moklu design to the original 16:9 default.
+  const hasQuickCanvas = activeGroup?.name === 'Moklu Canvas'
+  const matchingSize = hasQuickCanvas
+    ? (Object.entries(QUICK_SIZES).find(([, dims]) =>
+        dims.width === activeGroup?.slideWidth && dims.height === activeGroup?.slideHeight)?.[0] as QuickSize | undefined)
+    : undefined
+  const [size, setSize] = useState<QuickSize>(matchingSize ?? 'wide')
+  const [custom, setCustom] = useState(Boolean(hasQuickCanvas && !matchingSize))
+  const [customWidth, setCustomWidth] = useState(String(hasQuickCanvas ? activeGroup?.slideWidth : 1600))
+  const [customHeight, setCustomHeight] = useState(String(hasQuickCanvas ? activeGroup?.slideHeight : 900))
+  const currentMockup = activeGroup?.layers.find((layer) => layer.type === 'phone')
+  const initialMockup = QUICK_MOCKUPS.find((item) => item.id === (currentMockup?.type === 'phone' ? currentMockup.model : undefined))
+  const [mockup, setMockup] = useState<QuickMockup>(initialMockup?.id ?? 'browser-chrome')
+  const currentBackground = activeGroup?.layers.find((layer) => layer.type === 'background')
+  const initialTheme = currentBackground?.type === 'background' && currentBackground.fill.type === 'linear'
+    ? (Object.keys(QUICK_THEMES).find((key) =>
+        QUICK_THEMES[key as QuickTheme].top === currentBackground.fill.stops[0]?.color) as QuickTheme | undefined)
+    : undefined
+  const [theme, setTheme] = useState<QuickTheme>(initialTheme ?? 'aurora')
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const [applying, setApplying] = useState(false)
 
   const apply = async () => {
     if (!activeGroup) return
@@ -42,6 +60,10 @@ export function QuickDesignModal({ open, onClose }: QuickDesignModalProps) {
       window.alert('Canvas width and height must each be whole numbers from 240 to 4096, with a 16MP maximum.')
       return
     }
+    const additionalLayers = activeGroup.layers.filter((layer) => layer.type !== 'background' && layer.type !== 'phone')
+    if (additionalLayers.length > 0 && !window.confirm(
+      `Apply a new Quick Design? This replaces ${additionalLayers.length} additional layer(s). For only changing the canvas ratio, choose Canvas Size instead.`,
+    )) return
     const layers = makeQuickLayers(activeGroup.layers, size, theme, mockup)
     if (custom) {
       const layer = layers[1]
@@ -100,7 +122,7 @@ export function QuickDesignModal({ open, onClose }: QuickDesignModalProps) {
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
             <h2 id="quick-design-title" className="text-xl font-semibold">Quick Design</h2>
-            <p className="mt-1 text-sm text-[#aaaabc]">Give your screenshot a polished frame in a few clicks.</p>
+            <p className="mt-1 text-sm text-[#aaaabc]">Upload → choose frame & style → apply → export.</p>
           </div>
           <button type="button" onClick={onClose} className="text-xl text-[#aaaabc]" aria-label="Close quick design">×</button>
         </div>
@@ -141,7 +163,10 @@ export function QuickDesignModal({ open, onClose }: QuickDesignModalProps) {
             </button>
           )}
         </div>
-        <p className="mt-5 text-xs leading-5 text-[#aaaabc]">Applying a quick design replaces the current canvas layers but keeps its main screenshot. Other slides are untouched. You can edit the resulting layers as usual.</p>
+        <div role="note" className="mt-5 rounded-lg border border-[#8276e8]/25 bg-[#8276e8]/10 p-3 text-xs leading-5 text-[#bdbbd7]">
+          <strong className="text-white">Want a different ratio after applying?</strong> Use <strong className="text-[#d6d1ff]">Canvas Size</strong> in the toolbar to resize without replacing your screenshot, text or layers.
+          <span className="mt-1 block text-[#9395aa]">Quick Design reapplies a style and replaces the current slide layout. Existing screenshots remain attached; other slides are untouched.</span>
+        </div>
         <div className="mt-4 flex justify-end gap-2">
           <button type="button" onClick={onClose} className="rounded-lg border border-white/15 px-4 py-2 text-sm">Cancel</button>
           <button type="button" onClick={() => { void apply() }} disabled={!activeGroup || applying} className="rounded-lg bg-[#8276e8] px-5 py-2 text-sm font-semibold text-white hover:bg-[#9388ee] disabled:opacity-50">{applying ? 'Preparing…' : 'Apply Design'}</button>
