@@ -32,7 +32,7 @@ export function HelpModal({ open, onClose }: HelpModalProps) {
     <ModalShell
       open={open}
       onClose={onClose}
-      title="PixelDeck user guide"
+      title="Moklu user guide"
       closeLabel="Close help"
       maxWidth="max-w-[1120px]"
       backdropClassName="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-5"
@@ -53,7 +53,7 @@ export function HelpModal({ open, onClose }: HelpModalProps) {
             </div>
             <div>
               <h2 className="text-[15px] font-semibold tracking-[-0.01em] text-[#f0eff8]">
-                PixelDeck user guide
+                Moklu user guide
               </h2>
               <p className="mt-0.5 text-[11px] text-[#6b6b7a]">
                 Everything you need to design, adapt, and export screenshot sets.
@@ -164,7 +164,7 @@ export function HelpModal({ open, onClose }: HelpModalProps) {
                 </div>
               </div>
 
-              <div key={activeSection.id} className="animate-[pixeldeck-loader-enter_240ms_cubic-bezier(0.22,1,0.36,1)_both]">
+              <div key={activeSection.id} className="animate-[moklu-loader-enter_240ms_cubic-bezier(0.22,1,0.36,1)_both]">
                 <HelpMarkdown source={activeSection.body} />
               </div>
 

@@ -67,7 +67,7 @@ export function Toolbar({ mode, onSetMode }: ToolbarProps) {
     if (trimmed && trimmed !== project.name) {
       renameProject(project.id, trimmed).catch((err) => {
         if (err instanceof ProjectConflictError) notifyProjectConflict(err.projectId)
-        else console.error('[PixelDeck] Failed to rename project', err)
+        else console.error('[Moklu] Failed to rename project', err)
       })
     }
     setEditingName(false)

@@ -228,7 +228,7 @@ export function AiProviderSettings() {
         </div>
         {!hasActiveKey ? (
           <p className="rounded-lg border border-[rgba(255,255,255,0.08)] px-3 py-4 text-xs text-[#6b6b7a] text-center">
-            Add an API key to connect to {activeProvider.label}. PixelDeck will load the model list from the provider after the connection is available.
+            Add an API key to connect to {activeProvider.label}. Moklu will load the model list from the provider after the connection is available.
           </p>
         ) : (
           <>

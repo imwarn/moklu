@@ -163,7 +163,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
           <span className="text-[#2a2a3a]">·</span>
           <span className="text-[11px] text-[#4a4a5a] font-mono select-all" title="Git commit hash">{__GIT_HASH__}</span>
           <span className="flex-1" />
-          <a href="https://github.com/Pr0xS/PixelDeck" target="_blank" rel="noopener noreferrer" className="text-[11px] text-[#4a4a5a] hover:text-[#7c6ef6] transition-colors">github.com/Pr0xS/PixelDeck</a>
+          <a href="https://github.com/imwarn/moklu" target="_blank" rel="noopener noreferrer" className="text-[11px] text-[#4a4a5a] hover:text-[#7c6ef6] transition-colors">github.com/imwarn/moklu</a>
         </>
       )}
     >
