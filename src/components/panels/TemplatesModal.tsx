@@ -5,6 +5,7 @@ import { useEditorStore } from '@/store'
 import { looksLikeTemplate } from '@/utils/templates'
 import { downloadDataUrl } from '@/utils/export'
 import type { Template } from '@/types'
+import type { TemplateApplyMode } from '@/utils/templateAppearance'
 import { ModalShell } from '@/components/ui/ModalShell'
 import { FileUploadButton } from '@/components/ui/FileUploadButton'
 
@@ -26,6 +27,7 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
   const [applying, setApplying] = useState<string | null>(null)
   const [importError, setImportError] = useState<string | null>(null)
   const [galleryError, setGalleryError] = useState<string | null>(null)
+  const [canvasApplyMode, setCanvasApplyMode] = useState<TemplateApplyMode>('layout')
   const [exportOpen, setExportOpen] = useState(false)
 
   const [exportName, setExportName] = useState('')
@@ -54,8 +56,8 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
           throw new Error('Choose a single-slide canvas before applying a style.')
         }
         const hasExtra = active.layers.some((layer) => layer.type !== 'background' && layer.type !== 'phone')
-        if (hasExtra && !window.confirm('Apply this template? Existing text and decorations will be replaced, but your screenshot will be preserved.')) return
-        applyTemplateToActiveCanvas(tpl)
+        if (canvasApplyMode === 'layout' && hasExtra && !window.confirm('Apply this template? Existing text and decorations will be replaced, but your screenshot will be preserved.')) return
+        applyTemplateToActiveCanvas(tpl, canvasApplyMode)
       } else {
         addTemplateSlideGroups(tpl)
       }
@@ -476,6 +478,19 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
             </div>
           )}
 
+          <fieldset className="mb-4 rounded-xl border border-white/10 bg-white/[0.025] p-3">
+            <legend className="px-1 text-xs font-semibold text-[#dedee8]">Apply template to current canvas</legend>
+            <div className="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <label className={`flex cursor-pointer items-start gap-2 rounded-lg border p-3 text-xs ${canvasApplyMode === 'layout' ? 'border-[#9489f6] bg-[#8276e8]/10' : 'border-white/10'}`}>
+                <input type="radio" name="template-apply-mode" checked={canvasApplyMode === 'layout'} onChange={() => setCanvasApplyMode('layout')} />
+                <span><strong className="block text-white">Use template layout</strong><span className="mt-1 block text-[#aeb0c3]">New frame and composition. Keeps your main screenshot; replaces existing text and decorations.</span></span>
+              </label>
+              <label className={`flex cursor-pointer items-start gap-2 rounded-lg border p-3 text-xs ${canvasApplyMode === 'appearance' ? 'border-[#9489f6] bg-[#8276e8]/10' : 'border-white/10'}`}>
+                <input type="radio" name="template-apply-mode" checked={canvasApplyMode === 'appearance'} onChange={() => setCanvasApplyMode('appearance')} />
+                <span><strong className="block text-white">Style only · keep content</strong><span className="mt-1 block text-[#aeb0c3]">New colors, typography and frame effects. Keeps every layer, screenshot and its position.</span></span>
+              </label>
+            </div>
+          </fieldset>
           {galleryError && (
             <p role="alert" className="mb-3 rounded-lg border border-red-400/25 bg-red-400/10 p-3 text-xs text-red-300">{galleryError}</p>
           )}
@@ -607,9 +622,9 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
                         disabled={applying === entry.slug}
                         onClick={() => { void handleGalleryApply(entry, 'canvas') }}
                         className="rounded-md bg-[#7c6ef6] px-3 py-2 text-xs font-semibold text-white hover:bg-[#9689ff] disabled:opacity-50"
-                        title="Apply style to active canvas, preserving the main screenshot"
+                        title={canvasApplyMode === 'appearance' ? 'Change appearance without replacing any content or geometry' : 'Use template composition, preserving the main screenshot'}
                       >
-                        {applying === entry.slug ? 'Applying…' : 'Use on current canvas'}
+                        {applying === entry.slug ? 'Applying…' : canvasApplyMode === 'appearance' ? 'Apply style · keep layers' : 'Use on current canvas'}
                       </button>
                       <button
                         disabled={applying === entry.slug}
