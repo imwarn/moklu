@@ -1,6 +1,7 @@
 import type { BrandColor, Template } from '@/types'
 import { normalizeProjectFormats, BASE_CANVAS_FORMAT, getGroupFamilyKey } from '@/utils/canvasFormats'
 import { projectToTemplate, applyTemplate, extractInlineScreenshots } from '@/utils/templates'
+import { applyTemplateToCanvas } from '@/utils/templateSlots'
 import { isProjectExportBundle } from '@/utils/projectAssets'
 import type { EditorStore, EditorSet, EditorGet } from '../types'
 import { useAssetStore } from '../assets'
@@ -31,6 +32,7 @@ export const createProjectSlice = (
   | 'exportActiveAsTemplate'
   | 'importTemplateAsNewProject'
   | 'addTemplateSlideGroups'
+  | 'applyTemplateToActiveCanvas'
 > => ({
   // ─ Project actions
   setProjectName: (name) =>
@@ -149,6 +151,35 @@ export const createProjectSlice = (
     })
     // Clear undo history — new project starts fresh
     clearHistory()
+  },
+
+  /** Apply a template's first suitable slide onto the current artboard.
+   * The canvas dimensions, ID and user screenshot remain intact.
+   */
+  applyTemplateToActiveCanvas: (tpl: Template) => {
+    const { project, activeSlideGroupId } = get()
+    const current = project.slideGroups.find((g) => g.id === activeSlideGroupId)
+    if (!current) throw new Error('Choose a canvas before applying a template.')
+    const result = applyTemplateToCanvas(tpl, current)
+    set((s) => {
+      const existing = s.project.settings.brandColors ?? []
+      const known = new Set(existing.map((color) => color.id))
+      const incoming = (result.settings?.brandColors ?? []).filter((color) => !known.has(color.id))
+      return {
+        project: touchProject(s.project, {
+          settings: incoming.length
+            ? { ...s.project.settings, brandColors: [...existing, ...incoming] }
+            : s.project.settings,
+          slideGroups: s.project.slideGroups.map((group) => group.id === activeSlideGroupId
+            ? { ...group, layers: result.layers, formats: undefined }
+            : group),
+        }),
+        selection: result.selectedLayerId ? { slideGroupId: activeSlideGroupId, layerId: result.selectedLayerId } : null,
+        selectedLayerIds: [],
+        editingGroupId: null,
+        activeCanvasFormat: BASE_CANVAS_FORMAT,
+      }
+    })
   },
 
   addTemplateSlideGroups: (tpl: Template) => {

@@ -15,15 +15,17 @@ interface TemplatesModalProps {
 
 export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
   const { manifest, loading, error, loadManifest, fetchTemplate } = useTemplatesStore()
-  const { project, exportActiveAsTemplate, addTemplateSlideGroups } =
+  const { project, exportActiveAsTemplate, addTemplateSlideGroups, applyTemplateToActiveCanvas } =
     useEditorStore(useShallow((s) => ({
       project: s.project,
       exportActiveAsTemplate: s.exportActiveAsTemplate,
       addTemplateSlideGroups: s.addTemplateSlideGroups,
+      applyTemplateToActiveCanvas: s.applyTemplateToActiveCanvas,
     })))
 
   const [applying, setApplying] = useState<string | null>(null)
   const [importError, setImportError] = useState<string | null>(null)
+  const [galleryError, setGalleryError] = useState<string | null>(null)
   const [exportOpen, setExportOpen] = useState(false)
 
   const [exportName, setExportName] = useState('')
@@ -40,13 +42,27 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
     }
   }, [open, project.name])
 
-  const handleGalleryApply = async (entry: typeof manifest[0]) => {
+  const handleGalleryApply = async (entry: typeof manifest[0], action: 'canvas' | 'append') => {
     setApplying(entry.slug)
+    setGalleryError(null)
     try {
       const tpl = await fetchTemplate(entry)
-      addTemplateSlideGroups(tpl)
+      if (action === 'canvas') {
+        const state = useEditorStore.getState()
+        const active = state.project.slideGroups.find((g) => g.id === state.activeSlideGroupId)
+        if (!active || active.numSlides !== 1) {
+          throw new Error('Choose a single-slide canvas before applying a style.')
+        }
+        const hasExtra = active.layers.some((layer) => layer.type !== 'background' && layer.type !== 'phone')
+        if (hasExtra && !window.confirm('Apply this template? Existing text and decorations will be replaced, but your screenshot will be preserved.')) return
+        applyTemplateToActiveCanvas(tpl)
+      } else {
+        addTemplateSlideGroups(tpl)
+      }
       onClose()
-    } catch {
+    } catch (error) {
+      setGalleryError(error instanceof Error ? error.message : 'Unable to apply template.')
+    } finally {
       setApplying(null)
     }
   }
@@ -460,6 +476,9 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
             </div>
           )}
 
+          {galleryError && (
+            <p role="alert" className="mb-3 rounded-lg border border-red-400/25 bg-red-400/10 p-3 text-xs text-red-300">{galleryError}</p>
+          )}
           {manifest.length > 0 && (
             <div
               style={{
@@ -583,23 +602,23 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
                         {entry.description}
                       </div>
                     )}
-                    <button
-                      disabled={applying === entry.slug}
-                      onClick={() => handleGalleryApply(entry)}
-                      style={{
-                        width: '100%',
-                        background: '#7c6ef6',
-                        border: 'none',
-                        borderRadius: 5,
-                        color: '#fff',
-                        cursor: applying === entry.slug ? 'wait' : 'pointer',
-                        fontSize: 11,
-                        fontWeight: 600,
-                        padding: '6px 0',
-                      }}
-                    >
-                      {applying === entry.slug ? 'Adding…' : '+ Add slides to project'}
-                    </button>
+                    <div className="mt-2 flex flex-col gap-2">
+                      <button
+                        disabled={applying === entry.slug}
+                        onClick={() => { void handleGalleryApply(entry, 'canvas') }}
+                        className="rounded-md bg-[#7c6ef6] px-3 py-2 text-xs font-semibold text-white hover:bg-[#9689ff] disabled:opacity-50"
+                        title="Apply style to active canvas, preserving the main screenshot"
+                      >
+                        {applying === entry.slug ? 'Applying…' : 'Use on current canvas'}
+                      </button>
+                      <button
+                        disabled={applying === entry.slug}
+                        onClick={() => { void handleGalleryApply(entry, 'append') }}
+                        className="rounded-md border border-white/15 px-3 py-2 text-xs text-[#aeb0c3] hover:border-white/30 hover:text-white disabled:opacity-50"
+                      >
+                        + Add slides to project
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
