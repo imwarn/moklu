@@ -42,7 +42,7 @@ function QuickDesignDialog({ activeGroup, onClose }: { activeGroup: SlideGroup |
   const initialMockup = QUICK_MOCKUPS.find((item) => item.id === (currentMockup?.type === 'phone' ? currentMockup.model : undefined))
   const [mockup, setMockup] = useState<QuickMockup>(initialMockup?.id ?? 'browser-chrome')
   const [screenshotFit, setScreenshotFit] = useState<QuickScreenshotFit>(
-    currentMockup?.type === 'phone' ? currentMockup.screenshotFit : 'cover',
+    currentMockup?.type === 'phone' ? (currentMockup.screenshotFit ?? 'cover') : 'cover',
   )
   const currentBackground = activeGroup?.layers.find((layer) => layer.type === 'background')
   const backgroundFill = currentBackground?.type === 'background' ? currentBackground.fill : null
