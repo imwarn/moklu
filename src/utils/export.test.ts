@@ -7,6 +7,9 @@ function makeFakeStage() {
   return {
     x: () => 0, y: () => 0, scaleX: () => 1, scaleY: () => 1,
     toDataURL: vi.fn((opts: unknown) => `data:${JSON.stringify(opts)}`),
+    find: vi.fn(() => []),
+    draw: vi.fn(),
+    batchDraw: vi.fn(),
   } as unknown as Konva.Stage
 }
 
@@ -38,6 +41,27 @@ describe('exportSlide', () => {
       pixelRatio: 1,
       mimeType: 'image/png',
     })
+  })
+})
+
+describe('selection-safe PNG export', () => {
+  it('excludes editor-only overlays from regular PNG captures and restores visibility', async () => {
+    const stage = makeFakeStage()
+    let isVisible = true
+    const selection = {
+      visible: vi.fn((next?: boolean) => {
+        if (next !== undefined) isVisible = next
+        return isVisible
+      }),
+    }
+    vi.mocked(stage.find).mockReturnValue([selection] as unknown as ReturnType<Konva.Stage['find']>)
+    vi.mocked(stage.toDataURL).mockImplementation(() => {
+      expect(selection.visible()).toBe(false)
+      return 'data:image/png;base64,test'
+    })
+    const result = await exportSlide(stage, 0, makeGroup())
+    expect(result).toContain('data:image/png')
+    expect(selection.visible()).toBe(true)
   })
 })
 

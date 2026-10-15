@@ -171,10 +171,10 @@ export function StageCanvas({ stageRef }: StageCanvasProps) {
     {!group ? <div className="flex items-center justify-center w-full h-full text-[#6b6b7a] text-sm">No slide group selected</div> : containerSize.w > 0 && <>
       <CanvasShadow group={group} viewportX={viewportX} viewportY={viewportY} displayWidth={displayWidth} displayHeight={displayHeight} />
       <Stage ref={stageRef} width={containerSize.w} height={containerSize.h} scaleX={zoom} scaleY={zoom} x={viewportX} y={viewportY} onClick={handleStageClick} onTap={handleStageClick} onMouseDown={handleStageMouseDown} onMouseMove={handleStageMouseMove} onMouseUp={handleStageMouseUp} style={{ position: 'absolute', top: 0, left: 0 }}>
-        <Layer listening={false}>{gridLines}</Layer>
+        <Layer name="editor-export-overlay" listening={false}>{gridLines}</Layer>
         <Layer>{group.layers.filter((layer) => layer.type === 'background').map(renderStageLayerItem)}</Layer>
         <Layer listening={!selectedBackgroundLayer} onDragStart={handleContentLayerDragStart} onDragMove={handleContentLayerDragMove} onDragEnd={handleContentLayerDragEnd}>{group.layers.filter((layer) => layer.type !== 'background').map(renderStageLayerItem)}</Layer>
-        <Layer>
+        <Layer name="editor-export-overlay">
           <Transformer ref={groupOutlineRef} enabledAnchors={[]} rotateEnabled={false} borderStroke="rgba(255,255,255,0.65)" borderStrokeWidth={1.5} borderDash={[6, 4]} anchorSize={0} listening={false} />
           {rbRect && rbRect.w > 2 && rbRect.h > 2 && <Rect x={rbRect.x} y={rbRect.y} width={rbRect.w} height={rbRect.h} fill="rgba(124,110,246,0.08)" stroke="rgba(124,110,246,0.7)" strokeWidth={1 / zoom} dash={[4 / zoom, 3 / zoom]} listening={false} />}
           <Transformer ref={transformerRef} keepRatio={!selectedLayerIsText} boundBoxFunc={(oldBox, newBox) => newBox.width < 20 || newBox.height < 20 ? oldBox : newBox} enabledAnchors={['top-left', 'top-center', 'top-right', 'middle-right', 'middle-left', 'bottom-left', 'bottom-center', 'bottom-right']} rotateEnabled={true} borderStroke="rgba(124,110,246,0.9)" borderStrokeWidth={2} anchorFill="#7c6ef6" anchorStroke="#ffffff" anchorSize={10} anchorCornerRadius={3} rotateAnchorOffset={40} />
