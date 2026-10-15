@@ -20,9 +20,12 @@ describe('Moklu quick design', () => {
     const initial = makeQuickLayers([], 'wide', 'aurora', 'browser-chrome')
     const browser = initial[1] as PhoneLayer
     browser.screenshotPath = 'user-screenshot.png'
+    browser.browserChrome = { title: 'My portfolio', address: 'https://moklu.app', theme: 'dark', showAddressBar: true }
     const changed = makeQuickLayers(initial, 'square', 'midnight', 'iphone-16-pro')
     expect((changed[1] as PhoneLayer).screenshotPath).toBe('user-screenshot.png')
     expect((changed[1] as PhoneLayer).model).toBe('iphone-16-pro')
     expect(changed[1].id).toBe(browser.id)
+    expect((changed[1] as PhoneLayer).browserChrome?.title).toBe('My portfolio')
+    expect((changed[1] as PhoneLayer).browserChrome?.address).toBe('https://moklu.app')
   })
 })

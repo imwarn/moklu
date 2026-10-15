@@ -14,6 +14,7 @@ import {
   runExclusiveCapture,
   waitForStageSettled,
   withIdentityTransform,
+  withHiddenEditorOverlays,
 } from './stageCapture'
 
 describe('stage capture mutex', () => {
@@ -38,6 +39,53 @@ describe('stage capture mutex', () => {
 
   it("returns the callback's resolved value", async () => {
     await expect(runExclusiveCapture(async () => 7)).resolves.toBe(7)
+  })
+})
+
+describe('withHiddenEditorOverlays', () => {
+  function setup() {
+    const createNode = (startVisible: boolean) => {
+      let value = startVisible
+      return {
+        visible: vi.fn((next?: boolean) => {
+          if (typeof next === 'boolean') value = next
+          return value
+        }),
+      }
+    }
+    const grid = createNode(true)
+    const selection = createNode(true)
+    const hidden = createNode(false)
+    const stage = {
+      find: vi.fn((selector: string) => selector === '.editor-export-overlay' ? [grid, selection, hidden] : []),
+      draw: vi.fn(),
+      batchDraw: vi.fn(),
+    }
+    return { stage, grid, selection, hidden }
+  }
+
+  it('hides selection and grid while capturing, then restores selected UI', () => {
+    const { stage, grid, selection, hidden } = setup()
+    let during = [] as boolean[]
+    const result = withHiddenEditorOverlays(stage as unknown as Parameters<typeof withHiddenEditorOverlays>[0], () => {
+      during = [grid.visible(), selection.visible(), hidden.visible()]
+      return 'png image'
+    })
+    expect(result).toBe('png image')
+    expect(during).toEqual([false, false, false])
+    expect([grid.visible(), selection.visible(), hidden.visible()]).toEqual([true, true, false])
+    expect(stage.find).toHaveBeenCalledWith('.editor-export-overlay')
+    expect(stage.draw).toHaveBeenCalledOnce()
+    expect(stage.batchDraw).toHaveBeenCalledOnce()
+  })
+
+  it('restores overlay visibility even when PNG encoding throws', () => {
+    const { stage, grid, selection, hidden } = setup()
+    expect(() => withHiddenEditorOverlays(stage as unknown as Parameters<typeof withHiddenEditorOverlays>[0], () => {
+      throw new Error('canvas encoding failure')
+    })).toThrow('canvas encoding failure')
+    expect([grid.visible(), selection.visible(), hidden.visible()]).toEqual([true, true, false])
+    expect(stage.batchDraw).toHaveBeenCalledOnce()
   })
 })
 

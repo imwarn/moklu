@@ -302,8 +302,18 @@ export interface PhoneBorder {
   opacity: number;  // 0–1
 }
 
+/** Browser-only title, URL label and visual appearance; never navigated. */
+export interface BrowserChromeOptions {
+  title?: string;
+  address?: string;
+  theme?: 'light' | 'dark';
+  showAddressBar?: boolean;
+}
+
 export interface PhoneLayer extends BaseLayer {
   type: 'phone';
+  /** Ignored by device mockups, retained when switching models. */
+  browserChrome?: BrowserChromeOptions;
   /** Editable template binding; legacy layers without a slot use the first device. */
   templateSlot?: 'primary-screenshot' | 'secondary-screenshot';
   model: PhoneModel;

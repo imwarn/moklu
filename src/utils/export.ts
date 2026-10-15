@@ -1,6 +1,6 @@
 import type Konva from 'konva'
 import type { SlideGroup } from '@/types'
-import { withIdentityTransform } from './stageCapture'
+import { withHiddenEditorOverlays, withIdentityTransform } from './stageCapture'
 import { getPanoSlideX, getPanoTotalWidth } from './panoGeometry'
 
 interface WritableFileHandle {
@@ -42,14 +42,14 @@ export async function exportSlide(
 ): Promise<string> {
   const { slideWidth, slideHeight } = group
   return withIdentityTransform(stage, () =>
-    stage.toDataURL({
+    withHiddenEditorOverlays(stage, () => stage.toDataURL({
       x: getPanoSlideX(group, slideIndex, panoCompensationPx),
       y: 0,
       width: slideWidth,
       height: slideHeight,
       pixelRatio: 1,
       mimeType: 'image/png',
-    }),
+    })),
   )
 }
 
@@ -80,14 +80,14 @@ export async function exportWholeGroup(
   panoCompensationPx = 0,
 ): Promise<string> {
   return withIdentityTransform(stage, () =>
-    stage.toDataURL({
+    withHiddenEditorOverlays(stage, () => stage.toDataURL({
       x: 0,
       y: 0,
       width: getPanoTotalWidth(group, panoCompensationPx),
       height: group.slideHeight,
       pixelRatio: 1,
       mimeType: 'image/png',
-    }),
+    })),
   )
 }
 

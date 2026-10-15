@@ -67,6 +67,10 @@ The Templates gallery offers two deliberate ways to apply a style to an existing
 
 The original **+ Add slides to project** still works. Style-only does not change canvas dimensions or source device model, and does not remove user-uploaded background images.
 
+## v0.5 browser frame customization
+
+Browser mockups can now display an editable window title, address label, light/dark appearance, and a show/hide address toggle directly in device properties. The SVG chrome is hollow over the screenshot viewport, rather than an opaque overlay. Window text is XML-escaped before conversion to an SVG image and is never used to fetch or navigate to a web address. Existing projects with no browser options keep sensible defaults. Chrome, Safari and Minimal remain interchangeable without affecting the uploaded screenshot.
+
 ## Roadmap
 
 - **v0.1:** browser/device mockups, quick templates, common aspect ratios, local PNG export, editable source

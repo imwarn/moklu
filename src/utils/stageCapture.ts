@@ -68,6 +68,29 @@ export async function runExclusiveCapture<T>(fn: () => Promise<T>): Promise<T> {
   }
 }
 
+/**
+ * Hide canvas-only editor adornments during synchronous PNG capture.
+ *
+ * The Konva editor renders its grid and selection Transformers in dedicated
+ * layers named "editor-export-overlay". We intentionally do NOT clear selection
+ * in Zustand: users keep their selected object, editing context, and history.
+ *
+ * Call the callback synchronously: Stage.toDataURL is synchronous. Original
+ * visibility is restored even if encoding fails; also preserve hidden layers.
+ */
+export function withHiddenEditorOverlays<T>(stage: Konva.Stage, fn: () => T): T {
+  const overlays = stage.find('.editor-export-overlay')
+  const visibility = overlays.map((node) => ({ node, visible: node.visible() }))
+  try {
+    for (const { node } of visibility) node.visible(false)
+    stage.draw()
+    return fn()
+  } finally {
+    for (const { node, visible } of visibility) node.visible(visible)
+    stage.batchDraw()
+  }
+}
+
 export function withIdentityTransform<T>(stage: Konva.Stage, fn: () => T): T {
   const prevX = stage.x()
   const prevY = stage.y()
@@ -152,7 +175,7 @@ export async function waitForStageSettled(
       name: node.name?.(),
       className: node.getClassName?.(),
     }))
-  console.warn('[PixelDeck] stage did not settle before capture timeout — capturing anyway', {
+  console.warn('[Moklu] stage did not settle before capture timeout — capturing anyway', {
     totalImages: images.length,
     ...classification,
     unsettled,

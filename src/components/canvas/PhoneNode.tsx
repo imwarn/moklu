@@ -70,7 +70,7 @@ export function PhoneNode({ layer, onSelect, onDragEnd, onTransformEnd, forceNot
   const sr = spec.screen.cornerRadius * scale
 
   // Load SVG frame
-  const svgString = getMockupSvg(layer.model)
+  const svgString = getMockupSvg(layer.model, layer.browserChrome)
   const svgDataUrl = useMemo(
     () => `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgString)))}`,
     [svgString],
