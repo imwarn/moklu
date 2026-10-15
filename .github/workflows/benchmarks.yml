@@ -1,0 +1,45 @@
+name: Core Benchmarks
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: moklu-benchmarks
+  cancel-in-progress: false
+
+jobs:
+  baseline:
+    # Explicit manual run on the trusted default branch only.
+    if: github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, Linux, X64, coolify]
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Record system context
+        run: |
+          node --version | tee benchmark-environment.txt
+          uname -a | tee -a benchmark-environment.txt
+          grep -m1 'model name' /proc/cpuinfo | tee -a benchmark-environment.txt || true
+          free -h | tee -a benchmark-environment.txt || true
+      - name: Run opt-in, non-gating core microbenchmarks
+        run: |
+          npm run bench:core 2>&1 | tee benchmark-results.txt
+      - name: Preserve benchmark logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: moklu-core-benchmarks-${{ github.run_id }}
+          path: |
+            benchmark-environment.txt
+            benchmark-results.txt
+          retention-days: 30
