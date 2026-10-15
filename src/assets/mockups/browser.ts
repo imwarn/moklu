@@ -15,7 +15,7 @@ export function isBrowserModel(model: PhoneModel): model is BrowserModel {
 
 /** XML-escape user labels to prevent SVG markup injection. */
 export function escapeBrowserLabel(input: string, limit: number): string {
-  return Array.from(input.replace(/[\\u0000-\\u001f\\u007f-\\u009f]/g, '').trim())
+  return Array.from(input.replace(/[\u0000-\u001f\u007f-\u009f]/g, '').trim())
     .slice(0, limit).join('')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
