@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { SlideGroup } from '@/types'
 import { useEditorStore } from '@/store'
 import { useAssetStore } from '@/store/assets'
-import { prepareScreenshotUpload } from '@/utils/screenshotAssets'
+import { prepareScreenshotUpload, validateScreenshotFile } from '@/utils/screenshotAssets'
 import {
   getQuickMockupPlacement, makeQuickLayers, QUICK_MOCKUPS, QUICK_SIZES, QUICK_THEMES,
   type QuickMockup, type QuickSize, type QuickTheme,
@@ -48,6 +48,32 @@ function QuickDesignDialog({ activeGroup, onClose }: { activeGroup: SlideGroup |
     : undefined
   const [theme, setTheme] = useState<QuickTheme>(initialTheme ?? 'aurora')
   const [imageFile, setImageFile] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [dragActive, setDragActive] = useState(false)
+  const previewUrlRef = useRef<string | null>(null)
+  const existingShot = currentMockup?.type === 'phone' && Boolean(
+    currentMockup.screenshotPath || currentMockup.screenshotDataUrl,
+  )
+
+  useEffect(() => () => {
+    // Never leak object URLs when users reopen this dialog repeatedly.
+    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current)
+  }, [])
+
+  const chooseFile = (file: File | undefined) => {
+    if (!file) return
+    const validation = validateScreenshotFile(file)
+    if (validation) {
+      setUploadError(validation)
+      return
+    }
+    const url = URL.createObjectURL(file)
+    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current)
+    previewUrlRef.current = url
+    setPreviewUrl(url)
+    setImageFile(file)
+    setUploadError(null)
+  }
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [applying, setApplying] = useState(false)
 
@@ -78,8 +104,9 @@ function QuickDesignDialog({ activeGroup, onClose }: { activeGroup: SlideGroup |
       }
     }
     if (imageFile) {
-      if (!imageFile.type.startsWith('image/') || imageFile.size > 25 * 1024 * 1024) {
-        setUploadError('Choose a supported image smaller than 25 MB.')
+      const validation = validateScreenshotFile(imageFile)
+      if (validation) {
+        setUploadError(validation)
         return
       }
       setApplying(true)
@@ -92,8 +119,8 @@ function QuickDesignDialog({ activeGroup, onClose }: { activeGroup: SlideGroup |
           layer.screenshotDataUrl = dataUrl
         }
         setUploadError(null)
-      } catch {
-        setUploadError('Unable to read the selected image.')
+      } catch (error) {
+        setUploadError(error instanceof Error ? error.message : 'Unable to read the selected image.')
         setApplying(false)
         return
       }
@@ -117,7 +144,7 @@ function QuickDesignDialog({ activeGroup, onClose }: { activeGroup: SlideGroup |
   const controlClass = 'w-full rounded-lg border border-white/15 bg-[#222330] px-3 py-2 text-sm text-white'
   return (
     <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/70 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
-      <section role="dialog" aria-modal="true" aria-labelledby="quick-design-title" className="w-full max-w-xl rounded-2xl border border-white/10 bg-[#18181f] p-6 text-[#f5f5f8] shadow-2xl">
+      <section role="dialog" aria-modal="true" aria-labelledby="quick-design-title" className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-white/10 bg-[#18181f] p-6 text-[#f5f5f8] shadow-2xl">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
             <h2 id="quick-design-title" className="text-xl font-semibold">Quick Design</h2>
@@ -125,13 +152,42 @@ function QuickDesignDialog({ activeGroup, onClose }: { activeGroup: SlideGroup |
           </div>
           <button type="button" onClick={onClose} className="text-xl text-[#aaaabc]" aria-label="Close quick design">×</button>
         </div>
-        <label className="mb-5 block rounded-xl border border-dashed border-white/20 bg-white/[0.035] p-4 text-sm text-white/90">
-          <span className="mb-2 block font-semibold">1. Upload your screenshot <span className="font-normal text-white/50">(optional)</span></span>
-          <input type="file" accept="image/png,image/jpeg,image/webp" className="block w-full cursor-pointer text-xs text-[#b7bad3] file:mr-3 file:rounded-md file:border-0 file:bg-[#8276e8] file:px-3 file:py-1.5 file:text-white" onChange={(event) => { setImageFile(event.target.files?.[0] ?? null); setUploadError(null) }} />
-          {imageFile && <span className="mt-2 block truncate text-xs text-[#aee6d2]">{imageFile.name}</span>}
-          {uploadError && <span role="alert" className="mt-2 block text-xs text-red-400">{uploadError}</span>}
-          <span className="mt-2 block text-xs text-white/50">Or upload later using the mockup layer properties. Existing screenshots stay when changing presets.</span>
-        </label>
+        <div
+          role="group"
+          aria-label="Add screenshot"
+          onDragOver={(event) => { event.preventDefault(); setDragActive(true) }}
+          onDragLeave={() => setDragActive(false)}
+          onDrop={(event) => {
+            event.preventDefault()
+            event.stopPropagation()
+            setDragActive(false)
+            chooseFile(event.dataTransfer.files?.[0])
+          }}
+          className={`mb-5 rounded-xl border border-dashed p-4 text-sm text-white/90 transition-colors ${dragActive
+            ? 'border-[#b9afff] bg-[#8276e8]/15'
+            : 'border-white/20 bg-white/[0.035]'}`}
+        >
+          <div className="mb-2 font-semibold">1. Start with a screenshot <span className="font-normal text-white/50">(optional)</span></div>
+          <div className="flex items-center gap-3">
+            {previewUrl && <img src={previewUrl} alt="Screenshot selected for your design" className="h-16 w-24 shrink-0 rounded border border-white/10 bg-black/20 object-contain" />}
+            <div className="min-w-0 flex-1">
+              <label className="block cursor-pointer">
+                <span className="inline-block rounded-md bg-[#8276e8] px-3 py-2 text-xs font-semibold text-white hover:bg-[#9388ee]">
+                  {imageFile ? 'Change screenshot' : 'Choose screenshot'}
+                </span>
+                <input type="file" accept="image/png,image/jpeg,image/webp" className="sr-only"
+                  onChange={(event) => {
+                    chooseFile(event.target.files?.[0])
+                    event.currentTarget.value = ''
+                  }} />
+              </label>
+              <p className="mt-2 text-xs text-[#a5a8bc]">Or drop a PNG, JPEG or WebP image here · 25 MB maximum</p>
+              {imageFile && <p role="status" className="mt-1 truncate text-xs text-[#aee6d2]">{imageFile.name} · {(imageFile.size / (1024 * 1024)).toFixed(2)} MB</p>}
+              {!imageFile && existingShot && <p className="mt-1 text-xs text-[#aee6d2]">Your current screenshot will be reused.</p>}
+            </div>
+          </div>
+          {uploadError && <p role="alert" className="mt-2 text-xs text-red-400">{uploadError}</p>}
+        </div>
         <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#aeb0c3]">2. Choose canvas and mockup</div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <label className="block text-xs text-[#aeb0c3]">Canvas
@@ -168,7 +224,7 @@ function QuickDesignDialog({ activeGroup, onClose }: { activeGroup: SlideGroup |
         </div>
         <div className="mt-4 flex justify-end gap-2">
           <button type="button" onClick={onClose} className="rounded-lg border border-white/15 px-4 py-2 text-sm">Cancel</button>
-          <button type="button" onClick={() => { void apply() }} disabled={!activeGroup || applying} className="rounded-lg bg-[#8276e8] px-5 py-2 text-sm font-semibold text-white hover:bg-[#9388ee] disabled:opacity-50">{applying ? 'Preparing…' : 'Apply Design'}</button>
+          <button type="button" onClick={() => { void apply() }} disabled={!activeGroup || applying} className="rounded-lg bg-[#8276e8] px-5 py-2 text-sm font-semibold text-white hover:bg-[#9388ee] disabled:opacity-50">{applying ? 'Preparing…' : imageFile || existingShot ? 'Apply & Edit Design' : 'Start with Empty Mockup'}</button>
         </div>
       </section>
     </div>
