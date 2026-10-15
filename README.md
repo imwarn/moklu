@@ -4,7 +4,7 @@
 
 Moklu is an open-source screenshot and mockup studio. Start with a quick, editable design for a browser or device screenshot, then fine-tune every layer in a Konva-powered advanced editor.
 
-> **Status:** active pre-1.0 development. v0.1–v0.7 milestones are merged into main, and v0.8 is under review. This project is **not yet certified as commercial-release ready**. See the [development plan](./docs/development-plan.md) and [benchmark plan](./docs/benchmark-plan.md).
+> **Status:** active pre-1.0 development. v0.1–v0.8 milestones are merged into main; v0.9 JSON import hardening is under review. This project is **not yet certified as commercial-release ready**. See the [development plan](./docs/development-plan.md) and [benchmark plan](./docs/benchmark-plan.md).
 
 ## Quick start
 
@@ -37,6 +37,10 @@ Moklu is based on **[PixelDeck](https://github.com/Pr0xS/PixelDeck)** by PixelDe
 
 [Screenshot Studio](https://github.com/opennookorg/screenshot-studio) and [Shots.so](https://shots.so) serve as workflow inspiration; this repository does not include their code.
 
+## v0.9 project and template import safeguards
+
+Project/Template JSON is size-bounded and checked for layer structure, unsafe URI schemes, oversized images, excessive nesting, duplicate canvas-layer IDs and unsupported schema versions before being imported. Projects are staged under new IDs and failures trigger best-effort restoration of the previous active project. Low-level storage failures may still require manual recovery; this is **not** a security certification or a fully atomic database transaction.
+
 ## Engineering roadmap & benchmarks
 
 - [Development plan: v0.1 → v1.0 commercial release](./docs/development-plan.md)
@@ -44,7 +48,7 @@ Moklu is based on **[PixelDeck](https://github.com/Pr0xS/PixelDeck)** by PixelDe
 - [Release checklist](./docs/release-checklist.md)
 - [Engineering docs index](./docs/README.md)
 
-### Screenshot framing (v0.8 preview)
+### Screenshot framing (v0.8)
 
 Quick Design supports 9:16 Story and **Cover**, **Contain**, **Stretch** screenshot framing, consistent between the lightweight preview and editable output. Cover crops to fill the screen, Contain shows the entire image (possibly with letterboxing), and Stretch fills without cropping (may distort the image).
 
@@ -95,6 +99,6 @@ Browser mockups can now display an editable window title, address label, light/d
 
 ## Roadmap
 
-The **maintained roadmap** is in [docs/development-plan.md](./docs/development-plan.md). Historical milestones v0.1–v0.7 are merged; current priorities are framing fidelity, data import safety, end-to-end export verification and GA release engineering.
+The **maintained roadmap** is in [docs/development-plan.md](./docs/development-plan.md). Historical milestones v0.1–v0.8 are merged; current priorities are framing fidelity, data import safety, end-to-end export verification and GA release engineering.
 
 Website: [moklu.app](https://moklu.app) (planned).
