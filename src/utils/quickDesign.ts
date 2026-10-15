@@ -84,6 +84,7 @@ export function makeQuickLayers(
     ...placement,
     model: mockup,
     templateSlot: 'primary-screenshot',
+    ...(oldMockup?.browserChrome ? { browserChrome: { ...oldMockup.browserChrome } } : {}),
     visible: true,
     locked: false,
     opacity: 1,

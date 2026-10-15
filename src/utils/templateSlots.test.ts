@@ -8,6 +8,7 @@ const sourceCanvas = () => {
   if (layers[1].type !== 'phone') throw new Error('missing mockup')
   layers[1].screenshotPath = 'screenshot-A.png'
   layers[1].screenshotDataUrl = 'data:image/png;base64,ZmFrZQ=='
+  layers[1].browserChrome = { title: 'My app', address: 'https://moklu.app', theme: 'light' }
   return {
     id: 'canvas-1', name: 'Current', numSlides: 1, slideWidth: 1600,
     slideHeight: 900, slideNames: ['moklu'], layers,
@@ -37,6 +38,7 @@ describe('template slots', () => {
     expect(target?.screenshotDataUrl).toBe('data:image/png;base64,ZmFrZQ==')
     expect(target?.model).toBe('iphone-16-pro')
     expect(target?.templateSlot).toBe('primary-screenshot')
+    expect(target?.browserChrome).toEqual({ title: 'My app', address: 'https://moklu.app', theme: 'light' })
     expect(target?.id).not.toBe(oldPhone?.id)
     expect(original.slideWidth).toBe(1600)
     expect(oldPhone?.model).toBe('browser-chrome')

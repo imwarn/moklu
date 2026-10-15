@@ -66,6 +66,10 @@ export function applyTemplateToCanvas(template: Template, destination: SlideGrou
         screenshotPath: previousScreenshot.screenshotPath,
         screenshotDataUrl: previousScreenshot.screenshotDataUrl,
         screenshotFit: previousScreenshot.screenshotFit,
+        // User-authored browser labels survive layout/style switches.
+        browserChrome: previousScreenshot.browserChrome
+          ? { ...previousScreenshot.browserChrome }
+          : layer.browserChrome,
         localeContent: previousScreenshot.localeContent
           ? structuredClone(previousScreenshot.localeContent)
           : layer.localeContent,
