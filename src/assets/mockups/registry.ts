@@ -1,4 +1,4 @@
-import type { PhoneModel } from '@/types'
+import type { PhoneModel, BrowserChromeOptions } from '@/types'
 import { IPHONE_16_PRO_SVG } from './iphone-16-pro'
 import { IPHONE_16_PRO_PLAIN_SVG } from './iphone-16-pro-plain'
 import { PIXEL_9_SVG } from './pixel-9'
@@ -7,7 +7,7 @@ import { APPLE_WATCH_SVG } from './apple-watch'
 import { WEAR_OS_SVG } from './wear-os'
 import { IPAD_SVG } from './ipad'
 import { ANDROID_TABLET_SVG } from './android-tablet'
-import { BROWSER_CHROME_SVG, BROWSER_SAFARI_SVG, BROWSER_MINIMAL_SVG } from './browser'
+import { BROWSER_CHROME_SVG, BROWSER_SAFARI_SVG, BROWSER_MINIMAL_SVG, isBrowserModel, renderBrowserFrame } from './browser'
 
 export type MockupCategory = 'phone' | 'tablet' | 'watch' | 'screen' | 'browser'
 
@@ -37,7 +37,8 @@ export function getMockupCategory(id: PhoneModel): MockupCategory {
   return REGISTRY[id].category
 }
 
-export function getMockupSvg(id: PhoneModel): string {
+export function getMockupSvg(id: PhoneModel, options?: BrowserChromeOptions): string {
+  if (isBrowserModel(id)) return options ? renderBrowserFrame(id, options) : REGISTRY[id].svg
   const spec = REGISTRY[id]
   if (!spec) throw new Error(`Unknown mockup model: ${id}`)
   return spec.svg

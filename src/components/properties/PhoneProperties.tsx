@@ -10,6 +10,7 @@ import { ToggleSwitch } from '@/components/ui/ToggleSwitch'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { FileUploadButton } from '@/components/ui/FileUploadButton'
 import { computePhoneFitScale, PHONE_MODELS, getPhoneSpec } from '@/assets/mockups/specs'
+import { isBrowserModel } from '@/assets/mockups/browser'
 import {
   inputCls,
   labelCls,
@@ -114,6 +115,10 @@ export function PhoneProperties({ layer }: { layer: PhoneLayer }) {
   // frameless screens have `statusBar.height === 0` in their spec — the properties UI
   // should not offer controls that render nothing.
   const hasStatusBar = getPhoneSpec(layer.model).statusBar.height > 0
+  const isBrowser = isBrowserModel(layer.model)
+  const chrome = layer.browserChrome ?? {}
+  const updChrome = (patch: Partial<NonNullable<PhoneLayer['browserChrome']>>) =>
+    upd({ browserChrome: { ...chrome, ...patch } })
 
   return (
     <div className="space-y-4">
@@ -144,6 +149,45 @@ export function PhoneProperties({ layer }: { layer: PhoneLayer }) {
           ))}
         </select>
       </div>
+
+      {isBrowser && (
+        <div className={panelSectionCls}>
+          <label className={labelCls}>Browser Window</label>
+          <div className="space-y-3">
+            <label className="block text-xs text-[#a0a0b0]">Window title
+              <input type="text" maxLength={120} className={inputCls + ' mt-1'}
+                value={chrome.title ?? 'Your website'}
+                onChange={(event) => updChrome({ title: event.target.value })}
+                placeholder="My product" />
+            </label>
+            <label className="block text-xs text-[#a0a0b0]">Address bar text
+              <input type="text" maxLength={240} className={inputCls + ' mt-1'}
+                value={chrome.address ?? 'https://example.com'}
+                onChange={(event) => updChrome({ address: event.target.value })}
+                placeholder="https://moklu.app" />
+            </label>
+            <div>
+              <label className={labelCls}>Appearance</label>
+              <SegmentedControl
+                value={chrome.theme ?? (layer.model === 'browser-chrome' ? 'dark' : 'light')}
+                options={[{ value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }]}
+                onChange={(theme) => updChrome({ theme })}
+                className="grid grid-cols-2 gap-2"
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <label className={labelCls + ' !mb-0'}>Show address</label>
+              <ToggleSwitch checked={chrome.showAddressBar ?? true}
+                onChange={(showAddressBar) => updChrome({ showAddressBar })}
+                ariaLabel="Toggle browser address bar" />
+            </div>
+            <p className="text-[10px] leading-4 text-[#7f849a]">
+              Window chrome is editable artwork; the address is a label, not a live website.
+              The screenshot and canvas dimensions stay unchanged.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Position presets */}
       {(() => {
