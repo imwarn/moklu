@@ -12,7 +12,7 @@
 - [ ] 多页/多语言/多格式、ZIP/CLI 导出与目标命名经过 E2E 验证
 
 ## B. 安全、隐私、许可（P0）
-- [ ] Project/Template/ZIP 不可信导入有 Schema、边界检查与原项目回滚机制
+- [ ] Project/Template/ZIP 不可信导入有 Schema、边界检查与原项目回滚机制（v0.9 已初步加入 JSON 限额、补偿回滚；ZIP 尚未实现，存储故障需继续审计）
 - [ ] SVG/XML/URL/HTML 注入测试通过，没有意外跨域上传或私自遥测
 - [ ] HTTPS、安全响应头与 CSP 配置完成
 - [ ] 第三方依赖安全审计和处理记录存在

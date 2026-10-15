@@ -113,6 +113,7 @@ function validateGroups(groups: unknown, kind: 'project' | 'template'): void {
 export function validateProjectImport(value: unknown): { project: Project; assets: Record<string, string> } {
   validateTreeAndFields(value)
   if (!isRecord(value)) fail('project file must contain an object.')
+  if (value.kind === 'template') fail('a template cannot be imported as a project.')
   if (value.kind === 'project-export' && value.schemaVersion !== 1) {
     fail('unsupported project bundle version.')
   }
