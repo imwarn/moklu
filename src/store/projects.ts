@@ -296,6 +296,14 @@ export const useProjectsStore = create<ProjectsStore>((set, get) => ({
     try {
       await storage.saveProject(meta, JSON.stringify(stripDataUrls(nextProject)))
       await useAssetStore.getState().hydrateProject(newProjectId, assets)
+      // idbStorage intentionally swallows some write errors for normal autosave.
+      // Verify imported image bytes were actually persisted before switching.
+      if (Object.keys(assets).length > 0 && typeof indexedDB !== 'undefined') {
+        const staged = await useAssetStore.getState().loadProjectAssets(newProjectId)
+        const complete = Object.entries(assets).every(([key, dataUrl]) =>
+          staged[key]?.dataUrl === dataUrl)
+        if (!complete) throw new Error('Unable to persist imported images. The original project is unchanged.')
+      }
       useEditorStore.getState().importProject(JSON.stringify(nextProject))
       changedEditor = true
       await storage.setActiveProjectId(newProjectId)
