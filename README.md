@@ -67,6 +67,10 @@ The Templates gallery offers two deliberate ways to apply a style to an existing
 
 The original **+ Add slides to project** still works. Style-only does not change canvas dimensions or source device model, and does not remove user-uploaded background images.
 
+## v0.7 live mockup preview
+
+Quick Design now renders a responsive preview **before** applying a design. The preview reacts to screenshot uploads, frame choice, background styles and canvas dimensions. It reads the exact same mockup specifications and SVG artwork as the Konva editor and reuses the existing uploaded image where available. Preview geometry does not mutate your editable project; the final editor and PNG export remain the source of truth for effects, text and pixel-accurate output.
+
 ## v0.6 quick-start UX
 
 Quick Design now accepts **drag and drop** screenshots as well as normal file selection. The selected file gets a local, disposable thumbnail preview and immediate format/size validation before applying. Existing screenshots are explicitly recognized and retained. The responsive dialog scrolls when the screen is short; users can create a blank mockup without uploading an image. The editor still handles final layout adjustments and PNG export. Files and previews are handled locally in the browser, without uploading to a server.

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { SlideGroup } from '@/types'
 import { useEditorStore } from '@/store'
 import { useAssetStore } from '@/store/assets'
+import { QuickDesignPreview } from '@/components/panels/QuickDesignPreview'
 import { prepareScreenshotUpload, validateScreenshotFile } from '@/utils/screenshotAssets'
 import {
   getQuickMockupPlacement, makeQuickLayers, QUICK_MOCKUPS, QUICK_SIZES, QUICK_THEMES,
@@ -74,6 +75,14 @@ function QuickDesignDialog({ activeGroup, onClose }: { activeGroup: SlideGroup |
     setImageFile(file)
     setUploadError(null)
   }
+  const screenshotAssets = useAssetStore((s) => s.assets)
+  const existingSrc = currentMockup?.type === 'phone'
+    ? (currentMockup.screenshotPath ? screenshotAssets[currentMockup.screenshotPath]?.dataUrl : undefined)
+      ?? currentMockup.screenshotDataUrl
+    : undefined
+  const screenshotSrc = previewUrl ?? existingSrc
+  const activeWidth = custom ? Number(customWidth) : QUICK_SIZES[size].width
+  const activeHeight = custom ? Number(customHeight) : QUICK_SIZES[size].height
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [applying, setApplying] = useState(false)
 
@@ -218,6 +227,11 @@ function QuickDesignDialog({ activeGroup, onClose }: { activeGroup: SlideGroup |
             </button>
           )}
         </div>
+        <QuickDesignPreview
+          width={activeWidth} height={activeHeight}
+          theme={theme} mockup={mockup} screenshotSrc={screenshotSrc}
+          browserChrome={currentMockup?.type === 'phone' ? currentMockup.browserChrome : undefined}
+        />
         <div role="note" className="mt-5 rounded-lg border border-[#8276e8]/25 bg-[#8276e8]/10 p-3 text-xs leading-5 text-[#bdbbd7]">
           <strong className="text-white">Want a different ratio after applying?</strong> Use <strong className="text-[#d6d1ff]">Canvas Size</strong> in the toolbar to resize without replacing your screenshot, text or layers.
           <span className="mt-1 block text-[#9395aa]">Quick Design reapplies a style and replaces the current slide layout. Existing screenshots remain attached; other slides are untouched.</span>
