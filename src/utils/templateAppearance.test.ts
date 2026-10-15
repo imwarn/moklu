@@ -77,6 +77,63 @@ describe('style-only template application', () => {
     expect(canvas).toEqual(before)
   })
 
+  it('supports background-only styling without changing device or text', () => {
+    const canvas = original()
+    const before = structuredClone(canvas)
+    const result = applyTemplateAppearance(styleTemplate(), canvas,
+      { background: true, frame: false, typography: false })
+    expect(result.layers[0]).not.toEqual(before.layers[0])
+    expect(result.layers.slice(1)).toEqual(before.layers.slice(1))
+    expect(canvas).toEqual(before)
+  })
+
+  it('supports typography-only styling while retaining screenshot and background exactly', () => {
+    const canvas = original()
+    const before = structuredClone(canvas)
+    const result = applyTemplateAppearance(styleTemplate(), canvas,
+      { background: false, frame: false, typography: true })
+    expect(result.layers[0]).toEqual(before.layers[0])
+    expect(result.layers[1]).toEqual(before.layers[1])
+    expect(result.layers[2]).toEqual(before.layers[2])
+    const oldGroup = before.layers[3]
+    const newGroup = result.layers[3]
+    if (newGroup.type !== 'group' || oldGroup.type !== 'group') throw new Error('group missing')
+    const child = newGroup.children[0]
+    const previousChild = oldGroup.children[0]
+    if (child.type !== 'text' || previousChild.type !== 'text') throw new Error('text missing')
+    expect(child.fontFamily).toBe('Georgia')
+    expect(child.text).toBe(previousChild.text)
+    expect(child.x).toBe(previousChild.x)
+    expect(child.marks).toEqual(previousChild.marks)
+  })
+
+  it('supports frame-only styling, preserving all screenshot references and positions', () => {
+    const canvas = original()
+    const before = structuredClone(canvas)
+    const result = applyTemplateAppearance(styleTemplate(), canvas,
+      { background: false, frame: true, typography: false })
+    expect(result.layers[0]).toEqual(before.layers[0])
+    expect(result.layers[2]).toEqual(before.layers[2])
+    expect(result.layers[3]).toEqual(before.layers[3])
+    const next = result.layers[1]
+    const previous = before.layers[1]
+    if (next.type !== 'phone' || previous.type !== 'phone') throw new Error('phone missing')
+    expect(next.screenshotPath).toBe(previous.screenshotPath)
+    expect(next.localeContent).toEqual(previous.localeContent)
+    expect(next.model).toBe(previous.model)
+    expect(next.x).toBe(previous.x)
+    expect(next.y).toBe(previous.y)
+    expect(next.shadow).not.toEqual(previous.shadow)
+  })
+
+  it('rejects an empty style selection without mutating the canvas', () => {
+    const canvas = original()
+    const before = structuredClone(canvas)
+    expect(() => applyTemplateAppearance(styleTemplate(), canvas,
+      { background: false, frame: false, typography: false })).toThrow('Select at least one')
+    expect(canvas).toEqual(before)
+  })
+
   it('refuses panorama targets without changing data', () => {
     const pano = { ...original(), numSlides: 2 }
     expect(() => applyTemplateAppearance(styleTemplate(), pano)).toThrow('single-slide')

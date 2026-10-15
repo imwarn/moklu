@@ -5,6 +5,20 @@ import { findScreenshotTarget } from '@/utils/templateSlots'
 
 export type TemplateApplyMode = 'layout' | 'appearance'
 
+/** Each style family can be opted into independently without touching content. */
+export interface TemplateAppearanceParts {
+  background: boolean
+  frame: boolean
+  typography: boolean
+}
+
+export const DEFAULT_APPEARANCE_PARTS: Readonly<TemplateAppearanceParts> = {
+  background: true,
+  frame: true,
+  typography: true,
+}
+
+
 /**
  * Apply only a template's appearance, not its layout.
  *
@@ -12,12 +26,19 @@ export type TemplateApplyMode = 'layout' | 'appearance'
  * localized content, overlay text and inserted images exactly as authored.
  * Template styling affects backdrop, frame shadow/border and text typography.
  */
-export function applyTemplateAppearance(template: Template, destination: SlideGroup): {
+export function applyTemplateAppearance(
+  template: Template,
+  destination: SlideGroup,
+  parts: TemplateAppearanceParts = DEFAULT_APPEARANCE_PARTS,
+): {
   layers: Layer[]
   settings?: Partial<ProjectSettings>
   selectedLayerId: string | null
 } {
   if (destination.numSlides !== 1) throw new Error('Style only supports single-slide artboards.')
+  if (!parts.background && !parts.frame && !parts.typography) {
+    throw new Error('Select at least one appearance option.')
+  }
 
   const { slideGroups, settings } = applyTemplate(template)
   const source = slideGroups.find((g) => g.layers.some((l) => l.type === 'background')) ?? slideGroups[0]
@@ -39,7 +60,7 @@ export function applyTemplateAppearance(template: Template, destination: SlideGr
   const sy = destination.slideHeight / source.slideHeight
 
   const layers = mapLayerTree(destination.layers, (layer): Layer => {
-    if (layer.type === 'background' && templateBackground) {
+    if (parts.background && layer.type === 'background' && templateBackground) {
       return {
         ...layer,
         fill: structuredClone(templateBackground.fill),
@@ -51,14 +72,14 @@ export function applyTemplateAppearance(template: Template, destination: SlideGr
         // Such an image may obscure the new fill until removed by the user.
       }
     }
-    if (layer.type === 'phone' && templatePrimaryPhone) {
+    if (parts.frame && layer.type === 'phone' && templatePrimaryPhone) {
       return {
         ...layer,
         shadow: templatePrimaryPhone.shadow ? structuredClone(templatePrimaryPhone.shadow) : layer.shadow,
         border: templatePrimaryPhone.border ? structuredClone(templatePrimaryPhone.border) : layer.border,
       }
     }
-    if (layer.type === 'text' && templateTexts.length) {
+    if (parts.typography && layer.type === 'text' && templateTexts.length) {
       // Adopt typography without replacing content, rich-text ranges or geometry.
       const sample = templateTexts[Math.min(textIndex++, templateTexts.length - 1)]
       return {

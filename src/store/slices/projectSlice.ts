@@ -157,12 +157,12 @@ export const createProjectSlice = (
   /** Apply a template's first suitable slide onto the current artboard.
    * The canvas dimensions, ID and user screenshot remain intact.
    */
-  applyTemplateToActiveCanvas: (tpl: Template, mode = 'layout') => {
+  applyTemplateToActiveCanvas: (tpl: Template, mode = 'layout', parts) => {
     const { project, activeSlideGroupId } = get()
     const current = project.slideGroups.find((g) => g.id === activeSlideGroupId)
     if (!current) throw new Error('Choose a canvas before applying a template.')
     const result = mode === 'appearance'
-      ? applyTemplateAppearance(tpl, current)
+      ? applyTemplateAppearance(tpl, current, parts)
       : applyTemplateToCanvas(tpl, current)
     set((s) => {
       const existing = s.project.settings.brandColors ?? []

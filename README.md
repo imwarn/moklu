@@ -54,6 +54,10 @@ npm run build
 - Screenshot uploads use distinct asset IDs so two images named `screenshot.png` do not overwrite each other in project storage.
 - Template slots are an optional field on editable phone layers (`primary-screenshot` / `secondary-screenshot`), allowing backward-compatible template JSON and future multi-slot workflows.
 
+## v0.4 granular style transfer
+
+With **Style only · keep content** selected in Templates, individually enable or disable **Background**, **Frame effects**, and **Text style**. Unticked categories keep their existing style properties. At least one category must be selected. No option ever replaces the uploaded screenshot, any user-defined text, or artwork geometry.
+
 ## v0.3 template appearance options
 
 The Templates gallery offers two deliberate ways to apply a style to an existing canvas:

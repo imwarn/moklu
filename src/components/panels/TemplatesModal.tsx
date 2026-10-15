@@ -5,7 +5,7 @@ import { useEditorStore } from '@/store'
 import { looksLikeTemplate } from '@/utils/templates'
 import { downloadDataUrl } from '@/utils/export'
 import type { Template } from '@/types'
-import type { TemplateApplyMode } from '@/utils/templateAppearance'
+import type { TemplateApplyMode, TemplateAppearanceParts } from '@/utils/templateAppearance'
 import { ModalShell } from '@/components/ui/ModalShell'
 import { FileUploadButton } from '@/components/ui/FileUploadButton'
 
@@ -28,6 +28,13 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
   const [importError, setImportError] = useState<string | null>(null)
   const [galleryError, setGalleryError] = useState<string | null>(null)
   const [canvasApplyMode, setCanvasApplyMode] = useState<TemplateApplyMode>('layout')
+  const [appearanceParts, setAppearanceParts] = useState<TemplateAppearanceParts>({
+    background: true, frame: true, typography: true,
+  })
+  const selectedAppearancePartCount = Object.values(appearanceParts).filter(Boolean).length
+  const setAppearancePart = (part: keyof TemplateAppearanceParts, checked: boolean) => {
+    setAppearanceParts((previous) => ({ ...previous, [part]: checked }))
+  }
   const [exportOpen, setExportOpen] = useState(false)
 
   const [exportName, setExportName] = useState('')
@@ -57,7 +64,7 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
         }
         const hasExtra = active.layers.some((layer) => layer.type !== 'background' && layer.type !== 'phone')
         if (canvasApplyMode === 'layout' && hasExtra && !window.confirm('Apply this template? Existing text and decorations will be replaced, but your screenshot will be preserved.')) return
-        applyTemplateToActiveCanvas(tpl, canvasApplyMode)
+        applyTemplateToActiveCanvas(tpl, canvasApplyMode, appearanceParts)
       } else {
         addTemplateSlideGroups(tpl)
       }
@@ -491,6 +498,30 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
               </label>
             </div>
           </fieldset>
+          {canvasApplyMode === 'appearance' && (
+            <fieldset className="mb-4 rounded-xl border border-white/10 bg-white/[0.025] p-3">
+              <legend className="px-1 text-xs font-semibold text-[#dedee8]">Choose what to restyle</legend>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                {([
+                  ['background', 'Background', 'Gradient, accents and texture'],
+                  ['frame', 'Frame effects', 'Shadow and screen border; keeps device model'],
+                  ['typography', 'Text style', 'Font, weight and base color; keeps wording'],
+                ] as const).map(([key, label, description]) => (
+                  <label key={key} className="flex cursor-pointer items-start gap-2 rounded-lg border border-white/10 p-2.5 text-xs text-[#dedee8]">
+                    <input type="checkbox" checked={appearanceParts[key]}
+                      onChange={(event) => setAppearancePart(key, event.target.checked)} />
+                    <span><strong className="block">{label}</strong><span className="mt-1 block text-[11px] leading-4 text-[#9da0b5]">{description}</span></span>
+                  </label>
+                ))}
+              </div>
+              {selectedAppearancePartCount === 0 && (
+                <p role="alert" className="mt-2 text-xs text-amber-300">Select at least one style option to continue.</p>
+              )}
+              <p className="mt-2 text-[11px] text-[#9da0b5]">
+                Custom images, layer positions, screenshot content and group structure remain unchanged. Existing background photos and rich-text color overrides take precedence.
+              </p>
+            </fieldset>
+          )}
           {galleryError && (
             <p role="alert" className="mb-3 rounded-lg border border-red-400/25 bg-red-400/10 p-3 text-xs text-red-300">{galleryError}</p>
           )}
@@ -619,7 +650,7 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
                     )}
                     <div className="mt-2 flex flex-col gap-2">
                       <button
-                        disabled={applying === entry.slug}
+                        disabled={applying === entry.slug || (canvasApplyMode === 'appearance' && selectedAppearancePartCount === 0)}
                         onClick={() => { void handleGalleryApply(entry, 'canvas') }}
                         className="rounded-md bg-[#7c6ef6] px-3 py-2 text-xs font-semibold text-white hover:bg-[#9689ff] disabled:opacity-50"
                         title={canvasApplyMode === 'appearance' ? 'Change appearance without replacing any content or geometry' : 'Use template composition, preserving the main screenshot'}
