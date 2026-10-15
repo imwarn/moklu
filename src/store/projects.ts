@@ -8,7 +8,8 @@ import {
   isProjectExportBundle,
 } from '@/utils/projectAssets'
 import { useEditorStore } from './index'
-import { newId, stripDataUrls } from './helpers'
+import { migrateProject, newId, stripDataUrls } from './helpers'
+import { parseBoundedImportJson, validateProjectImport } from '@/utils/importValidation'
 import { useAssetStore } from './assets'
 import { idbStorage } from './idb-storage'
 import { isCaptureLocked } from '@/utils/stageCapture'
@@ -274,22 +275,53 @@ export const useProjectsStore = create<ProjectsStore>((set, get) => ({
   },
 
   async importProjectFromJson(json) {
-    const parsed: unknown = JSON.parse(json)
-    const bundle = isProjectExportBundle(parsed) ? parsed : null
-    const rawProject = bundle ? bundle.project : parsed
-    const assets: Record<string, string> = bundle ? bundle.assets : {}
+    // Validate and migrate before touching any editor state, active pointers or
+    // the existing project. A malformed import is a complete no-op.
+    const { project: rawProject, assets } = validateProjectImport(parseBoundedImportJson(json))
+    const nextProject = migrateProject({ ...rawProject, id: newId() })
+    const oldProject = useEditorStore.getState().project
+    const oldAssetScope = useAssetStore.getState().activeProjectId
+    const storage = getProjectStorage()
+    const newProjectId = nextProject.id
+    const meta: ProjectMeta = {
+      id: newProjectId,
+      name: nextProject.name,
+      createdAt: nextProject.createdAt,
+      updatedAt: nextProject.updatedAt,
+    }
+    let changedEditor = false
 
+    // Save the original first. Stage project data and image assets in a fresh
+    // namespace before switching the visible editor. No overwrite of old IDs.
     await get().saveCurrentProject()
-    const withFreshId = { ...(rawProject as Project), id: newId() }
-    useEditorStore.getState().importProject(JSON.stringify(withFreshId))
-    const newProjectId = useEditorStore.getState().project.id
-    await getProjectStorage().setActiveProjectId(newProjectId)
-    await useAssetStore.getState().setActiveProject(newProjectId)
-    await useAssetStore.getState().hydrateProject(newProjectId, assets)
-    await get().saveCurrentProject()
-    const referenced = collectAssetKeys(useEditorStore.getState().project)
-    const missing = [...referenced].filter((key) => !(key in assets))
-    return { missing }
+    try {
+      await storage.saveProject(meta, JSON.stringify(stripDataUrls(nextProject)))
+      await useAssetStore.getState().hydrateProject(newProjectId, assets)
+      useEditorStore.getState().importProject(JSON.stringify(nextProject))
+      changedEditor = true
+      await storage.setActiveProjectId(newProjectId)
+      await get().saveCurrentProject()
+      const referenced = collectAssetKeys(useEditorStore.getState().project)
+      return { missing: [...referenced].filter((key) => !(key in assets)) }
+    } catch (error) {
+      // Best-effort compensation if an adapter/IndexedDB write fails. Never
+      // leave a failed import selected, and do not delete the previous project.
+      if (changedEditor) {
+        try { useEditorStore.getState().importProject(JSON.stringify(oldProject)) }
+        catch (restoreError) { console.error('[Moklu] Failed to restore editor after import', restoreError) }
+      }
+      try { await storage.setActiveProjectId(oldProject.id) }
+      catch (restoreError) { console.error('[Moklu] Failed to restore active project pointer', restoreError) }
+      try {
+        await useAssetStore.getState().clearProject(newProjectId)
+        await useAssetStore.getState().setActiveProject(oldAssetScope ?? oldProject.id)
+      } catch (restoreError) {
+        console.error('[Moklu] Failed to restore active project assets', restoreError)
+      }
+      try { await storage.deleteProject(newProjectId) }
+      catch (restoreError) { console.error('[Moklu] Failed to clear staged import', restoreError) }
+      throw error
+    }
   },
 }))
 
