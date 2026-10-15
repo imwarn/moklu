@@ -254,6 +254,24 @@ describe('project asset lifecycle and bundles', () => {
     }
   })
 
+  it('refuses to switch projects if staged images cannot be read back', async () => {
+    const original = structuredClone(useEditorStore.getState().project)
+    const oldId = original.id
+    const getStaged = vi.spyOn(useAssetStore.getState(), 'loadProjectAssets')
+      .mockResolvedValueOnce({})
+    try {
+      await expect(useProjectsStore.getState().importProjectFromJson(
+        JSON.stringify(makeBundle(original, { 'shot.png': 'data:image/png;base64,cGl4ZWxz' })),
+      )).rejects.toThrow(/Unable to persist imported images/)
+      expect(useEditorStore.getState().project.id).toBe(oldId)
+      expect(useAssetStore.getState().activeProjectId).toBe(oldId)
+      const list = JSON.parse(localStorage.getItem('pd:project-list') ?? '[]') as Array<{ id: string }>
+      expect(list.map((entry) => entry.id)).toEqual([oldId])
+    } finally {
+      getStaged.mockRestore()
+    }
+  })
+
   it('hydrates base and locale images from an imported project bundle', async () => {
     useEditorStore.getState().addPhone()
     const phone = useEditorStore.getState().project.slideGroups[0].layers.find(
