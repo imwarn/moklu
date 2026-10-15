@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { Template } from '@/types'
+import { validateTemplateImport } from '@/utils/importValidation'
 
 export interface TemplateManifestEntry {
   slug: string
@@ -48,6 +49,6 @@ export const useTemplatesStore = create<TemplatesState>((set, get) => ({
   fetchTemplate: async (entry) => {
     const res = await fetch(toAbsolute(entry.file))
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
-    return (await res.json()) as Template
+    return validateTemplateImport(await res.json())
   },
 }))

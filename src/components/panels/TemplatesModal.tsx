@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useTemplatesStore, toAbsolute } from '@/store/templates'
 import { useEditorStore } from '@/store'
-import { looksLikeTemplate } from '@/utils/templates'
+import { checkImportFileSize, parseBoundedImportJson, validateTemplateImport } from '@/utils/importValidation'
 import { downloadDataUrl } from '@/utils/export'
 import type { Template } from '@/types'
 import type { TemplateApplyMode, TemplateAppearanceParts } from '@/utils/templateAppearance'
@@ -96,30 +96,18 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
     onClose()
   }
 
-  const handleImportFile = (files: File[]) => {
+  const handleImportFile = async (files: File[]) => {
     const file = files[0]
     if (!file) return
     setImportError(null)
-    const reader = new FileReader()
-    reader.onload = () => {
-      try {
-        const obj = JSON.parse(reader.result as string)
-        if (looksLikeTemplate(obj)) {
-          const tpl = obj as Template
-          if (!tpl.kind) tpl.kind = 'template'
-          if (!tpl.schemaVersion) tpl.schemaVersion = 1
-          addTemplateSlideGroups(tpl)
-          onClose()
-        } else {
-          setImportError(
-            'This file is not a template. Use "Import Project" for project files.',
-          )
-        }
-      } catch {
-        setImportError('Could not read file.')
-      }
+    try {
+      checkImportFileSize(file.size)
+      const tpl = validateTemplateImport(parseBoundedImportJson(await file.text()))
+      addTemplateSlideGroups(tpl)
+      onClose()
+    } catch (error) {
+      setImportError(error instanceof Error ? error.message : 'Could not read template file.')
     }
-    reader.readAsText(file)
   }
 
   /* ─── shared input style ─────────────────────────────────── */
