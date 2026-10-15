@@ -1,5 +1,17 @@
 import { getPhoneSpec } from '@/assets/mockups/specs'
-import { getQuickMockupPlacement, type QuickMockup } from '@/utils/quickDesign'
+import { getQuickMockupPlacement, type QuickMockup, type QuickScreenshotFit } from '@/utils/quickDesign'
+
+/**
+ * Align SVG image composition with PhoneNode.geometry's fit modes:
+ * cover -> crop overflowing edges; contain -> letterbox; fill -> stretch.
+ */
+export function screenshotPreserveAspectRatio(fit: QuickScreenshotFit): string {
+  switch (fit) {
+    case 'cover': return 'xMidYMid slice'
+    case 'contain': return 'xMidYMid meet'
+    case 'fill': return 'none'
+  }
+}
 
 export interface QuickPreviewGeometry {
   frameX: number

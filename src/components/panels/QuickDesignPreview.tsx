@@ -2,8 +2,8 @@ import { useId, useMemo } from 'react'
 import { getMockupSvg } from '@/assets/mockups/registry'
 import { getPhoneSpec } from '@/assets/mockups/specs'
 import type { BrowserChromeOptions } from '@/types'
-import { QUICK_THEMES, type QuickMockup, type QuickTheme } from '@/utils/quickDesign'
-import { getQuickPreviewGeometry, makeSvgImageDataUrl } from '@/utils/quickPreview'
+import { QUICK_THEMES, type QuickMockup, type QuickTheme, type QuickScreenshotFit } from '@/utils/quickDesign'
+import { getQuickPreviewGeometry, makeSvgImageDataUrl, screenshotPreserveAspectRatio } from '@/utils/quickPreview'
 
 interface QuickDesignPreviewProps {
   width: number
@@ -11,11 +11,12 @@ interface QuickDesignPreviewProps {
   theme: QuickTheme
   mockup: QuickMockup
   screenshotSrc?: string
+  screenshotFit?: QuickScreenshotFit
   browserChrome?: BrowserChromeOptions
 }
 
 export function QuickDesignPreview({
-  width, height, theme, mockup, screenshotSrc, browserChrome,
+  width, height, theme, mockup, screenshotSrc, screenshotFit = 'cover', browserChrome,
 }: QuickDesignPreviewProps) {
   const uid = useId().replace(/:/g, '')
   const bgId = `moklu-quick-bg-${uid}`
@@ -88,7 +89,7 @@ export function QuickDesignPreview({
               {screenshotSrc ? (
                 <image href={screenshotSrc}
                   x={screen.x} y={screen.y} width={screen.width} height={screen.height}
-                  preserveAspectRatio="xMidYMid slice" />
+                  preserveAspectRatio={screenshotPreserveAspectRatio(screenshotFit)} />
               ) : (
                 <>
                   <rect x={screen.x} y={screen.y} width={screen.width} height={screen.height}

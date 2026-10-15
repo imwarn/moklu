@@ -6,7 +6,7 @@ import { QuickDesignPreview } from '@/components/panels/QuickDesignPreview'
 import { prepareScreenshotUpload, validateScreenshotFile } from '@/utils/screenshotAssets'
 import {
   getQuickMockupPlacement, makeQuickLayers, QUICK_MOCKUPS, QUICK_SIZES, QUICK_THEMES,
-  type QuickMockup, type QuickSize, type QuickTheme,
+  type QuickMockup, type QuickSize, type QuickTheme, type QuickScreenshotFit,
 } from '@/utils/quickDesign'
 
 interface QuickDesignModalProps {
@@ -41,6 +41,9 @@ function QuickDesignDialog({ activeGroup, onClose }: { activeGroup: SlideGroup |
   const currentMockup = activeGroup?.layers.find((layer) => layer.type === 'phone')
   const initialMockup = QUICK_MOCKUPS.find((item) => item.id === (currentMockup?.type === 'phone' ? currentMockup.model : undefined))
   const [mockup, setMockup] = useState<QuickMockup>(initialMockup?.id ?? 'browser-chrome')
+  const [screenshotFit, setScreenshotFit] = useState<QuickScreenshotFit>(
+    currentMockup?.type === 'phone' ? currentMockup.screenshotFit : 'cover',
+  )
   const currentBackground = activeGroup?.layers.find((layer) => layer.type === 'background')
   const backgroundFill = currentBackground?.type === 'background' ? currentBackground.fill : null
   const initialTheme = backgroundFill && typeof backgroundFill !== 'string' && backgroundFill.type === 'linear'
@@ -99,7 +102,7 @@ function QuickDesignDialog({ activeGroup, onClose }: { activeGroup: SlideGroup |
     if (additionalLayers.length > 0 && !window.confirm(
       `Apply a new Quick Design? This replaces ${additionalLayers.length} additional layer(s). For only changing the canvas ratio, choose Canvas Size instead.`,
     )) return
-    const layers = makeQuickLayers(activeGroup.layers, size, theme, mockup)
+    const layers = makeQuickLayers(activeGroup.layers, size, theme, mockup, screenshotFit)
     if (custom) {
       const layer = layers[1]
       if (layer.type === 'phone') Object.assign(layer, getQuickMockupPlacement(mockup, width, height))
@@ -227,9 +230,29 @@ function QuickDesignDialog({ activeGroup, onClose }: { activeGroup: SlideGroup |
             </button>
           )}
         </div>
+        <fieldset className="mt-5">
+          <legend className="text-xs font-semibold uppercase tracking-widest text-[#aeb0c3]">Screenshot framing</legend>
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            {([
+              ['cover', 'Cover', 'Fill screen; crop edges'],
+              ['contain', 'Contain', 'Keep full screenshot'],
+              ['fill', 'Stretch', 'Fill without cropping'],
+            ] as const).map(([value, label, hint]) => (
+              <label key={value} className={`cursor-pointer rounded-lg border px-2 py-2.5 text-center text-xs ${screenshotFit === value
+                ? 'border-[#b49eff] bg-[#b49eff]/10 text-white'
+                : 'border-white/10 text-[#aeb0c3] hover:border-white/30'}`}>
+                <input type="radio" name="quick-screenshot-fit" className="sr-only"
+                  value={value} checked={screenshotFit === value}
+                  onChange={() => setScreenshotFit(value)} />
+                <strong className="block text-xs">{label}</strong>
+                <span className="mt-1 block text-[10px] leading-4">{hint}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
         <QuickDesignPreview
           width={activeWidth} height={activeHeight}
-          theme={theme} mockup={mockup} screenshotSrc={screenshotSrc}
+          theme={theme} mockup={mockup} screenshotSrc={screenshotSrc} screenshotFit={screenshotFit}
           browserChrome={currentMockup?.type === 'phone' ? currentMockup.browserChrome : undefined}
         />
         <div role="note" className="mt-5 rounded-lg border border-[#8276e8]/25 bg-[#8276e8]/10 p-3 text-xs leading-5 text-[#bdbbd7]">

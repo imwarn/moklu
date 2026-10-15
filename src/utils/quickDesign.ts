@@ -2,7 +2,8 @@ import { nanoid } from 'nanoid'
 import type { BackgroundLayer, Layer, PhoneLayer, PhoneModel } from '@/types'
 import { getPhoneSpec } from '@/assets/mockups/specs'
 
-export type QuickSize = 'wide' | 'landscape' | 'square' | 'portrait'
+export type QuickSize = 'wide' | 'landscape' | 'square' | 'portrait' | 'story'
+export type QuickScreenshotFit = PhoneLayer['screenshotFit']
 export type QuickTheme = 'aurora' | 'midnight' | 'warm'
 export type QuickMockup = Extract<PhoneModel, 'browser-chrome' | 'browser-safari' | 'browser-minimal' | 'iphone-16-pro' | 'pixel-9'>
 
@@ -11,6 +12,7 @@ export const QUICK_SIZES: Record<QuickSize, { label: string; width: number; heig
   landscape: { label: '16:10 · Landscape', width: 1600, height: 1000 },
   square: { label: '1:1 · Square', width: 1200, height: 1200 },
   portrait: { label: '4:5 · Portrait', width: 1080, height: 1350 },
+  story: { label: '9:16 · Story', width: 1080, height: 1920 },
 }
 
 export const QUICK_THEMES: Record<QuickTheme, { label: string; top: string; bottom: string; glow: string }> = {
@@ -51,6 +53,7 @@ export function makeQuickLayers(
   size: QuickSize,
   theme: QuickTheme,
   mockup: QuickMockup,
+  screenshotFit: QuickScreenshotFit = 'cover',
 ): Layer[] {
   const { width, height } = QUICK_SIZES[size]
   const palette = QUICK_THEMES[theme]
@@ -91,7 +94,7 @@ export function makeQuickLayers(
     rotation: 0,
     screenshotPath: oldMockup?.screenshotPath ?? (oldImage?.type === 'image' ? oldImage.src : undefined),
     screenshotDataUrl: oldMockup?.screenshotDataUrl,
-    screenshotFit: 'cover',
+    screenshotFit,
     screenshotOffsetX: 0,
     screenshotOffsetY: 0,
     showStatusBar: !isBrowser,
