@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { getPhoneSpec } from '@/assets/mockups/specs'
 import { getQuickMockupPlacement } from './quickDesign'
-import { getQuickPreviewGeometry, makeSvgImageDataUrl } from './quickPreview'
+import { getQuickPreviewGeometry, makeSvgImageDataUrl, screenshotPreserveAspectRatio } from './quickPreview'
 
 describe('Quick Design live preview geometry', () => {
   it.each([
@@ -25,6 +25,12 @@ describe('Quick Design live preview geometry', () => {
     expect(preview.screenHeight).toBeCloseTo(spec.screen.height * p.scale)
     expect(preview.frameX).toBeGreaterThanOrEqual(0)
     expect(preview.frameY).toBeGreaterThanOrEqual(0)
+  })
+
+  it('keeps cover/contain/stretch consistent with the Konva editor', () => {
+    expect(screenshotPreserveAspectRatio('cover')).toBe('xMidYMid slice')
+    expect(screenshotPreserveAspectRatio('contain')).toBe('xMidYMid meet')
+    expect(screenshotPreserveAspectRatio('fill')).toBe('none')
   })
 
   it('embeds the registered SVG as a local encoded image, not an HTTP request', () => {

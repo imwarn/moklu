@@ -37,7 +37,8 @@
     "preview": "vite preview",
     "cli": "node cli/index.mjs",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "bench:core": "vitest bench src/benchmarks/core.bench.ts"
   },
   "engines": {
     "node": ">=20.19.0"

@@ -4,7 +4,7 @@
 
 Moklu is an open-source screenshot and mockup studio. Start with a quick, editable design for a browser or device screenshot, then fine-tune every layer in a Konva-powered advanced editor.
 
-> **Status:** v0.1.0 development preview. The upstream engine is integrated; browser mockups and quick layout controls are early features pending CI and hands-on testing.
+> **Status:** active pre-1.0 development. v0.1–v0.7 milestones are merged into main, and v0.8 is under review. This project is **not yet certified as commercial-release ready**. See the [development plan](./docs/development-plan.md) and [benchmark plan](./docs/benchmark-plan.md).
 
 ## Quick start
 
@@ -37,6 +37,17 @@ Moklu is based on **[PixelDeck](https://github.com/Pr0xS/PixelDeck)** by PixelDe
 
 [Screenshot Studio](https://github.com/opennookorg/screenshot-studio) and [Shots.so](https://shots.so) serve as workflow inspiration; this repository does not include their code.
 
+## Engineering roadmap & benchmarks
+
+- [Development plan: v0.1 → v1.0 commercial release](./docs/development-plan.md)
+- [Benchmark plan and reproducible measurement criteria](./docs/benchmark-plan.md)
+- [Release checklist](./docs/release-checklist.md)
+- [Engineering docs index](./docs/README.md)
+
+### Screenshot framing (v0.8 preview)
+
+Quick Design supports 9:16 Story and **Cover**, **Contain**, **Stretch** screenshot framing, consistent between the lightweight preview and editable output. Cover crops to fill the screen, Contain shows the entire image (possibly with letterboxing), and Stretch fills without cropping (may distort the image).
+
 ## Development
 
 ```bash
@@ -44,6 +55,9 @@ npm run lint
 npm run typecheck
 npm test
 npm run build
+
+# Optional CPU-only microbenchmarks; NOT a substitute for browser E2E
+npm run bench:core
 ```
 
 ## v0.2 screenshot-first workflow
@@ -81,9 +95,6 @@ Browser mockups can now display an editable window title, address label, light/d
 
 ## Roadmap
 
-- **v0.1:** browser/device mockups, quick templates, common aspect ratios, local PNG export, editable source
-- **v0.2:** template slots and flexible screenshot replacement, project/format separation
-- **v0.3:** extended browser chrome, export profiles, shareable presets
-- **Later:** perspective rendering and optional cloud capabilities
+The **maintained roadmap** is in [docs/development-plan.md](./docs/development-plan.md). Historical milestones v0.1–v0.7 are merged; current priorities are framing fidelity, data import safety, end-to-end export verification and GA release engineering.
 
 Website: [moklu.app](https://moklu.app) (planned).
