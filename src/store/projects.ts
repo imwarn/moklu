@@ -5,7 +5,6 @@ import type { Project } from '@/types'
 import {
   buildProjectExportBundle,
   collectAssetKeys,
-  isProjectExportBundle,
 } from '@/utils/projectAssets'
 import { useEditorStore } from './index'
 import { migrateProject, newId, stripDataUrls } from './helpers'
