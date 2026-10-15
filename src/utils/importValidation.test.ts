@@ -34,6 +34,17 @@ describe('bounded import validation', () => {
     tpl.slideGroups[0].layers[1].id = tpl.slideGroups[0].layers[0].id
     expect(() => validateTemplateImport(tpl)).toThrow(/duplicate/)
   })
+  it('rejects potentially executable image references and unsupported project migrations', () => {
+    const p = newProject()
+    const bg = p.slideGroups[0].layers[0]
+    if (bg.type !== 'background') throw new Error('missing background')
+    bg.imageDataUrl = 'data:image/svg+xml;base64,PHN2Zz48L3N2Zz4='
+    expect(() => validateProjectImport(p)).toThrow(/executable/)
+    const future = newProject()
+    future.settings.schemaVersion = 999
+    expect(() => validateProjectImport(future)).toThrow(/future project schema/)
+  })
+
   it('rejects prototype-pollution keys and SVG asset payloads', () => {
     const pollution = JSON.parse('{"__proto__": {"isAdmin": true}, "name":"x"}') as unknown
     expect(() => validateProjectImport(pollution)).toThrow(/reserved key/)

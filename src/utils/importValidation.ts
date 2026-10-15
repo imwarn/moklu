@@ -1,4 +1,5 @@
 import type { Project, Template } from '@/types'
+import { SLIDE_KEY_SCHEMA_VERSION } from '@/store/helpers'
 
 /** Bounds for user-supplied files, including nested JSON and embedded images. */
 export const IMPORT_LIMITS = {
@@ -15,6 +16,7 @@ const layerTypes = new Set([
   'background', 'phone', 'text', 'image', 'shape', 'emoji', 'brand', 'group',
 ])
 const poisonKeys = new Set(['__proto__', 'constructor', 'prototype'])
+const imageReferenceKeys = new Set(['src', 'thumbnail', 'imageDataUrl', 'logoDataUrl', 'brandLogoDataUrl', 'screenshotDataUrl', 'screenshotPath'])
 const isRecord = (v: unknown): v is Record<string, unknown> =>
   !!v && typeof v === 'object' && !Array.isArray(v)
 
@@ -53,6 +55,10 @@ function validateTreeAndFields(value: unknown): void {
       if (entries.length > 10_000) fail('an object has too many keys.')
       for (const [key, v] of entries) {
         if (poisonKeys.has(key)) fail(`reserved key "${key}" is not allowed.`)
+        if (imageReferenceKeys.has(key) && typeof v === 'string' &&
+          /^(?:javascript:|vbscript:|file:|data:text\/html|data:image\/svg\+xml)/i.test(v.trim())) {
+          fail('potentially executable image or resource URLs are not allowed.')
+        }
         nodes.push({ value: v, depth: current.depth + 1 })
       }
     } else if (typeof current.value === 'number' && !Number.isFinite(current.value)) {
@@ -126,6 +132,12 @@ export function validateProjectImport(value: unknown): { project: Project; asset
     fail('project name is missing or too long.')
   }
   validateGroups(raw.slideGroups, 'project')
+  const diskVersion = raw.settings.schemaVersion
+  if (diskVersion !== undefined &&
+      (!Number.isInteger(diskVersion) || (diskVersion as number) > SLIDE_KEY_SCHEMA_VERSION ||
+       (diskVersion as number) < 0)) {
+    fail('unsupported future project schema version.')
+  }
   let assets: Record<string, string> = {}
   if (isBundle) {
     if (!isRecord(value.assets) || Object.keys(value.assets).length > IMPORT_LIMITS.assets) {
