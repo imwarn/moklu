@@ -26,7 +26,7 @@ const template: Template = {
   kind: 'template', schemaVersion: 1, id: 'bench-template',
   name: 'Benchmark appearance', description: 'Synthetic benchmark',
   slideGroups: [{
-    id: 'template-slide', name: 'Template',
+    name: 'Template',
     slideWidth: 1080, slideHeight: 1350,
     numSlides: 1, slideNames: ['style'],
     layers: makeQuickLayers([], 'portrait', 'midnight', 'iphone-16-pro'),
