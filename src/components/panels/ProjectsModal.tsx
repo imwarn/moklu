@@ -6,6 +6,7 @@ import { ModalShell } from '@/components/ui/ModalShell'
 import { InlineEditableLabel } from '@/components/ui/InlineEditableLabel'
 import { FileUploadButton } from '@/components/ui/FileUploadButton'
 import { ProjectConflictError } from '@/store/storage/types'
+import { checkImportFileSize } from '@/utils/importValidation'
 
 
 interface ProjectsModalProps {
@@ -137,23 +138,20 @@ export function ProjectsModal({ open, onClose }: ProjectsModalProps) {
 
   const handleImport = () => importInputRef.current?.click()
 
-  const handleImportFile = (files: File[]) => {
+  const handleImportFile = async (files: File[]) => {
     const file = files[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = async () => {
-      try {
-        const { missing } = await useProjectsStore.getState()
-          .importProjectFromJson(reader.result as string)
-        onClose()
-        if (missing.length > 0) {
-          alert(`Project imported. ${missing.length} referenced image(s) were missing from the file and will appear blank.`)
-        }
-      } catch {
-        alert('Failed to open project file.')
+    try {
+      checkImportFileSize(file.size)
+      const json = await file.text()
+      const { missing } = await useProjectsStore.getState().importProjectFromJson(json)
+      onClose()
+      if (missing.length > 0) {
+        alert(`Project imported. ${missing.length} referenced image(s) were missing from the file and will appear blank.`)
       }
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Failed to open project file.')
     }
-    reader.readAsText(file)
   }
 
   // Sort: active first, then by most recently updated

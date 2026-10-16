@@ -219,6 +219,59 @@ describe('project asset lifecycle and bundles', () => {
     expect(useAssetStore.getState().getAsset('shot.png')).toBe('data:image/png;base64,first')
   })
 
+  it('rejects invalid projects without changing the active project or saved library', async () => {
+    const before = structuredClone(useEditorStore.getState().project)
+    const originalId = before.id
+    await expect(useProjectsStore.getState().importProjectFromJson(JSON.stringify({
+      kind: 'project-export', schemaVersion: 1,
+      project: { ...before, slideGroups: [{ ...before.slideGroups[0], slideWidth: -1 }] },
+      assets: {},
+    }))).rejects.toThrow(/canvas dimensions/)
+    expect(useEditorStore.getState().project).toEqual(before)
+    expect(useAssetStore.getState().activeProjectId).toBe(originalId)
+    const active = localStorage.getItem('pd:active-project')
+    expect(active === null || active === originalId).toBe(true)
+    expect(useProjectsStore.getState().projects.map((x) => x.id)).toEqual([originalId])
+  })
+
+  it('rolls back a staged import when image hydration fails', async () => {
+    const before = structuredClone(useEditorStore.getState().project)
+    const oldId = before.id
+    const hydrate = vi.spyOn(useAssetStore.getState(), 'hydrateProject')
+      .mockRejectedValueOnce(new Error('Simulated write failure'))
+    try {
+      await expect(useProjectsStore.getState().importProjectFromJson(
+        JSON.stringify(makeBundle(before, { 'image.png': 'data:image/png;base64,ZW50cnk=' })),
+      )).rejects.toThrow('Simulated write failure')
+      expect(useEditorStore.getState().project.id).toBe(oldId)
+      expect(useAssetStore.getState().activeProjectId).toBe(oldId)
+      const projects = await useProjectsStore.getState().projects
+      expect(projects.map((x) => x.id)).toEqual([oldId])
+      const library = JSON.parse(localStorage.getItem('pd:project-list') ?? '[]') as Array<{ id: string }>
+      expect(library.map((x) => x.id)).toEqual([oldId])
+    } finally {
+      hydrate.mockRestore()
+    }
+  })
+
+  it('refuses to switch projects if staged images cannot be read back', async () => {
+    const original = structuredClone(useEditorStore.getState().project)
+    const oldId = original.id
+    const getStaged = vi.spyOn(useAssetStore.getState(), 'loadProjectAssets')
+      .mockResolvedValueOnce({})
+    try {
+      await expect(useProjectsStore.getState().importProjectFromJson(
+        JSON.stringify(makeBundle(original, { 'shot.png': 'data:image/png;base64,cGl4ZWxz' })),
+      )).rejects.toThrow(/Unable to persist imported images/)
+      expect(useEditorStore.getState().project.id).toBe(oldId)
+      expect(useAssetStore.getState().activeProjectId).toBe(oldId)
+      const list = JSON.parse(localStorage.getItem('pd:project-list') ?? '[]') as Array<{ id: string }>
+      expect(list.map((entry) => entry.id)).toEqual([oldId])
+    } finally {
+      getStaged.mockRestore()
+    }
+  })
+
   it('hydrates base and locale images from an imported project bundle', async () => {
     useEditorStore.getState().addPhone()
     const phone = useEditorStore.getState().project.slideGroups[0].layers.find(
