@@ -223,19 +223,19 @@ describe('exportProjectImages', () => {
     let calls = 0
     vi.mocked(waitForStageCaptureReady).mockImplementation(async () => {
       if (++calls === 2) throw new Error('restore-stage failure')
-      return undefined
+      return true
     })
     try {
       await expect(exportProjectImages(stage, {
         formatIds: ['base'], locales: ['en'], scope: 'current-group',
       })).rejects.toThrow('restore-stage failure')
       expect(isCaptureLocked()).toBe(false)
-      vi.mocked(waitForStageCaptureReady).mockResolvedValue(undefined)
+      vi.mocked(waitForStageCaptureReady).mockResolvedValue(true)
       await expect(exportProjectImages(stage, {
         formatIds: ['base'], locales: ['en'], scope: 'current-group',
       })).resolves.toHaveLength(1)
     } finally {
-      vi.mocked(waitForStageCaptureReady).mockResolvedValue(undefined)
+      vi.mocked(waitForStageCaptureReady).mockResolvedValue(true)
     }
   })
 

@@ -14,7 +14,10 @@ function fakePng(width: number, height: number): string {
 function makeFakeStage() {
   return {
     x: () => 0, y: () => 0, scaleX: () => 1, scaleY: () => 1,
-    toDataURL: vi.fn((opts: unknown) => `data:${JSON.stringify(opts)}`),
+    toDataURL: vi.fn((opts: unknown) => {
+      const { width, height } = opts as { width: number; height: number }
+      return fakePng(width, height)
+    }),
     find: vi.fn(() => []),
     draw: vi.fn(),
     batchDraw: vi.fn(),
@@ -91,6 +94,12 @@ describe('selection-safe PNG export', () => {
     await expect(exportSlide(stage, 0, makeGroup())).rejects.toThrow(/signature|IHDR/)
     expect(selection.visible()).toBe(true)
     expect(stage.batchDraw).toHaveBeenCalled()
+  })
+
+  it('rejects a non-PNG response rather than silently offering an invalid download', async () => {
+    const stage = makeFakeStage()
+    vi.mocked(stage.toDataURL).mockReturnValue('data:text/plain;base64,AAAA')
+    await expect(exportSlide(stage, 0, makeGroup())).rejects.toThrow(/PNG/)
   })
 
   it('validates whole panorama width and rejects mismatches', async () => {

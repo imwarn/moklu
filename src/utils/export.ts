@@ -52,7 +52,7 @@ export async function exportSlide(
       mimeType: 'image/png',
     })),
   )
-  if (dataUrl.startsWith('data:image/png;')) assertPngExportDimensions(dataUrl, slideWidth, slideHeight)
+  assertPngExportDimensions(dataUrl, slideWidth, slideHeight)
   return dataUrl
 }
 
@@ -93,7 +93,7 @@ export async function exportWholeGroup(
       mimeType: 'image/png',
     })),
   )
-  if (dataUrl.startsWith('data:image/png;')) assertPngExportDimensions(dataUrl, width, group.slideHeight)
+  assertPngExportDimensions(dataUrl, width, group.slideHeight)
   return dataUrl
 }
 
