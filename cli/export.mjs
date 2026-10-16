@@ -7,6 +7,7 @@ import { createServer } from 'http'
 import { readFile } from 'fs/promises'
 import { extname } from 'path'
 import yaml from 'js-yaml'
+import { decodeValidatedPng } from './png-output.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const distPath = resolve(__dirname, '../dist')
@@ -244,12 +245,15 @@ async function runSingle({ project, screenshotsDir, outputDir, locale, port = DE
       throw new Error('No slides were exported')
     }
 
-    // Save PNGs
+    // Validate the whole batch before writing anything: a corrupt or wrong-sized
+    // PNG must not leave a misleading partial success on disk.
+    const validated = results.map(({ name, dataUrl, width, height }) => ({
+      filename: name.endsWith('.png') ? name : `${name}.png`,
+      bytes: decodeValidatedPng(dataUrl, width, height),
+    }))
     let saved = 0
-    for (const { name, dataUrl } of results) {
-      const filename = name.endsWith('.png') ? name : `${name}.png`
-      const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, '')
-      writeFileSync(join(localeOutput, filename), Buffer.from(base64, 'base64'))
+    for (const { filename, bytes } of validated) {
+      writeFileSync(join(localeOutput, filename), bytes)
       console.log(`  ✓ ${filename}`)
       saved++
     }

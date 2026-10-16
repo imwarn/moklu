@@ -20,6 +20,7 @@ import { buildExportPlan, type ExportPlanBatch } from '@/utils/exportPlan'
 import { acquireCaptureLock, waitForStage, waitForStageCaptureReady } from '@/utils/stageCapture'
 import { loadGoogleFonts, registerCustomFonts } from '@/utils/fonts'
 import { LayerNode } from '@/components/canvas/LayerNode'
+import { assertPngExportDimensions } from '@/utils/pngIntegrity'
 import type { Layer as AppLayer, Project, SlideGroup } from '@/types'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -35,6 +36,8 @@ export interface ExportConfig {
 export interface ExportResult {
   name: string      // slide filename (without .png)
   dataUrl: string   // PNG data URL
+  width: number
+  height: number
 }
 
 declare global {
@@ -112,11 +115,9 @@ export function ExportApp() {
 
   const captureBatch = (batch: ExportPlanBatch) => {
     const stage = stageRef.current
-    if (!stage) {
-      console.error('[ExportApp] Stage not ready for group', batch.group.id)
-      return
-    }
+    if (!stage) throw new Error(`Stage not ready for group ${batch.group.id}`)
 
+    const batchResults: ExportResult[] = []
     for (const entry of batch.entries) {
       if (entry.slideIndex === null) continue
       try {
@@ -128,12 +129,15 @@ export function ExportApp() {
           pixelRatio: 1,
           mimeType: 'image/png',
         })
-        resultsRef.current.push({ name: entry.name, dataUrl })
+        assertPngExportDimensions(dataUrl, batch.group.slideWidth, batch.group.slideHeight)
+        batchResults.push({ name: entry.name, dataUrl, width: batch.group.slideWidth, height: batch.group.slideHeight })
         console.log(`[ExportApp] captured ${entry.name}`)
       } catch (err) {
-        console.error(`[ExportApp] failed to capture ${entry.name}:`, err)
+        throw new Error(`Unable to export ${entry.name}: ${err instanceof Error ? err.message : String(err)}`)
       }
     }
+    // Do not report partial successful batch results when one image failed.
+    resultsRef.current.push(...batchResults)
   }
 
   const finalize = () => {
@@ -259,6 +263,11 @@ export function ExportApp() {
         } else {
           finalize()
         }
+      } catch (err) {
+        console.error('[ExportApp] export failed:', err)
+        window.__EXPORT_ERROR__ = err instanceof Error ? err.message : String(err)
+        window.__EXPORT_DONE__ = true
+        setPhase('done')
       } finally {
         release()
       }

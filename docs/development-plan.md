@@ -106,3 +106,5 @@
 - `npm run test:browser`：Playwright Chromium、Firefox、WebKit（Linux）启动真实 Vite 应用，运行截图上传到 PNG 下载的 UI smoke，以及使用真实 Konva 渲染的 240×240 全图 RGBA Golden（透明像素、编辑辅助层、缩放恢复）。测试图均为确定性合成，无用户数据。
 - 核心 Vitest 回归补充单画布 / 全景宽度检查、PNG 损坏时的选区恢复、最终恢复阶段异常后的 capture lock 释放。
 - WebKit on Linux **不等于 macOS Safari 正式版**；Safari/Edge 实机 QA、不同设备 DPR、全格式/语言批量 PNG 深度检查、完整 DS-01~09 数据集和黄金图人工确认仍须按基准测试计划补齐。只有浏览器工作流在指定 SHA 上成功才可标注该范围“CI passed”。
+
+- CLI batch export: `ExportApp` 对每张截图验证 IHDR 精确宽高并向 CLI 回传尺寸，发生导出异常时明确失败；Node CLI 对批次中每一张 PNG 再次验证，批次通过前不落盘。对应 `cli/png-output.test.mjs`。

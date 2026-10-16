@@ -155,3 +155,5 @@ GitHub Actions 增加单独的 **Core Benchmarks** 手动 workflow（`workflow_d
 Playwright 每 PR 在单独的 `browser-export` CI job 执行；安装浏览器依赖可能要求自托管容器具有 apt 权限。失败 trace 存储 7 日用于定位。记下 Actions SHA、各 browser version 和运行结论后，再确定是否扩大为所有样本的发布门槛。
 
 版本化二进制 Golden：`tests/goldens/konva-rect-240x240.png` 是原创生成的透明 RGBA PNG；浏览器测试对已解码结果同时执行固定矩形语义断言、与该独立文件逐像素比较。Golden 的字节编码本身可能随压缩器不同，但像素值必须一致；更新 Golden 时必须有图像审核理由。
+
+CLI 批量导出新增双重校验：浏览器无头渲染阶段按计划画布尺寸验证每张 PNG，错误不再仅记录后跳过；Node CLI 在磁盘写入前再次验证整个批次的 MIME、IHDR 和精确尺寸，避免输出部分损坏文件并错误报告成功。
