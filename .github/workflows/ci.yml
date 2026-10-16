@@ -35,7 +35,8 @@ jobs:
 
   browser-export:
     # Browser binaries execute only trusted first-party code on the self-hosted pool.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    # Avoid duplicate heavyweight browser suites on feature pushes + their PRs.
+    if: (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     needs: quality
     runs-on: [self-hosted, Linux, X64, coolify]
     timeout-minutes: 35
