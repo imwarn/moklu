@@ -52,10 +52,6 @@ export async function exportSlide(
       mimeType: 'image/png',
     })),
   )
-  if (dataUrl.startsWith('data:image/png;')) {
-    assertPngExportDimensions(dataUrl, getPanoTotalWidth(group, panoCompensationPx), group.slideHeight)
-  }
-  return dataUrl
   if (dataUrl.startsWith('data:image/png;')) assertPngExportDimensions(dataUrl, slideWidth, slideHeight)
   return dataUrl
 }
@@ -86,16 +82,19 @@ export async function exportWholeGroup(
   group: SlideGroup,
   panoCompensationPx = 0,
 ): Promise<string> {
-  return withIdentityTransform(stage, () =>
+  const width = getPanoTotalWidth(group, panoCompensationPx)
+  const dataUrl = withIdentityTransform(stage, () =>
     withHiddenEditorOverlays(stage, () => stage.toDataURL({
       x: 0,
       y: 0,
-      width: getPanoTotalWidth(group, panoCompensationPx),
+      width,
       height: group.slideHeight,
       pixelRatio: 1,
       mimeType: 'image/png',
     })),
   )
+  if (dataUrl.startsWith('data:image/png;')) assertPngExportDimensions(dataUrl, width, group.slideHeight)
+  return dataUrl
 }
 
 export async function exportGroupImages(
