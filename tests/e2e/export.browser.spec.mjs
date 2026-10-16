@@ -86,8 +86,8 @@ test('Quick Design screenshot upload produces a real downloadable PNG at the req
     name: 'synthetic-screenshot.png', mimeType: 'image/png', buffer: Buffer.from(source, 'base64'),
   })
   await expect(dialog.getByRole('status')).toContainText('synthetic-screenshot.png')
-  await dialog.getByLabel('Canvas', { exact: true }).selectOption('wide')
-  await dialog.getByLabel('Mockup', { exact: true }).selectOption('browser-chrome')
+  await dialog.getByRole('combobox').nth(0).selectOption('wide')
+  await dialog.getByRole('combobox').nth(1).selectOption('browser-chrome')
   const fit = browserName === 'firefox' ? 'contain' : browserName === 'webkit' ? 'fill' : 'cover'
   await dialog.locator('input[name="quick-screenshot-fit"][value="' + fit + '"]').check({ force: true })
   await dialog.getByRole('button', { name: 'Apply & Edit Design' }).click()
@@ -108,7 +108,7 @@ test('9:16 Story exports exact portrait pixels through the real application', as
   await page.goto('/')
   await page.getByRole('button', { name: /Quick Design/ }).click()
   const dialog = page.getByRole('dialog', { name: 'Quick Design' })
-  await dialog.getByLabel('Canvas', { exact: true }).selectOption('story')
+  await dialog.getByRole('combobox').nth(0).selectOption('story')
   await dialog.getByRole('button', { name: 'Start with Empty Mockup' }).click()
   await expect(dialog).toBeHidden()
   const downloadPromise = page.waitForEvent('download')
