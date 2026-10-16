@@ -74,7 +74,7 @@ describe('selection-safe PNG export', () => {
   it('validates the single slide dimensions, not the full panorama', async () => {
     const stage = makeFakeStage()
     vi.mocked(stage.toDataURL).mockReturnValue(fakePng(1000, 2000))
-    await expect(exportSlide(stage, 1, makeGroup(), 24)).resolves.toMatch(/^data:image\\/png/)
+    await expect(exportSlide(stage, 1, makeGroup(), 24)).resolves.toContain('data:image/png')
   })
 
   it('rejects corrupt PNG data while restoring overlays and stage transform', async () => {
@@ -96,7 +96,7 @@ describe('selection-safe PNG export', () => {
   it('validates whole panorama width and rejects mismatches', async () => {
     const stage = makeFakeStage()
     vi.mocked(stage.toDataURL).mockReturnValue(fakePng(2024, 2000))
-    await expect(exportWholeGroup(stage, makeGroup(), 24)).resolves.toMatch(/^data:image\\/png/)
+    await expect(exportWholeGroup(stage, makeGroup(), 24)).resolves.toContain('data:image/png')
     expect(stage.toDataURL).toHaveBeenCalledWith(expect.objectContaining({ width: 2024, height: 2000 }))
     vi.mocked(stage.toDataURL).mockReturnValue(fakePng(1000, 2000))
     await expect(exportWholeGroup(stage, makeGroup(), 24)).rejects.toThrow(/mismatch/)
