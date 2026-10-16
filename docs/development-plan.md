@@ -32,6 +32,7 @@
 | v0.7 | ✅ main | 跟随画布/Mockup/背景/图片变化的预览；用户完成基本浏览器交互验收。 |
 | v0.8 | ✅ main | 9:16 画布、Cover/Contain/Stretch 截图适配与预览一致性；可手动运行的性能微基准及工程规划文档。 |
 | v0.9 | 🛠 开发 PR | 项目与模板 JSON 导入限额、恶意键/资源校验、暂存与失败补偿恢复；ZIP 导入及完整迁移审计留待后续。 |
+| v0.10 | 🛠 开发 PR #11 | PNG 文件头尺寸校验、全景与单画布导出边界回归、浏览器真实 Canvas RGBA 基准、导出失败恢复、Quick Design 下载 E2E；CI / 跨浏览器实测以 Actions 结果为准。 |
 
 **注意**：main 的版本号与 npm manifest 仍可能保持 `0.1.0`；以上为产品迭代阶段标识，不表示 npm 已发布对应版本、已有 Tag，或全部经过独立安全审计。下一阶段需规范版本、Tag 与 Changelog。
 
@@ -99,3 +100,9 @@
 
 - Added synchronous PNG signature/IHDR dimensions verification to single-canvas and panorama PNG export paths. Wrong-size PNGs are treated as export errors; this does not perform pixel-level visual comparison.
 - Next steps: real-browser Playwright workflows (Chrome/Firefox/WebKit where available), export image/golden matrix, alpha and screenshot-fit parity, cancellation and format/locale restoration tests. Until complete, v0.10 is NOT accepted for release.
+
+### v0.10 测试落地状态（仍非 GA 签收）
+
+- `npm run test:browser`：Playwright Chromium、Firefox、WebKit（Linux）启动真实 Vite 应用，运行截图上传到 PNG 下载的 UI smoke，以及使用真实 Konva 渲染的 240×240 全图 RGBA Golden（透明像素、编辑辅助层、缩放恢复）。测试图均为确定性合成，无用户数据。
+- 核心 Vitest 回归补充单画布 / 全景宽度检查、PNG 损坏时的选区恢复、最终恢复阶段异常后的 capture lock 释放。
+- WebKit on Linux **不等于 macOS Safari 正式版**；Safari/Edge 实机 QA、不同设备 DPR、全格式/语言批量 PNG 深度检查、完整 DS-01~09 数据集和黄金图人工确认仍须按基准测试计划补齐。只有浏览器工作流在指定 SHA 上成功才可标注该范围“CI passed”。

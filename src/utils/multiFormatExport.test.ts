@@ -7,6 +7,7 @@ vi.mock('./stageCapture', async (importOriginal) => {
 })
 import { ExportCancelledError, exportProjectImages } from './multiFormatExport'
 import { exportGroupImages } from './export'
+import { isCaptureLocked, waitForStageCaptureReady } from './stageCapture'
 import { useEditorStore } from '@/store'
 
 const stage = {} as unknown as Konva.Stage
@@ -215,6 +216,27 @@ describe('exportProjectImages', () => {
       locales: ['en'],
       scope: 'current-group',
     })).resolves.toHaveLength(1)
+  })
+
+  it('releases capture lock when restoring the stage fails and allows retry', async () => {
+    mockSingleImage()
+    let calls = 0
+    vi.mocked(waitForStageCaptureReady).mockImplementation(async () => {
+      if (++calls === 2) throw new Error('restore-stage failure')
+      return undefined
+    })
+    try {
+      await expect(exportProjectImages(stage, {
+        formatIds: ['base'], locales: ['en'], scope: 'current-group',
+      })).rejects.toThrow('restore-stage failure')
+      expect(isCaptureLocked()).toBe(false)
+      vi.mocked(waitForStageCaptureReady).mockResolvedValue(undefined)
+      await expect(exportProjectImages(stage, {
+        formatIds: ['base'], locales: ['en'], scope: 'current-group',
+      })).resolves.toHaveLength(1)
+    } finally {
+      vi.mocked(waitForStageCaptureReady).mockResolvedValue(undefined)
+    }
   })
 
   it('rejects cancelled exports and restores global export state', async () => {

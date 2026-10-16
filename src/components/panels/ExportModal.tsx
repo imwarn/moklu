@@ -224,7 +224,7 @@ export function ExportModal({ open, onClose, stageRef }: ExportModalProps) {
       if (err instanceof ExportCancelledError) {
         setExportError(null)
       } else {
-        setExportError('Export failed. Try again.')
+        setExportError(err instanceof Error ? `Export failed: ${err.message} Try again.` : 'Export failed. Try again.')
       }
     } finally {
       setIsExporting(false)

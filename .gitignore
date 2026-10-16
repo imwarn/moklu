@@ -45,3 +45,7 @@ pnpm-debug.log*
 *.njsproj
 *.sln
 *.sw?
+
+# Playwright browser test artifacts
+playwright-report/
+test-results/

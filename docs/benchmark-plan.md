@@ -23,6 +23,10 @@ npm run typecheck
 npm test
 npm run build
 
+# 浏览器 PNG QA：Chromium / Firefox / WebKit (Linux)
+npx playwright install --with-deps chromium firefox webkit
+npm run test:browser
+
 # 手动执行：仅统计核心同步函数，不会设定 CI 硬性性能阈值
 npm run bench:core
 ```
@@ -141,3 +145,11 @@ GitHub Actions 增加单独的 **Core Benchmarks** 手动 workflow（`workflow_d
 - [ ] 建立 Playwright GUI E2E 与 Golden PNG，覆盖三个 screenshot-fit 模式
 - [ ] 校准 reference/constrained 两组设备的基准和图片精度误差
 - [ ] 为导出、导入、数据恢复、无障碍建立带证据的 GA release gate
+
+## 10. v0.10 可执行浏览器导出基准（合成 Golden）
+
+`tests/fixtures/export-harness.html` 以真实 Konva Stage 生成 240×240 PNG：指定两个纯色矩形，其他位置透明；对每个解码后的 RGBA 像素逐一比对期望矩阵（必须 0 个差异、48,800 个透明像素、0 个洋红色 overlay 像素）。采集前人为设置非 1 倍缩放和 stage offset；采集后检查选择辅助层可见性、位移和缩放均恢复。
+
+`tests/e2e/export.browser.spec.mjs` 还覆盖编码器抛异常、损坏文件头、随后重试成功，及真实应用 Quick Design 上传与导出（16:9 及 Chromium 9:16）。矩形基准是确定性像素级 Golden，**不代表**复杂字体、阴影和浏览器 mockup 全量视觉回归已经签收。实际 macOS Safari 必须独立执行。
+
+Playwright 每 PR 在单独的 `browser-export` CI job 执行；安装浏览器依赖可能要求自托管容器具有 apt 权限。失败 trace 存储 7 日用于定位。记下 Actions SHA、各 browser version 和运行结论后，再确定是否扩大为所有样本的发布门槛。
