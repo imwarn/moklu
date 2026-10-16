@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Moklu real-canvas export fixture</title></head>
+<body>
+  <div id="stage"></div>
+  <span id="ready">loading</span>
+  <script type="module">
+    import Konva from 'konva'
+    import { exportSlide } from '../../src/utils/export.ts'
+
+    const stage = new Konva.Stage({ container: 'stage', width: 240, height: 240 })
+    const content = new Konva.Layer()
+    content.add(new Konva.Rect({ x: 40, y: 40, width: 80, height: 80, fill: '#ff3300', listening: false }))
+    content.add(new Konva.Rect({ x: 160, y: 140, width: 40, height: 60, fill: '#0033ff', listening: false }))
+    stage.add(content)
+
+    // Deliberately opaque magenta: even one leaked overlay pixel fails the RGBA golden.
+    const overlay = new Konva.Layer({ name: 'editor-export-overlay', listening: false })
+    overlay.add(new Konva.Rect({ x: 0, y: 0, width: 240, height: 240, fill: '#ff00ff' }))
+    stage.add(overlay)
+    stage.x(17)
+    stage.y(13)
+    stage.scale({ x: 0.75, y: 0.75 })
+    stage.draw()
+
+    const group = {
+      id: 'export-fixture', name: 'Export fixture',
+      slideWidth: 240, slideHeight: 240, numSlides: 1,
+      slideNames: ['export-fixture'], layers: [],
+    }
+    const state = () => ({
+      overlayVisible: overlay.visible(),
+      x: stage.x(), y: stage.y(),
+      scaleX: stage.scaleX(), scaleY: stage.scaleY(),
+    })
+    window.mokluExportQA = {
+      state,
+      capture: () => exportSlide(stage, 0, group),
+      failCapture: async (mode) => {
+        const original = stage.toDataURL
+        stage.toDataURL = () => {
+          if (mode === 'throw') throw new Error('Injected canvas encoder failure')
+          // A syntactically valid header with the wrong dimensions.
+          const header = new Uint8Array([137,80,78,71,13,10,26,10,0,0,0,13,73,72,68,82,0,0,0,1,0,0,0,1])
+          return 'data:image/png;base64,' + btoa(String.fromCharCode(...header))
+        }
+        try {
+          await exportSlide(stage, 0, group)
+          return { error: null, state: state() }
+        } catch (error) {
+          return { error: String(error), state: state() }
+        } finally {
+          stage.toDataURL = original
+        }
+      },
+    }
+    document.querySelector('#ready').textContent = 'ready'
+  </script>
+</body>
+</html>
