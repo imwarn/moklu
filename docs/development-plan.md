@@ -93,3 +93,9 @@
 5. 若调整性能预算，注明机器配置、前后数据及理由。
 
 里程碑号可变，但不可将“计划指标”改写成“测量成绩”。商业版价格、销售渠道、账户体系等留待产品验证后决定。
+
+
+### v0.10 implementation note (in progress)
+
+- Added synchronous PNG signature/IHDR dimensions verification to single-canvas and panorama PNG export paths. Wrong-size PNGs are treated as export errors; this does not perform pixel-level visual comparison.
+- Next steps: real-browser Playwright workflows (Chrome/Firefox/WebKit where available), export image/golden matrix, alpha and screenshot-fit parity, cancellation and format/locale restoration tests. Until complete, v0.10 is NOT accepted for release.
