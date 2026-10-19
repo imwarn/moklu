@@ -129,3 +129,22 @@ test('9:16 Story exports exact portrait pixels through the real application', as
   const download = await downloadPromise
   assertPngHeader(await readFile(await download.path()), 1080, 1920)
 })
+
+test('Quick Design is keyboard dismissible and restores focus to its launcher', async ({ page }) => {
+  await page.goto('/')
+  const launch = page.getByRole('button', { name: /Quick Design/ })
+  await launch.focus()
+  await launch.press('Enter')
+  const dialog = page.getByRole('dialog', { name: 'Quick Design' })
+  await expect(dialog).toBeVisible()
+  await expect(dialog).toBeFocused()
+
+  await page.keyboard.press('Shift+Tab')
+  await expect(dialog.getByRole('button', { name: /Start with Empty Mockup|Apply & Edit Design/ })).toBeFocused()
+  await page.keyboard.press('Tab')
+  await expect(dialog.getByRole('button', { name: 'Close quick design' })).toBeFocused()
+
+  await page.keyboard.press('Escape')
+  await expect(dialog).toBeHidden()
+  await expect(launch).toBeFocused()
+})
