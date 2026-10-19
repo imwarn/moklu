@@ -148,3 +148,28 @@ test('Quick Design is keyboard dismissible and restores focus to its launcher', 
   await expect(dialog).toBeHidden()
   await expect(launch).toBeFocused()
 })
+
+test('Quick Design form keyboard actions cannot trigger destructive editor shortcuts', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: /Quick Design/ }).click()
+  const dialog = page.getByRole('dialog', { name: 'Quick Design' })
+  await expect(dialog).toBeVisible()
+  const canvas = dialog.getByRole('combobox').first()
+  await canvas.focus()
+  await page.keyboard.press('Backspace')
+  await expect(dialog).toBeVisible()
+  await expect(canvas).toBeFocused()
+  await page.keyboard.press('Escape')
+  await expect(dialog).toBeHidden()
+})
+
+test('compact toolbar retains keyboard-reachable Quick Design and PNG actions', async ({ page }) => {
+  await page.setViewportSize({ width: 720, height: 760 })
+  await page.goto('/')
+  const quick = page.getByRole('button', { name: /Quick Design/ }).first()
+  const png = page.locator('button[title="Export the active canvas at its original size"]')
+  await expect(quick).toBeAttached()
+  await png.focus()
+  await expect(png).toBeFocused()
+  await expect(page.locator('header').first()).toHaveJSProperty('scrollHeight', 48)
+})
