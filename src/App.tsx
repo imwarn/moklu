@@ -101,7 +101,7 @@ export default function App() {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't fire when user is typing in an input or rich text editor
       const active = document.activeElement as HTMLElement | null
-      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) return
+      if (active && (active.closest('[role="dialog"], [aria-modal="true"]') || active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT' || active.isContentEditable)) return
 
       if (e.key === 'Escape') {
         if (editingGroupId) {
@@ -203,7 +203,7 @@ export default function App() {
         }
 
         // Delete / Backspace — remove selected layer
-        if (e.key === 'Delete' || e.key === 'Backspace') {
+        if ((e.key === 'Delete' || e.key === 'Backspace') && useEditorStore.getState().selection?.layerId) {
           e.preventDefault()
           const { selection, selectedLayerIds, removeLayer } = useEditorStore.getState()
           if (selectedLayerIds.length > 0) {
