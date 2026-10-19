@@ -133,7 +133,7 @@ export function ExportApp() {
         batchResults.push({ name: entry.name, dataUrl, width: batch.group.slideWidth, height: batch.group.slideHeight })
         console.log(`[ExportApp] captured ${entry.name}`)
       } catch (err) {
-        throw new Error(`Unable to export ${entry.name}: ${err instanceof Error ? err.message : String(err)}`)
+        throw new Error(`Unable to export ${entry.name}: ${err instanceof Error ? err.message : String(err)}`, { cause: err })
       }
     }
     // Do not report partial successful batch results when one image failed.
