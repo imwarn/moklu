@@ -23,6 +23,14 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
       applyTemplateToActiveCanvas: s.applyTemplateToActiveCanvas,
     })))
 
+  const [searchTerm, setSearchTerm] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState('all')
+  const categories = Array.from(new Set(manifest.map((entry) => entry.category).filter((value): value is string => Boolean(value)))).sort()
+  const normalizedSearch = searchTerm.trim().toLocaleLowerCase()
+  const filteredManifest = manifest.filter((entry) =>
+    (categoryFilter === 'all' || entry.category === categoryFilter) &&
+    (!normalizedSearch || [entry.name, entry.description, entry.category].some((value) => value?.toLocaleLowerCase().includes(normalizedSearch))),
+  )
   const [applying, setApplying] = useState<string | null>(null)
   const [importError, setImportError] = useState<string | null>(null)
   const [galleryError, setGalleryError] = useState<string | null>(null)
@@ -513,6 +521,26 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
             <p role="alert" className="mb-3 rounded-lg border border-red-400/25 bg-red-400/10 p-3 text-xs text-red-300">{galleryError}</p>
           )}
           {manifest.length > 0 && (
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row" role="search" aria-label="Find templates">
+              <label className="flex-1 text-xs text-[#aeb0c3]">Search templates
+                <input type="search" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)}
+                  placeholder="Name, description or category" className="mt-1 w-full rounded-lg border border-white/20 bg-[#222330] p-2 text-sm text-white focus-visible:outline-2 focus-visible:outline-[#b9afff]" />
+              </label>
+              <label className="text-xs text-[#aeb0c3]">Category
+                <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}
+                  className="mt-1 w-full rounded-lg border border-white/20 bg-[#222330] p-2 text-sm text-white sm:min-w-40">
+                  <option value="all">All categories</option>
+                  {categories.map((category) => <option key={category} value={category}>{category}</option>)}
+                </select>
+              </label>
+            </div>
+          )}
+          {manifest.length > 0 && filteredManifest.length === 0 && (
+            <p role="status" className="mb-4 rounded-lg border border-white/10 p-4 text-sm text-[#aeb0c3]">
+              No matching templates. Try another search or category.
+            </p>
+          )}
+          {filteredManifest.length > 0 && (
             <div
               style={{
                 display: 'grid',
@@ -520,7 +548,7 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
                 gap: 12,
               }}
             >
-              {manifest.map((entry) => (
+              {filteredManifest.map((entry) => (
                 <div
                   key={entry.slug}
                   style={{
