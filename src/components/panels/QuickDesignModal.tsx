@@ -54,6 +54,39 @@ function QuickDesignDialog({ activeGroup, onClose }: { activeGroup: SlideGroup |
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [dragActive, setDragActive] = useState(false)
+  const dialogRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    const returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    dialogRef.current?.focus()
+    return () => returnFocus?.focus()
+  }, [])
+
+  const handleDialogKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      event.stopPropagation()
+      onClose()
+      return
+    }
+    if (event.key !== 'Tab') return
+    const focusable = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
+    ) ?? []).filter((element) => element.getClientRects().length > 0)
+    if (!focusable.length) {
+      event.preventDefault()
+      return
+    }
+    const first = focusable[0]
+    const last = focusable[focusable.length - 1]
+    if (event.shiftKey && (document.activeElement === first || document.activeElement === dialogRef.current)) {
+      event.preventDefault()
+      last.focus()
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault()
+      first.focus()
+    }
+  }
   const previewUrlRef = useRef<string | null>(null)
   const existingShot = currentMockup?.type === 'phone' && Boolean(
     currentMockup.screenshotPath || currentMockup.screenshotDataUrl,
@@ -156,13 +189,13 @@ function QuickDesignDialog({ activeGroup, onClose }: { activeGroup: SlideGroup |
   const controlClass = 'w-full rounded-lg border border-white/15 bg-[#222330] px-3 py-2 text-sm text-white'
   return (
     <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/70 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
-      <section role="dialog" aria-modal="true" aria-labelledby="quick-design-title" className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-white/10 bg-[#18181f] p-6 text-[#f5f5f8] shadow-2xl">
+      <section ref={dialogRef} tabIndex={-1} onKeyDown={handleDialogKeyDown} role="dialog" aria-modal="true" aria-labelledby="quick-design-title" aria-describedby="quick-design-description" className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-white/10 bg-[#18181f] p-6 text-[#f5f5f8] shadow-2xl">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
             <h2 id="quick-design-title" className="text-xl font-semibold">Quick Design</h2>
-            <p className="mt-1 text-sm text-[#aaaabc]">Upload → choose frame & style → apply → export.</p>
+            <p id="quick-design-description" className="mt-1 text-sm text-[#aaaabc]">Upload → choose frame & style → apply → export.</p>
           </div>
-          <button type="button" onClick={onClose} className="text-xl text-[#aaaabc]" aria-label="Close quick design">×</button>
+          <button type="button" onClick={onClose} className="text-xl text-[#aaaabc] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b9afff]" aria-label="Close quick design">×</button>
         </div>
         <div
           role="group"
@@ -187,7 +220,7 @@ function QuickDesignDialog({ activeGroup, onClose }: { activeGroup: SlideGroup |
                 <span className="inline-block rounded-md bg-[#8276e8] px-3 py-2 text-xs font-semibold text-white hover:bg-[#9388ee]">
                   {imageFile ? 'Change screenshot' : 'Choose screenshot'}
                 </span>
-                <input type="file" accept="image/png,image/jpeg,image/webp" className="sr-only"
+                <input type="file" accept="image/png,image/jpeg,image/webp" className="sr-only focus-visible:not-sr-only"
                   onChange={(event) => {
                     chooseFile(event.target.files?.[0])
                     event.currentTarget.value = ''
