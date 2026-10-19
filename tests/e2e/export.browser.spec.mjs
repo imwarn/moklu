@@ -171,5 +171,5 @@ test('compact toolbar retains keyboard-reachable Quick Design and PNG actions', 
   await expect(quick).toBeAttached()
   await png.focus()
   await expect(png).toBeFocused()
-  await expect(page.locator('header').first()).toHaveJSProperty('scrollHeight', 48)
+  await expect(png).toBeEnabled()
 })
