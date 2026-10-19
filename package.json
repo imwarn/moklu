@@ -38,7 +38,8 @@
     "cli": "node cli/index.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
-    "bench:core": "vitest bench src/benchmarks/core.bench.ts"
+    "bench:core": "vitest bench src/benchmarks/core.bench.ts",
+    "test:browser": "playwright test"
   },
   "engines": {
     "node": ">=20.19.0"

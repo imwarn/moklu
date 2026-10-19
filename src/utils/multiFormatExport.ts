@@ -142,24 +142,28 @@ export async function exportProjectImages(
     if (options.signal?.aborted) throw new ExportCancelledError()
     return results
   } finally {
-    if (originalLocale !== undefined) useEditorStore.getState().setActiveLocale(originalLocale)
-    if (originalFormat !== undefined) useEditorStore.getState().setActiveCanvasFormat(originalFormat)
-    useEditorStore.getState().setPanoRenderOverride(null)
-    if (originalGroupId !== undefined && useEditorStore.getState().activeSlideGroupId !== originalGroupId) {
-      useEditorStore.getState().setActiveSlideGroup(originalGroupId)
+    try {
+      if (originalLocale !== undefined) useEditorStore.getState().setActiveLocale(originalLocale)
+      if (originalFormat !== undefined) useEditorStore.getState().setActiveCanvasFormat(originalFormat)
+      useEditorStore.getState().setPanoRenderOverride(null)
+      if (originalGroupId !== undefined && useEditorStore.getState().activeSlideGroupId !== originalGroupId) {
+        useEditorStore.getState().setActiveSlideGroup(originalGroupId)
+      }
+      await waitForStageCaptureReady(stage)
+      if (lastBatch) {
+        options.onProgress?.({
+          completed,
+          total,
+          formatId: lastBatch.formatId,
+          formatLabel: lastBatch.formatLabel,
+          locale: lastBatch.locale,
+          groupName: lastBatch.group.name,
+          phase: 'restoring',
+        })
+      }
+    } finally {
+      // The capture mutex must be freed even when restoring the stage throws.
+      release()
     }
-    await waitForStageCaptureReady(stage)
-    if (lastBatch) {
-      options.onProgress?.({
-        completed,
-        total,
-        formatId: lastBatch.formatId,
-        formatLabel: lastBatch.formatLabel,
-        locale: lastBatch.locale,
-        groupName: lastBatch.group.name,
-        phase: 'restoring',
-      })
-    }
-    release()
   }
 }

@@ -2,6 +2,7 @@ import type Konva from 'konva'
 import type { SlideGroup } from '@/types'
 import { withHiddenEditorOverlays, withIdentityTransform } from './stageCapture'
 import { getPanoSlideX, getPanoTotalWidth } from './panoGeometry'
+import { assertPngExportDimensions } from './pngIntegrity'
 
 interface WritableFileHandle {
   write(data: Blob): Promise<void>
@@ -41,7 +42,7 @@ export async function exportSlide(
   panoCompensationPx = 0,
 ): Promise<string> {
   const { slideWidth, slideHeight } = group
-  return withIdentityTransform(stage, () =>
+  const dataUrl = withIdentityTransform(stage, () =>
     withHiddenEditorOverlays(stage, () => stage.toDataURL({
       x: getPanoSlideX(group, slideIndex, panoCompensationPx),
       y: 0,
@@ -51,6 +52,8 @@ export async function exportSlide(
       mimeType: 'image/png',
     })),
   )
+  assertPngExportDimensions(dataUrl, slideWidth, slideHeight)
+  return dataUrl
 }
 
 /**
@@ -79,16 +82,19 @@ export async function exportWholeGroup(
   group: SlideGroup,
   panoCompensationPx = 0,
 ): Promise<string> {
-  return withIdentityTransform(stage, () =>
+  const width = getPanoTotalWidth(group, panoCompensationPx)
+  const dataUrl = withIdentityTransform(stage, () =>
     withHiddenEditorOverlays(stage, () => stage.toDataURL({
       x: 0,
       y: 0,
-      width: getPanoTotalWidth(group, panoCompensationPx),
+      width,
       height: group.slideHeight,
       pixelRatio: 1,
       mimeType: 'image/png',
     })),
   )
+  assertPngExportDimensions(dataUrl, width, group.slideHeight)
+  return dataUrl
 }
 
 export async function exportGroupImages(

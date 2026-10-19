@@ -1,12 +1,23 @@
 import { describe, it, expect, vi } from 'vitest'
 import type Konva from 'konva'
 import type { SlideGroup } from '@/types'
-import { exportSlide, exportAllSlides, exportGroupImages } from './export'
+import { exportSlide, exportWholeGroup, exportAllSlides, exportGroupImages } from './export'
+
+function fakePng(width: number, height: number): string {
+  const header = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 0, 0, 0, 0, 0])
+  const view = new DataView(header.buffer)
+  view.setUint32(16, width)
+  view.setUint32(20, height)
+  return 'data:image/png;base64,' + btoa(String.fromCharCode(...header))
+}
 
 function makeFakeStage() {
   return {
     x: () => 0, y: () => 0, scaleX: () => 1, scaleY: () => 1,
-    toDataURL: vi.fn((opts: unknown) => `data:${JSON.stringify(opts)}`),
+    toDataURL: vi.fn((opts: unknown) => {
+      const { width, height } = opts as { width: number; height: number }
+      return fakePng(width, height)
+    }),
     find: vi.fn(() => []),
     draw: vi.fn(),
     batchDraw: vi.fn(),
@@ -57,12 +68,49 @@ describe('selection-safe PNG export', () => {
     vi.mocked(stage.find).mockReturnValue([selection] as unknown as ReturnType<Konva.Stage['find']>)
     vi.mocked(stage.toDataURL).mockImplementation(() => {
       expect(selection.visible()).toBe(false)
-      return 'data:image/png;base64,test'
+      return fakePng(1000, 2000)
     })
     const result = await exportSlide(stage, 0, makeGroup())
     expect(result).toContain('data:image/png')
     expect(selection.visible()).toBe(true)
   })
+  it('validates the single slide dimensions, not the full panorama', async () => {
+    const stage = makeFakeStage()
+    vi.mocked(stage.toDataURL).mockReturnValue(fakePng(1000, 2000))
+    await expect(exportSlide(stage, 1, makeGroup(), 24)).resolves.toContain('data:image/png')
+  })
+
+  it('rejects corrupt PNG data while restoring overlays and stage transform', async () => {
+    const stage = makeFakeStage()
+    let visible = true
+    const selection = {
+      visible: vi.fn((next?: boolean) => {
+        if (next !== undefined) visible = next
+        return visible
+      }),
+    }
+    vi.mocked(stage.find).mockReturnValue([selection] as unknown as ReturnType<Konva.Stage['find']>)
+    vi.mocked(stage.toDataURL).mockReturnValue('data:image/png;base64,AAAA')
+    await expect(exportSlide(stage, 0, makeGroup())).rejects.toThrow(/signature|IHDR/)
+    expect(selection.visible()).toBe(true)
+    expect(stage.batchDraw).toHaveBeenCalled()
+  })
+
+  it('rejects a non-PNG response rather than silently offering an invalid download', async () => {
+    const stage = makeFakeStage()
+    vi.mocked(stage.toDataURL).mockReturnValue('data:text/plain;base64,AAAA')
+    await expect(exportSlide(stage, 0, makeGroup())).rejects.toThrow(/PNG/)
+  })
+
+  it('validates whole panorama width and rejects mismatches', async () => {
+    const stage = makeFakeStage()
+    vi.mocked(stage.toDataURL).mockReturnValue(fakePng(2024, 2000))
+    await expect(exportWholeGroup(stage, makeGroup(), 24)).resolves.toContain('data:image/png')
+    expect(stage.toDataURL).toHaveBeenCalledWith(expect.objectContaining({ width: 2024, height: 2000 }))
+    vi.mocked(stage.toDataURL).mockReturnValue(fakePng(1000, 2000))
+    await expect(exportWholeGroup(stage, makeGroup(), 24)).rejects.toThrow(/mismatch/)
+  })
+
 })
 
 describe('exportAllSlides', () => {
