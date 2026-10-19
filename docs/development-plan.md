@@ -32,7 +32,9 @@
 | v0.7 | ✅ main | 跟随画布/Mockup/背景/图片变化的预览；用户完成基本浏览器交互验收。 |
 | v0.8 | ✅ main | 9:16 画布、Cover/Contain/Stretch 截图适配与预览一致性；可手动运行的性能微基准及工程规划文档。 |
 | v0.9 | 🛠 开发 PR | 项目与模板 JSON 导入限额、恶意键/资源校验、暂存与失败补偿恢复；ZIP 导入及完整迁移审计留待后续。 |
-| v0.10 | 🛠 开发 PR #11 | PNG 文件头尺寸校验、全景与单画布导出边界回归、浏览器真实 Canvas RGBA 基准、导出失败恢复、Quick Design 下载 E2E；CI / 跨浏览器实测以 Actions 结果为准。 |
+| v0.10 | ✅ main · CI + 真机验收 | PNG 文件头尺寸校验、全景与单画布导出边界回归、浏览器真实 Canvas RGBA 基准、导出失败恢复、Quick Design 下载 E2E；CI / 跨浏览器实测以 Actions 结果为准。 |
+
+| v0.11 | 🛠 开发中 | Quick Design 对话框键盘循环、Escape 关闭与焦点返回；继续落实空状态、响应式和模板搜索。 |
 
 **注意**：main 的版本号与 npm manifest 仍可能保持 `0.1.0`；以上为产品迭代阶段标识，不表示 npm 已发布对应版本、已有 Tag，或全部经过独立安全审计。下一阶段需规范版本、Tag 与 Changelog。
 
@@ -108,3 +110,8 @@
 - WebKit on Linux **不等于 macOS Safari 正式版**；Safari/Edge 实机 QA、不同设备 DPR、全格式/语言批量 PNG 深度检查、完整 DS-01~09 数据集和黄金图人工确认仍须按基准测试计划补齐。只有浏览器工作流在指定 SHA 上成功才可标注该范围“CI passed”。
 
 - CLI batch export: `ExportApp` 对每张截图验证 IHDR 精确宽高并向 CLI 回传尺寸，发生导出异常时明确失败；Node CLI 对批次中每一张 PNG 再次验证，批次通过前不落盘。对应 `cli/png-output.test.mjs`。
+
+### v0.11 · UX & Accessibility (in progress)
+
+- First increment: Quick Design traps keyboard Tab/Shift+Tab within the modal, closes with Escape and restores focus to the launch button. The accessible description is bound to its title; Playwright covers keyboard-only opening, wraparound, dismissal and focus recovery.
+- Follow-up acceptance gates: first-run empty-state guidance, Quick/Advanced discoverability, responsive mobile/desktop overflow and template search/category accessibility. Do not mark the entire v0.11 milestone accepted until these pass.
