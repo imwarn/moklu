@@ -18,9 +18,7 @@ test('real Konva export matches complete deterministic RGBA golden, excludes ove
   const dataUrl = await page.evaluate(() => window.mokluExportQA.capture())
   const bytes = Buffer.from(dataUrl.split(',')[1], 'base64')
   assertPngHeader(bytes, 240, 240)
-  const goldenBytes = await readFile(new URL('../goldens/konva-rect-240x240.png', import.meta.url))
-  assertPngHeader(goldenBytes, 240, 240)
-  const golden = await page.evaluate(async ({ url, expectedUrl }) => {
+  const golden = await page.evaluate(async (url) => {
     const img = new Image()
     img.src = url
     await img.decode()
@@ -30,14 +28,16 @@ test('real Konva export matches complete deterministic RGBA golden, excludes ove
     const context = canvas.getContext('2d', { willReadFrequently: true })
     context.drawImage(img, 0, 0)
     const pixels = context.getImageData(0, 0, 240, 240).data
-    const referenceImage = new Image()
-    referenceImage.src = expectedUrl
-    await referenceImage.decode()
+    // Independent browser-generated golden: avoid committing a truncated/corrupt
+    // PNG fixture and compare all RGBA channels, including true transparency.
     const referenceCanvas = document.createElement('canvas')
     referenceCanvas.width = 240
     referenceCanvas.height = 240
     const referenceContext = referenceCanvas.getContext('2d', { willReadFrequently: true })
-    referenceContext.drawImage(referenceImage, 0, 0)
+    referenceContext.fillStyle = '#ff3300'
+    referenceContext.fillRect(40, 40, 80, 80)
+    referenceContext.fillStyle = '#0033ff'
+    referenceContext.fillRect(160, 140, 40, 60)
     const referencePixels = referenceContext.getImageData(0, 0, 240, 240).data
     let goldenMismatches = 0
     let mismatches = 0
@@ -58,7 +58,7 @@ test('real Konva export matches complete deterministic RGBA golden, excludes ove
       }
     }
     return { mismatches, goldenMismatches, transparent, magenta }
-  }, { url: dataUrl, expectedUrl: 'data:image/png;base64,' + goldenBytes.toString('base64') })
+  }, dataUrl)
   expect(golden).toEqual({ mismatches: 0, goldenMismatches: 0, transparent: 48_800, magenta: 0 })
   expect(await page.evaluate(() => window.mokluExportQA.state())).toEqual(before)
 })
