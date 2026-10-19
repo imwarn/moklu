@@ -34,7 +34,7 @@
 | v0.9 | 🛠 开发 PR | 项目与模板 JSON 导入限额、恶意键/资源校验、暂存与失败补偿恢复；ZIP 导入及完整迁移审计留待后续。 |
 | v0.10 | ✅ main · CI + 真机验收 | PNG 文件头尺寸校验、全景与单画布导出边界回归、浏览器真实 Canvas RGBA 基准、导出失败恢复、Quick Design 下载 E2E；CI / 跨浏览器实测以 Actions 结果为准。 |
 
-| v0.11 | 🛠 开发中 | Quick Design 对话框键盘循环、Escape 关闭与焦点返回；继续落实空状态、响应式和模板搜索。 |
+| v0.11 | 🛠 开发中 | Quick Design 焦点循环与模板搜索已合并；后续 PR 优化首次使用引导、窄视口工具栏访问、模态框内删除快捷键隔离与浏览器回归。 |
 
 **注意**：main 的版本号与 npm manifest 仍可能保持 `0.1.0`；以上为产品迭代阶段标识，不表示 npm 已发布对应版本、已有 Tag，或全部经过独立安全审计。下一阶段需规范版本、Tag 与 Changelog。
 
@@ -115,3 +115,10 @@
 
 - First increment: Quick Design traps keyboard Tab/Shift+Tab within the modal, closes with Escape and restores focus to the launch button. The accessible description is bound to its title; Playwright covers keyboard-only opening, wraparound, dismissal and focus recovery.
 - Follow-up acceptance gates: first-run empty-state guidance, Quick/Advanced discoverability, responsive mobile/desktop overflow and template search/category accessibility. Do not mark the entire v0.11 milestone accepted until these pass.
+
+### v0.11 follow-up QA scope
+
+- New user path describes screenshot upload (optional), frame/style, apply, and PNG export, with explicit access to the advanced Layers/Properties editor.
+- Narrow viewport keeps header horizontally scrollable rather than clipping commands; verify keyboard access to Quick Design and PNG.
+- Global delete/nudge/undo handlers must never modify canvas when a modal or form control owns focus. Validate in browser along with existing modal focus tests.
+- Remaining manual gate: mobile/desktop viewport walkthrough, first-time task completion without instructions, and assistive-technology review. Do not claim full WCAG conformance from CI smoke tests.
