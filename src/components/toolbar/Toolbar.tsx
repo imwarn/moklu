@@ -124,7 +124,7 @@ export function Toolbar({ mode, onSetMode }: ToolbarProps) {
 
   return (
     <header
-      className="flex h-12 items-center gap-3 border-b px-3 max-[1099px]:gap-2 max-[1099px]:px-2"
+      className="flex h-12 shrink-0 items-center gap-3 overflow-x-auto border-b px-3 max-[1099px]:gap-2 max-[1099px]:px-2"
       style={{
         background: '#18181f',
         borderColor: 'rgba(255,255,255,0.08)',
@@ -227,7 +227,7 @@ export function Toolbar({ mode, onSetMode }: ToolbarProps) {
         <span className="max-[1099px]:hidden">Projects</span>
       </button>
 
-      <button type="button" onClick={() => setQuickOpen(true)} title="Create a quick screenshot mockup" className="shrink-0 rounded-lg border border-[#8276e8]/60 bg-[#8276e8]/20 px-3 py-1.5 text-xs font-semibold text-[#d6d1ff] hover:bg-[#8276e8]/30">✦ Quick Design</button>
+      <button type="button" onClick={() => setQuickOpen(true)} title="Quick Design: upload a screenshot, choose a device and background, then export" aria-label="Quick Design: guided screenshot mockup" className="shrink-0 rounded-lg border border-[#8276e8]/60 bg-[#8276e8]/20 px-3 py-1.5 text-xs font-semibold text-[#d6d1ff] hover:bg-[#8276e8]/30">✦ Quick Design</button>
 
       <button type="button" onClick={() => setCanvasSizeOpen(true)} title="Change canvas size and aspect ratio without losing layers" className="shrink-0 rounded-lg border border-white/15 px-3 py-1.5 text-xs text-[#d6d6e4] hover:border-white/30 hover:bg-white/5">▣ Canvas Size<span className="ml-1 hidden text-[#888a9d] min-[1350px]:inline">{project.slideGroups.find((g) => g.id === useEditorStore.getState().activeSlideGroupId)?.slideWidth}×{project.slideGroups.find((g) => g.id === useEditorStore.getState().activeSlideGroupId)?.slideHeight}</span></button>
 
