@@ -41,18 +41,18 @@ test('live project survives refresh, backs up with assets, restores in a fresh p
     expect(pngBytes.readUInt32BE(16)).toBe(1600)
     expect(pngBytes.readUInt32BE(20)).toBe(900)
 
-    await page.getByRole('button', { name: 'Manage projects' }).click()
+    await page.locator('button[title="Manage projects"]').click()
     const firstJsonDownload = page.waitForEvent('download')
-    await page.getByRole('button', { name: 'Export project as JSON' }).first().click()
+    await page.locator('button[title="Export project as JSON"]').first().click()
     const savedJsonDownload = await firstJsonDownload
     const savedJson = await readFile(await savedJsonDownload.path())
     const bundle = JSON.parse(savedJson.toString('utf8'))
     expect(JSON.stringify(bundle)).toContain('data:image/png')
     await page.reload()
-    await expect(page.getByRole('button', { name: 'Manage projects' })).toBeVisible()
-    await page.getByRole('button', { name: 'Manage projects' }).click()
+    await expect(page.locator('button[title="Manage projects"]')).toBeVisible()
+    await page.locator('button[title="Manage projects"]').click()
     const afterReload = page.waitForEvent('download')
-    await page.getByRole('button', { name: 'Export project as JSON' }).first().click()
+    await page.locator('button[title="Export project as JSON"]').first().click()
     const reloaded = JSON.parse((await readFile(await (await afterReload).path())).toString('utf8'))
     expect(reloaded.project?.slideGroups || reloaded.slideGroups).toEqual(bundle.project?.slideGroups || bundle.slideGroups)
 
@@ -62,14 +62,14 @@ test('live project survives refresh, backs up with assets, restores in a fresh p
     restoredPage.on('dialog', async (dialog) => { alerts.push(dialog.message()); await dialog.accept() })
     try {
       await restoredPage.goto(origin)
-      await restoredPage.getByRole('button', { name: 'Manage projects' }).click()
+      await restoredPage.locator('button[title="Manage projects"]').click()
       await restoredPage.locator('input[type=file][accept=".json"]').setInputFiles({
         name: 'moklu-test-backup.json', mimeType: 'application/json', buffer: savedJson,
       })
-      await expect(restoredPage.getByRole('button', { name: 'Manage projects' })).toBeVisible()
-      await restoredPage.getByRole('button', { name: 'Manage projects' }).click()
+      await expect(restoredPage.locator('button[title="Manage projects"]')).toBeVisible()
+      await restoredPage.locator('button[title="Manage projects"]').click()
       const importedDownload = restoredPage.waitForEvent('download')
-      await restoredPage.getByRole('button', { name: 'Export project as JSON' }).first().click()
+      await restoredPage.locator('button[title="Export project as JSON"]').first().click()
       const imported = JSON.parse((await readFile(await (await importedDownload).path())).toString('utf8'))
       expect(imported.project?.slideGroups || imported.slideGroups).toEqual(bundle.project?.slideGroups || bundle.slideGroups)
       expect(alerts.some((message) => /missing|blank/i.test(message))).toBe(false)
@@ -79,9 +79,9 @@ test('live project survives refresh, backs up with assets, restores in a fresh p
         name: 'broken-project.json', mimeType: 'application/json', buffer: Buffer.from('{malformed'),
       })
       expect(alerts.length).toBeGreaterThan(0)
-      await restoredPage.getByRole('button', { name: 'Manage projects' }).click()
+      await restoredPage.locator('button[title="Manage projects"]').click()
       const safeDownload = restoredPage.waitForEvent('download')
-      await restoredPage.getByRole('button', { name: 'Export project as JSON' }).first().click()
+      await restoredPage.locator('button[title="Export project as JSON"]').first().click()
       const safe = JSON.parse((await readFile(await (await safeDownload).path())).toString('utf8'))
       expect(safe.project?.slideGroups || safe.slideGroups).toEqual(imported.project?.slideGroups || imported.slideGroups)
     } finally {
