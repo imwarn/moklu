@@ -1,0 +1,41 @@
+name: Deployment Smoke
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deployed-site:
+    runs-on: [self-hosted, Linux, X64, coolify]
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Verify public HTTPS response, assets and headers
+        env:
+          MOKLU_DEPLOY_URL: https://moklu.tech
+        run: node scripts/check-deployment.mjs
+      - name: Install browser engines
+        run: npx playwright install --with-deps chromium firefox webkit
+      - name: Run deployed-site browser smoke
+        env:
+          MOKLU_DEPLOY_URL: https://moklu.tech
+        run: npx playwright test --config tests/live/playwright.config.mjs
+      - name: Upload deployment evidence and traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployed-smoke-${{ github.run_id }}
+          path: |
+            release-evidence/deployment-smoke.json
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 14
