@@ -237,3 +237,13 @@ test('mobile format selector is unobstructed and switches formats', async ({ pag
     await expect(format).toHaveValue('base')
   }
 })
+
+test('mobile add-format action opens the existing creation menu', async ({ page }) => {
+  await page.setViewportSize({ width: 393, height: 852 })
+  await page.goto('/')
+  const add = page.getByRole('button', { name: 'Add a canvas format' })
+  await expect(add).toBeVisible()
+  await add.click()
+  await expect(add).toHaveAttribute('aria-expanded', 'true')
+  await expect(page.getByRole('region', { name: 'Create new layout' })).toBeVisible()
+})
