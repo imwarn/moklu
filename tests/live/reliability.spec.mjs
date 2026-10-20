@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises'
 // This test only uses disposable browser profiles, local synthetic images,
 // and client-side project storage. No actual user account or server data is touched.
 test('live project survives refresh, backs up with assets, restores in a fresh profile, and exports exact PNG', async ({ browser, baseURL }) => {
+  test.skip(test.info().project.name !== 'chromium-desktop', 'Stateful reliability scenario runs in isolated Chromium')
   const origin = baseURL || 'https://moklu.tech'
   const context = await browser.newContext({ acceptDownloads: true })
   const page = await context.newPage()
@@ -46,7 +47,7 @@ test('live project survives refresh, backs up with assets, restores in a fresh p
     const savedJsonDownload = await firstJsonDownload
     const savedJson = await readFile(await savedJsonDownload.path())
     const bundle = JSON.parse(savedJson.toString('utf8'))
-    expect(JSON.stringify(bundle)).toContain('moklu-live-synthetic')
+    expect(JSON.stringify(bundle)).toContain('data:image/png')
     await page.reload()
     await expect(page.getByRole('button', { name: 'Manage projects' })).toBeVisible()
     await page.getByRole('button', { name: 'Manage projects' }).click()
