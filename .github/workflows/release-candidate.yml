@@ -26,6 +26,12 @@ jobs:
       - run: npm run build
       - name: Verify distributable
         run: node scripts/verify-release.mjs
+      - name: Install supported browser engines
+        run: npx playwright install --with-deps chromium firefox webkit
+      - name: Run browser E2E on production build
+        env:
+          MOKLU_E2E_PREVIEW: '1'
+        run: npm run test:browser
       - name: Collect release environment and dependency audit
         shell: bash
         run: |
@@ -49,3 +55,12 @@ jobs:
           path: release-evidence/
           if-no-files-found: ignore
           retention-days: 30
+
+      - name: Upload browser failure traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: moklu-rc-traces-${{ github.run_id }}
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 14
