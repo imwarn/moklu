@@ -115,3 +115,9 @@
 
 - First increment: Quick Design traps keyboard Tab/Shift+Tab within the modal, closes with Escape and restores focus to the launch button. The accessible description is bound to its title; Playwright covers keyboard-only opening, wraparound, dismissal and focus recovery.
 - Follow-up acceptance gates: first-run empty-state guidance, Quick/Advanced discoverability, responsive mobile/desktop overflow and template search/category accessibility. Do not mark the entire v0.11 milestone accepted until these pass.
+
+### v0.12 · Release Engineering (implementation in progress)
+
+- Added a manual, main-only Release Candidate Evidence workflow that runs lint, typecheck, unit tests, build, distributable validation and captures an npm production dependency audit as a retained artifact. The audit is **evidence**, not automatic approval; findings require human triage.
+- Added a static-hosting/Coolify deployment and rollback runbook with caching, TLS/security headers, staged CSP calibration, client-side data backup warning and immutable artifact rollback steps.
+- Pending before v0.12 acceptance: verified candidate workflow run on main, dependency/license risk disposition, real deployment and rollback rehearsal, browser/QA report, benchmark archive, version/tag/changelog and final CSP enforcement check.
