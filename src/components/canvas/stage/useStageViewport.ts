@@ -32,6 +32,7 @@ export function useStageViewport({
   const panStartRef = useRef<{ clientX: number; clientY: number; vpX: number; vpY: number } | null>(null)
   const lastCenteredGroupId = useRef<string | null>(null)
   const lastContainerW = useRef(0)
+  const lastCanvasDimensions = useRef('')
   const lastFamilyRef = useRef<string | null>(null)
   const prevCanvasRef = useRef<{ format: CanvasFormatId; totalW: number; totalH: number } | null>(null)
 
@@ -50,15 +51,27 @@ export function useStageViewport({
     if (!containerSize.w || !containerSize.h || !group) return
     const totalW = getPanoTotalWidth(group, panoCompensate ? panoCompensationPx : 0)
     const totalH = group.slideHeight
-    const needsCenter = lastCenteredGroupId.current !== group.id || lastContainerW.current === 0
-    if (!needsCenter) return
+    const dimensions = `${group.id}:${totalW}:${totalH}`
+    const geometryChanged = lastCanvasDimensions.current !== dimensions
+    const viewportChanged = lastContainerW.current !== containerSize.w
+    if (!geometryChanged && !viewportChanged) return
+    lastCanvasDimensions.current = dimensions
     lastCenteredGroupId.current = group.id
     lastContainerW.current = containerSize.w
-    const { zoom: currentZoom, setViewportPosition: svp } = useEditorStore.getState()
-    const cx = (containerSize.w - totalW * currentZoom) / 2
-    const cy = (containerSize.h - totalH * currentZoom) / 2
-    svp(cx, cy)
-  }, [containerSize.w, containerSize.h, group?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+    const currentZoom = useEditorStore.getState().zoom
+    // Fit when a new canvas is applied or a narrow viewport cannot display
+    // the old canvas. Keep user zoom otherwise (e.g. opening sidebars).
+    const shouldFit = geometryChanged || totalW * currentZoom > containerSize.w - 24
+    const nextZoom = shouldFit ? Math.max(0.05, Math.min(4, Math.min(
+      (containerSize.w - 32) / totalW,
+      (containerSize.h - 32) / totalH,
+    ))) : currentZoom
+    if (nextZoom !== currentZoom) setZoom(nextZoom)
+    setViewportPosition(
+      (containerSize.w - totalW * nextZoom) / 2,
+      (containerSize.h - totalH * nextZoom) / 2,
+    )
+  }, [containerSize.w, containerSize.h, group?.id, group?.slideWidth, group?.slideHeight, group?.numSlides, panoCompensate, panoCompensationPx, setZoom, setViewportPosition])
 
   useEffect(() => {
     const el = containerRef.current
