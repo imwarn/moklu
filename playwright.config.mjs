@@ -2,6 +2,9 @@ import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
   testDir: './tests/e2e',
+  // Konva source-module fixtures require Vite's dev-only module serving. The RC
+  // built-site pass runs the real application flows; fixture tests remain in PR CI.
+  grepInvert: process.env.MOKLU_E2E_PREVIEW === '1' ? /real Konva export|failed export/ : undefined,
   timeout: 60_000,
   expect: { timeout: 15_000 },
   fullyParallel: false,
