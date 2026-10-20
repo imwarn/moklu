@@ -268,16 +268,6 @@ export default function App() {
           </main>
         )}
 
-        {view === 'editor' && (
-          <nav aria-label="Editor panels" className="absolute right-3 top-2 z-30 flex gap-2 lg:hidden">
-            <button type="button" aria-label="Toggle layers panel" aria-expanded={mobilePanel === 'layers'}
-              onClick={() => setMobilePanel((panel) => panel === 'layers' ? null : 'layers')}
-              className="rounded-lg border border-white/20 bg-[#222330] px-3 py-2 text-xs text-white shadow-lg">Layers</button>
-            <button type="button" aria-label="Toggle properties panel" aria-expanded={mobilePanel === 'properties'}
-              onClick={() => setMobilePanel((panel) => panel === 'properties' ? null : 'properties')}
-              className="rounded-lg border border-white/20 bg-[#222330] px-3 py-2 text-xs text-white shadow-lg">Properties</button>
-          </nav>
-        )}
         {/* Editor view — always mounted so the Konva stage + ResizeObserver are always alive.
             Hidden (pointer-events-none, invisible) when the localization view is on top. */}
         <div
@@ -294,6 +284,14 @@ export default function App() {
             className="flex-1 overflow-hidden bg-[#111118] flex flex-col"
             style={{ minWidth: 0 }}
           >
+            <nav aria-label="Editor panels" className="flex shrink-0 justify-end gap-2 border-b border-white/10 bg-[#18181f] px-3 py-2 lg:hidden">
+              <button type="button" aria-label="Toggle layers panel" aria-expanded={mobilePanel === 'layers'}
+                onClick={() => setMobilePanel((panel) => panel === 'layers' ? null : 'layers')}
+                className="rounded-lg border border-white/20 bg-[#222330] px-3 py-1.5 text-xs text-white">Layers</button>
+              <button type="button" aria-label="Toggle properties panel" aria-expanded={mobilePanel === 'properties'}
+                onClick={() => setMobilePanel((panel) => panel === 'properties' ? null : 'properties')}
+                className="rounded-lg border border-white/20 bg-[#222330] px-3 py-1.5 text-xs text-white">Properties</button>
+            </nav>
             {/* Both editing axes share one compact top bar. */}
             <EditingContextBar />
             <EditingContextAlert />
