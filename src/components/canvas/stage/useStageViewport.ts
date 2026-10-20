@@ -30,7 +30,6 @@ export function useStageViewport({
   const [spaceDown, setSpaceDown] = useState(false)
   const [isPanning, setIsPanning] = useState(false)
   const panStartRef = useRef<{ clientX: number; clientY: number; vpX: number; vpY: number } | null>(null)
-  const lastCenteredGroupId = useRef<string | null>(null)
   const lastContainerW = useRef(0)
   const lastCanvasDimensions = useRef('')
   const lastFamilyRef = useRef<string | null>(null)
@@ -56,7 +55,6 @@ export function useStageViewport({
     const viewportChanged = lastContainerW.current !== containerSize.w
     if (!geometryChanged && !viewportChanged) return
     lastCanvasDimensions.current = dimensions
-    lastCenteredGroupId.current = group.id
     lastContainerW.current = containerSize.w
     const currentZoom = useEditorStore.getState().zoom
     // Fit when a new canvas is applied or a narrow viewport cannot display
