@@ -5,7 +5,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     // The browser suites are owned by Playwright, not Vitest.
-    exclude: ['**/node_modules/**', '**/dist/**', '**/tests/e2e/**'],
+    exclude: ['**/node_modules/**', '**/dist/**', '**/tests/e2e/**', '**/tests/live/**'],
     setupFiles: ['./src/test/setup-idb.ts'],
   },
   resolve: {
