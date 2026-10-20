@@ -122,3 +122,9 @@
 - Narrow viewport keeps header horizontally scrollable rather than clipping commands; verify keyboard access to Quick Design and PNG.
 - Global delete/nudge/undo handlers must never modify canvas when a modal or form control owns focus. Validate in browser along with existing modal focus tests.
 - Remaining manual gate: mobile/desktop viewport walkthrough, first-time task completion without instructions, and assistive-technology review. Do not claim full WCAG conformance from CI smoke tests.
+
+### v0.12 · Release Engineering (implementation in progress)
+
+- Added a main-only, manually triggered Release Candidate Evidence workflow: quality gates, production build verification, production-output browser app E2E, npm audit evidence and lockfile dependency license inventory with artifacts.
+- Added static Coolify/nginx deployment guidance, staged CSP review, client-side project backup limitations and immutable-build rollback.
+- Remaining acceptance: actual RC workflow run on main, license/security finding disposition, browser QA and performance report, validated response headers and a deployment/backup/rollback rehearsal. No GA approval implied.
