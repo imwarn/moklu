@@ -224,9 +224,10 @@ export function EditingContextBar() {
   const [customH, setCustomH] = useState('')
   const [formatMenuPosition, setFormatMenuPosition] = useState({ left: 0, top: 0 })
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const mobileFormatRef = useRef<HTMLDivElement>(null)
   const formatMenuRef = useRef<HTMLDivElement>(null)
   const actionsRef = useRef<HTMLDivElement>(null)
-  useDismissOnOutsideClick(dropdownOpen || showCustomInput, [dropdownRef, formatMenuRef], () => { setDropdownOpen(false); setShowCustomInput(false) })
+  useDismissOnOutsideClick(dropdownOpen || showCustomInput, [dropdownRef, mobileFormatRef, formatMenuRef], () => { setDropdownOpen(false); setShowCustomInput(false) })
   useDismissOnOutsideClick(actionsOpen, actionsRef, () => setActionsOpen(false))
 
   const baseFormat = getProjectBaseFormat({ settings })
@@ -312,8 +313,8 @@ export function EditingContextBar() {
     setCustomW('')
     setCustomH('')
   }
-  const openFormatMenu = () => {
-    const rect = dropdownRef.current?.getBoundingClientRect()
+  const openFormatMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect()
     if (rect) setFormatMenuPosition({ left: rect.left, top: rect.bottom + 4 })
     setDropdownOpen((open) => !open)
   }
@@ -423,7 +424,7 @@ export function EditingContextBar() {
               ))}
             </select>
           </label>
-          <div className="flex shrink-0 items-center lg:hidden" ref={dropdownRef}>
+          <div className="flex shrink-0 items-center lg:hidden" ref={mobileFormatRef}>
             <button type="button" onClick={openFormatMenu} title="Add a canvas format" aria-label="Add a canvas format"
               aria-expanded={dropdownOpen || showCustomInput}
               className="ml-2 flex h-8 w-8 items-center justify-center rounded-md border border-white/20 bg-[#222330] text-base text-[#fbbf24] focus-visible:outline-2 focus-visible:outline-[#b9afff]">+</button>
