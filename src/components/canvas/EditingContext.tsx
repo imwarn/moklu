@@ -423,6 +423,11 @@ export function EditingContextBar() {
               ))}
             </select>
           </label>
+          <div className="flex shrink-0 items-center lg:hidden" ref={dropdownRef}>
+            <button type="button" onClick={openFormatMenu} title="Add a canvas format" aria-label="Add a canvas format"
+              aria-expanded={dropdownOpen || showCustomInput}
+              className="ml-2 flex h-8 w-8 items-center justify-center rounded-md border border-white/20 bg-[#222330] text-base text-[#fbbf24] focus-visible:outline-2 focus-visible:outline-[#b9afff]">+</button>
+          </div>
           <div className="hidden min-w-0 flex-1 lg:flex">
           {hasMultipleFamilies ? (
             <HorizontalScrollAffordance>
