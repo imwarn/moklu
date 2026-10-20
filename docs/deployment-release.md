@@ -15,7 +15,7 @@ npm run build
 node scripts/verify-release.mjs
 ```
 
-Run `Release Candidate Evidence` manually from the **main** branch. Download its build and audit artifacts. Compare the commit SHA against the intended release and record the browser QA results, manual Safari/Edge evidence, license and asset authorization results before publishing any candidate. The workflow builds artifacts but **does not deploy** them or publish a release.
+Run `Release Candidate Evidence` manually from the **main** branch. Download its build and audit artifacts. Review \`release-evidence/license-inventory.json\` alongside \`npm-audit.json\`; missing license fields are review items, not proof of infringement. Compare the commit SHA against the intended release and record the browser QA results, manual Safari/Edge evidence, license and asset authorization results before publishing any candidate. The workflow builds artifacts but **does not deploy** them or publish a release.
 
 ## Static deployment via Coolify / nginx
 
@@ -53,3 +53,7 @@ To roll back:
 ## Release blocking criteria
 
 Do not mark the v1.0 checklist complete until the dependency audit findings have a reviewed disposition, licenses/materials are cleared, production security headers verified, benchmark outputs archived, the full browser matrix has passed and maintainers explicitly approve the candidate.
+
+## RC versioning and changelog
+
+Before publishing a candidate, choose the semver version and update the package manifest and lockfile together. Record user-visible changes and compatibility notes in CHANGELOG.md; avoid labeling internal iteration numbers (v0.10–v0.12) as already-published npm releases. Create an annotated RC tag from the exact successful SHA only after security, license, export and data-recovery gates pass. Keep the previous approved build artifact to support immediate rollback.
