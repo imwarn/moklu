@@ -193,7 +193,7 @@ function QuickDesignDialog({ activeGroup, onClose }: { activeGroup: SlideGroup |
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
             <h2 id="quick-design-title" className="text-xl font-semibold">Quick Design</h2>
-            <p id="quick-design-description" className="mt-1 text-sm text-[#aaaabc]">Upload → choose frame & style → apply → export.</p>
+            <p id="quick-design-description" className="mt-1 text-sm text-[#aaaabc]">New here? Choose a screenshot (optional), pick a mockup and style, then apply. Use the PNG button in the top toolbar to export.</p>
           </div>
           <button type="button" onClick={onClose} className="text-xl text-[#aaaabc] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b9afff]" aria-label="Close quick design">×</button>
         </div>
@@ -289,7 +289,7 @@ function QuickDesignDialog({ activeGroup, onClose }: { activeGroup: SlideGroup |
           browserChrome={currentMockup?.type === 'phone' ? currentMockup.browserChrome : undefined}
         />
         <div role="note" className="mt-5 rounded-lg border border-[#8276e8]/25 bg-[#8276e8]/10 p-3 text-xs leading-5 text-[#bdbbd7]">
-          <strong className="text-white">Want a different ratio after applying?</strong> Use <strong className="text-[#d6d1ff]">Canvas Size</strong> in the toolbar to resize without replacing your screenshot, text or layers.
+          <strong className="text-white">Want to edit individual elements?</strong> After applying, use the Layers and Properties panels (Advanced editor). For a different ratio, use Canvas Size in the toolbar. Canvas Size resizes without replacing your screenshot, text or layers.
           <span className="mt-1 block text-[#9395aa]">Quick Design reapplies a style and replaces the current slide layout. Existing screenshots remain attached; other slides are untouched.</span>
         </div>
         <div className="mt-4 flex justify-end gap-2">

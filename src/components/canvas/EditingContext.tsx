@@ -224,9 +224,10 @@ export function EditingContextBar() {
   const [customH, setCustomH] = useState('')
   const [formatMenuPosition, setFormatMenuPosition] = useState({ left: 0, top: 0 })
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const mobileFormatRef = useRef<HTMLDivElement>(null)
   const formatMenuRef = useRef<HTMLDivElement>(null)
   const actionsRef = useRef<HTMLDivElement>(null)
-  useDismissOnOutsideClick(dropdownOpen || showCustomInput, [dropdownRef, formatMenuRef], () => { setDropdownOpen(false); setShowCustomInput(false) })
+  useDismissOnOutsideClick(dropdownOpen || showCustomInput, [dropdownRef, mobileFormatRef, formatMenuRef], () => { setDropdownOpen(false); setShowCustomInput(false) })
   useDismissOnOutsideClick(actionsOpen, actionsRef, () => setActionsOpen(false))
 
   const baseFormat = getProjectBaseFormat({ settings })
@@ -312,8 +313,8 @@ export function EditingContextBar() {
     setCustomW('')
     setCustomH('')
   }
-  const openFormatMenu = () => {
-    const rect = dropdownRef.current?.getBoundingClientRect()
+  const openFormatMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect()
     if (rect) setFormatMenuPosition({ left: rect.left, top: rect.bottom + 4 })
     setDropdownOpen((open) => !open)
   }
@@ -405,11 +406,30 @@ export function EditingContextBar() {
   return (
     <div className={`relative ${actionsOpen ? 'z-40' : 'z-20'} h-11 shrink-0 border-b border-[rgba(255,255,255,0.07)] bg-[#18181f] px-3`}>
       <div className="flex h-full min-w-0 items-stretch">
-        <section className="flex min-w-[12rem] flex-1 items-stretch" aria-label="Canvas format">
-          <div className="mr-1.5 flex shrink-0 items-center gap-1.5">
+        <section className="flex min-w-0 flex-1 items-stretch" aria-label="Canvas format">
+          <div className="mr-1.5 hidden shrink-0 items-center gap-1.5 lg:flex">
             <span className="h-1.5 w-1.5 rounded-full bg-[#f59e0b] shadow-[0_0_7px_rgba(245,158,11,0.35)]" />
             <span className="text-[9px] font-semibold uppercase tracking-[0.16em] text-[#6b6254]">Format</span>
           </div>
+          <label className="flex min-w-0 flex-1 items-center gap-2 lg:hidden">
+            <span className="sr-only">Canvas format</span>
+            <select
+              aria-label="Canvas format"
+              value={activeCanvasFormat}
+              onChange={(event) => selectFormat(event.target.value as CanvasFormatId)}
+              className="w-full min-w-0 rounded-md border border-white/20 bg-[#222330] px-2 py-1.5 text-xs text-white"
+            >
+              {Array.from(new Set([baseFormat, ...familyEntries.flatMap(({ presetFormats, customFormats }) => [...presetFormats, ...customFormats])])).map((formatId) => (
+                <option key={formatId} value={formatId}>{getFormatLabel(formatId, settings.customFormats)}</option>
+              ))}
+            </select>
+          </label>
+          <div className="flex shrink-0 items-center lg:hidden" ref={mobileFormatRef}>
+            <button type="button" onClick={openFormatMenu} title="Add a canvas format" aria-label="Add a canvas format"
+              aria-expanded={dropdownOpen || showCustomInput}
+              className="ml-2 flex h-8 w-8 items-center justify-center rounded-md border border-white/20 bg-[#222330] text-base text-[#fbbf24] focus-visible:outline-2 focus-visible:outline-[#b9afff]">+</button>
+          </div>
+          <div className="hidden min-w-0 flex-1 lg:flex">
           {hasMultipleFamilies ? (
             <HorizontalScrollAffordance>
               <div role="group" aria-label="Format family" className="flex h-full min-w-max items-stretch gap-0.5">
@@ -503,6 +523,7 @@ export function EditingContextBar() {
             </HorizontalScrollAffordance>
           )}
 
+          </div>
           {(dropdownOpen || showCustomInput) && createPortal(
             <div
               ref={formatMenuRef}

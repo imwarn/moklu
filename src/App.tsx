@@ -49,6 +49,7 @@ export default function App() {
   const { undo, redo } = useUndoRedo()
   const [view, setView] = useState<'editor' | 'localization'>('editor')
   const [previewOpen, setPreviewOpen] = useState(false)
+  const [mobilePanel, setMobilePanel] = useState<'layers' | 'properties' | null>(null)
   // Locale the preview opens in + the view to return to when it closes.
   const [previewLocale, setPreviewLocale] = useState<string | undefined>(undefined)
   const [previewReturnTo, setPreviewReturnTo] = useState<'localization' | null>(null)
@@ -101,7 +102,7 @@ export default function App() {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't fire when user is typing in an input or rich text editor
       const active = document.activeElement as HTMLElement | null
-      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) return
+      if (active && (active.closest('[role="dialog"], [aria-modal="true"]') || active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT' || active.isContentEditable)) return
 
       if (e.key === 'Escape') {
         if (editingGroupId) {
@@ -203,7 +204,7 @@ export default function App() {
         }
 
         // Delete / Backspace — remove selected layer
-        if (e.key === 'Delete' || e.key === 'Backspace') {
+        if ((e.key === 'Delete' || e.key === 'Backspace') && useEditorStore.getState().selection?.layerId) {
           e.preventDefault()
           const { selection, selectedLayerIds, removeLayer } = useEditorStore.getState()
           if (selectedLayerIds.length > 0) {
@@ -274,13 +275,23 @@ export default function App() {
           style={view === 'localization' ? { visibility: 'hidden', pointerEvents: 'none' } : undefined}
         >
           {/* Layers panel — always visible */}
-          <LayersPanel />
+          <aside aria-label="Layers sidebar" className={`z-20 h-full shrink-0 lg:static lg:block ${mobilePanel === 'layers' ? 'absolute inset-y-0 left-0 block shadow-2xl' : 'hidden'}`}>
+            <LayersPanel />
+          </aside>
 
           {/* Canvas area — fills remaining space */}
           <main
             className="flex-1 overflow-hidden bg-[#111118] flex flex-col"
             style={{ minWidth: 0 }}
           >
+            <nav aria-label="Editor panels" className="relative z-30 flex shrink-0 justify-end gap-2 border-b border-white/10 bg-[#18181f] px-3 py-2 lg:hidden">
+              <button type="button" aria-label="Toggle layers panel" aria-expanded={mobilePanel === 'layers'}
+                onClick={() => setMobilePanel((panel) => panel === 'layers' ? null : 'layers')}
+                className="rounded-lg border border-white/20 bg-[#222330] px-3 py-1.5 text-xs text-white">Layers</button>
+              <button type="button" aria-label="Toggle properties panel" aria-expanded={mobilePanel === 'properties'}
+                onClick={() => setMobilePanel((panel) => panel === 'properties' ? null : 'properties')}
+                className="rounded-lg border border-white/20 bg-[#222330] px-3 py-1.5 text-xs text-white">Properties</button>
+            </nav>
             {/* Both editing axes share one compact top bar. */}
             <EditingContextBar />
             <EditingContextAlert />
@@ -308,7 +319,9 @@ export default function App() {
           </main>
 
           {/* Properties panel — always visible */}
-          <PropertiesPanel />
+          <aside aria-label="Properties sidebar" className={`z-20 h-full shrink-0 lg:static lg:block ${mobilePanel === 'properties' ? 'absolute inset-y-0 right-0 block shadow-2xl' : 'hidden'}`}>
+            <PropertiesPanel />
+          </aside>
         </div>
       </div>
       <SlideNavigator thumbnails={thumbnails} staleGroupIds={staleGroupIds} stageRef={stageRef} onCaptureThumbnail={(groupId) => { void captureNow(groupId) }} onOpenPreview={() => setPreviewOpen(true)} />

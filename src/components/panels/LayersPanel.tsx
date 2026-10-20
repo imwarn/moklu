@@ -108,8 +108,8 @@ export function LayersPanel() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key !== 'Delete' && e.key !== 'Backspace') return
-      const tag = (document.activeElement as HTMLElement)?.tagName
-      if (tag === 'INPUT' || tag === 'TEXTAREA') return
+      const active = document.activeElement as HTMLElement | null
+      if (active?.closest('[role="dialog"], [aria-modal="true"]') || active?.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(active?.tagName ?? '')) return
       if (selection?.layerId) removeLayer(selection.layerId)
     }
     window.addEventListener('keydown', handleKeyDown)
