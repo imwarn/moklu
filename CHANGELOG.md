@@ -1,11 +1,22 @@
 # Changelog
 
-All notable changes to PixelDeck are documented here.
+Moklu changes are recorded above the preserved upstream PixelDeck release history below. Internal milestone labels do not imply npm package releases.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [Unreleased] — Moklu
+
+### Added
+- Screenshot-first Quick Design, template application, flexible frames and export QA
+- Template discovery, mobile editor controls and keyboard-accessible Quick Design
+- Release-candidate evidence collection, production build verification and deployment/rollback guidance
+
+### Pending before release
+- Security and asset-license disposition, browser acceptance, performance evidence, deployed CSP verification and rollback exercise
+
+## Preserved upstream PixelDeck history
+
 
 ## [0.8.3](https://github.com/Pr0xS/PixelDeck/compare/v0.8.2...v0.8.3) - 2026-08-14
 
