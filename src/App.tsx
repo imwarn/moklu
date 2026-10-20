@@ -284,7 +284,7 @@ export default function App() {
             className="flex-1 overflow-hidden bg-[#111118] flex flex-col"
             style={{ minWidth: 0 }}
           >
-            <nav aria-label="Editor panels" className="flex shrink-0 justify-end gap-2 border-b border-white/10 bg-[#18181f] px-3 py-2 lg:hidden">
+            <nav aria-label="Editor panels" className="relative z-30 flex shrink-0 justify-end gap-2 border-b border-white/10 bg-[#18181f] px-3 py-2 lg:hidden">
               <button type="button" aria-label="Toggle layers panel" aria-expanded={mobilePanel === 'layers'}
                 onClick={() => setMobilePanel((panel) => panel === 'layers' ? null : 'layers')}
                 className="rounded-lg border border-white/20 bg-[#222330] px-3 py-1.5 text-xs text-white">Layers</button>
