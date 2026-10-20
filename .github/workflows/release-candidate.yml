@@ -1,0 +1,51 @@
+name: Release Candidate Evidence
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release-evidence:
+    if: github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, Linux, X64, coolify]
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: Verify distributable
+        run: node scripts/verify-release.mjs
+      - name: Collect release environment and dependency audit
+        shell: bash
+        run: |
+          mkdir -p release-evidence
+          printf 'sha=%s\nrunner=%s\nos=%s\nnode=%s\nnpm=%s\n' \
+            "$GITHUB_SHA" "$RUNNER_NAME" "$(uname -a)" "$(node -v)" "$(npm -v)" > release-evidence/environment.txt
+          npm audit --omit=dev --json > release-evidence/npm-audit.json || echo 'Dependency audit reports findings: manual security disposition required' >> release-evidence/environment.txt
+          sha256sum dist/index.html > release-evidence/dist-index.sha256
+      - name: Upload static build
+        uses: actions/upload-artifact@v4
+        with:
+          name: moklu-rc-build-${{ github.sha }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload release evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: moklu-rc-evidence-${{ github.run_id }}
+          path: release-evidence/
+          if-no-files-found: ignore
+          retention-days: 30
