@@ -214,3 +214,26 @@ test('Quick Design preserves visible canvas after portrait-sized mobile apply', 
   expect(state.width).toBeGreaterThan(250)
   expect(state.height).toBeGreaterThan(300)
 })
+
+test('mobile format selector is unobstructed and switches formats', async ({ page }) => {
+  await page.setViewportSize({ width: 393, height: 852 })
+  await page.goto('/')
+  const format = page.getByRole('combobox', { name: 'Canvas format' })
+  await expect(format).toBeVisible()
+  const controls = page.getByRole('navigation', { name: 'Editor panels' })
+  await expect(controls).toBeVisible()
+  const formatBounds = await format.boundingBox()
+  const toggleBounds = await controls.boundingBox()
+  expect(formatBounds).not.toBeNull()
+  expect(toggleBounds).not.toBeNull()
+  expect(formatBounds.y).toBeGreaterThan(toggleBounds.y + toggleBounds.height - 1)
+  const options = await format.locator('option').evaluateAll((nodes) => nodes.map((node) => node.value))
+  expect(options).toContain('base')
+  const second = options.find((option) => option !== 'base')
+  if (second) {
+    await format.selectOption(second)
+    await expect(format).toHaveValue(second)
+    await format.selectOption('base')
+    await expect(format).toHaveValue('base')
+  }
+})
