@@ -49,6 +49,7 @@ export default function App() {
   const { undo, redo } = useUndoRedo()
   const [view, setView] = useState<'editor' | 'localization'>('editor')
   const [previewOpen, setPreviewOpen] = useState(false)
+  const [mobilePanel, setMobilePanel] = useState<'layers' | 'properties' | null>(null)
   // Locale the preview opens in + the view to return to when it closes.
   const [previewLocale, setPreviewLocale] = useState<string | undefined>(undefined)
   const [previewReturnTo, setPreviewReturnTo] = useState<'localization' | null>(null)
@@ -267,6 +268,16 @@ export default function App() {
           </main>
         )}
 
+        {view === 'editor' && (
+          <nav aria-label="Editor panels" className="absolute right-3 top-2 z-30 flex gap-2 lg:hidden">
+            <button type="button" aria-label="Toggle layers panel" aria-expanded={mobilePanel === 'layers'}
+              onClick={() => setMobilePanel((panel) => panel === 'layers' ? null : 'layers')}
+              className="rounded-lg border border-white/20 bg-[#222330] px-3 py-2 text-xs text-white shadow-lg">Layers</button>
+            <button type="button" aria-label="Toggle properties panel" aria-expanded={mobilePanel === 'properties'}
+              onClick={() => setMobilePanel((panel) => panel === 'properties' ? null : 'properties')}
+              className="rounded-lg border border-white/20 bg-[#222330] px-3 py-2 text-xs text-white shadow-lg">Properties</button>
+          </nav>
+        )}
         {/* Editor view — always mounted so the Konva stage + ResizeObserver are always alive.
             Hidden (pointer-events-none, invisible) when the localization view is on top. */}
         <div
@@ -274,7 +285,9 @@ export default function App() {
           style={view === 'localization' ? { visibility: 'hidden', pointerEvents: 'none' } : undefined}
         >
           {/* Layers panel — always visible */}
-          <LayersPanel />
+          <aside aria-label="Layers sidebar" className={`z-20 h-full shrink-0 lg:static lg:block ${mobilePanel === 'layers' ? 'absolute inset-y-0 left-0 block shadow-2xl' : 'hidden'}`}>
+            <LayersPanel />
+          </aside>
 
           {/* Canvas area — fills remaining space */}
           <main
@@ -308,7 +321,9 @@ export default function App() {
           </main>
 
           {/* Properties panel — always visible */}
-          <PropertiesPanel />
+          <aside aria-label="Properties sidebar" className={`z-20 h-full shrink-0 lg:static lg:block ${mobilePanel === 'properties' ? 'absolute inset-y-0 right-0 block shadow-2xl' : 'hidden'}`}>
+            <PropertiesPanel />
+          </aside>
         </div>
       </div>
       <SlideNavigator thumbnails={thumbnails} staleGroupIds={staleGroupIds} stageRef={stageRef} onCaptureThumbnail={(groupId) => { void captureNow(groupId) }} onOpenPreview={() => setPreviewOpen(true)} />
