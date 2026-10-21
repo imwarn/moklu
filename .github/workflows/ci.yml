@@ -30,6 +30,10 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
+      # The CSP must stay consistent with the domains the app actually calls.
+      # A policy that drifts from src/ai/providers.ts silently breaks a provider.
+      - name: Verify response headers match the app
+        run: node scripts/check-headers.mjs
       - run: npm test
       - run: npm run build
 
@@ -53,6 +57,21 @@ jobs:
         run: npx playwright install --with-deps chromium firefox webkit
       - name: Browser export and RGBA goldens
         run: npm run test:browser
+      - name: Validate staged UI and enforced CSP on local production build
+        run: |
+          npm run build
+          PORT=$((40000 + GITHUB_RUN_ID % 10000))
+          node scripts/serve-headers.mjs dist "$PORT" > /tmp/moklu-csp-preview-"$GITHUB_RUN_ID".log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl -fsS "http://127.0.0.1:$PORT/" >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsSI "http://127.0.0.1:$PORT/" | grep -i '^content-security-policy:'
+          MOKLU_DEPLOY_URL="http://127.0.0.1:$PORT" MOKLU_LIVE_ACCEPTANCE=1 MOKLU_REQUIRE_CSP=1 \
+            npx playwright test tests/live/acceptance.spec.mjs tests/live/csp.spec.mjs \
+              --config=tests/live/playwright.config.mjs --project=chromium-desktop
       - name: Upload Playwright traces on failure
         if: failure()
         uses: actions/upload-artifact@v4

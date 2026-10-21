@@ -358,7 +358,7 @@ export function SlideNavigator({ thumbnails, staleGroupIds, stageRef, onCaptureT
 
   return (
     <footer
-      className="h-20 flex items-center gap-3 px-3 shrink-0 border-t"
+      className="min-h-20 flex flex-wrap items-center gap-3 px-3 py-2 shrink-0 border-t"
       style={{ background: '#18181f', borderColor }}
     >
       {/* Width follows the responsive LayersPanel width, less this footer's 12px inset. */}
@@ -451,7 +451,7 @@ export function SlideNavigator({ thumbnails, staleGroupIds, stageRef, onCaptureT
         </button>
       </div>
 
-      <div className="flex items-center gap-2 shrink-0 border-l border-[rgba(255,255,255,0.06)] pl-3">
+      <div className="ml-auto flex items-center gap-2 shrink-0 border-l border-[rgba(255,255,255,0.06)] pl-3">
         <button
           onClick={onOpenPreview}
           className="text-xs text-[#e8e8f0] px-3 py-2 rounded border border-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] hover:bg-[rgba(255,255,255,0.05)] transition-colors"

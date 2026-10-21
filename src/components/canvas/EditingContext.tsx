@@ -167,6 +167,9 @@ function HorizontalScrollAffordance({
 }
 
 /** The two editing axes share one piece of persistent editor chrome. */
+/** Width of the format popover; also used to clamp it inside the viewport. */
+const FORMAT_MENU_WIDTH = 250
+
 export function EditingContextBar() {
   const {
     project,
@@ -315,7 +318,14 @@ export function EditingContextBar() {
   }
   const openFormatMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
     const rect = event.currentTarget.getBoundingClientRect()
-    if (rect) setFormatMenuPosition({ left: rect.left, top: rect.bottom + 4 })
+    if (rect) {
+      // The + button sits near the right edge on phones, so anchoring the
+      // popover at rect.left pushed 206px of it past a 393px viewport. Clamp
+      // the anchored left edge so the popover always fits on screen.
+      const menuWidth = Math.min(FORMAT_MENU_WIDTH, window.innerWidth - 8)
+      const left = Math.min(rect.left, window.innerWidth - menuWidth - 4)
+      setFormatMenuPosition({ left: Math.max(4, left), top: rect.bottom + 4 })
+    }
     setDropdownOpen((open) => !open)
   }
   const runFormatAction = (action: (format: CanvasFormatId) => void) => {
@@ -531,7 +541,7 @@ export function EditingContextBar() {
               style={{ left: formatMenuPosition.left, top: formatMenuPosition.top }}
             >
             {dropdownOpen && (
-              <div className="absolute left-0 top-full z-50 mt-1 min-w-[250px] max-h-[min(30rem,calc(100vh-5rem))] overflow-y-auto rounded-lg border border-[rgba(255,255,255,0.1)] bg-[#1e1e2a] py-1 shadow-xl">
+              <div className="absolute left-0 top-full z-50 mt-1 min-w-[250px] max-w-[calc(100vw-8px)] max-h-[min(30rem,calc(100vh-5rem))] overflow-y-auto rounded-lg border border-[rgba(255,255,255,0.1)] bg-[#1e1e2a] py-1 shadow-xl">
                 {uncreatedFormats.length > 0 && <section aria-label="Create new layout">
                   <p className="px-3 pb-1 pt-1 text-[9px] font-semibold uppercase tracking-[0.15em] text-[#fbbf24]">Create new layout</p>
                   {renderFormatMenuFamilies(uncreatedFormats, (formatId) => {
@@ -558,7 +568,7 @@ export function EditingContextBar() {
               </div>
             )}
             {showCustomInput && (
-              <div className="absolute left-0 top-full z-50 mt-1 min-w-[210px] rounded-lg border border-[rgba(255,255,255,0.1)] bg-[#1e1e2a] p-3 shadow-xl">
+              <div className="absolute left-0 top-full z-50 mt-1 min-w-[210px] max-w-[calc(100vw-8px)] rounded-lg border border-[rgba(255,255,255,0.1)] bg-[#1e1e2a] p-3 shadow-xl">
                 <p className="mb-2 text-[10px] text-[#6b6b7a]">Custom canvas format</p>
                 <input
                   type="text"

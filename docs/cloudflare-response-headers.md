@@ -1,0 +1,217 @@
+# Cloudflare 侧安全响应头配置（Moklu）
+
+> 目标：闭合 v0.12 验收中 OPS-01 / OPS-02 的 FAIL 项。
+> 配置本体在 `public/_headers`（唯一真相源），本文说明**为什么这么配**、**怎么上线**、**怎么验证**。
+
+## 一、现状（2026-10-21 实测）
+
+`curl -sSI https://moklu.tech/` 的结果：
+
+| 头 | 现状 | 问题 |
+| --- | --- | --- |
+| `Content-Security-Policy` | **缺失** | 无 XSS 兜底 |
+| `Strict-Transport-Security` | **缺失** | 无 HSTS 钉扎 |
+| `X-Content-Type-Options` | **缺失** | 无 MIME 嗅探防护 |
+| `Referrer-Policy` | **缺失** | 跨站泄露完整 Referer |
+| `X-Frame-Options` | **缺失** | 可被任意站点 iframe |
+| `Cache-Control`（HTML） | **缺失**，`cf-cache-status: DYNAMIC` | 入口文档可被启发式缓存 → 新部署后仍加载旧 assets 图 |
+| `Cache-Control`（`/assets/*`） | `max-age=14400` | 应为 `immutable` 长缓存 |
+
+**`max-age=14400` 的来源判断**：`/logo.svg`、`/favicon.svg`、`/assets/*` 全是 4 小时，而 `/` 是 `DYNAMIC` 无该头 —— 这个分布符合 Cloudflare 的 **Browser Cache TTL 默认 4 小时**，不是源站设置的。所以资产长缓存要同时改「源站头」和「关掉 CF 的默认覆盖」。
+
+---
+
+## 二、CSP 是怎么定出来的（全部来自代码证据）
+
+CSP 最怕照抄模板。下面每一条都有仓库里的实测依据：
+
+| 指令 | 取值 | 为什么必须是这个 |
+| --- | --- | --- |
+| `script-src 'self'` | 只用 hashed bundle | `index.html` 无内联 `<script>`；全仓库 `grep 'eval(\|new Function('` 为 0 → **不需要** `'unsafe-inline'` / `'unsafe-eval'` |
+| `style-src ... 'unsafe-inline'` | 必须加 | 33 个组件用 React `style={{...}}`（行内 style 属性受 `style-src` 管辖） |
+| `style-src ... fonts.googleapis.com` | 必须加 | `src/utils/fonts.ts:186,207` 在**运行时**动态注入 `<link rel=stylesheet href="https://fonts.googleapis.com/...">` |
+| `font-src ... fonts.gstatic.com` | 必须加 | 字体文件由 gstatic 提供 |
+| `font-src ... data:` | 必须加 | `loadUploadedFont` 从 data URL 注册用户上传字体 |
+| `img-src data: blob:` | 必须加 | 截图以 data URL 存储；预览用 `URL.createObjectURL` |
+| `worker-src blob:` | 保险 | Konva/打包链路可能起 blob worker |
+| `connect-src` 三个 AI 域 | 必须加 | `src/ai/providers.ts` 定义 `api.openai.com` / `openrouter.ai` / `generativelanguage.googleapis.com`，**由浏览器直连** |
+| `object-src 'none'` | 收紧 | 无插件内容 |
+| `frame-ancestors 'none'` | 收紧 | 与 `X-Frame-Options: DENY` 一致 |
+
+### ⚠️ 已知限制：自定义 AI 端点会被 CSP 拦截
+
+`src/ai/client.ts:291` 支持用户填写**任意** `baseUrl`（provider = `custom`）。CSP 是静态头，无法预知用户的自定义域名，因此**自定义 provider 会被 `connect-src` 拦下**。
+
+三个选择：
+
+1. **接受**（**当前采用**）：CSP 保住主站安全边界，三个内置 provider 不受影响；自定义端点需自建代理。
+2. **扩展白名单**：把团队常用的自定义域名加进 `connect-src`，改一次配置加一个域。
+3. **放宽为 `connect-src https:`**：功能全通，但 XSS 可外传数据 —— 等于放弃这道防线，不建议。
+
+### 已采用方案：明确拒绝，而不是静默失败
+
+CSP 拦截和 CORS 拒绝在 `fetch()` 眼里**完全一样**，都是 `TypeError: Failed to fetch`。如果不做处理，用户填了自定义端点只会看到"CORS 错误"，然后去查一个根本不存在的问题。
+
+所以 `src/ai/client.ts` 现在会在报错前先判断请求域名是否落在 `connect-src` 白名单内：
+
+```
+Could not generate image for custom. The page's Content-Security-Policy does
+not allow connecting to https://llm.internal.example.com, so the browser
+blocked the request before it left the device. Use one of the built-in
+providers (OpenAI, OpenRouter, Google) or route the custom endpoint through
+your own proxy on this origin. (Failed to fetch)
+```
+
+而不是误导性的：
+
+```
+Could not generate image for custom. Check your network connection and that
+the base URL is correct and allows direct browser requests (CORS)...
+```
+
+`CSP_CONNECT_ALLOWED_ORIGINS`（`src/ai/client.ts`）与 `public/_headers` 的 `connect-src`
+是同一份事实的两处表达，`scripts/check-headers.mjs` 会交叉校验并让 CI 失败，
+避免以后换 provider 时一处改了另一处没改。
+
+---
+
+## 三、上线步骤（Coolify + Cloudflare）
+
+### 先确认各层职责
+
+Moklu 的 Coolify Resource 是 **Application / Nixpacks / SPA**，由应用容器内的静态服务器提供文件；外部 HTTPS / 域名转发由 Coolify 的反向代理以及可能存在的 Cloudflare 负责。**不要把下面的任何 nginx `server { listen 443 ssl; }` 配置直接粘贴到 Coolify 默认反向代理**，也不要修改 Coolify 管理的宿主机 nginx/Traefik 配置。
+
+`public/_headers` 只是 **Cloudflare Pages / Netlify 格式的配置源文件**，适用于本地 `scripts/serve-headers.mjs` 预演；Coolify 默认的 Nixpacks 静态服务器、Cloudflare 的普通代理 DNS 记录**都不会自动读取它**。PR 合并或重新部署 Moklu **不等于线上安全响应头生效**。
+
+### 阶段 A：合并 / 部署 UI 修复，先不强制 CSP
+
+1. PR 的普通 CI 和 **Live Reliability Gate** 先通过；合并到 `main`。
+2. 在 Coolify 部署对应 commit，确认 `https://moklu.tech/` 的 UI 已更新（浏览器 DevTools / 新版右侧 toolbar）。
+3. 在 GitHub Actions → **Deployment Smoke** 运行两种阶段：
+   - `include_acceptance=false`、`require_csp=false`：基础连通性、项目备份恢复等，不要求新 UI 或已配置 CSP。
+   - Coolify 已部署新版后，设 `include_acceptance=true`、`require_csp=false`：加入 UI-01/02/03/04/05/07 等修复验收。**旧版线上站点不应运行这个门禁**。
+4. 不要将本地 `serve-headers` 的 CSP 测试通过，解释为 `moklu.tech` 的 CSP 已上线。
+
+### 阶段 B：启用安全头（优先在 Cloudflare 边缘配置）
+
+如果 `moklu.tech` 经过 Cloudflare 代理（DNS 为橙云），可以在 Cloudflare Dashboard 为该域名创建 **Rules → Transform Rules → Modify Response Header**（菜单位置随计划和 UI 版本略有变化）：
+
+- 匹配条件为 `http.host eq "moklu.tech"`，而不是误影响其他项目域名；
+- 选择 **Set static**，按 `public/_headers` 中 `/*` 规则逐条填写 `X-Content-Type-Options`、`Referrer-Policy`、`X-Frame-Options`、`Permissions-Policy` 和 **完整** `Content-Security-Policy`；
+- 复制 **完整 CSP**，保存后用 `curl -sSI https://moklu.tech/` 检查返回值，不要只相信控制台已保存；验证是否出现截断、重复 CSP 或其他规则覆盖；
+- 若当前 Cloudflare 套餐、权限或规则限制不允许配置完整 CSP，请改为**在应用自身静态服务器配置响应头**，而不是放宽 CSP 以掩盖限制。不同计划的额度和长度限制以 Dashboard 的校验及真实响应为准。
+
+注意：不要同时在 Cloudflare 和 Coolify 源站设置互相冲突的 CSP；多个 CSP 响应头会同时被浏览器执行，不是“后者覆盖前者”。
+
+**不使用 Cloudflare Transform Rules 时：** 需要通过 Coolify 的 Dockerfile / 自定义构建配置，让**应用容器内**的 nginx 在 HTTP `80` 端口附加安全头；HTTPS 终止仍由 Coolify 反向代理处理。应保留实际正在运行的 SPA `try_files ... /index.html` 路由，以及现有 `root` 和代理端口。不要直接照抄示例中的 `/var/www/moklu/dist` 或假设存在 `/etc/nginx/snippets/moklu-headers.conf`。如果想用 `include`，必须在镜像里**先创建**对应片段文件，并在带 `add_header` 的每个 `location` 中包含它（nginx 的 `add_header` 存在继承陷阱）。修改后在容器中执行 `nginx -t`，再进行部署/重启；不要直接修改 Coolify 管理的宿主代理。
+
+### 阶段 C：缓存与 HSTS
+
+优先通过应用静态服务器或 Cloudflare Cache Rules 配置下面的浏览器缓存策略，**重新请求验证实际生效结果**：
+
+| 路径 | 目标响应 |
+| --- | --- |
+| `/` 和 `/index.html` | `Cache-Control: no-cache, no-store, must-revalidate`，HTML 不做过期的边缘缓存 |
+| `/assets/*`（带内容哈希） | `Cache-Control: public, max-age=31536000, immutable` |
+| `/logo.svg` 等不带哈希的素材 | 短 TTL，如 `max-age=3600` |
+
+Cloudflare 的 **Caching → Configuration → Browser Cache TTL**（或相应 Cache Rule）若覆盖源站缓存头，应调整为尊重源站策略或通过精确路径规则覆盖。修改之后分别验证 HTML 和 hashed 资源，不能只测试首页。
+
+HSTS 必须在确认目标域名及需要覆盖的子域名都能正常 HTTPS 后分阶段开启：先 `max-age=300`，观察后再扩大；`includeSubDomains` 和 `preload` **不要默认直接启用**。如果通过 Cloudflare 开启 HSTS，可使用 **SSL/TLS → Edge Certificates → HSTS**，具体可用性依你的 Cloudflare 配置为准。
+
+### 阶段 D：强制线上 CSP / 发布验收
+
+确认线上 `Content-Security-Policy` 已按预期返回，且新 UI 构建已部署后：
+
+1. GitHub Actions → **Deployment Smoke**：`include_acceptance=true`、`require_csp=true`，强制运行实际响应头上的 CSP 测试；缺失 CSP 直接失败。
+2. 查看 `tests/live/csp.spec.mjs` 的 `securitypolicyviolation` 结果，实际 Quick Design、字体加载、PNG 导出不得出现 CSP 拦截。
+3. 执行 `scripts/verify-deploy.sh`，归档构建标识、缓存、安全头和 UI 断言；若生产 SHA 仍为 `unknown`，按第五节补充构建元数据。
+4. 确认 Coolify 回滚可用后，才能把安全头/版本一致性标记为 RC 验收通过。
+
+---
+
+## 四、验证
+
+### 本地预演（不碰生产）
+
+```bash
+npm run build
+node scripts/serve-headers.mjs dist 4174   # 按 public/_headers 发头
+
+# 头是否齐全
+curl -sSI http://localhost:4174/ | grep -iE 'content-security|x-content-type|referrer|frame-options|cache-control'
+
+# 配置与代码是否一致（provider 域名 / 缓存策略 / 无 unsafe-eval）
+node scripts/check-headers.mjs
+
+# CSP 实测：跑完整业务流并捕获 securitypolicyviolation
+MOKLU_REQUIRE_CSP=1 MOKLU_DEPLOY_URL=http://localhost:4174 npx playwright test tests/live/csp.spec.mjs \
+  --config=tests/live/playwright.config.mjs --project=chromium-desktop
+
+# 回归：确认 CSP 没打坏编辑器
+MOKLU_LIVE_ACCEPTANCE=1 MOKLU_DEPLOY_URL=http://localhost:4174 npx playwright test tests/live/acceptance.spec.mjs \
+  --config=tests/live/playwright.config.mjs --project=chromium-desktop
+```
+
+### 上线后：一条命令（新版 UI 与安全头均生效之后）
+
+```bash
+scripts/verify-deploy.sh                  # 严格检查新版 UI + 实际安全头
+scripts/verify-deploy.sh http://localhost:4174   # 验证本地构建
+scripts/verify-deploy.sh --no-browser     # 只查头和构建标识，未配置安全头会如实失败
+```
+
+它会回答三个「跑测试通过」答不了的问题：
+
+1. **线上到底是哪个构建？** 检查 bundle 里有没有 `toolbar-right` 标记，并读出 Settings 分块里注入的 commit
+2. **那些阻断缺陷真的没了吗？** 真机探测 UI-01/02/03/04/07，打印实测数值
+3. **安全头生效了吗？** 逐项检查，并区分「缺失」和「有但不是想要的」
+
+输出示例（旧版 vs 新版）:
+
+```text
+2. Build identity (is this the fixed build?)
+  ✗ fixed toolbar build     bundle is PRE-FIX (no toolbar-right) — fixes not deployed
+  ! deployed commit         unknown — build has no .git (see docs §5)
+
+5. Live defect probes
+  ✗ UI-02                   overflowPx=177 visible=29.2%
+  ✗ UI-04 Templates         tab escapes=6/6
+
+──── 19 checks: 0 pass  8 fail  ...
+
+VERDICT: FAIL — 8 blocking check(s).
+```
+
+修复版跑出来是 `18 pass / 0 fail / 1 warn`（warn 是 HSTS 分阶段未开）。
+
+它**不是**「配了什么就通过什么」：拿它跑未修复的线上站点，探测项会实打实报失败。
+
+`tests/live/csp.spec.mjs` 会断言部署真的带上了 CSP，并捕获 `securitypolicyviolation` —— 光看头存在不算通过，要业务流跑完零违规才算。
+
+### 这套验证是可信的（已做反向验证）
+
+故意把 `style-src` 里的 `fonts.googleapis.com` 删掉，测试**立即失败**并报出字体被拦截。说明这不是"配了什么就通过什么"的空测试。
+
+---
+
+## 五、还没解决的：线上 SHA 是 `unknown`
+
+`vite.config.ts` 用 `git rev-parse --short HEAD` 注入 `__GIT_HASH__`。线上 Settings 弹窗实测显示 **`v0.1.0` / `unknown`** —— 说明 **Coolify 构建环境里没有 `.git` 目录**，`execSync` 抛错后走了 `catch` 分支。
+
+这导致：**无法从生产确认部署的是哪个 commit**，回滚和验收溯源都缺一环。
+
+修法（任选）：
+
+1. Coolify 构建时保留 `.git`（clone 时不要 `--depth 1` 或设置 `GIT_DEPTH=0`）
+2. 构建前注入环境变量，`vite.config.ts` 优先读 `process.env.SOURCE_COMMIT`
+
+推荐 2，并把 SHA 同时写进一个 `/version.json`，方便 `curl` 直接查：
+
+```ts
+// vite.config.ts
+const gitHash = process.env.SOURCE_COMMIT?.slice(0, 7)
+  ?? execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim()
+```
+
+这样 `curl -s https://moklu.tech/version.json` 就能确认线上版本，不用开浏览器点弹窗。

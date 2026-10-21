@@ -254,3 +254,64 @@ describe('editImage', () => {
     vi.useRealTimers()
   })
 })
+
+describe('CSP-aware network errors', () => {
+  const originalFetch = globalThis.fetch
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch
+    vi.restoreAllMocks()
+    vi.unstubAllGlobals()
+  })
+
+  // A failed fetch alone does not prove that the page enforced CSP.
+  // Warn about the declared allowlist without falsely asserting a CSP block.
+  it('flags an external custom endpoint outside the default CSP allowlist', async () => {
+    globalThis.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'))
+    const error = await chat({
+      provider: 'custom',
+      apiKey: 'sk-test',
+      baseUrl: 'https://llm.internal.example.com/v1',
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: 'hello' }],
+      retries: 0,
+    }).catch((caught: unknown) => caught)
+
+    expect(error).toBeInstanceOf(AiClientError)
+    expect((error as AiClientError).kind).toBe('network')
+    expect((error as Error).message).toContain('Content-Security-Policy')
+    expect((error as Error).message).toContain('https://llm.internal.example.com')
+    expect((error as Error).message).toContain('may block it')
+    expect((error as Error).message).not.toContain('browser blocked the request')
+  })
+
+  it('does not mistake a same-origin custom proxy for a blocked CSP endpoint', async () => {
+    vi.stubGlobal('location', { origin: 'https://moklu.tech' })
+    globalThis.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'))
+    const error = await chat({
+      provider: 'custom',
+      apiKey: 'sk-test',
+      baseUrl: 'https://moklu.tech/api/v1',
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: 'hello' }],
+      retries: 0,
+    }).catch((caught: unknown) => caught)
+
+    expect((error as Error).message).toContain('CORS')
+    expect((error as Error).message).not.toContain('Content-Security-Policy')
+  })
+
+  it('keeps the CORS hint for provider origins the policy allows', async () => {
+    globalThis.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'))
+    const error = await chat({
+      provider: 'openai',
+      apiKey: 'sk-test',
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: 'hello' }],
+      retries: 0,
+    }).catch((caught: unknown) => caught)
+
+    expect((error as Error).message).toContain('CORS')
+    expect((error as Error).message).not.toContain('Content-Security-Policy')
+  })
+})

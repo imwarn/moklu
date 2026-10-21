@@ -1,7 +1,78 @@
-import { useEffect, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react'
 
 function shouldCloseModalForKey(key: string): boolean {
   return key === 'Escape'
+}
+
+const FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled]):not([type="hidden"])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(',')
+
+/**
+ * Modal dialogs must keep keyboard focus inside their own subtree and hand
+ * focus back to whatever opened them once they close. Both behaviours are
+ * required by the v0.12 accessibility acceptance pass, and both were missing
+ * while every dialog routed through this shell.
+ */
+function useDialogFocusTrap(open: boolean) {
+  const panelRef = useRef<HTMLDivElement>(null)
+  const restoreRef = useRef<HTMLElement | null>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const previouslyFocused = document.activeElement
+    restoreRef.current = previouslyFocused instanceof HTMLElement ? previouslyFocused : null
+
+    const panel = panelRef.current
+    if (!panel) return
+    // Move focus into the dialog without stealing it from an autofocused child.
+    if (!panel.contains(document.activeElement)) {
+      const first = panel.querySelector<HTMLElement>(FOCUSABLE_SELECTOR)
+      ;(first ?? panel).focus({ preventScroll: true })
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Tab') return
+      const current = panelRef.current
+      if (!current) return
+      const focusable = Array.from(current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR))
+        .filter((element) => element.offsetParent !== null || element === current)
+      if (focusable.length === 0) {
+        event.preventDefault()
+        current.focus({ preventScroll: true })
+        return
+      }
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      const active = document.activeElement
+      if (event.shiftKey) {
+        if (active === first || active === current || !current.contains(active)) {
+          event.preventDefault()
+          last.focus({ preventScroll: true })
+        }
+        return
+      }
+      if (active === last || !current.contains(active)) {
+        event.preventDefault()
+        first.focus({ preventScroll: true })
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown, true)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown, true)
+      const target = restoreRef.current
+      restoreRef.current = null
+      if (target && document.contains(target)) target.focus({ preventScroll: true })
+    }
+  }, [open])
+
+  return panelRef
 }
 
 interface ModalShellProps {
@@ -53,6 +124,8 @@ export function ModalShell({
   onEscape,
   closeOnBackdrop = true,
 }: ModalShellProps) {
+  const panelRef = useDialogFocusTrap(open)
+
   useEffect(() => {
     if (!open || !closeOnEscape) return
     const handler = (event: KeyboardEvent) => {
@@ -72,8 +145,10 @@ export function ModalShell({
       data-testid="modal-backdrop"
     >
       <div
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
+        tabIndex={-1}
         aria-label={typeof title === 'string' ? title : undefined}
         className={`${panelClassName} ${maxWidth}`.trim()}
         style={panelStyle}

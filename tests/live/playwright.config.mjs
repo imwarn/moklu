@@ -2,7 +2,13 @@ import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
   testDir: '.',
-  testMatch: /(?:production|reliability)\.spec\.mjs$/,
+  testMatch: /(?:production|reliability|acceptance|csp)\.spec\.mjs$/,
+  // Production may lag behind a just-merged PR; CSP is configured separately
+  // in Coolify/Cloudflare. Require an explicit gate for either release stage.
+  testIgnore: [
+    ...(process.env.MOKLU_LIVE_ACCEPTANCE === '1' ? [] : ['**/acceptance.spec.mjs']),
+    ...(process.env.MOKLU_REQUIRE_CSP === '1' ? [] : ['**/csp.spec.mjs']),
+  ],
   timeout: 90_000,
   retries: process.env.CI ? 1 : 0,
   workers: 1,

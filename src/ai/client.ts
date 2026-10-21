@@ -190,8 +190,45 @@ function wait(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-function networkErrorMessage(provider: AiProvider, action: string, error: unknown): string {
+/**
+ * Domains the deployed Content-Security-Policy permits in `connect-src`.
+ * Keep in sync with `connect-src` in public/_headers — scripts/check-headers.mjs
+ * fails CI when the two drift apart.
+ */
+const CSP_CONNECT_ALLOWED_ORIGINS = [
+  'https://api.openai.com',
+  'https://openrouter.ai',
+  'https://generativelanguage.googleapis.com',
+]
+
+function isOriginOutsideDefaultCsp(baseUrl: string): boolean {
+  try {
+    const origin = new URL(baseUrl).origin
+    // connect-src 'self' permits same-origin proxies in addition to
+    // the three built-in remote providers.
+    if (typeof location !== 'undefined' && origin === location.origin) return false
+    return !CSP_CONNECT_ALLOWED_ORIGINS.includes(origin)
+  } catch {
+    return false
+  }
+}
+
+function networkErrorMessage(provider: AiProvider, action: string, error: unknown, url?: string): string {
   const cause = error instanceof Error && error.message ? error.message : 'Network request failed'
+  // CSP, CORS and network failures can all surface as Failed to fetch.
+  // The browser does not expose the active HTTP CSP response header here, so
+  // only flag an endpoint as outside the *default policy*. Never claim a CSP
+  // block actually occurred solely from its URL.
+  if (url && isOriginOutsideDefaultCsp(url)) {
+    const origin = (() => {
+      try {
+        return new URL(url).origin
+      } catch {
+        return url
+      }
+    })()
+    return `Could not ${action} for ${provider}. ${origin} is not included in Moklu's default Content-Security-Policy connect-src allowlist, so deployments enforcing that policy may block it. Network or CORS errors can also cause this failure; check the browser console to distinguish them. Use a built-in provider, allowlist the endpoint in your deployment, or use a same-origin proxy. (${cause})`
+  }
   const hint = 'Check your network connection and that the base URL is correct and allows direct browser requests (CORS). If this provider blocks browser CORS, use a different provider or a self-hosted proxy.'
   return `Could not ${action} for ${provider}. ${hint} (${cause})`
 }
@@ -235,7 +272,7 @@ async function requestJsonWithRetry(
       const timedOut = controller.signal.aborted
       const normalized = timedOut
         ? new AiClientError('timeout', `Timed out while trying to ${action} for ${provider} after ${timeoutMs}ms.`, { cause: error })
-        : new AiClientError('network', networkErrorMessage(provider, action, error), { cause: error })
+        : new AiClientError('network', networkErrorMessage(provider, action, error, url), { cause: error })
       const transient = retryOnTransportErrors && (timedOut || error instanceof TypeError)
       if (!transient || attempt === retries) throw normalized
     } finally {
