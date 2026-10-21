@@ -132,8 +132,10 @@ test('live project survives refresh, backs up with assets, restores in a fresh p
       await restoredPage.locator('input[type=file][accept=".json"]').setInputFiles({
         name: 'broken-project.json', mimeType: 'application/json', buffer: Buffer.from('{malformed'),
       })
-      expect(alerts.length).toBeGreaterThan(0)
-      await restoredPage.locator('button[title="Manage projects"]').click()
+      await expect.poll(() => alerts.length, { timeout: 5000 }).toBeGreaterThan(0)
+      // A rejected import leaves the Projects dialog open; do not try to
+      // reopen it through the toolbar behind its backdrop.
+      await expect(projectsDialog).toBeVisible()
       const safeDownload = restoredPage.waitForEvent('download')
       await restoredPage.locator('button[title="Export project as JSON"]').first().click()
       const safe = JSON.parse((await readFile(await (await safeDownload).path())).toString('utf8'))
