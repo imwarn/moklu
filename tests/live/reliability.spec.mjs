@@ -9,28 +9,65 @@ function assertScreenshotAssets(bundle) {
   expect(assets.every((asset) => asset.startsWith('data:image/png;base64,'))).toBe(true)
 }
 
-async function pngPixelDigest(page, bytes) {
-  // Compare the decoded RGBA pixels, not encoder-dependent PNG byte streams.
-  return page.evaluate(async (base64) => {
-    const binary = atob(base64)
-    const png = Uint8Array.from(binary, (char) => char.charCodeAt(0))
-    const bitmap = await createImageBitmap(new Blob([png], { type: 'image/png' }))
-    const canvas = document.createElement('canvas')
-    canvas.width = bitmap.width
-    canvas.height = bitmap.height
-    const context = canvas.getContext('2d', { willReadFrequently: true })
-    if (!context) throw new Error('2D context unavailable for PNG comparison')
-    context.drawImage(bitmap, 0, 0)
-    bitmap.close()
-    const rgba = context.getImageData(0, 0, canvas.width, canvas.height).data
-    const sha256 = await crypto.subtle.digest('SHA-256', rgba)
-    return {
-      width: canvas.width,
-      height: canvas.height,
-      rgbaSha256: Array.from(new Uint8Array(sha256),
-        (byte) => byte.toString(16).padStart(2, '0')).join(''),
+async function comparePngPixels(page, originalBytes, importedBytes) {
+  // Calibrated on CI's real 1600x900 PNGs: synthetic screenshot pixels were
+  // exactly equal, while the background gradient differed by at most 4/255
+  // RGB and never in alpha. Use a 6/255 ceiling for rendering roundoff.
+  return page.evaluate(async ([before64, after64]) => {
+    const decode = async (base64) => {
+      const binary = atob(base64)
+      const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0))
+      const bitmap = await createImageBitmap(new Blob([bytes], { type: 'image/png' }))
+      const canvas = document.createElement('canvas')
+      canvas.width = bitmap.width
+      canvas.height = bitmap.height
+      const ctx = canvas.getContext('2d', { willReadFrequently: true })
+      if (!ctx) throw new Error('2D context unavailable for PNG comparison')
+      ctx.drawImage(bitmap, 0, 0)
+      bitmap.close()
+      return { width: canvas.width, height: canvas.height, rgba: ctx.getImageData(0, 0, canvas.width, canvas.height).data }
     }
-  }, bytes.toString('base64'))
+    const before = await decode(before64)
+    const after = await decode(after64)
+    if (before.width !== after.width || before.height !== after.height) {
+      throw new Error('PNG dimensions changed after project import')
+    }
+    let alphaMismatches = 0
+    let rgbOverTolerance = 0
+    let maxRgbDelta = 0
+    let sourcePixelMismatches = 0
+    let redBefore = 0
+    let blueBefore = 0
+    let redAfter = 0
+    let blueAfter = 0
+    const isRed = (pixels, p) => pixels[p] === 221 && pixels[p + 1] === 51 && pixels[p + 2] === 17 && pixels[p + 3] === 255
+    const isBlue = (pixels, p) => pixels[p] === 17 && pixels[p + 1] === 102 && pixels[p + 2] === 221 && pixels[p + 3] === 255
+    for (let i = 0; i < before.rgba.length; i += 4) {
+      const oldRed = isRed(before.rgba, i)
+      const oldBlue = isBlue(before.rgba, i)
+      if (oldRed) redBefore++
+      if (oldBlue) blueBefore++
+      if (isRed(after.rgba, i)) redAfter++
+      if (isBlue(after.rgba, i)) blueAfter++
+      if (before.rgba[i + 3] !== after.rgba[i + 3]) alphaMismatches++
+      const rgbDelta = Math.max(
+        Math.abs(before.rgba[i] - after.rgba[i]),
+        Math.abs(before.rgba[i + 1] - after.rgba[i + 1]),
+        Math.abs(before.rgba[i + 2] - after.rgba[i + 2]),
+      )
+      maxRgbDelta = Math.max(maxRgbDelta, rgbDelta)
+      if (rgbDelta > 6) rgbOverTolerance++
+      if ((oldRed || oldBlue) && (
+        before.rgba[i] !== after.rgba[i] ||
+        before.rgba[i + 1] !== after.rgba[i + 1] ||
+        before.rgba[i + 2] !== after.rgba[i + 2] ||
+        before.rgba[i + 3] !== after.rgba[i + 3]
+      )) sourcePixelMismatches++
+    }
+    return { width: before.width, height: before.height,
+      alphaMismatches, rgbOverTolerance, maxRgbDelta,
+      sourcePixelMismatches, redBefore, blueBefore, redAfter, blueAfter }
+  }, [originalBytes.toString('base64'), importedBytes.toString('base64')])
 }
 
 // This test only uses disposable browser profiles, local synthetic images,
@@ -72,7 +109,6 @@ test('live project survives refresh, backs up with assets, restores in a fresh p
     expect(pngBytes.subarray(0, 8).equals(Buffer.from([137,80,78,71,13,10,26,10]))).toBe(true)
     expect(pngBytes.readUInt32BE(16)).toBe(1600)
     expect(pngBytes.readUInt32BE(20)).toBe(900)
-    const originalPixels = await pngPixelDigest(page, pngBytes)
     await test.info().attach('original-synthetic-export.png', { body: pngBytes, contentType: 'image/png' })
 
     await page.locator('button[title="Manage projects"]').click()
@@ -124,7 +160,17 @@ test('live project survives refresh, backs up with assets, restores in a fresh p
       await restoredPage.locator('button[title="Export the active canvas at its original size"]').click()
       const restoredPngBytes = await readFile(await (await restoredPngDownload).path())
       await test.info().attach('restored-synthetic-export.png', { body: restoredPngBytes, contentType: 'image/png' })
-      expect(await pngPixelDigest(restoredPage, restoredPngBytes)).toEqual(originalPixels)
+      const pixelResult = await comparePngPixels(restoredPage, pngBytes, restoredPngBytes)
+      console.log('Live imported PNG pixel comparison:', pixelResult)
+      expect(pixelResult.width).toBe(1600)
+      expect(pixelResult.height).toBe(900)
+      expect(pixelResult.alphaMismatches).toBe(0)
+      expect(pixelResult.rgbOverTolerance).toBe(0)
+      expect(pixelResult.redBefore).toBeGreaterThan(100_000)
+      expect(pixelResult.blueBefore).toBeGreaterThan(100_000)
+      expect(pixelResult.redAfter).toBe(pixelResult.redBefore)
+      expect(pixelResult.blueAfter).toBe(pixelResult.blueBefore)
+      expect(pixelResult.sourcePixelMismatches).toBe(0)
       expect(alerts.some((message) => /missing|blank/i.test(message))).toBe(false)
 
       // Reopen Projects for the malformed-file check after closing it for PNG.
