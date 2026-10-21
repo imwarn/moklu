@@ -1,6 +1,32 @@
 import { expect, test } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 
+
+function normalizedProject(bundle) {
+  // Migration moves inline images into the asset map and may add a default
+  // locale pointer to the same screenshot. Neither changes the user's design.
+  const project = structuredClone(bundle.project)
+  const walk = (layers) => {
+    for (const layer of layers) {
+      delete layer.screenshotDataUrl
+      if (layer.localeContent?.en?.screenshotPath === layer.screenshotPath &&
+          Object.keys(layer.localeContent.en).length === 1) {
+        delete layer.localeContent.en
+        if (!Object.keys(layer.localeContent).length) delete layer.localeContent
+      }
+      if (layer.children) walk(layer.children)
+    }
+  }
+  for (const group of project.slideGroups) walk(group.layers)
+  return project.slideGroups
+}
+
+function assertScreenshotAssets(bundle) {
+  const assets = Object.values(bundle.assets ?? {})
+  expect(assets.length, 'export should contain at least one screenshot asset').toBeGreaterThan(0)
+  expect(assets.every((asset) => asset.startsWith('data:image/png;base64,'))).toBe(true)
+}
+
 // This test only uses disposable browser profiles, local synthetic images,
 // and client-side project storage. No actual user account or server data is touched.
 test('live project survives refresh, backs up with assets, restores in a fresh profile, and exports exact PNG', async ({ browser, baseURL }) => {
@@ -47,14 +73,15 @@ test('live project survives refresh, backs up with assets, restores in a fresh p
     const savedJsonDownload = await firstJsonDownload
     const savedJson = await readFile(await savedJsonDownload.path())
     const bundle = JSON.parse(savedJson.toString('utf8'))
-    expect(JSON.stringify(bundle)).toContain('data:image/png')
+    assertScreenshotAssets(bundle)
     await page.reload()
     await expect(page.locator('button[title="Manage projects"]')).toBeVisible()
     await page.locator('button[title="Manage projects"]').click()
     const afterReload = page.waitForEvent('download')
     await page.locator('button[title="Export project as JSON"]').first().click()
     const reloaded = JSON.parse((await readFile(await (await afterReload).path())).toString('utf8'))
-    expect(reloaded.project?.slideGroups || reloaded.slideGroups).toEqual(bundle.project?.slideGroups || bundle.slideGroups)
+    expect(normalizedProject(reloaded)).toEqual(normalizedProject(bundle))
+    expect(reloaded.assets).toEqual(bundle.assets)
 
     const restored = await browser.newContext({ acceptDownloads: true })
     const restoredPage = await restored.newPage()
@@ -71,7 +98,8 @@ test('live project survives refresh, backs up with assets, restores in a fresh p
       const importedDownload = restoredPage.waitForEvent('download')
       await restoredPage.locator('button[title="Export project as JSON"]').first().click()
       const imported = JSON.parse((await readFile(await (await importedDownload).path())).toString('utf8'))
-      expect(imported.project?.slideGroups || imported.slideGroups).toEqual(bundle.project?.slideGroups || bundle.slideGroups)
+      expect(normalizedProject(imported)).toEqual(normalizedProject(bundle))
+      expect(imported.assets).toEqual(bundle.assets)
       expect(alerts.some((message) => /missing|blank/i.test(message))).toBe(false)
 
       // A malformed JSON must be rejected without replacing the current project.
@@ -83,7 +111,8 @@ test('live project survives refresh, backs up with assets, restores in a fresh p
       const safeDownload = restoredPage.waitForEvent('download')
       await restoredPage.locator('button[title="Export project as JSON"]').first().click()
       const safe = JSON.parse((await readFile(await (await safeDownload).path())).toString('utf8'))
-      expect(safe.project?.slideGroups || safe.slideGroups).toEqual(imported.project?.slideGroups || imported.slideGroups)
+      expect(normalizedProject(safe)).toEqual(normalizedProject(imported))
+      expect(safe.assets).toEqual(imported.assets)
     } finally {
       await restored.close()
     }
