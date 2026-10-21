@@ -109,8 +109,11 @@ test('live project survives refresh, backs up with assets, restores in a fresh p
       expect(imported.assets).toEqual(bundle.assets)
       // Close the Projects dialog after JSON export. Its backdrop intercepts
       // clicks on the editor's PNG button while the dialog is still open.
-      const projectsDialog = restoredPage.getByRole('dialog', { name: 'Projects' })
-      await projectsDialog.getByRole('button', { name: '×' }).click()
+      const projectsDialog = restoredPage.getByRole('dialog').filter({
+        has: restoredPage.getByRole('heading', { name: 'Projects' }),
+      })
+      await expect(projectsDialog).toBeVisible()
+      await projectsDialog.getByRole('button', { name: '×' }).click({ timeout: 5000 })
       await expect(projectsDialog).toBeHidden()
 
       // A successful JSON import must restore the rendered screenshot too,
