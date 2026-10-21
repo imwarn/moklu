@@ -40,3 +40,48 @@ describe('live project persistence normalization', () => {
     expect(normalizedProject(changed)).not.toEqual(normalizedProject(original))
   })
 })
+
+describe('default-locale screenshot data URL migration', () => {
+  it('treats imported locale path plus matching inline bytes as equivalent to the original', () => {
+    const before = bundle({ id: 'phone', screenshotPath: 'shot', screenshotDataUrl: 'data:image/png;base64,AAAA' })
+    const imported = bundle({
+      id: 'phone', screenshotPath: 'shot',
+      localeContent: { en: {
+        screenshotPath: 'shot', screenshotDataUrl: 'data:image/png;base64,AAAA',
+      } },
+    })
+    expect(normalizedProject(imported)).toEqual(normalizedProject(before))
+    expect(imported.project.slideGroups[0].layers[0].localeContent.en.screenshotDataUrl).toBe('data:image/png;base64,AAAA')
+  })
+
+  it('rejects a changed inline image even if its reference path is unchanged', () => {
+    const original = bundle({ id: 'phone', screenshotPath: 'shot' })
+    const tamperedLocale = bundle({
+      id: 'phone', screenshotPath: 'shot',
+      localeContent: { en: {
+        screenshotPath: 'shot', screenshotDataUrl: 'data:image/png;base64,DIFFERENT',
+      } },
+    })
+    expect(normalizedProject(tamperedLocale)).not.toEqual(normalizedProject(original))
+  })
+
+  it('does not hide a path-only locale patch when the base asset is missing', () => {
+    const original = bundle({ id: 'phone', screenshotPath: 'absent' })
+    const changed = bundle({
+      id: 'phone', screenshotPath: 'absent',
+      localeContent: { en: { screenshotPath: 'absent' } },
+    })
+    expect(normalizedProject(changed)).not.toEqual(normalizedProject(original))
+  })
+
+  it('does not discard unrelated language overrides or screenshot fit changes', () => {
+    const original = bundle({ id: 'phone', screenshotPath: 'shot', screenshotFit: 'cover' })
+    const changedLocale = bundle({
+      id: 'phone', screenshotPath: 'shot', screenshotFit: 'cover',
+      localeContent: { en: { screenshotPath: 'shot', screenshotDataUrl: 'data:image/png;base64,AAAA' }, fr: { screenshotPath: 'other' } },
+    })
+    const changedFit = bundle({ id: 'phone', screenshotPath: 'shot', screenshotFit: 'contain' })
+    expect(normalizedProject(changedLocale)).not.toEqual(normalizedProject(original))
+    expect(normalizedProject(changedFit)).not.toEqual(normalizedProject(original))
+  })
+})
