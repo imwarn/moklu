@@ -1,25 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
+import { normalizedProject } from './projectComparison.mjs'
 
-
-function normalizedProject(bundle) {
-  // Migration moves inline images into the asset map and may add a default
-  // locale pointer to the same screenshot. Neither changes the user's design.
-  const project = structuredClone(bundle.project)
-  const walk = (layers) => {
-    for (const layer of layers) {
-      delete layer.screenshotDataUrl
-      if (layer.localeContent?.en?.screenshotPath === layer.screenshotPath &&
-          Object.keys(layer.localeContent.en).length === 1) {
-        delete layer.localeContent.en
-        if (!Object.keys(layer.localeContent).length) delete layer.localeContent
-      }
-      if (layer.children) walk(layer.children)
-    }
-  }
-  for (const group of project.slideGroups) walk(group.layers)
-  return project.slideGroups
-}
 
 function assertScreenshotAssets(bundle) {
   const assets = Object.values(bundle.assets ?? {})
