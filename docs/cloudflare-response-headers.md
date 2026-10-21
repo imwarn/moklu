@@ -77,107 +77,56 @@ the base URL is correct and allows direct browser requests (CORS)...
 
 ## 三、上线步骤（Coolify + Cloudflare）
 
-### 步骤 1：确认源站是否支持 `_headers`
+### 先确认各层职责
 
-`_headers` 是 **Cloudflare Pages / Netlify** 的约定。当前站点跑在 **Coolify**（自托管），源站大概率是 nginx，**不会自动读这个文件**。
+Moklu 的 Coolify Resource 是 **Application / Nixpacks / SPA**，由应用容器内的静态服务器提供文件；外部 HTTPS / 域名转发由 Coolify 的反向代理以及可能存在的 Cloudflare 负责。**不要把下面的任何 nginx `server { listen 443 ssl; }` 配置直接粘贴到 Coolify 默认反向代理**，也不要修改 Coolify 管理的宿主机 nginx/Traefik 配置。
 
-先确认：
+`public/_headers` 只是 **Cloudflare Pages / Netlify 格式的配置源文件**，适用于本地 `scripts/serve-headers.mjs` 预演；Coolify 默认的 Nixpacks 静态服务器、Cloudflare 的普通代理 DNS 记录**都不会自动读取它**。PR 合并或重新部署 Moklu **不等于线上安全响应头生效**。
 
-```bash
-# 如果静态资产由 nginx 提供，可以直接验证
-curl -sSI https://moklu.tech/ | grep -i x-content-type-options
-```
+### 阶段 A：合并 / 部署 UI 修复，先不强制 CSP
 
-- **有输出** → 源站已在处理，把 `public/_headers` 部署上去即可。
-- **无输出** → 走下面 2a 或 2b。
+1. PR 的普通 CI 和 **Live Reliability Gate** 先通过；合并到 `main`。
+2. 在 Coolify 部署对应 commit，确认 `https://moklu.tech/` 的 UI 已更新（浏览器 DevTools / 新版右侧 toolbar）。
+3. 在 GitHub Actions → **Deployment Smoke** 运行两种阶段：
+   - `include_acceptance=false`、`require_csp=false`：基础连通性、项目备份恢复等，不要求新 UI 或已配置 CSP。
+   - Coolify 已部署新版后，设 `include_acceptance=true`、`require_csp=false`：加入 UI-01/02/03/04/05/07 等修复验收。**旧版线上站点不应运行这个门禁**。
+4. 不要将本地 `serve-headers` 的 CSP 测试通过，解释为 `moklu.tech` 的 CSP 已上线。
 
-### 步骤 2a：源站是 nginx（推荐，最稳）
+### 阶段 B：启用安全头（优先在 Cloudflare 边缘配置）
 
-`/etc/nginx/conf.d/moklu.conf`：
+如果 `moklu.tech` 经过 Cloudflare 代理（DNS 为橙云），可以在 Cloudflare Dashboard 为该域名创建 **Rules → Transform Rules → Modify Response Header**（菜单位置随计划和 UI 版本略有变化）：
 
-```nginx
-server {
-    listen 80;
-    server_name moklu.tech;
-    return 301 https://$host$request_uri;
-}
+- 匹配条件为 `http.host eq "moklu.tech"`，而不是误影响其他项目域名；
+- 选择 **Set static**，按 `public/_headers` 中 `/*` 规则逐条填写 `X-Content-Type-Options`、`Referrer-Policy`、`X-Frame-Options`、`Permissions-Policy` 和 **完整** `Content-Security-Policy`；
+- 复制 **完整 CSP**，保存后用 `curl -sSI https://moklu.tech/` 检查返回值，不要只相信控制台已保存；验证是否出现截断、重复 CSP 或其他规则覆盖；
+- 若当前 Cloudflare 套餐、权限或规则限制不允许配置完整 CSP，请改为**在应用自身静态服务器配置响应头**，而不是放宽 CSP 以掩盖限制。不同计划的额度和长度限制以 Dashboard 的校验及真实响应为准。
 
-server {
-    listen 443 ssl http2;
-    server_name moklu.tech;
+注意：不要同时在 Cloudflare 和 Coolify 源站设置互相冲突的 CSP；多个 CSP 响应头会同时被浏览器执行，不是“后者覆盖前者”。
 
-    root /var/www/moklu/dist;
-    index index.html;
+**不使用 Cloudflare Transform Rules 时：** 需要通过 Coolify 的 Dockerfile / 自定义构建配置，让**应用容器内**的 nginx 在 HTTP `80` 端口附加安全头；HTTPS 终止仍由 Coolify 反向代理处理。应保留实际正在运行的 SPA `try_files ... /index.html` 路由，以及现有 `root` 和代理端口。不要直接照抄示例中的 `/var/www/moklu/dist` 或假设存在 `/etc/nginx/snippets/moklu-headers.conf`。如果想用 `include`，必须在镜像里**先创建**对应片段文件，并在带 `add_header` 的每个 `location` 中包含它（nginx 的 `add_header` 存在继承陷阱）。修改后在容器中执行 `nginx -t`，再进行部署/重启；不要直接修改 Coolify 管理的宿主代理。
 
-    # ── 安全响应头（对所有响应生效）──
-    add_header X-Content-Type-Options    "nosniff" always;
-    add_header Referrer-Policy           "strict-origin-when-cross-origin" always;
-    add_header X-Frame-Options           "DENY" always;
-    add_header Permissions-Policy        "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()" always;
-    add_header Content-Security-Policy   "default-src 'self'; script-src 'self'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://api.openai.com https://openrouter.ai https://generativelanguage.googleapis.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests" always;
+### 阶段 C：缓存与 HSTS
 
-    # HSTS 先在源站加；确认全站 HTTPS 正常后再逐步调大 max-age
-    add_header Strict-Transport-Security "max-age=300; includeSubDomains" always;
+优先通过应用静态服务器或 Cloudflare Cache Rules 配置下面的浏览器缓存策略，**重新请求验证实际生效结果**：
 
-    # HTML 入口文档绝不缓存
-    location = /index.html {
-        add_header Cache-Control "no-cache, no-store, must-revalidate" always;
-        # 注意：location 块内的 add_header 会覆盖 server 级 add_header，
-        # 所以安全头必须在这里重复一遍，或改用 include 片段。
-        include /etc/nginx/snippets/moklu-headers.conf;
-    }
-
-    # content-hashed 资源长缓存
-    location /assets/ {
-        include /etc/nginx/snippets/moklu-headers.conf;
-        add_header Cache-Control "public, max-age=31536000, immutable" always;
-        try_files $uri =404;
-    }
-
-    location / {
-        include /etc/nginx/snippets/moklu-headers.conf;
-        add_header Cache-Control "no-cache" always;
-        try_files $uri $uri/ /index.html;
-    }
-}
-```
-
-> **nginx 的经典坑**：`location` 里只要出现 `add_header`，server 级的 `add_header` 就**全部失效**。所以把安全头抽成 `/etc/nginx/snippets/moklu-headers.conf` 在每个 location 里 `include`，这是唯一不踩坑的写法。
-
-### 步骤 2b：用 Cloudflare Transform Rules（不想动源站）
-
-Cloudflare Dashboard → **Rules → Transform Rules → Modify Response Header**：
-
-为 `moklu.tech/*` 添加 5 条 `Set static`：
-
-| Header name | Value |
+| 路径 | 目标响应 |
 | --- | --- |
-| `X-Content-Type-Options` | `nosniff` |
-| `Referrer-Policy` | `strict-origin-when-cross-origin` |
-| `X-Frame-Options` | `DENY` |
-| `Permissions-Policy` | `camera=(), microphone=(), geolocation=(), payment=(), usb=()` |
-| `Content-Security-Policy` | （上面那条完整策略） |
+| `/` 和 `/index.html` | `Cache-Control: no-cache, no-store, must-revalidate`，HTML 不做过期的边缘缓存 |
+| `/assets/*`（带内容哈希） | `Cache-Control: public, max-age=31536000, immutable` |
+| `/logo.svg` 等不带哈希的素材 | 短 TTL，如 `max-age=3600` |
 
-⚠️ **CSP 很长**，Dashboard 单条 value 有长度限制，超长会被截断且不报错 —— 截断的 CSP 会静默放行/拦截错误。**建议 CSP 走源站，其余 4 条走 CF**。
+Cloudflare 的 **Caching → Configuration → Browser Cache TTL**（或相应 Cache Rule）若覆盖源站缓存头，应调整为尊重源站策略或通过精确路径规则覆盖。修改之后分别验证 HTML 和 hashed 资源，不能只测试首页。
 
-### 步骤 3：关闭 CF 对缓存头的默认覆盖
+HSTS 必须在确认目标域名及需要覆盖的子域名都能正常 HTTPS 后分阶段开启：先 `max-age=300`，观察后再扩大；`includeSubDomains` 和 `preload` **不要默认直接启用**。如果通过 Cloudflare 开启 HSTS，可使用 **SSL/TLS → Edge Certificates → HSTS**，具体可用性依你的 Cloudflare 配置为准。
 
-Cloudflare Dashboard → **Caching → Configuration**：
+### 阶段 D：强制线上 CSP / 发布验收
 
-```
-Browser Cache TTL:  Respect Existing Headers   ← 关键
-```
+确认线上 `Content-Security-Policy` 已按预期返回，且新 UI 构建已部署后：
 
-默认是「4 hours」，会**覆盖**源站的 `Cache-Control`。不改这一项，nginx 里配的 `immutable` 不会生效。
-
-### 步骤 4：HSTS 分阶段
-
-不要一上来就 `max-age=31536000; preload`。按这个顺序：
-
-1. `max-age=300`，观察 1–2 天，确认所有子域都走 HTTPS
-2. `max-age=86400`
-3. `max-age=31536000; includeSubDomains`
-4. 最后才考虑 `preload`（提交预加载列表后**很难撤回**）
+1. GitHub Actions → **Deployment Smoke**：`include_acceptance=true`、`require_csp=true`，强制运行实际响应头上的 CSP 测试；缺失 CSP 直接失败。
+2. 查看 `tests/live/csp.spec.mjs` 的 `securitypolicyviolation` 结果，实际 Quick Design、字体加载、PNG 导出不得出现 CSP 拦截。
+3. 执行 `scripts/verify-deploy.sh`，归档构建标识、缓存、安全头和 UI 断言；若生产 SHA 仍为 `unknown`，按第五节补充构建元数据。
+4. 确认 Coolify 回滚可用后，才能把安全头/版本一致性标记为 RC 验收通过。
 
 ---
 
@@ -196,20 +145,20 @@ curl -sSI http://localhost:4174/ | grep -iE 'content-security|x-content-type|ref
 node scripts/check-headers.mjs
 
 # CSP 实测：跑完整业务流并捕获 securitypolicyviolation
-MOKLU_DEPLOY_URL=http://localhost:4174 npx playwright test tests/live/csp.spec.mjs \
+MOKLU_REQUIRE_CSP=1 MOKLU_DEPLOY_URL=http://localhost:4174 npx playwright test tests/live/csp.spec.mjs \
   --config=tests/live/playwright.config.mjs --project=chromium-desktop
 
 # 回归：确认 CSP 没打坏编辑器
-MOKLU_DEPLOY_URL=http://localhost:4174 npx playwright test tests/live/acceptance.spec.mjs \
+MOKLU_LIVE_ACCEPTANCE=1 MOKLU_DEPLOY_URL=http://localhost:4174 npx playwright test tests/live/acceptance.spec.mjs \
   --config=tests/live/playwright.config.mjs --project=chromium-desktop
 ```
 
-### 上线后：一条命令
+### 上线后：一条命令（新版 UI 与安全头均生效之后）
 
 ```bash
-scripts/verify-deploy.sh                  # 验证线上
+scripts/verify-deploy.sh                  # 严格检查新版 UI + 实际安全头
 scripts/verify-deploy.sh http://localhost:4174   # 验证本地构建
-scripts/verify-deploy.sh --no-browser     # 只查头和构建标识，秒出
+scripts/verify-deploy.sh --no-browser     # 只查头和构建标识，未配置安全头会如实失败
 ```
 
 它会回答三个「跑测试通过」答不了的问题：
