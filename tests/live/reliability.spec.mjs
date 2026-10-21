@@ -73,6 +73,7 @@ test('live project survives refresh, backs up with assets, restores in a fresh p
     expect(pngBytes.readUInt32BE(16)).toBe(1600)
     expect(pngBytes.readUInt32BE(20)).toBe(900)
     const originalPixels = await pngPixelDigest(page, pngBytes)
+    await test.info().attach('original-synthetic-export.png', { body: pngBytes, contentType: 'image/png' })
 
     await page.locator('button[title="Manage projects"]').click()
     const firstJsonDownload = page.waitForEvent('download')
@@ -122,6 +123,7 @@ test('live project survives refresh, backs up with assets, restores in a fresh p
       const restoredPngDownload = restoredPage.waitForEvent('download')
       await restoredPage.locator('button[title="Export the active canvas at its original size"]').click()
       const restoredPngBytes = await readFile(await (await restoredPngDownload).path())
+      await test.info().attach('restored-synthetic-export.png', { body: restoredPngBytes, contentType: 'image/png' })
       expect(await pngPixelDigest(restoredPage, restoredPngBytes)).toEqual(originalPixels)
       expect(alerts.some((message) => /missing|blank/i.test(message))).toBe(false)
 
