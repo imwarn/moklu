@@ -204,12 +204,39 @@ MOKLU_DEPLOY_URL=http://localhost:4174 npx playwright test tests/live/acceptance
   --config=tests/live/playwright.config.mjs --project=chromium-desktop
 ```
 
-### 上线后
+### 上线后：一条命令
 
 ```bash
-node scripts/check-deployment.mjs        # 现在应该 0 warning
-curl -sSI https://moklu.tech/ | grep -i content-security-policy
+scripts/verify-deploy.sh                  # 验证线上
+scripts/verify-deploy.sh http://localhost:4174   # 验证本地构建
+scripts/verify-deploy.sh --no-browser     # 只查头和构建标识，秒出
 ```
+
+它会回答三个「跑测试通过」答不了的问题：
+
+1. **线上到底是哪个构建？** 检查 bundle 里有没有 `toolbar-right` 标记，并读出 Settings 分块里注入的 commit
+2. **那些阻断缺陷真的没了吗？** 真机探测 UI-01/02/03/04/07，打印实测数值
+3. **安全头生效了吗？** 逐项检查，并区分「缺失」和「有但不是想要的」
+
+输出示例（旧版 vs 新版）:
+
+```text
+2. Build identity (is this the fixed build?)
+  ✗ fixed toolbar build     bundle is PRE-FIX (no toolbar-right) — fixes not deployed
+  ! deployed commit         unknown — build has no .git (see docs §5)
+
+5. Live defect probes
+  ✗ UI-02                   overflowPx=177 visible=29.2%
+  ✗ UI-04 Templates         tab escapes=6/6
+
+──── 19 checks: 0 pass  8 fail  ...
+
+VERDICT: FAIL — 8 blocking check(s).
+```
+
+修复版跑出来是 `18 pass / 0 fail / 1 warn`（warn 是 HSTS 分阶段未开）。
+
+它**不是**「配了什么就通过什么」：拿它跑未修复的线上站点，探测项会实打实报失败。
 
 `tests/live/csp.spec.mjs` 会断言部署真的带上了 CSP，并捕获 `securitypolicyviolation` —— 光看头存在不算通过，要业务流跑完零违规才算。
 

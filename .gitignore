@@ -52,3 +52,6 @@ test-results/
 
 # Local release evidence (generated)
 release-evidence/
+
+# Alma workspace snapshots (local tooling state)
+.alma-snapshots/
