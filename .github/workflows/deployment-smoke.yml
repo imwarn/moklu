@@ -2,6 +2,17 @@ name: Deployment Smoke
 
 on:
   workflow_dispatch:
+    inputs:
+      include_acceptance:
+        description: 'Run UI acceptance against the NEWLY DEPLOYED candidate (fails on old UI)'
+        type: boolean
+        required: false
+        default: false
+      require_csp:
+        description: 'Require live Content-Security-Policy after Coolify/Cloudflare headers are enabled'
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -28,6 +39,8 @@ jobs:
       - name: Run deployed-site browser smoke
         env:
           MOKLU_DEPLOY_URL: https://moklu.tech
+          MOKLU_LIVE_ACCEPTANCE: ${{ inputs.include_acceptance && '1' || '0' }}
+          MOKLU_REQUIRE_CSP: ${{ inputs.require_csp && '1' || '0' }}
         run: npx playwright test --config tests/live/playwright.config.mjs
       - name: Upload deployment evidence and traces
         if: always()
