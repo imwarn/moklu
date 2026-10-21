@@ -263,11 +263,14 @@ for p in d.get('probes',[]): print(f\"{p['id']}\t{str(p['ok']).lower()}\t{p['det
 fi
 
 # ── 6. Full live suites (optional, slow) ────────────────────────────────────
+# This script is a strict release readiness gate, not a pre-deployment smoke:
+# explicitly include post-rollout UI acceptance and the enforced CSP tests.
+# The latter intentionally fails until Coolify/Cloudflare headers are live.
 hdr "6. Full live suites"
 if [[ $SKIP_BROWSER -eq 1 ]]; then
   c_warn "acceptance + csp specs" "skipped (--no-browser)"
 else
-  if MOKLU_DEPLOY_URL="$TARGET" npx playwright test tests/live/acceptance.spec.mjs tests/live/csp.spec.mjs \
+  if MOKLU_LIVE_ACCEPTANCE=1 MOKLU_REQUIRE_CSP=1 MOKLU_DEPLOY_URL="$TARGET" npx playwright test tests/live/acceptance.spec.mjs tests/live/csp.spec.mjs \
       --config=tests/live/playwright.config.mjs --project=chromium-desktop --reporter=line >"$OUT_DIR/specs-$STAMP.log" 2>&1; then
     SUMMARY="$(grep -oE '[0-9]+ passed[^)]*' "$OUT_DIR/specs-$STAMP.log" | tail -1)"
     c_pass "acceptance + csp specs" "${SUMMARY:-passed}"
