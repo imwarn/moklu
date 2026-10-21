@@ -9,6 +9,30 @@ function assertScreenshotAssets(bundle) {
   expect(assets.every((asset) => asset.startsWith('data:image/png;base64,'))).toBe(true)
 }
 
+async function pngPixelDigest(page, bytes) {
+  // Compare the decoded RGBA pixels, not encoder-dependent PNG byte streams.
+  return page.evaluate(async (base64) => {
+    const binary = atob(base64)
+    const png = Uint8Array.from(binary, (char) => char.charCodeAt(0))
+    const bitmap = await createImageBitmap(new Blob([png], { type: 'image/png' }))
+    const canvas = document.createElement('canvas')
+    canvas.width = bitmap.width
+    canvas.height = bitmap.height
+    const context = canvas.getContext('2d', { willReadFrequently: true })
+    if (!context) throw new Error('2D context unavailable for PNG comparison')
+    context.drawImage(bitmap, 0, 0)
+    bitmap.close()
+    const rgba = context.getImageData(0, 0, canvas.width, canvas.height).data
+    const sha256 = await crypto.subtle.digest('SHA-256', rgba)
+    return {
+      width: canvas.width,
+      height: canvas.height,
+      rgbaSha256: Array.from(new Uint8Array(sha256),
+        (byte) => byte.toString(16).padStart(2, '0')).join(''),
+    }
+  }, bytes.toString('base64'))
+}
+
 // This test only uses disposable browser profiles, local synthetic images,
 // and client-side project storage. No actual user account or server data is touched.
 test('live project survives refresh, backs up with assets, restores in a fresh profile, and exports exact PNG', async ({ browser, baseURL }) => {
@@ -48,6 +72,7 @@ test('live project survives refresh, backs up with assets, restores in a fresh p
     expect(pngBytes.subarray(0, 8).equals(Buffer.from([137,80,78,71,13,10,26,10]))).toBe(true)
     expect(pngBytes.readUInt32BE(16)).toBe(1600)
     expect(pngBytes.readUInt32BE(20)).toBe(900)
+    const originalPixels = await pngPixelDigest(page, pngBytes)
 
     await page.locator('button[title="Manage projects"]').click()
     const firstJsonDownload = page.waitForEvent('download')
@@ -82,6 +107,13 @@ test('live project survives refresh, backs up with assets, restores in a fresh p
       const imported = JSON.parse((await readFile(await (await importedDownload).path())).toString('utf8'))
       expect(normalizedProject(imported)).toEqual(normalizedProject(bundle))
       expect(imported.assets).toEqual(bundle.assets)
+      // A successful JSON import must restore the rendered screenshot too,
+      // not merely preserve its references and embedded bytes.
+      await expect(restoredPage.locator('.konvajs-content').first()).toBeVisible()
+      const restoredPngDownload = restoredPage.waitForEvent('download')
+      await restoredPage.locator('button[title="Export the active canvas at its original size"]').click()
+      const restoredPngBytes = await readFile(await (await restoredPngDownload).path())
+      expect(await pngPixelDigest(restoredPage, restoredPngBytes)).toEqual(originalPixels)
       expect(alerts.some((message) => /missing|blank/i.test(message))).toBe(false)
 
       // A malformed JSON must be rejected without replacing the current project.
