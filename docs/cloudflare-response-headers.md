@@ -44,11 +44,34 @@ CSP 最怕照抄模板。下面每一条都有仓库里的实测依据：
 
 三个选择：
 
-1. **接受**（推荐先这样）：文档里说明"自定义端点需自建代理"，CSP 保住主站安全边界。三个内置 provider 不受影响。
+1. **接受**（**当前采用**）：CSP 保住主站安全边界，三个内置 provider 不受影响；自定义端点需自建代理。
 2. **扩展白名单**：把团队常用的自定义域名加进 `connect-src`，改一次配置加一个域。
 3. **放宽为 `connect-src https:`**：功能全通，但 XSS 可外传数据 —— 等于放弃这道防线，不建议。
 
-> 这一条**必须在 GA 前明确取舍**，否则用户开了自定义 provider 会看到静默失败。
+### 已采用方案：明确拒绝，而不是静默失败
+
+CSP 拦截和 CORS 拒绝在 `fetch()` 眼里**完全一样**，都是 `TypeError: Failed to fetch`。如果不做处理，用户填了自定义端点只会看到"CORS 错误"，然后去查一个根本不存在的问题。
+
+所以 `src/ai/client.ts` 现在会在报错前先判断请求域名是否落在 `connect-src` 白名单内：
+
+```
+Could not generate image for custom. The page's Content-Security-Policy does
+not allow connecting to https://llm.internal.example.com, so the browser
+blocked the request before it left the device. Use one of the built-in
+providers (OpenAI, OpenRouter, Google) or route the custom endpoint through
+your own proxy on this origin. (Failed to fetch)
+```
+
+而不是误导性的：
+
+```
+Could not generate image for custom. Check your network connection and that
+the base URL is correct and allows direct browser requests (CORS)...
+```
+
+`CSP_CONNECT_ALLOWED_ORIGINS`（`src/ai/client.ts`）与 `public/_headers` 的 `connect-src`
+是同一份事实的两处表达，`scripts/check-headers.mjs` 会交叉校验并让 CI 失败，
+避免以后换 provider 时一处改了另一处没改。
 
 ---
 

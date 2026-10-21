@@ -77,6 +77,27 @@ if (!csp) {
     }
   }
 
+  // src/ai/client.ts hard-codes the same origins to explain CSP refusals in
+  // plain language. If the two lists drift, users get a CS-sounding error for a
+  // domain the policy actually allows (or the reverse).
+  const clientSource = readFileSync('src/ai/client.ts', 'utf8')
+  const clientOrigins = [...clientSource.matchAll(/'(https:\/\/[^']+)'/g)]
+    .map((m) => m[1])
+    .filter((value) => /^https:\/\/[a-z0-9.-]+$/.test(value))
+  const connectAllowed = source('connect-src')
+  const declared = clientSource.match(/CSP_CONNECT_ALLOWED_ORIGINS = \[([\s\S]*?)\]/)
+  if (!declared) {
+    failures.push('src/ai/client.ts must declare CSP_CONNECT_ALLOWED_ORIGINS')
+  } else {
+    const declaredOrigins = [...declared[1].matchAll(/'(https:\/\/[^']+)'/g)].map((m) => m[1])
+    const missing = declaredOrigins.filter((origin) => !connectAllowed.includes(origin))
+    if (missing.length) {
+      failures.push(`CSP_CONNECT_ALLOWED_ORIGINS lists origins the CSP blocks: ${missing.join(', ')}`)
+    }
+    notes.push(`client explains CSP refusals for ${declaredOrigins.length} origins`)
+  }
+  void clientOrigins
+
   if (directives['script-src']?.includes("'unsafe-eval'")) {
     failures.push("script-src allows 'unsafe-eval' but the bundle contains no eval/new Function")
   }

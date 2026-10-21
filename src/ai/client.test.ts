@@ -254,3 +254,47 @@ describe('editImage', () => {
     vi.useRealTimers()
   })
 })
+
+describe('CSP-aware network errors', () => {
+  const originalFetch = globalThis.fetch
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch
+    vi.restoreAllMocks()
+  })
+
+  // A blocked request and a CORS refusal both surface as `TypeError: Failed to
+  // fetch`, so the message must name the CSP explicitly when the target falls
+  // outside connect-src. Otherwise users on the deployed site chase CORS.
+  it('explains that a custom endpoint is blocked by the page CSP', async () => {
+    globalThis.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'))
+    const error = await chat({
+      provider: 'custom',
+      apiKey: 'sk-test',
+      baseUrl: 'https://llm.internal.example.com/v1',
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: 'hello' }],
+      retries: 0,
+    }).catch((caught: unknown) => caught)
+
+    expect(error).toBeInstanceOf(AiClientError)
+    expect((error as AiClientError).kind).toBe('network')
+    expect((error as Error).message).toContain('Content-Security-Policy')
+    expect((error as Error).message).toContain('https://llm.internal.example.com')
+    expect((error as Error).message).not.toContain('allows direct browser requests (CORS)')
+  })
+
+  it('keeps the CORS hint for provider origins the policy allows', async () => {
+    globalThis.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'))
+    const error = await chat({
+      provider: 'openai',
+      apiKey: 'sk-test',
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: 'hello' }],
+      retries: 0,
+    }).catch((caught: unknown) => caught)
+
+    expect((error as Error).message).toContain('CORS')
+    expect((error as Error).message).not.toContain('Content-Security-Policy')
+  })
+})

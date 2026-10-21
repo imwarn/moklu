@@ -190,8 +190,41 @@ function wait(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-function networkErrorMessage(provider: AiProvider, action: string, error: unknown): string {
+/**
+ * Domains the deployed Content-Security-Policy permits in `connect-src`.
+ * Keep in sync with `connect-src` in public/_headers — scripts/check-headers.mjs
+ * fails CI when the two drift apart.
+ */
+const CSP_CONNECT_ALLOWED_ORIGINS = [
+  'https://api.openai.com',
+  'https://openrouter.ai',
+  'https://generativelanguage.googleapis.com',
+]
+
+function isOriginBlockedByCsp(baseUrl: string): boolean {
+  try {
+    const origin = new URL(baseUrl).origin
+    return !CSP_CONNECT_ALLOWED_ORIGINS.includes(origin)
+  } catch {
+    return false
+  }
+}
+
+function networkErrorMessage(provider: AiProvider, action: string, error: unknown, url?: string): string {
   const cause = error instanceof Error && error.message ? error.message : 'Network request failed'
+  // A CSP refusal and a CORS refusal are indistinguishable to fetch(): both
+  // surface as `TypeError: Failed to fetch`. When the request target is known
+  // to fall outside connect-src, say so instead of sending the user chasing CORS.
+  if (url && isOriginBlockedByCsp(url)) {
+    const origin = (() => {
+      try {
+        return new URL(url).origin
+      } catch {
+        return url
+      }
+    })()
+    return `Could not ${action} for ${provider}. The page's Content-Security-Policy does not allow connecting to ${origin}, so the browser blocked the request before it left the device. Use one of the built-in providers (OpenAI, OpenRouter, Google) or route the custom endpoint through your own proxy on this origin. (${cause})`
+  }
   const hint = 'Check your network connection and that the base URL is correct and allows direct browser requests (CORS). If this provider blocks browser CORS, use a different provider or a self-hosted proxy.'
   return `Could not ${action} for ${provider}. ${hint} (${cause})`
 }
@@ -235,7 +268,7 @@ async function requestJsonWithRetry(
       const timedOut = controller.signal.aborted
       const normalized = timedOut
         ? new AiClientError('timeout', `Timed out while trying to ${action} for ${provider} after ${timeoutMs}ms.`, { cause: error })
-        : new AiClientError('network', networkErrorMessage(provider, action, error), { cause: error })
+        : new AiClientError('network', networkErrorMessage(provider, action, error, url), { cause: error })
       const transient = retryOnTransportErrors && (timedOut || error instanceof TypeError)
       if (!transient || attempt === retries) throw normalized
     } finally {
