@@ -107,6 +107,12 @@ test('live project survives refresh, backs up with assets, restores in a fresh p
       const imported = JSON.parse((await readFile(await (await importedDownload).path())).toString('utf8'))
       expect(normalizedProject(imported)).toEqual(normalizedProject(bundle))
       expect(imported.assets).toEqual(bundle.assets)
+      // Close the Projects dialog after JSON export. Its backdrop intercepts
+      // clicks on the editor's PNG button while the dialog is still open.
+      const projectsDialog = restoredPage.getByRole('dialog', { name: 'Projects' })
+      await projectsDialog.getByRole('button', { name: '×' }).click()
+      await expect(projectsDialog).toBeHidden()
+
       // A successful JSON import must restore the rendered screenshot too,
       // not merely preserve its references and embedded bytes.
       await expect(restoredPage.locator('.konvajs-content').first()).toBeVisible()
@@ -116,6 +122,9 @@ test('live project survives refresh, backs up with assets, restores in a fresh p
       expect(await pngPixelDigest(restoredPage, restoredPngBytes)).toEqual(originalPixels)
       expect(alerts.some((message) => /missing|blank/i.test(message))).toBe(false)
 
+      // Reopen Projects for the malformed-file check after closing it for PNG.
+      await restoredPage.locator('button[title="Manage projects"]').click()
+      await expect(projectsDialog).toBeVisible()
       // A malformed JSON must be rejected without replacing the current project.
       await restoredPage.locator('input[type=file][accept=".json"]').setInputFiles({
         name: 'broken-project.json', mimeType: 'application/json', buffer: Buffer.from('{malformed'),
