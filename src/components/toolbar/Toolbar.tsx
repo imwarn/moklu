@@ -124,7 +124,7 @@ export function Toolbar({ mode, onSetMode }: ToolbarProps) {
 
   return (
     <header
-      className="flex h-12 shrink-0 items-center gap-3 overflow-x-auto border-b px-3 max-[1099px]:gap-2 max-[1099px]:px-2"
+      className="flex h-12 shrink-0 items-center gap-2 border-b px-3 max-[1099px]:gap-2 max-[1099px]:px-2"
       style={{
         background: '#18181f',
         borderColor: 'rgba(255,255,255,0.08)',
@@ -140,6 +140,10 @@ export function Toolbar({ mode, onSetMode }: ToolbarProps) {
         <HelpModal open={helpOpen} onClose={() => setHelpOpen(false)} />
       </Suspense>
 
+      <div
+        data-testid="toolbar-left"
+        className="flex min-w-0 flex-1 items-center gap-3 overflow-x-auto max-[1099px]:gap-2"
+      >
       {/* Logo */}
       <Logo />
 
@@ -265,7 +269,6 @@ export function Toolbar({ mode, onSetMode }: ToolbarProps) {
 
       <BrandKitButton />
 
-      <button type="button" onClick={() => { void exportQuickPng() }} title="Export the active canvas at its original size" className="shrink-0 rounded-lg border border-white/15 px-3 py-1.5 text-xs text-white hover:bg-white/10">↓ PNG</button>
       {quickExportError && <span title={quickExportError} className="max-w-32 truncate text-xs text-red-400">Export error</span>}
 
       {/* Save indicator */}
@@ -314,10 +317,11 @@ export function Toolbar({ mode, onSetMode }: ToolbarProps) {
         )}
       </div>
 
-      <div className="min-w-2 flex-1" />
+      </div>
 
-      {/* Right section */}
-      <div className="flex shrink-0 items-center gap-2 max-[1099px]:gap-1">
+      {/* Right section — pinned so Settings/Help/GitHub never scroll out of reach */}
+      <button type="button" onClick={() => { void exportQuickPng() }} title="Export the active canvas at its original size" className="shrink-0 rounded-lg border border-white/15 px-3 py-1.5 text-xs text-white hover:bg-white/10">↓ PNG</button>
+      <div data-testid="toolbar-right" className="flex shrink-0 items-center gap-2 max-[1099px]:gap-1">
         <button
           onClick={() => setSettingsOpen(true)}
           title="Open settings"

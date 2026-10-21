@@ -49,3 +49,6 @@ pnpm-debug.log*
 # Playwright browser test artifacts
 playwright-report/
 test-results/
+
+# Local release evidence (generated)
+release-evidence/

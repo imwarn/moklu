@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
   testDir: '.',
-  testMatch: /(?:production|reliability)\.spec\.mjs$/,
+  testMatch: /(?:production|reliability|acceptance)\.spec\.mjs$/,
   timeout: 90_000,
   retries: process.env.CI ? 1 : 0,
   workers: 1,
