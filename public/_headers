@@ -1,0 +1,47 @@
+# Moklu — static response headers
+#
+# Format: Cloudflare Pages / Netlify compatible.
+# NOTE: this file is a single source of truth reused by scripts/serve-headers.mjs
+# so the CSP below can be exercised in CI before it ever reaches production.
+#
+# CSP design constraints measured from the app itself:
+#   - style-src needs 'unsafe-inline': 33 components use React `style={{...}}`
+#   - style-src needs fonts.googleapis.com: src/utils/fonts.ts injects <link> at runtime
+#   - font-src needs data:: user-uploaded fonts are registered from data URLs
+#   - connect-src must allow the three direct AI providers plus any custom endpoint
+#   - no 'unsafe-eval' anywhere: the bundle contains no eval/new Function
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()
+  Content-Security-Policy: default-src 'self'; script-src 'self'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://api.openai.com https://openrouter.ai https://generativelanguage.googleapis.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
+
+# The HTML entry document must never be cached by heuristics or a CDN edge,
+# otherwise a new deploy keeps serving the previous asset graph.
+/
+  Content-Type: text/html; charset=utf-8
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/index.html
+  Content-Type: text/html; charset=utf-8
+  Cache-Control: no-cache, no-store, must-revalidate
+
+# Content-hashed bundles are immutable: the bytes change only when the name does.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Unhashed public assets get a short TTL so a swapped logo still propagates.
+/logo.svg
+  Cache-Control: public, max-age=3600
+  X-Content-Type-Options: nosniff
+
+/favicon.svg
+  Cache-Control: public, max-age=3600
+
+/icons.svg
+  Cache-Control: public, max-age=3600
+
+/templates/*
+  Cache-Control: public, max-age=3600

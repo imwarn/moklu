@@ -30,6 +30,10 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
+      # The CSP must stay consistent with the domains the app actually calls.
+      # A policy that drifts from src/ai/providers.ts silently breaks a provider.
+      - name: Verify response headers match the app
+        run: node scripts/check-headers.mjs
       - run: npm test
       - run: npm run build
 
