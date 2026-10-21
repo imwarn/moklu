@@ -1,0 +1,44 @@
+name: Live Reliability Gate
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tests/live/**'
+      - 'tests/projectComparison.test.mjs'
+      - '.github/workflows/live-reliability-gate.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  reliability:
+    # Do not execute fork PR code on our self-hosted machines.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, Linux, X64, coolify]
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Check normalization unit regressions
+        run: npx vitest run tests/projectComparison.test.mjs
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Verify backup and pixel identity against deployed staging site
+        env:
+          MOKLU_DEPLOY_URL: https://moklu.tech
+        run: npx playwright test --config tests/live/playwright.config.mjs --project chromium-desktop tests/live/reliability.spec.mjs
+      - name: Upload browser trace if failed
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-reliability-traces-${{ github.run_id }}
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7
