@@ -201,9 +201,12 @@ const CSP_CONNECT_ALLOWED_ORIGINS = [
   'https://generativelanguage.googleapis.com',
 ]
 
-function isOriginBlockedByCsp(baseUrl: string): boolean {
+function isOriginOutsideDefaultCsp(baseUrl: string): boolean {
   try {
     const origin = new URL(baseUrl).origin
+    // connect-src 'self' permits same-origin proxies in addition to
+    // the three built-in remote providers.
+    if (typeof location !== 'undefined' && origin === location.origin) return false
     return !CSP_CONNECT_ALLOWED_ORIGINS.includes(origin)
   } catch {
     return false
@@ -212,10 +215,11 @@ function isOriginBlockedByCsp(baseUrl: string): boolean {
 
 function networkErrorMessage(provider: AiProvider, action: string, error: unknown, url?: string): string {
   const cause = error instanceof Error && error.message ? error.message : 'Network request failed'
-  // A CSP refusal and a CORS refusal are indistinguishable to fetch(): both
-  // surface as `TypeError: Failed to fetch`. When the request target is known
-  // to fall outside connect-src, say so instead of sending the user chasing CORS.
-  if (url && isOriginBlockedByCsp(url)) {
+  // CSP, CORS and network failures can all surface as Failed to fetch.
+  // The browser does not expose the active HTTP CSP response header here, so
+  // only flag an endpoint as outside the *default policy*. Never claim a CSP
+  // block actually occurred solely from its URL.
+  if (url && isOriginOutsideDefaultCsp(url)) {
     const origin = (() => {
       try {
         return new URL(url).origin
@@ -223,7 +227,7 @@ function networkErrorMessage(provider: AiProvider, action: string, error: unknow
         return url
       }
     })()
-    return `Could not ${action} for ${provider}. The page's Content-Security-Policy does not allow connecting to ${origin}, so the browser blocked the request before it left the device. Use one of the built-in providers (OpenAI, OpenRouter, Google) or route the custom endpoint through your own proxy on this origin. (${cause})`
+    return `Could not ${action} for ${provider}. ${origin} is not included in Moklu's default Content-Security-Policy connect-src allowlist, so deployments enforcing that policy may block it. Network or CORS errors can also cause this failure; check the browser console to distinguish them. Use a built-in provider, allowlist the endpoint in your deployment, or use a same-origin proxy. (${cause})`
   }
   const hint = 'Check your network connection and that the base URL is correct and allows direct browser requests (CORS). If this provider blocks browser CORS, use a different provider or a self-hosted proxy.'
   return `Could not ${action} for ${provider}. ${hint} (${cause})`
