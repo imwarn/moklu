@@ -1,9 +1,16 @@
-import { useEffect, useMemo, useState } from 'react'
+/**
+ * [INPUT]: depends on react hooks/Fragment, testAiConnection, listModels/searchModels, AI_PROVIDERS/getDefaultModel, useApiKeysStore, and useStudioLocale/formatMessage/splitMessageTemplate from @/i18n
+ * [OUTPUT]: exports AiProviderSettings provider/key/model selector UI localized across EN/ZH/JA/KO
+ * [POS]: shared AI configuration panel mounted inside SettingsModal and ApiKeysModal within src/components/ai
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { testAiConnection } from '@/ai/features/testConnection'
 import { listModels, searchModels } from '@/ai/models'
 import { AI_PROVIDERS, getDefaultModel } from '@/ai/providers'
 import { useApiKeysStore } from '@/store/apiKeys'
 import type { AiModel, AiProvider } from '@/ai/providers'
+import { formatMessage, splitMessageTemplate, useStudioLocale } from '@/i18n'
 
 const inputCls =
   'bg-[#0f0f13] border border-[rgba(255,255,255,0.1)] rounded px-3 py-2 text-sm text-[#e8e8f0] w-full focus:outline-none focus:border-[rgba(124,110,246,0.5)]'
@@ -11,6 +18,8 @@ const monoInputCls = `${inputCls} font-mono`
 const labelCls = 'text-[11px] text-[#6b6b7a] mb-1 block uppercase tracking-[0.08em]'
 
 export function AiProviderSettings() {
+  const { t } = useStudioLocale()
+  const ta = t.modals.aiProvider
   const {
     provider,
     openaiKey,
@@ -52,7 +61,23 @@ export function AiProviderSettings() {
     else setCustomApiKey(value)
   }
 
+  function providerShortLabel(item: (typeof AI_PROVIDERS)[number]): string {
+    return item.id === 'custom' ? ta.providers.customShortLabel : item.shortLabel
+  }
+
+  function providerFullLabel(item: (typeof AI_PROVIDERS)[number]): string {
+    return item.id === 'custom' ? ta.providers.customLabel : item.label
+  }
+
+  function providerDescription(item: (typeof AI_PROVIDERS)[number]): string {
+    if (item.id === 'openai') return ta.providers.openaiDesc
+    if (item.id === 'openrouter') return ta.providers.openrouterDesc
+    if (item.id === 'google') return ta.providers.googleDesc
+    return ta.providers.customDesc
+  }
+
   const activeProvider = AI_PROVIDERS.find((item) => item.id === provider) ?? AI_PROVIDERS[0]
+  const activeProviderLabel = providerFullLabel(activeProvider)
   const activeKey = keyValue(provider)
   const hasActiveKey = activeKey.trim().length > 0 && (provider !== 'custom' || customBaseUrl.trim().length > 0)
   const modelSignature = `${provider}:${activeKey.trim()}:${provider === 'custom' ? customBaseUrl.trim() : ''}`
@@ -68,12 +93,12 @@ export function AiProviderSettings() {
     [visibleModels, modelSearch],
   )
   const modelStatus = !hasActiveKey
-    ? 'Not connected'
+    ? ta.statusNotConnected
     : loadingModels || !isCurrentModelResult
-      ? 'Connecting…'
+      ? ta.statusConnecting
       : activeModelError
-        ? 'Connection failed'
-        : `${visibleModels.length} from provider`
+        ? ta.statusFailed
+        : formatMessage(ta.statusModelCount, { count: visibleModels.length })
   const isCurrentTestResult = hasActiveKey && testSignature === modelSignature
   const visibleTestState = isCurrentTestResult ? testState : 'idle'
 
@@ -93,7 +118,7 @@ export function AiProviderSettings() {
       setTestResult(translated)
       setTestState('success')
     } catch (error) {
-      setTestError(error instanceof Error ? error.message : 'Unknown error.')
+      setTestError(error instanceof Error ? error.message : ta.unknownError)
       setTestState('error')
     }
   }
@@ -113,7 +138,7 @@ export function AiProviderSettings() {
       } catch (error) {
         if (cancelled) return
         setModels([])
-        setModelError(error instanceof Error ? error.message : 'Unknown error.')
+        setModelError(error instanceof Error ? error.message : ta.unknownError)
         setModelResultSignature(modelSignature)
       } finally {
         if (!cancelled) setLoadingModels(false)
@@ -125,12 +150,12 @@ export function AiProviderSettings() {
       cancelled = true
       window.clearTimeout(timeout)
     }
-  }, [activeKey, customBaseUrl, hasActiveKey, modelLoadNonce, modelSignature, provider])
+  }, [activeKey, customBaseUrl, hasActiveKey, modelLoadNonce, modelSignature, provider, ta.unknownError])
 
   return (
     <div>
       <div className="mb-4">
-        <label className={labelCls}>AI Provider</label>
+        <label className={labelCls}>{ta.providerLabel}</label>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
           {AI_PROVIDERS.map((item) => (
             <button
@@ -146,8 +171,8 @@ export function AiProviderSettings() {
                   : 'border-[rgba(255,255,255,0.1)] text-[#6b6b7a] hover:text-[#e8e8f0] hover:bg-[rgba(255,255,255,0.06)]'
               }`}
             >
-              <span className="block font-medium">{item.shortLabel}</span>
-              <span className="block mt-1 text-[10px] opacity-70 leading-tight">{item.description}</span>
+              <span className="block font-medium">{providerShortLabel(item)}</span>
+              <span className="block mt-1 text-[10px] opacity-70 leading-tight">{providerDescription(item)}</span>
             </button>
           ))}
         </div>
@@ -155,7 +180,7 @@ export function AiProviderSettings() {
 
       {provider === 'custom' && (
         <div className="mb-4">
-          <label className={labelCls}>Base URL</label>
+          <label className={labelCls}>{ta.baseUrlLabel}</label>
           <input
             type="text"
             value={customBaseUrl}
@@ -165,13 +190,13 @@ export function AiProviderSettings() {
             autoComplete="off"
           />
           <p className="mt-1 text-[11px] text-[#4a4a5a] leading-relaxed">
-            Must implement the OpenAI Chat Completions API (`POST {'{baseUrl}'}/chat/completions`).
+            {ta.baseUrlHint}
           </p>
         </div>
       )}
 
       <div className="mb-4">
-        <label className={labelCls}>API Key — {activeProvider.label}</label>
+        <label className={labelCls}>{formatMessage(ta.apiKeyLabel, { provider: activeProviderLabel })}</label>
         <input
           type="password"
           value={activeKey}
@@ -182,28 +207,35 @@ export function AiProviderSettings() {
         />
         {activeProvider.keyUrl && (
           <p className="mt-1 text-[11px] text-[#4a4a5a] leading-relaxed">
-            Get your key from{' '}
-            <a href={activeProvider.keyUrl} target="_blank" rel="noreferrer" className="text-[#7c6ef6] hover:underline">
-              {activeProvider.keyUrl.replace(/^https?:\/\//, '')}
-            </a>
+            {splitMessageTemplate(ta.getKeyFrom).map((part, idx) => (
+              <Fragment key={idx}>
+                {part.type === 'token' && part.key === 'link' ? (
+                  <a href={activeProvider.keyUrl} target="_blank" rel="noreferrer" className="text-[#7c6ef6] hover:underline">
+                    {activeProvider.keyUrl.replace(/^https?:\/\//, '')}
+                  </a>
+                ) : (
+                  part.type === 'text' ? part.value : ''
+                )}
+              </Fragment>
+            ))}
           </p>
         )}
       </div>
 
       <div className="mb-4">
-        <label className={labelCls}>Test Connection</label>
+        <label className={labelCls}>{ta.testConnection}</label>
         <button
           type="button"
           onClick={() => void runConnectionTest()}
           disabled={!hasActiveKey || visibleTestState === 'testing'}
           className="rounded-md border border-[rgba(255,255,255,0.12)] px-3 py-1.5 text-xs text-[#e8e8f0] hover:bg-[rgba(255,255,255,0.06)] disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          {visibleTestState === 'testing' ? 'Testing…' : 'Test Connection'}
+          {visibleTestState === 'testing' ? ta.testing : ta.testConnection}
         </button>
         {visibleTestState === 'success' && (
           <div className="mt-2 rounded-lg border border-[rgba(74,222,128,0.25)] bg-[rgba(74,222,128,0.08)] px-3 py-3">
             <p className="text-xs text-[#86efac] leading-relaxed">
-              ✓ Connection works — translated &quot;Hello, world!&quot; to Spanish: &quot;{testResult}&quot;
+              {formatMessage(ta.connectionWorks, { result: testResult ?? '' })}
             </p>
           </div>
         )}
@@ -215,7 +247,7 @@ export function AiProviderSettings() {
               onClick={() => void runConnectionTest()}
               className="mt-3 rounded-md border border-[rgba(255,255,255,0.12)] px-3 py-1.5 text-xs text-[#e8e8f0] hover:bg-[rgba(255,255,255,0.06)]"
             >
-              Retry
+              {ta.retry}
             </button>
           </div>
         )}
@@ -223,12 +255,12 @@ export function AiProviderSettings() {
 
       <div className="mb-4 rounded-xl border border-[rgba(255,255,255,0.08)] p-3 bg-[rgba(255,255,255,0.02)]">
         <div className="flex items-center justify-between gap-3 mb-2">
-          <label className={labelCls + ' !mb-0'}>Model</label>
+          <label className={labelCls + ' !mb-0'}>{ta.modelLabel}</label>
           <span className="text-[10px] text-[#6b6b7a]">{modelStatus}</span>
         </div>
         {!hasActiveKey ? (
           <p className="rounded-lg border border-[rgba(255,255,255,0.08)] px-3 py-4 text-xs text-[#6b6b7a] text-center">
-            Add an API key to connect to {activeProvider.label}. Moklu will load the model list from the provider after the connection is available.
+            {formatMessage(ta.addKeyHint, { provider: activeProviderLabel })}
           </p>
         ) : (
           <>
@@ -236,26 +268,26 @@ export function AiProviderSettings() {
               type="text"
               value={activeModel}
               onChange={(event) => setModel(provider, event.target.value)}
-              placeholder={getDefaultModel(provider) || 'e.g. gpt-4o-mini'}
+              placeholder={getDefaultModel(provider) || ta.modelPlaceholderFallback}
               className={`${monoInputCls} mb-2`}
               autoComplete="off"
             />
             {loadingModels ? (
               <p className="rounded-lg border border-[rgba(255,255,255,0.08)] px-3 py-4 text-xs text-[#6b6b7a] text-center">
-                Connecting to {activeProvider.label} and loading models…
+                {formatMessage(ta.loadingModels, { provider: activeProviderLabel })}
               </p>
             ) : activeModelError ? (
               <div className="rounded-lg border border-[rgba(248,113,113,0.25)] bg-[rgba(248,113,113,0.08)] px-3 py-3">
                 <p className="text-xs text-[#fca5a5] leading-relaxed">
-                  Could not load models from {activeProvider.label}: {activeModelError}
+                  {formatMessage(ta.loadModelsFailed, { provider: activeProviderLabel, error: activeModelError })}
                 </p>
-                <p className="mt-1 text-[11px] text-[#9ca3af]">No hardcoded fallback models are shown. Check the key/provider and retry.</p>
+                <p className="mt-1 text-[11px] text-[#9ca3af]">{ta.noFallbackHint}</p>
                 <button
                   type="button"
                   onClick={() => setModelLoadNonce((value) => value + 1)}
                   className="mt-3 rounded-md border border-[rgba(255,255,255,0.12)] px-3 py-1.5 text-xs text-[#e8e8f0] hover:bg-[rgba(255,255,255,0.06)]"
                 >
-                  Retry connection
+                  {ta.retryConnection}
                 </button>
               </div>
             ) : (
@@ -264,7 +296,7 @@ export function AiProviderSettings() {
                   type="search"
                   value={modelSearch}
                   onChange={(event) => setModelSearch(event.target.value)}
-                  placeholder="Search models from this provider…"
+                  placeholder={ta.searchModelsPlaceholder}
                   className={`${inputCls} mb-2`}
                 />
                 <div className="max-h-48 overflow-y-auto rounded-lg border border-[rgba(255,255,255,0.08)]">
@@ -284,7 +316,7 @@ export function AiProviderSettings() {
                       {model.description && <span className="block text-[10px] text-[#4a4a5a] line-clamp-2 mt-0.5">{model.description}</span>}
                     </button>
                   )) : (
-                    <p className="px-3 py-4 text-xs text-[#6b6b7a] text-center">The provider returned no models matching this search.</p>
+                    <p className="px-3 py-4 text-xs text-[#6b6b7a] text-center">{ta.noMatchingModels}</p>
                   )}
                 </div>
               </>

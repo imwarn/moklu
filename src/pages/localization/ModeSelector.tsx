@@ -1,11 +1,12 @@
+/**
+ * [INPUT]: depends on Layer/LocalizationMode types, effectiveLocalizationMode from @/utils/locale, and useStudioLocale from @/i18n
+ * [OUTPUT]: exports ModeSelector per-layer auto/manual/skip mode toggle localized across EN/ZH/JA/KO
+ * [POS]: layer localization mode control inside SlideGroupSection within src/pages/localization
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { Layer, LocalizationMode } from '@/types'
 import { effectiveLocalizationMode } from '@/utils/locale'
-
-const MODE_OPTIONS: { value: LocalizationMode; label: string; title: string }[] = [
-  { value: 'auto',   label: 'Auto',   title: 'Eligible for bulk AI translation' },
-  { value: 'manual', label: 'Manual', title: 'Human-entered only; skipped by bulk AI translate' },
-  { value: 'skip',   label: 'Skip',   title: 'Not localized; excluded from progress' },
-]
+import { useStudioLocale } from '@/i18n'
 
 export interface ModeSelectorProps {
   layer: Layer
@@ -13,19 +14,27 @@ export interface ModeSelectorProps {
 }
 
 export function ModeSelector({ layer, onUpdate }: ModeSelectorProps) {
+  const { t } = useStudioLocale()
+  const tl = t.modals.localization
   const effective = effectiveLocalizationMode(layer)
   const isImageType = layer.type === 'image' || layer.type === 'phone'
 
+  const modeOptions: { value: LocalizationMode; label: string; title: string }[] = [
+    { value: 'auto',   label: tl.modeAuto,   title: tl.modeAutoTitle },
+    { value: 'manual', label: tl.modeManual, title: tl.modeManualTitle },
+    { value: 'skip',   label: tl.modeSkip,   title: tl.modeSkipTitle },
+  ]
+
   return (
     <div className="flex gap-0.5 mt-1.5">
-      {MODE_OPTIONS.map((opt) => {
+      {modeOptions.map((opt) => {
         const active = effective === opt.value
         const disabled = isImageType && opt.value === 'auto'
         return (
           <button
             key={opt.value}
             type="button"
-            title={disabled ? 'AI image generation not available yet' : opt.title}
+            title={disabled ? tl.modeImageAutoDisabledTitle : opt.title}
             disabled={disabled}
             onClick={() => onUpdate(opt.value === 'auto' ? undefined : opt.value)}
             className={`rounded px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide transition ${

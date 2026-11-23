@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on react useRef, useEditorStore, useBrandColors, fileToDataUrl, resolveBrandColor, backgroundAccents utils, PropertyControls, panelConstants, UI controls, and useStudioLocale/formatMessage from @/i18n
+ * [OUTPUT]: exports BackgroundProperties inspector panel localized across EN/ZH/JA/KO
+ * [POS]: background layer property editor within src/components/properties
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useRef } from 'react'
 import { useEditorStore } from '@/store'
 import { useBrandColors } from '@/hooks/useBrandColors'
@@ -21,6 +27,7 @@ import {
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch'
 import { FileUploadButton } from '@/components/ui/FileUploadButton'
+import { formatMessage, useStudioLocale } from '@/i18n'
 
 const ACCENT_PRESETS = [
   { cx: 50, cy: 20, rx: 500, ry: 450 },
@@ -32,6 +39,8 @@ const ACCENT_PRESETS = [
 ] as const
 
 export function BackgroundProperties({ layer }: { layer: BackgroundLayer }) {
+  const { t } = useStudioLocale()
+  const tp = t.properties
   const updateLayer = useEditorStore((s) => s.updateLayer)
   const selectedAccentIndex = useEditorStore((s) => s.selectedAccentIndex)
   const selectAccent = useEditorStore((s) => s.selectAccent)
@@ -75,10 +84,10 @@ export function BackgroundProperties({ layer }: { layer: BackgroundLayer }) {
     <div className="space-y-4">
       {/* Background type toggle */}
       <div>
-        <label className={labelCls}>Background Type</label>
+        <label className={labelCls}>{tp.backgroundType}</label>
         <SegmentedControl
           value={hasImage ? 'image' : 'gradient'}
-          options={[{ value: 'gradient', label: '🎨 Gradient' }, { value: 'image', label: '🖼 Image' }]}
+          options={[{ value: 'gradient', label: tp.gradientOption }, { value: 'image', label: tp.imageOption }]}
           onChange={(mode) => {
                 if (mode === 'image') bgImageInputRef.current?.click()
                 else upd({ imageDataUrl: undefined })
@@ -111,11 +120,11 @@ export function BackgroundProperties({ layer }: { layer: BackgroundLayer }) {
           >
             <img
               src={layer.imageDataUrl}
-              alt="Background"
+              alt={tp.background}
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-[rgba(0,0,0,0.5)]">
-              <span className="text-xs text-white">Change image</span>
+              <span className="text-xs text-white">{tp.changeImage}</span>
             </div>
           </div>
           <button
@@ -123,11 +132,11 @@ export function BackgroundProperties({ layer }: { layer: BackgroundLayer }) {
             onClick={() => upd({ imageDataUrl: undefined })}
             className="text-xs text-[#f87171] hover:text-[#fca5a5] transition-colors"
           >
-            Remove image ×
+            {tp.removeImage}
           </button>
 
           <div>
-            <label className={labelCls}>Fit</label>
+            <label className={labelCls}>{tp.fit}</label>
             <div className="grid grid-cols-3 gap-2">
               {(['cover', 'contain', 'fill'] as const).map((fit) => (
                 <button
@@ -140,14 +149,14 @@ export function BackgroundProperties({ layer }: { layer: BackgroundLayer }) {
                       : 'border-[rgba(255,255,255,0.1)] text-[#6b6b7a] hover:text-[#e8e8f0]'
                   }`}
                 >
-                  {fit.charAt(0).toUpperCase() + fit.slice(1)}
+                  {tp.fitOptions[fit]}
                 </button>
               ))}
             </div>
           </div>
 
           <SliderField
-            label="Blur"
+            label={tp.blur}
             value={layer.imageBlur ?? 0}
             min={0}
             max={50}
@@ -160,8 +169,8 @@ export function BackgroundProperties({ layer }: { layer: BackgroundLayer }) {
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className={labelCls + ' !mb-0'}>Color Overlay</label>
-              <ToggleSwitch checked={(layer.imageOverlayOpacity ?? 0) > 0} onChange={(checked) => upd({ imageOverlayOpacity: checked ? 0.4 : 0 })} ariaLabel="Toggle color overlay" />
+              <label className={labelCls + ' !mb-0'}>{tp.colorOverlay}</label>
+              <ToggleSwitch checked={(layer.imageOverlayOpacity ?? 0) > 0} onChange={(checked) => upd({ imageOverlayOpacity: checked ? 0.4 : 0 })} ariaLabel={tp.toggleColorOverlayAria} />
             </div>
             {(layer.imageOverlayOpacity ?? 0) > 0 && (
               <div className="space-y-2">
@@ -172,7 +181,7 @@ export function BackgroundProperties({ layer }: { layer: BackgroundLayer }) {
                   onInteractionEnd={resumeTemporal}
                 />
                 <SliderField
-                  label="Opacity"
+                  label={tp.opacity}
                   value={Math.round((layer.imageOverlayOpacity ?? 0) * 100)}
                   min={0} max={100} unit="%"
                   onChange={(v) => upd({ imageOverlayOpacity: v / 100 })}
@@ -189,12 +198,12 @@ export function BackgroundProperties({ layer }: { layer: BackgroundLayer }) {
       {/* Noise texture — always visible */}
       <div>
         <div className="flex items-center justify-between mb-1">
-          <label className={labelCls + ' !mb-0'}>Noise Texture</label>
-          <ToggleSwitch checked={(layer.noise ?? 0) > 0} onChange={(checked) => upd({ noise: checked ? 0.05 : 0 })} checkedKnobClassName="translate-x-4" ariaLabel="Toggle noise texture" />
+          <label className={labelCls + ' !mb-0'}>{tp.noiseTexture}</label>
+          <ToggleSwitch checked={(layer.noise ?? 0) > 0} onChange={(checked) => upd({ noise: checked ? 0.05 : 0 })} checkedKnobClassName="translate-x-4" ariaLabel={tp.toggleNoiseTextureAria} />
         </div>
         {(layer.noise ?? 0) > 0 && (
           <SliderField
-            label="Intensity"
+            label={tp.intensity}
             value={Math.round((layer.noise ?? 0) * 100)}
             min={1} max={30} unit="%"
             onChange={(v) => upd({ noise: v / 100 })}
@@ -207,7 +216,7 @@ export function BackgroundProperties({ layer }: { layer: BackgroundLayer }) {
 
       {/* Decorative glow accents */}
       <div className={panelSectionCls}>
-        <label className={labelCls}>Accents</label>
+        <label className={labelCls}>{tp.accents}</label>
         <div className="space-y-3">
           <div className="space-y-1.5">
             {layer.accents.map((accent, i) => (
@@ -234,11 +243,11 @@ export function BackgroundProperties({ layer }: { layer: BackgroundLayer }) {
                       opacity: accent.opacity === undefined ? 1 : getBackgroundAccentOpacity(accent),
                     }}
                   />
-                  <span className="flex-1">Accent {i + 1}</span>
+                  <span className="flex-1">{formatMessage(tp.accentLabel, { index: i + 1 })}</span>
                 </button>
                 <button
                   type="button"
-                  aria-label={`Remove accent ${i + 1}`}
+                  aria-label={formatMessage(tp.removeAccentAria, { index: i + 1 })}
                   onClick={(event) => {
                     event.stopPropagation()
                     removeAccent(i)
@@ -256,7 +265,7 @@ export function BackgroundProperties({ layer }: { layer: BackgroundLayer }) {
             return (
               <div className="space-y-3 border-t border-[rgba(255,255,255,0.08)] pt-3">
                 <div className={fieldCls}>
-                  <label className={labelCls}>Color</label>
+                  <label className={labelCls}>{tp.color}</label>
                   <ColorField
                     value={accent.color}
                     onChange={(color) => updateAccent(selectedAccentIndex, {
@@ -269,7 +278,7 @@ export function BackgroundProperties({ layer }: { layer: BackgroundLayer }) {
                 </div>
 
                 <SliderField
-                  label="Opacity"
+                  label={tp.opacity}
                   value={Math.round(getBackgroundAccentOpacity(accent) * 100)}
                   min={0}
                   max={100}
@@ -279,7 +288,7 @@ export function BackgroundProperties({ layer }: { layer: BackgroundLayer }) {
                   onInteractionEnd={resumeTemporal}
                 />
                 <SliderField
-                  label="Position X"
+                  label={tp.positionX}
                   value={accent.cx}
                   min={0}
                   max={100}
@@ -289,7 +298,7 @@ export function BackgroundProperties({ layer }: { layer: BackgroundLayer }) {
                   onInteractionEnd={resumeTemporal}
                 />
                 <SliderField
-                  label="Position Y"
+                  label={tp.positionY}
                   value={accent.cy}
                   min={0}
                   max={100}
@@ -299,7 +308,7 @@ export function BackgroundProperties({ layer }: { layer: BackgroundLayer }) {
                   onInteractionEnd={resumeTemporal}
                 />
                 <SliderField
-                  label="Size X"
+                  label={tp.sizeX}
                   value={accent.rx}
                   min={20}
                   max={1400}
@@ -309,7 +318,7 @@ export function BackgroundProperties({ layer }: { layer: BackgroundLayer }) {
                   onInteractionEnd={resumeTemporal}
                 />
                 <SliderField
-                  label="Size Y"
+                  label={tp.sizeY}
                   value={accent.ry}
                   min={20}
                   max={1400}
@@ -319,7 +328,7 @@ export function BackgroundProperties({ layer }: { layer: BackgroundLayer }) {
                   onInteractionEnd={resumeTemporal}
                 />
                 <SliderField
-                  label="Blur"
+                  label={tp.blur}
                   value={accent.blur ?? 0}
                   min={0}
                   max={60}
@@ -332,11 +341,11 @@ export function BackgroundProperties({ layer }: { layer: BackgroundLayer }) {
               </div>
             )
           })() : (
-            <p className="text-xs text-[#6b6b7a]">Select an accent to edit it</p>
+            <p className="text-xs text-[#6b6b7a]">{tp.selectAccentHint}</p>
           )}
 
           <button type="button" onClick={addAccent} className={subtleButtonCls}>
-            + Add Accent
+            {tp.addAccent}
           </button>
         </div>
       </div>
@@ -350,7 +359,7 @@ export function BackgroundProperties({ layer }: { layer: BackgroundLayer }) {
           if (!file) return
           await handleImageFile(file)
         }}
-      >Upload background</FileUploadButton>
+      >{tp.uploadBackground}</FileUploadButton>
     </div>
   )
 }

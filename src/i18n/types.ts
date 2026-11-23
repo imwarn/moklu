@@ -177,6 +177,15 @@ export interface StudioDictionary {
     deleteNoLayoutsMsg: string
     deleteExclusiveMsg: string
     deleteSharedMsg: string
+    familyLabels: {
+      phone: string
+      tablet: string
+      watch: string
+      desktop: string
+      tv: string
+      vr: string
+      game: string
+    }
   }
   properties: {
     title: string
@@ -281,6 +290,101 @@ export interface StudioDictionary {
     localizedScreenshots: string
     change: string
     uploadFor: string
+    backgroundType: string
+    gradientOption: string
+    imageOption: string
+    changeImage: string
+    removeImage: string
+    colorOverlay: string
+    toggleColorOverlayAria: string
+    noiseTexture: string
+    toggleNoiseTextureAria: string
+    intensity: string
+    accents: string
+    accentLabel: string
+    removeAccentAria: string
+    positionX: string
+    positionY: string
+    sizeX: string
+    sizeY: string
+    selectAccentHint: string
+    addAccent: string
+    uploadBackground: string
+    appName: string
+    logo: string
+    changeLogo: string
+    uploadLogo: string
+    nameColor: string
+    fontSize: string
+    fontWeight: string
+    fontFamily: string
+    logoSize: string
+    direction: string
+    horizontal: string
+    vertical: string
+    gap: string
+    emoji: string
+    emojiPlaceholder: string
+    size: string
+    emojiCategories: {
+      smileys: string
+      gestures: string
+      nature: string
+      objects: string
+      food: string
+      symbols: string
+    }
+    groupSelected: string
+    groupEnterAction: string
+    groupEnterHint: string
+    innerLayersCount: string
+    layerTypes: {
+      text: string
+      phone: string
+      image: string
+      shape: string
+      emoji: string
+      brand: string
+      group: string
+      background: string
+    }
+    cornerRadius: string
+    shapeType: string
+    shapes: {
+      rect: string
+      ellipse: string
+      triangle: string
+      diamond: string
+      star: string
+      pentagon: string
+      hexagon: string
+      arrow: string
+      cross: string
+      check: string
+    }
+    starPoints: string
+    starInnerRatio: string
+    textStylingLabel: string
+    font: string
+    searchFontsPlaceholder: string
+    myFonts: string
+    webSafeFonts: string
+    googleFonts: string
+    noFontsMatch: string
+    uploadFontTitle: string
+    uploadFont: string
+    customFontsCount: string
+    removeCustomFont: string
+    letterSpacing: string
+    lineHeight: string
+    alignment: string
+    alignLeft: string
+    alignCenter: string
+    alignRight: string
+    verticalAlign: string
+    alignTop: string
+    alignMiddle: string
+    alignBottom: string
   }
   slides: {
     title: string
@@ -364,6 +468,10 @@ export interface StudioDictionary {
       deleteConfirmBtn: string
       nameRequired: string
       justNow: string
+      conflictCreateError: string
+      exportFailedAlert: string
+      importMissingImagesAlert: string
+      importOpenFailedAlert: string
     }
     templates: {
       title: string
@@ -467,12 +575,151 @@ export interface StudioDictionary {
       chooseSection: string
       selectSectionHint: string
     }
+    contentSync: {
+      title: string
+      noOtherFamilies: string
+      confirm: string
+      fromFamilyLead: string
+      sourceLabel: string
+      pullFrom: string
+      noMatchingScreen: string
+      skippedOne: string
+      skippedOther: string
+    }
+    createFormatLayout: {
+      title: string
+      confirm: string
+      unscoped: string
+      unscopedScreens: string
+      summarySentence: string
+      summaryTargetOne: string
+      summaryTargetOther: string
+      summarySourceOne: string
+      summarySourceOther: string
+      pinNoticeOne: string
+      pinNoticeOther: string
+      currentFormatsFallback: string
+      noSourceHint: string
+      copyFromLabel: string
+      sourceOptionOne: string
+      sourceOptionOther: string
+      startingPointLabel: string
+      copyAndScaleTitle: string
+      copyAndScaleDesc: string
+      startBlankTitle: string
+      startBlankDesc: string
+    }
+    aiProvider: {
+      providerLabel: string
+      providers: {
+        openaiDesc: string
+        openrouterDesc: string
+        googleDesc: string
+        customLabel: string
+        customShortLabel: string
+        customDesc: string
+      }
+      baseUrlLabel: string
+      baseUrlHint: string
+      apiKeyLabel: string
+      getKeyFrom: string
+      testConnection: string
+      testing: string
+      connectionWorks: string
+      retry: string
+      modelLabel: string
+      statusNotConnected: string
+      statusConnecting: string
+      statusFailed: string
+      statusModelCount: string
+      unknownError: string
+      addKeyHint: string
+      modelPlaceholderFallback: string
+      loadingModels: string
+      loadModelsFailed: string
+      noFallbackHint: string
+      retryConnection: string
+      searchModelsPlaceholder: string
+      noMatchingModels: string
+    }
     localization: {
       noContentTitle: string
       noContentDesc: string
       textStyling: string
       textStylingHint1: string
       textStylingHint2: string
+      languagesLabel: string
+      defaultBadge: string
+      defaultBadgeParen: string
+      changeDefaultTitle: string
+      changeDefault: string
+      removeLanguageTitle: string
+      addLanguage: string
+      previewLanguageTitle: string
+      previewButton: string
+      backToEditor: string
+      defaultPickerNote: string
+      searchLanguagePlaceholder: string
+      useCustomCode: string
+      noLanguagesFound: string
+      bulkTranslateLabel: string
+      cellsCountOne: string
+      cellsCountOther: string
+      overwriteExisting: string
+      configureApiKeyTitle: string
+      translatingStatus: string
+      translateAllOne: string
+      translateAllOther: string
+      noApiKeyCta: string
+      stop: string
+      modeAuto: string
+      modeAutoTitle: string
+      modeManual: string
+      modeManualTitle: string
+      modeSkip: string
+      modeSkipTitle: string
+      modeImageAutoDisabledTitle: string
+      sectionSummary: string
+      layerColumn: string
+      goToLayerTitle: string
+      platformOnly: string
+      badgeSkip: string
+      badgeManual: string
+      baseImage: string
+      baseImageAlt: string
+      noImage: string
+      embeddedImage: string
+      change: string
+      upload: string
+      skippedCell: string
+      clearCell: string
+      missingBadge: string
+      queued: string
+      translating: string
+      translationFailed: string
+      retry: string
+      inherits: string
+      manualAdd: string
+      aiTranslate: string
+      aiTranslated: string
+      enterBaseText: string
+      enterLocalizedText: string
+      formattingLostByAi: string
+      formattingMissing: string
+      baseContent: string
+      retranslateTitle: string
+      retranslate: string
+      promoteTitle: string
+      promoteConfirm: string
+      promoteLead: string
+      translationCoverage: string
+      everythingTranslated: string
+      layersNeedReviewOne: string
+      layersNeedReviewOther: string
+      someIncompleteTitle: string
+      someIncompleteBody: string
+      affectedLayers: string
+      moreCount: string
     }
   }
 }

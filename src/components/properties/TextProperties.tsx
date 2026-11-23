@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on react hooks, zustand useShallow, useEditorStore, useFontStore, font utilities, SliderField, panelConstants, LayerTextToolbar, and useStudioLocale/formatMessage from @/i18n
+ * [OUTPUT]: exports TextProperties inspector panel and internal FontPicker localized across EN/ZH/JA/KO
+ * [POS]: text layer property editor within src/components/properties
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useEditorStore } from '@/store'
@@ -13,6 +19,7 @@ import {
   resumeTemporal,
 } from '@/components/properties/panelConstants'
 import { LayerTextToolbar } from '@/components/text/LayerTextToolbar'
+import { formatMessage, useStudioLocale } from '@/i18n'
 
 // ─── FontPicker ───────────────────────────────────────────────────────────────
 
@@ -23,6 +30,8 @@ interface FontPickerProps {
 }
 
 function FontPicker({ value, customFonts, onChange }: FontPickerProps) {
+  const { t } = useStudioLocale()
+  const tp = t.properties
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   // Index into the flat filtered list for keyboard navigation (-1 = none)
@@ -185,7 +194,7 @@ function FontPicker({ value, customFonts, onChange }: FontPickerProps) {
               type="text"
               value={search}
               onChange={(e) => { setSearch(e.target.value); setActiveIdx(-1) }}
-              placeholder="Search fonts… (↑↓ to preview)"
+              placeholder={tp.searchFontsPlaceholder}
               className={`${inputCls} text-xs`}
             />
           </div>
@@ -195,7 +204,7 @@ function FontPicker({ value, customFonts, onChange }: FontPickerProps) {
             {/* My Fonts */}
             {filteredCustom.length > 0 && (
               <>
-                <div className={sectionLabelCls}>My Fonts</div>
+                <div className={sectionLabelCls}>{tp.myFonts}</div>
                 {filteredCustom.map((f, i) => {
                   const flatIdx = customStart + i
                   return (
@@ -218,7 +227,7 @@ function FontPicker({ value, customFonts, onChange }: FontPickerProps) {
             {/* Web Safe */}
             {filteredWebSafe.length > 0 && (
               <>
-                <div className={sectionLabelCls}>Web Safe</div>
+                <div className={sectionLabelCls}>{tp.webSafeFonts}</div>
                 {filteredWebSafe.map((f, i) => {
                   const flatIdx = webSafeStart + i
                   return (
@@ -240,7 +249,7 @@ function FontPicker({ value, customFonts, onChange }: FontPickerProps) {
             {/* Google Fonts */}
             {filteredGoogle.length > 0 && (
               <>
-                <div className={sectionLabelCls}>Google Fonts</div>
+                <div className={sectionLabelCls}>{tp.googleFonts}</div>
                 {filteredGoogle.map((f, i) => {
                   const flatIdx = googleStart + i
                   return (
@@ -263,7 +272,7 @@ function FontPicker({ value, customFonts, onChange }: FontPickerProps) {
             {/* Empty state */}
             {noResults && (
               <div className="px-3 py-4 text-sm text-[#4a4a5a] text-center">
-                No fonts match &ldquo;{search}&rdquo;
+                {formatMessage(tp.noFontsMatch, { query: search })}
               </div>
             )}
           </div>
@@ -276,6 +285,8 @@ function FontPicker({ value, customFonts, onChange }: FontPickerProps) {
 // ─── TextProperties ───────────────────────────────────────────────────────────
 
 export function TextProperties({ layer }: { layer: TextLayer }) {
+  const { t } = useStudioLocale()
+  const tp = t.properties
   const { updateLayer, project, updateProject } = useEditorStore(
     useShallow((s) => ({
       updateLayer: s.updateLayer,
@@ -289,13 +300,14 @@ export function TextProperties({ layer }: { layer: TextLayer }) {
   const addFont = useFontStore((s) => s.addFont)
   const removeFont = useFontStore((s) => s.removeFont)
   const customFonts = project.customFonts ?? []
+  const selectedCustomFont = customFonts.find((f) => f.family === layer.fontFamily)
 
   return (
     <div className="space-y-4">
 
       {/* ── Text styling toolbar — always visible ── */}
       <div className={`${panelSectionCls} !border-[rgba(124,110,246,0.35)]`}>
-        <label className={labelCls}>✏️ Text Styling</label>
+        <label className={labelCls}>{tp.textStylingLabel}</label>
         {editingThis ? (
           // Canvas editor is active: it portals RichTextToolbar into this slot
           <div id="rich-text-toolbar-slot" />
@@ -307,7 +319,7 @@ export function TextProperties({ layer }: { layer: TextLayer }) {
 
       {/* ── Font ── */}
       <div className={panelSectionCls}>
-        <label className={labelCls}>Font</label>
+        <label className={labelCls}>{tp.font}</label>
         <FontPicker
           value={layer.fontFamily}
           customFonts={customFonts}
@@ -327,9 +339,9 @@ export function TextProperties({ layer }: { layer: TextLayer }) {
         <div className="mt-2 flex items-center gap-2">
           <label
             className="cursor-pointer text-xs px-3 py-1.5 rounded-lg border border-[rgba(255,255,255,0.1)] text-[#6b6b7a] hover:text-[#e8e8f0] hover:border-[rgba(255,255,255,0.2)] transition-colors"
-            title="Upload a .ttf, .otf, or .woff2 font file"
+            title={tp.uploadFontTitle}
           >
-            + Upload Font
+            {tp.uploadFont}
             <input
               type="file"
               accept=".ttf,.otf,.woff,.woff2"
@@ -356,46 +368,44 @@ export function TextProperties({ layer }: { layer: TextLayer }) {
             />
           </label>
           {customFonts.length > 0 && (
-            <span className="text-xs text-[#6b6b7a]">{customFonts.length} custom</span>
+            <span className="text-xs text-[#6b6b7a]">{formatMessage(tp.customFontsCount, { count: customFonts.length })}</span>
           )}
         </div>
 
         {/* Remove custom font button — shown when a custom font is selected */}
-        {customFonts.some(f => f.family === layer.fontFamily) && (
+        {selectedCustomFont && (
           <button
             type="button"
             className="mt-1 text-xs text-[#f87171] hover:text-[#fca5a5] transition-colors"
             onClick={() => {
-              const ref = customFonts.find(f => f.family === layer.fontFamily)
-              if (!ref) return
-              unregisterCustomFont(ref.family)
-              removeFont(ref.filename)
-              updateProject({ customFonts: (project.customFonts ?? []).filter(f => f.family !== ref.family) })
+              unregisterCustomFont(selectedCustomFont.family)
+              removeFont(selectedCustomFont.filename)
+              updateProject({ customFonts: (project.customFonts ?? []).filter(f => f.family !== selectedCustomFont.family) })
               upd({ fontFamily: 'Inter', fontWeight: 400 })
             }}
           >
-            Remove &ldquo;{customFonts.find(f => f.family === layer.fontFamily)?.label}&rdquo;
+            {formatMessage(tp.removeCustomFont, { label: selectedCustomFont.label })}
           </button>
         )}
 
         {/* Size */}
         <div className="mt-3">
-          <SliderField label="Size" value={layer.fontSize} min={6} max={300} unit="px" onChange={(v) => upd({ fontSize: v })} onInteractionStart={pauseTemporal} onInteractionEnd={resumeTemporal} />
+          <SliderField label={tp.size} value={layer.fontSize} min={6} max={300} unit="px" onChange={(v) => upd({ fontSize: v })} onInteractionStart={pauseTemporal} onInteractionEnd={resumeTemporal} />
         </div>
 
         {/* Spacing */}
-        <SliderField label="Letter Spacing" value={layer.letterSpacing} min={-20} max={100} step={1} onChange={(v) => upd({ letterSpacing: v })} onInteractionStart={pauseTemporal} onInteractionEnd={resumeTemporal} />
-        <SliderField label="Line Height" value={layer.lineHeight} min={0.5} max={4} step={0.05} unit="×" onChange={(v) => upd({ lineHeight: v })} onInteractionStart={pauseTemporal} onInteractionEnd={resumeTemporal} className="!mb-0" />
+        <SliderField label={tp.letterSpacing} value={layer.letterSpacing} min={-20} max={100} step={1} onChange={(v) => upd({ letterSpacing: v })} onInteractionStart={pauseTemporal} onInteractionEnd={resumeTemporal} />
+        <SliderField label={tp.lineHeight} value={layer.lineHeight} min={0.5} max={4} step={0.05} unit="×" onChange={(v) => upd({ lineHeight: v })} onInteractionStart={pauseTemporal} onInteractionEnd={resumeTemporal} className="!mb-0" />
       </div>
 
       {/* ── Align ── */}
       <div className={panelSectionCls}>
-        <label className={labelCls}>Alignment</label>
+        <label className={labelCls}>{tp.alignment}</label>
         <div className="grid grid-cols-3 gap-2">
           {([
-            { value: 'left',   label: '⬱ Left' },
-            { value: 'center', label: '≡ Center' },
-            { value: 'right',  label: '⬲ Right' },
+            { value: 'left',   label: tp.alignLeft },
+            { value: 'center', label: tp.alignCenter },
+            { value: 'right',  label: tp.alignRight },
           ] as const).map((item) => (
             <button
               key={item.value}
@@ -415,12 +425,12 @@ export function TextProperties({ layer }: { layer: TextLayer }) {
         {/* Vertical alignment — meaningful when the box has an explicit height */}
         {layer.height != null && (
           <div className="mt-3">
-            <label className={labelCls}>Vertical Align</label>
+            <label className={labelCls}>{tp.verticalAlign}</label>
             <div className="grid grid-cols-3 gap-2">
               {([
-                { value: 'top',    label: '⤒ Top' },
-                { value: 'middle', label: '☰ Middle' },
-                { value: 'bottom', label: '⤓ Bottom' },
+                { value: 'top',    label: tp.alignTop },
+                { value: 'middle', label: tp.alignMiddle },
+                { value: 'bottom', label: tp.alignBottom },
               ] as const).map((item) => (
                 <button
                   key={item.value}

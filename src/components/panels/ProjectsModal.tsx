@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on react, useProjectsStore, useEditorStore, ConfirmDialog, ModalShell, InlineEditableLabel, FileUploadButton, ProjectConflictError, checkImportFileSize, and useStudioLocale from @/i18n
- * [OUTPUT]: exports ProjectsModal local project manager dialog localized across EN/ZH/JA/KO
+ * [INPUT]: depends on react, useProjectsStore, useEditorStore, ConfirmDialog, ModalShell, InlineEditableLabel, FileUploadButton, ProjectConflictError, checkImportFileSize, and useStudioLocale/formatMessage/formatRelativeTime from @/i18n
+ * [OUTPUT]: exports ProjectsModal local project manager dialog localized across EN/ZH/JA/KO with Intl.RelativeTimeFormat timestamps
  * [POS]: project switcher/backup dialog launched from Studio Toolbar inside src/components/panels
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -13,7 +13,7 @@ import { InlineEditableLabel } from '@/components/ui/InlineEditableLabel'
 import { FileUploadButton } from '@/components/ui/FileUploadButton'
 import { ProjectConflictError } from '@/store/storage/types'
 import { checkImportFileSize } from '@/utils/importValidation'
-import { useStudioLocale } from '@/i18n'
+import { formatMessage, formatRelativeTime, useStudioLocale } from '@/i18n'
 
 
 interface ProjectsModalProps {
@@ -21,20 +21,8 @@ interface ProjectsModalProps {
   onClose: () => void
 }
 
-function relativeTime(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime()
-  const s = Math.floor(diff / 1000)
-  if (s < 60) return 'just now'
-  const m = Math.floor(s / 60)
-  if (m < 60) return `${m}m ago`
-  const h = Math.floor(m / 60)
-  if (h < 24) return `${h}h ago`
-  const d = Math.floor(h / 24)
-  return `${d}d ago`
-}
-
 export function ProjectsModal({ open, onClose }: ProjectsModalProps) {
-  const { t } = useStudioLocale()
+  const { uiLocale, t } = useStudioLocale()
   const pm = t.modals.projects
   const { projects, createProject, openProject, deleteProject, renameProject } =
     useProjectsStore()
@@ -98,7 +86,7 @@ export function ProjectsModal({ open, onClose }: ProjectsModalProps) {
     } catch (err) {
       if (err instanceof ProjectConflictError) {
         notifyProjectConflict(err.projectId)
-        setNewNameError('Another tab or device changed this project. Export your local copy or reload before creating a new project.')
+        setNewNameError(pm.conflictCreateError)
       } else {
         setNewNameError(err instanceof Error ? err.message : String(err))
       }
@@ -141,7 +129,7 @@ export function ProjectsModal({ open, onClose }: ProjectsModalProps) {
       URL.revokeObjectURL(url)
     } catch (err) {
       console.error('[Moklu] Failed to export project', err)
-      alert('Failed to export this project. Please try again.')
+      alert(pm.exportFailedAlert)
     }
   }
 
@@ -156,10 +144,10 @@ export function ProjectsModal({ open, onClose }: ProjectsModalProps) {
       const { missing } = await useProjectsStore.getState().importProjectFromJson(json)
       onClose()
       if (missing.length > 0) {
-        alert(`Project imported. ${missing.length} referenced image(s) were missing from the file and will appear blank.`)
+        alert(formatMessage(pm.importMissingImagesAlert, { count: missing.length }))
       }
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'Failed to open project file.')
+      alert(error instanceof Error ? error.message : pm.importOpenFailedAlert)
     }
   }
 
@@ -460,7 +448,7 @@ export function ProjectsModal({ open, onClose }: ProjectsModalProps) {
                         )}
                       </InlineEditableLabel>
                     <div style={{ fontSize: 11, color: '#6b6b7a', marginTop: 2 }}>
-                      {relativeTime(p.updatedAt)}
+                      {formatRelativeTime(p.updatedAt, uiLocale, pm.justNow)}
                     </div>
                   </div>
 
