@@ -1,15 +1,16 @@
 /**
- * [INPUT]: depends on vitest; depends on stageImagesIntoStudio from ./studioHandoff; depends on useEditorStore from @/store; depends on useAssetStore from @/store/assets; depends on BASE_CANVAS_FORMAT from @/utils/canvasFormats; depends on ImageLayer and PhoneLayer from @/types
- * [OUTPUT]: verifies mockup, canvas, and carousel handoffs, asset registration, non-destructive preservation of existing Studio slides, and empty-payload safety
+ * [INPUT]: depends on vitest; depends on stageImagesIntoStudio from ./studioHandoff; depends on useEditorStore from @/store; depends on useAssetStore from @/store/assets; depends on BASE_CANVAS_FORMAT from @/utils/canvasFormats; depends on QUICK_THEMES from @/utils/quickDesign; depends on BackgroundLayer, ImageLayer, and PhoneLayer from @/types
+ * [OUTPUT]: verifies mockup, canvas, and carousel handoffs, user style/fit/scale/chrome preservation, asset registration, non-destructive preservation of existing Studio slides, and empty-payload safety
  * [POS]: Unit test suite for src/bridge/studioHandoff
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
 import { beforeEach, describe, expect, it } from 'vitest'
-import type { ImageLayer, PhoneLayer } from '@/types'
+import type { BackgroundLayer, ImageLayer, PhoneLayer } from '@/types'
 import { useEditorStore } from '@/store'
 import { useAssetStore } from '@/store/assets'
 import { BASE_CANVAS_FORMAT } from '@/utils/canvasFormats'
+import { QUICK_THEMES } from '@/utils/quickDesign'
 import { stageImagesIntoStudio } from './studioHandoff'
 
 const TINY_PNG =
@@ -149,5 +150,58 @@ describe('stageImagesIntoStudio', () => {
     expect(state.project.slideGroups).toHaveLength(2)
     expect(state.activeSlideGroupId).not.toBe(firstGroupId)
     expect(state.project.slideGroups[0].id).toBe(firstGroupId)
+  })
+
+  it('preserves user mockup theme, screenshotFit, scaleFactor, and browserChrome on Studio handoff', () => {
+    stageImagesIntoStudio({
+      mode: 'mockup',
+      mockupModel: 'browser-chrome',
+      slideWidth: 1600,
+      slideHeight: 900,
+      images: [{ dataUrl: TINY_PNG, name: 'baseline.png', width: 1440, height: 900 }],
+    })
+    const baselineGroup = useEditorStore.getState().project.slideGroups[0]
+    const baselinePhone = baselineGroup.layers[1] as PhoneLayer
+
+    useEditorStore.getState().resetProject()
+
+    stageImagesIntoStudio({
+      mode: 'mockup',
+      mockupModel: 'browser-chrome',
+      slideWidth: 1600,
+      slideHeight: 900,
+      theme: 'midnight',
+      screenshotFit: 'contain',
+      scaleFactor: 0.8,
+      browserChrome: {
+        title: 'Moklu Dashboard',
+        address: 'https://moklu.app/demo',
+        theme: 'dark',
+        showAddressBar: true,
+      },
+      images: [{ dataUrl: TINY_PNG, name: 'styled.png', width: 1440, height: 900 }],
+    })
+
+    const state = useEditorStore.getState()
+    const styledGroup = state.project.slideGroups.find((g) => g.id === state.activeSlideGroupId)!
+    const bg = styledGroup.layers[0] as BackgroundLayer
+    const phone = styledGroup.layers[1] as PhoneLayer
+
+    expect(bg.fill).toEqual({
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { offset: 0, color: QUICK_THEMES.midnight.top },
+        { offset: 1, color: QUICK_THEMES.midnight.bottom },
+      ],
+    })
+    expect(phone.screenshotFit).toBe('contain')
+    expect(phone.scale).toBeCloseTo(baselinePhone.scale * 0.8, 5)
+    expect(phone.browserChrome).toEqual({
+      title: 'Moklu Dashboard',
+      address: 'https://moklu.app/demo',
+      theme: 'dark',
+      showAddressBar: true,
+    })
   })
 })

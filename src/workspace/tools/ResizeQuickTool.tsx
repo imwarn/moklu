@@ -1,10 +1,10 @@
 /**
- * [INPUT]: depends on react, batchHelpers from ../batchHelpers, canvasUtils from ../canvasUtils, strings from ../i18n, themeTokens from ../themeTokens, UI primitives from ../uiPrimitives, and WorkspaceToolPanelProps from ../types
- * [OUTPUT]: exports ResizePreviewStage and ResizeQuickTool for multi-image Resize (px or scale %), Crop, and non-crop Border & Pad workflows with filmstrip preview switcher, single-item actions, batch ZIP, and full-batch Studio handoff
+ * [INPUT]: depends on react, batchHelpers from ../batchHelpers, canvasUtils from ../canvasUtils, strings from ../i18n, themeTokens from ../themeTokens, UI primitives from ../uiPrimitives, useDebouncedValue from ../useDebouncedValue, and WorkspaceToolPanelProps from ../types
+ * [OUTPUT]: exports ResizePreviewStage and ResizeQuickTool for multi-image Resize (px or scale %), Crop, and non-crop Border & Pad workflows with filmstrip preview switcher, debounced transforms, error-handled ZIP export, and full-batch Studio handoff
  * [POS]: resize, crop, and border-pad panel inside src/workspace/tools; delegates rendering to injected engines.transform
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import {
   buildBatchStudioHandoff,
   clampBatchIndex,
@@ -26,20 +26,21 @@ import type {
 import {
   ColorSwatchRow,
   DropZone,
+  PreviewBusyOverlay,
   SegmentedControl,
   SliderField,
   StudioHandoffButton,
 } from '../uiPrimitives'
+import { useDebouncedValue } from '../useDebouncedValue'
 
-const PAD_SWATCHES = [
-  { label: 'Pure White', value: '#ffffff' },
-  { label: 'Warm Cream', value: '#faf7f2' },
-  { label: 'Charcoal', value: '#111827' },
-  { label: 'Soft Aurora', value: 'linear-gradient(135deg, #b5b0f2, #e5efff)' },
-  { label: 'Peach Glow', value: 'linear-gradient(135deg, #fde68a, #f9a8d4)' },
-]
-
+const MIN_RESIZE_PX = 16
+const MAX_RESIZE_PX = 8192
 const SCALE_PRESETS = [25, 50, 75, 150, 200] as const
+
+function clampResizePx(value: number, fallback: number): number {
+  if (!Number.isFinite(value)) return fallback
+  return Math.max(MIN_RESIZE_PX, Math.min(MAX_RESIZE_PX, Math.round(value)))
+}
 
 export interface ResizePreviewStageProps {
   theme: WorkspaceTheme
@@ -47,6 +48,7 @@ export interface ResizePreviewStageProps {
   outputs: readonly WorkspaceBlobOutput[]
   selectedIndex: number
   hasSourceImages: boolean
+  busy?: boolean
   onSelectIndex: (index: number) => void
   onDownloadAt: (index: number) => void
   onRemoveAt: (index: number) => void
@@ -61,6 +63,7 @@ export function ResizePreviewStage({
   outputs,
   selectedIndex,
   hasSourceImages,
+  busy = false,
   onSelectIndex,
   onDownloadAt,
   onRemoveAt,
@@ -96,7 +99,7 @@ export function ResizePreviewStage({
                 data-testid="resize-prev-btn"
                 aria-label={s.common.previousImage}
                 onClick={() => onSelectIndex(stepBatchIndex(safeIndex, -1, outputs.length))}
-                className={`inline-flex h-6 w-6 items-center justify-center rounded-md border text-xs font-bold transition-colors ${tokens.pillIdle}`}
+                className={`inline-flex h-8 w-8 items-center justify-center rounded-md border text-sm font-bold transition-colors ${tokens.focusRing} ${tokens.pillIdle}`}
               >
                 ‹
               </button>
@@ -105,7 +108,7 @@ export function ResizePreviewStage({
                 data-testid="resize-next-btn"
                 aria-label={s.common.nextImage}
                 onClick={() => onSelectIndex(stepBatchIndex(safeIndex, 1, outputs.length))}
-                className={`inline-flex h-6 w-6 items-center justify-center rounded-md border text-xs font-bold transition-colors ${tokens.pillIdle}`}
+                className={`inline-flex h-8 w-8 items-center justify-center rounded-md border text-sm font-bold transition-colors ${tokens.focusRing} ${tokens.pillIdle}`}
               >
                 ›
               </button>
@@ -117,7 +120,7 @@ export function ResizePreviewStage({
           <button
             type="button"
             onClick={onLoadDemo}
-            className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${tokens.buttonSecondary}`}
+            className={`min-h-8 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${tokens.focusRing} ${tokens.buttonSecondary}`}
           >
             {s.common.tryDemo}
           </button>
@@ -125,7 +128,7 @@ export function ResizePreviewStage({
             <button
               type="button"
               onClick={onClearAll}
-              className={`rounded-lg px-2.5 py-1 text-xs font-medium ${tokens.textMuted} hover:text-rose-500`}
+              className={`min-h-8 rounded-lg px-2.5 py-1 text-xs font-medium ${tokens.focusRing} ${tokens.textMuted} hover:text-rose-500`}
             >
               {s.common.clearAll}
             </button>
@@ -133,7 +136,11 @@ export function ResizePreviewStage({
         </div>
       </div>
 
-      <div className={`flex min-h-[240px] flex-col items-center justify-center overflow-hidden rounded-xl border p-4 ${tokens.cardMuted}`}>
+      <div
+        aria-busy={busy}
+        className={`relative flex min-h-[240px] flex-col items-center justify-center overflow-hidden rounded-xl border p-4 ${tokens.cardMuted}`}
+      >
+        {busy && <PreviewBusyOverlay theme={theme} label={s.common.processing} />}
         {current ? (
           <>
             <img
@@ -166,9 +173,7 @@ export function ResizePreviewStage({
                   key={`${item.filename}-${idx}`}
                   data-testid={`resize-thumb-${idx}`}
                   className={`flex w-[148px] shrink-0 flex-col rounded-xl border p-1.5 transition-all ${
-                    selected
-                      ? 'border-indigo-500 ring-2 ring-indigo-500/35 ' + tokens.card
-                      : tokens.card
+                    selected ? `${tokens.accentRing} ${tokens.card}` : tokens.card
                   }`}
                 >
                   <button
@@ -176,7 +181,7 @@ export function ResizePreviewStage({
                     data-testid={`resize-thumb-select-${idx}`}
                     aria-pressed={selected}
                     onClick={() => onSelectIndex(idx)}
-                    className="group flex flex-col text-left focus:outline-none"
+                    className={`group flex flex-col rounded-lg text-left ${tokens.focusRing}`}
                   >
                     <div className="relative overflow-hidden rounded-lg bg-black/5">
                       <img
@@ -184,7 +189,7 @@ export function ResizePreviewStage({
                         alt={item.filename}
                         className="h-16 w-full object-cover"
                       />
-                      <span className="absolute left-1 top-1 rounded bg-slate-900/75 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-white">
+                      <span className="absolute left-1 top-1 rounded bg-zinc-900/80 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-white">
                         #{idx + 1}
                       </span>
                     </div>
@@ -202,7 +207,7 @@ export function ResizePreviewStage({
                       title={s.common.downloadSingle}
                       aria-label={`${s.common.downloadSingle}: ${item.filename}`}
                       onClick={() => onDownloadAt(idx)}
-                      className={`rounded border px-1.5 py-0.5 text-[10px] font-semibold ${tokens.pillIdle}`}
+                      className={`inline-flex h-7 min-w-7 items-center justify-center rounded-md border px-2 text-xs font-semibold ${tokens.focusRing} ${tokens.pillIdle}`}
                     >
                       ↓
                     </button>
@@ -212,7 +217,7 @@ export function ResizePreviewStage({
                       title={s.common.remove}
                       aria-label={`${s.common.remove}: ${item.filename}`}
                       onClick={() => onRemoveAt(idx)}
-                      className="rounded border border-rose-300/60 px-1.5 py-0.5 text-[10px] font-semibold text-rose-500 hover:bg-rose-500/10"
+                      className={`inline-flex h-7 min-w-7 items-center justify-center rounded-md border px-2 text-xs font-semibold ${tokens.focusRing} ${tokens.dangerGhost}`}
                     >
                       ×
                     </button>
@@ -232,6 +237,7 @@ export function ResizePreviewStage({
           title={s.common.dropMultipleTitle}
           hint={s.common.dropHint}
           buttonLabel={s.common.chooseFiles}
+          invalidFileMessage={s.common.invalidFileError}
           onFiles={onFiles}
         />
       </div>
@@ -248,6 +254,19 @@ export function ResizeQuickTool({
 }: WorkspaceToolPanelProps) {
   const s = getWorkspaceStrings(locale)
   const tokens = getWorkspaceThemeTokens(theme)
+  const widthInputId = useId()
+  const heightInputId = useId()
+
+  const padSwatches = useMemo(
+    () => [
+      { label: s.swatches.pureWhite, value: '#ffffff' },
+      { label: s.swatches.warmCream, value: '#faf7f2' },
+      { label: s.swatches.charcoal, value: '#111827' },
+      { label: s.swatches.softAurora, value: 'linear-gradient(135deg, #b5b0f2, #e5efff)' },
+      { label: s.swatches.peachGlow, value: 'linear-gradient(135deg, #fde68a, #f9a8d4)' },
+    ],
+    [s.swatches],
+  )
 
   const [images, setImages] = useState<WorkspaceImageInput[]>([])
   const [selectedIndex, setSelectedIndex] = useState<number>(0)
@@ -257,6 +276,8 @@ export function ResizeQuickTool({
   const [aspectRatio, setAspectRatio] = useState<WorkspaceAspectPreset>('1:1')
   const [widthPx, setWidthPx] = useState<number>(1200)
   const [heightPx, setHeightPx] = useState<number>(1200)
+  const [widthDraft, setWidthDraft] = useState<string>('1200')
+  const [heightDraft, setHeightDraft] = useState<string>('1200')
   const [lockAspect, setLockAspect] = useState<boolean>(true)
   const [borderPx, setBorderPx] = useState<number>(48)
   const [borderRadius, setBorderRadius] = useState<number>(16)
@@ -264,25 +285,42 @@ export function ResizeQuickTool({
   const [shadow, setShadow] = useState<boolean>(true)
   const [outputs, setOutputs] = useState<WorkspaceBlobOutput[]>([])
   const [processing, setProcessing] = useState(false)
+  const [zipping, setZipping] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const debouncedScalePercent = useDebouncedValue(scalePercent)
+  const debouncedWidthPx = useDebouncedValue(widthPx)
+  const debouncedHeightPx = useDebouncedValue(heightPx)
+  const debouncedBorderPx = useDebouncedValue(borderPx)
+  const debouncedBorderRadius = useDebouncedValue(borderRadius)
+
+  const hasPendingParams =
+    images.length > 0 &&
+    (debouncedScalePercent !== scalePercent ||
+      debouncedWidthPx !== widthPx ||
+      debouncedHeightPx !== heightPx ||
+      debouncedBorderPx !== borderPx ||
+      debouncedBorderRadius !== borderRadius)
+  const isBusy = processing || hasPendingParams
+
+  const hasImages = images.length > 0
 
   const handleFiles = useCallback(async (files: File[]) => {
     setError(null)
     try {
       const loaded = await Promise.all(files.map((file) => readFileAsImageInput(file)))
-      setImages((prev) => {
-        const next = [...prev, ...loaded]
-        if (prev.length === 0 && loaded[0]) {
-          setWidthPx(loaded[0].width)
-          setHeightPx(loaded[0].height)
-          setSelectedIndex(0)
-        }
-        return next
-      })
+      setImages((prev) => [...prev, ...loaded])
+      if (!hasImages && loaded[0]) {
+        setWidthPx(loaded[0].width)
+        setHeightPx(loaded[0].height)
+        setWidthDraft(String(loaded[0].width))
+        setHeightDraft(String(loaded[0].height))
+        setSelectedIndex(0)
+      }
     } catch {
-      setError('Unable to decode one or more images.')
+      setError(s.common.decodeError)
     }
-  }, [])
+  }, [hasImages, s.common.decodeError])
 
   const handleLoadDemo = () => {
     setError(null)
@@ -291,24 +329,60 @@ export function ResizeQuickTool({
     setSelectedIndex(0)
     setWidthPx(demo.width)
     setHeightPx(demo.height)
+    setWidthDraft(String(demo.width))
+    setHeightDraft(String(demo.height))
   }
 
   const activeSource = images[clampBatchIndex(selectedIndex, images.length)] ?? images[0]
 
-  const handleWidthChange = (nextWidth: number) => {
-    const safeW = Math.max(16, Math.min(8192, nextWidth || 16))
+  const commitWidth = (safeW: number) => {
     setWidthPx(safeW)
     if (lockAspect && activeSource && activeSource.width > 0) {
-      setHeightPx(Math.max(16, Math.round((activeSource.height / activeSource.width) * safeW)))
+      const nextH = clampResizePx((activeSource.height / activeSource.width) * safeW, heightPx)
+      setHeightPx(nextH)
+      setHeightDraft(String(nextH))
     }
   }
 
-  const handleHeightChange = (nextHeight: number) => {
-    const safeH = Math.max(16, Math.min(8192, nextHeight || 16))
+  const commitHeight = (safeH: number) => {
     setHeightPx(safeH)
     if (lockAspect && activeSource && activeSource.height > 0) {
-      setWidthPx(Math.max(16, Math.round((activeSource.width / activeSource.height) * safeH)))
+      const nextW = clampResizePx((activeSource.width / activeSource.height) * safeH, widthPx)
+      setWidthPx(nextW)
+      setWidthDraft(String(nextW))
     }
+  }
+
+  const handleWidthDraftChange = (raw: string) => {
+    setWidthDraft(raw)
+    if (raw.trim() === '') return
+    const parsed = Number(raw)
+    if (Number.isFinite(parsed) && parsed >= MIN_RESIZE_PX && parsed <= MAX_RESIZE_PX) {
+      commitWidth(Math.round(parsed))
+    }
+  }
+
+  const handleWidthBlur = () => {
+    const parsed = widthDraft.trim() === '' ? Number.NaN : Number(widthDraft)
+    const safeW = clampResizePx(parsed, widthPx)
+    setWidthDraft(String(safeW))
+    commitWidth(safeW)
+  }
+
+  const handleHeightDraftChange = (raw: string) => {
+    setHeightDraft(raw)
+    if (raw.trim() === '') return
+    const parsed = Number(raw)
+    if (Number.isFinite(parsed) && parsed >= MIN_RESIZE_PX && parsed <= MAX_RESIZE_PX) {
+      commitHeight(Math.round(parsed))
+    }
+  }
+
+  const handleHeightBlur = () => {
+    const parsed = heightDraft.trim() === '' ? Number.NaN : Number(heightDraft)
+    const safeH = clampResizePx(parsed, heightPx)
+    setHeightDraft(String(safeH))
+    commitHeight(safeH)
   }
 
   const handleRemoveAt = (removeIndex: number) => {
@@ -333,21 +407,21 @@ export function ResizeQuickTool({
       try {
         const transformed = await engines.transform(images, {
           mode,
-          width: mode === 'resize' && resizeBy === 'pixels' ? widthPx : undefined,
-          height: mode === 'resize' && resizeBy === 'pixels' ? heightPx : undefined,
-          scale: mode === 'resize' && resizeBy === 'scale' ? scalePercent / 100 : undefined,
+          width: mode === 'resize' && resizeBy === 'pixels' ? debouncedWidthPx : undefined,
+          height: mode === 'resize' && resizeBy === 'pixels' ? debouncedHeightPx : undefined,
+          scale: mode === 'resize' && resizeBy === 'scale' ? debouncedScalePercent / 100 : undefined,
           lockAspect,
           aspectRatio,
-          borderPx,
+          borderPx: debouncedBorderPx,
           background,
-          borderRadius,
+          borderRadius: debouncedBorderRadius,
           shadow,
           format: 'image/png',
           quality: 0.94,
         })
         if (!cancelled) setOutputs(transformed)
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Transform failed')
+        if (!cancelled) setError(err instanceof Error && err.message ? err.message : s.resize.transformError)
       } finally {
         if (!cancelled) setProcessing(false)
       }
@@ -360,16 +434,17 @@ export function ResizeQuickTool({
     images,
     mode,
     resizeBy,
-    scalePercent,
-    widthPx,
-    heightPx,
+    debouncedScalePercent,
+    debouncedWidthPx,
+    debouncedHeightPx,
     lockAspect,
     aspectRatio,
-    borderPx,
+    debouncedBorderPx,
     background,
-    borderRadius,
+    debouncedBorderRadius,
     shadow,
     engines,
+    s.resize.transformError,
   ])
 
   const activeOutputs = images.length > 0 ? outputs : []
@@ -382,15 +457,23 @@ export function ResizeQuickTool({
   }
 
   const handleDownloadPrimaryOrZip = async () => {
-    if (activeOutputs.length === 0) return
+    if (activeOutputs.length === 0 || zipping) return
     if (activeOutputs.length === 1) {
       triggerBlobDownload(activeOutputs[0].blob, activeOutputs[0].filename)
       return
     }
-    const zipBlob = await engines.packZip(
-      activeOutputs.map((out) => ({ filename: out.filename, blob: out.blob })),
-    )
-    triggerBlobDownload(zipBlob, `moklu-${mode}-${activeOutputs.length}.zip`)
+    setZipping(true)
+    setError(null)
+    try {
+      const zipBlob = await engines.packZip(
+        activeOutputs.map((out) => ({ filename: out.filename, blob: out.blob })),
+      )
+      triggerBlobDownload(zipBlob, `moklu-${mode}-${activeOutputs.length}.zip`)
+    } catch (err) {
+      setError(err instanceof Error && err.message ? err.message : s.common.zipError)
+    } finally {
+      setZipping(false)
+    }
   }
 
   const handleOpenInStudio = () => {
@@ -408,6 +491,7 @@ export function ResizeQuickTool({
           outputs={activeOutputs}
           selectedIndex={safeIndex}
           hasSourceImages={images.length > 0}
+          busy={isBusy}
           onSelectIndex={setSelectedIndex}
           onDownloadAt={handleDownloadAt}
           onRemoveAt={handleRemoveAt}
@@ -454,7 +538,7 @@ export function ResizeQuickTool({
                         type="button"
                         aria-pressed={scalePercent === pct}
                         onClick={() => setScalePercent(pct)}
-                        className={`rounded-lg border px-2.5 py-1 text-xs font-medium tabular-nums transition-colors ${
+                        className={`min-h-8 rounded-lg border px-2.5 py-1 text-xs font-medium tabular-nums transition-colors ${tokens.focusRing} ${
                           scalePercent === pct ? tokens.pillActive : tokens.pillIdle
                         }`}
                       >
@@ -477,29 +561,33 @@ export function ResizeQuickTool({
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-2.5">
                     <div>
-                      <label className={`mb-1 block text-xs font-semibold ${tokens.textMuted}`}>
+                      <label htmlFor={widthInputId} className={`mb-1 block text-xs font-semibold ${tokens.textMuted}`}>
                         {s.resize.widthLabel}
                       </label>
                       <input
+                        id={widthInputId}
                         type="number"
-                        min={16}
-                        max={8192}
-                        value={widthPx}
-                        onChange={(e) => handleWidthChange(Number(e.target.value))}
-                        className={`w-full rounded-lg border px-2.5 py-1.5 text-xs tabular-nums outline-none ${tokens.input}`}
+                        min={MIN_RESIZE_PX}
+                        max={MAX_RESIZE_PX}
+                        value={widthDraft}
+                        onChange={(e) => handleWidthDraftChange(e.target.value)}
+                        onBlur={handleWidthBlur}
+                        className={`min-h-8 w-full rounded-lg border px-2.5 py-1.5 text-xs tabular-nums outline-none ${tokens.input}`}
                       />
                     </div>
                     <div>
-                      <label className={`mb-1 block text-xs font-semibold ${tokens.textMuted}`}>
+                      <label htmlFor={heightInputId} className={`mb-1 block text-xs font-semibold ${tokens.textMuted}`}>
                         {s.resize.heightLabel}
                       </label>
                       <input
+                        id={heightInputId}
                         type="number"
-                        min={16}
-                        max={8192}
-                        value={heightPx}
-                        onChange={(e) => handleHeightChange(Number(e.target.value))}
-                        className={`w-full rounded-lg border px-2.5 py-1.5 text-xs tabular-nums outline-none ${tokens.input}`}
+                        min={MIN_RESIZE_PX}
+                        max={MAX_RESIZE_PX}
+                        value={heightDraft}
+                        onChange={(e) => handleHeightDraftChange(e.target.value)}
+                        onBlur={handleHeightBlur}
+                        className={`min-h-8 w-full rounded-lg border px-2.5 py-1.5 text-xs tabular-nums outline-none ${tokens.input}`}
                       />
                     </div>
                   </div>
@@ -508,7 +596,7 @@ export function ResizeQuickTool({
                       type="checkbox"
                       checked={lockAspect}
                       onChange={(e) => setLockAspect(e.target.checked)}
-                      className="h-3.5 w-3.5 accent-indigo-600"
+                      className={`h-4 w-4 accent-violet-600 ${tokens.focusRing}`}
                     />
                     {s.resize.lockAspect}
                   </label>
@@ -557,7 +645,7 @@ export function ResizeQuickTool({
                 theme={theme}
                 label={s.common.background}
                 value={background}
-                options={PAD_SWATCHES}
+                options={padSwatches}
                 onChange={setBackground}
               />
               <label className={`flex cursor-pointer items-center gap-2 text-xs font-medium ${tokens.textMuted}`}>
@@ -565,7 +653,7 @@ export function ResizeQuickTool({
                   type="checkbox"
                   checked={shadow}
                   onChange={(e) => setShadow(e.target.checked)}
-                  className="h-3.5 w-3.5 accent-indigo-600"
+                  className={`h-4 w-4 accent-violet-600 ${tokens.focusRing}`}
                 />
                 {s.resize.shadowLabel}
               </label>
@@ -575,22 +663,24 @@ export function ResizeQuickTool({
 
         <div className="space-y-2 border-t pt-4 border-current/10">
           {error && (
-            <p role="alert" className="text-xs font-medium text-rose-500">
+            <p role="alert" className={`text-xs font-medium ${tokens.errorText}`}>
               {error}
             </p>
           )}
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <button
               type="button"
-              disabled={!current || processing}
+              disabled={!current || isBusy || zipping}
               onClick={handleDownloadPrimaryOrZip}
-              className={`inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-xs font-semibold transition-colors disabled:opacity-50 ${tokens.buttonPrimary}`}
+              className={`inline-flex min-h-9 items-center justify-center rounded-xl px-4 py-2.5 text-xs font-semibold transition-colors disabled:opacity-50 ${tokens.focusRing} ${tokens.buttonPrimary}`}
             >
-              {processing
-                ? s.common.processing
-                : activeOutputs.length > 1
-                  ? s.common.downloadZip
-                  : s.common.downloadImage}
+              {zipping
+                ? s.common.downloading
+                : isBusy
+                  ? s.common.processing
+                  : activeOutputs.length > 1
+                    ? s.common.downloadZip
+                    : s.common.downloadImage}
             </button>
             <StudioHandoffButton
               theme={theme}

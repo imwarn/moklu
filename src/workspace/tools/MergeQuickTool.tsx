@@ -1,10 +1,10 @@
 /**
- * [INPUT]: depends on react, canvasUtils from ../canvasUtils, strings from ../i18n, themeTokens from ../themeTokens, UI primitives from ../uiPrimitives, and WorkspaceToolPanelProps from ../types
- * [OUTPUT]: exports MergeQuickTool component for horizontal, vertical, and grid multi-image stitching with reorderable strip
+ * [INPUT]: depends on react, canvasUtils from ../canvasUtils, strings from ../i18n, themeTokens from ../themeTokens, UI primitives from ../uiPrimitives, useDebouncedValue from ../useDebouncedValue, and WorkspaceToolPanelProps from ../types
+ * [OUTPUT]: exports MergeQuickTool component for horizontal, vertical, and grid multi-image stitching with reorderable strip and debounced preview
  * [POS]: merge and collage tool panel inside src/workspace/tools; delegates canvas composition to injected engines.merge
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createDemoImageInput, formatBytes, readFileAsImageInput, triggerBlobDownload } from '../canvasUtils'
 import { getWorkspaceStrings } from '../i18n'
 import { getWorkspaceThemeTokens } from '../themeTokens'
@@ -18,19 +18,12 @@ import type {
 import {
   ColorSwatchRow,
   DropZone,
+  PreviewBusyOverlay,
   SegmentedControl,
   SliderField,
   StudioHandoffButton,
 } from '../uiPrimitives'
-
-const BG_SWATCHES = [
-  { label: 'White', value: '#ffffff' },
-  { label: 'Soft Gray', value: '#f1f5f9' },
-  { label: 'Slate Dark', value: '#0f172a' },
-  { label: 'Aurora', value: 'linear-gradient(135deg, #b5b0f2, #e5efff)' },
-  { label: 'Sunset', value: 'linear-gradient(135deg, #f97316, #ec4899)' },
-  { label: 'Transparent', value: 'transparent' },
-]
+import { useDebouncedValue } from '../useDebouncedValue'
 
 export function MergeQuickTool({
   preset,
@@ -41,6 +34,18 @@ export function MergeQuickTool({
 }: WorkspaceToolPanelProps) {
   const s = getWorkspaceStrings(locale)
   const tokens = getWorkspaceThemeTokens(theme)
+
+  const bgSwatches = useMemo(
+    () => [
+      { label: s.swatches.white, value: '#ffffff' },
+      { label: s.swatches.softGray, value: '#f1f5f9' },
+      { label: s.swatches.slateDark, value: '#0f172a' },
+      { label: s.swatches.aurora, value: 'linear-gradient(135deg, #b5b0f2, #e5efff)' },
+      { label: s.swatches.sunset, value: 'linear-gradient(135deg, #f97316, #ec4899)' },
+      { label: s.swatches.transparent, value: 'transparent' },
+    ],
+    [s.swatches],
+  )
 
   const [images, setImages] = useState<WorkspaceImageInput[]>([])
   const [direction, setDirection] = useState<WorkspaceMergeOptions['direction']>(
@@ -58,15 +63,28 @@ export function MergeQuickTool({
   const [rendering, setRendering] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const debouncedColumns = useDebouncedValue(columns)
+  const debouncedGap = useDebouncedValue(gap)
+  const debouncedPadding = useDebouncedValue(padding)
+  const debouncedBorderRadius = useDebouncedValue(borderRadius)
+
+  const hasPendingParams =
+    images.length > 0 &&
+    (debouncedColumns !== columns ||
+      debouncedGap !== gap ||
+      debouncedPadding !== padding ||
+      debouncedBorderRadius !== borderRadius)
+  const isBusy = rendering || hasPendingParams
+
   const handleFiles = useCallback(async (files: File[]) => {
     setError(null)
     try {
       const loaded = await Promise.all(files.map((file) => readFileAsImageInput(file)))
       setImages((prev) => [...prev, ...loaded])
     } catch {
-      setError('Failed to decode one or more images.')
+      setError(s.common.decodeError)
     }
-  }, [])
+  }, [s.common.decodeError])
 
   const handleLoadDemo = () => {
     setError(null)
@@ -102,19 +120,19 @@ export function MergeQuickTool({
         const merged = await engines.merge(images, {
           direction,
           normalize,
-          columns,
+          columns: debouncedColumns,
           aspectCell,
           fit: 'cover',
-          gap,
-          padding,
-          borderRadius,
+          gap: debouncedGap,
+          padding: debouncedPadding,
+          borderRadius: debouncedBorderRadius,
           background,
           format,
           quality: 0.92,
         })
         if (!cancelled) setResult(merged)
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Merge failed')
+        if (!cancelled) setError(err instanceof Error && err.message ? err.message : s.merge.mergeError)
       } finally {
         if (!cancelled) setRendering(false)
       }
@@ -123,7 +141,20 @@ export function MergeQuickTool({
     return () => {
       cancelled = true
     }
-  }, [images, direction, normalize, columns, aspectCell, gap, padding, borderRadius, background, format, engines])
+  }, [
+    images,
+    direction,
+    normalize,
+    debouncedColumns,
+    aspectCell,
+    debouncedGap,
+    debouncedPadding,
+    debouncedBorderRadius,
+    background,
+    format,
+    engines,
+    s.merge.mergeError,
+  ])
 
   const activeResult = images.length > 0 ? result : null
 
@@ -164,7 +195,7 @@ export function MergeQuickTool({
               <button
                 type="button"
                 onClick={handleLoadDemo}
-                className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${tokens.buttonSecondary}`}
+                className={`min-h-8 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${tokens.focusRing} ${tokens.buttonSecondary}`}
               >
                 {s.merge.loadDemoSet}
               </button>
@@ -175,7 +206,7 @@ export function MergeQuickTool({
                     setImages([])
                     setResult(null)
                   }}
-                  className={`rounded-lg px-2.5 py-1 text-xs font-medium ${tokens.textMuted} hover:text-rose-500`}
+                  className={`min-h-8 rounded-lg px-2.5 py-1 text-xs font-medium ${tokens.focusRing} ${tokens.textMuted} hover:text-rose-500`}
                 >
                   {s.common.clearAll}
                 </button>
@@ -183,11 +214,15 @@ export function MergeQuickTool({
             </div>
           </div>
 
-          <div className={`flex min-h-[260px] items-center justify-center overflow-hidden rounded-xl border p-3 ${tokens.cardMuted}`}>
+          <div
+            aria-busy={isBusy}
+            className={`relative flex min-h-[260px] items-center justify-center overflow-hidden rounded-xl border p-3 ${tokens.cardMuted}`}
+          >
+            {isBusy && <PreviewBusyOverlay theme={theme} label={s.common.processing} />}
             {activeResult ? (
               <img
                 src={activeResult.dataUrl}
-                alt="Merged result preview"
+                alt={s.merge.previewAlt}
                 className="max-h-[340px] max-w-full rounded-lg object-contain shadow-sm"
               />
             ) : (
@@ -214,33 +249,33 @@ export function MergeQuickTool({
                       className="h-12 w-12 rounded-lg object-cover"
                     />
                     <div className="flex flex-col gap-1">
-                      <span className={`max-w-[96px] truncate text-[11px] font-medium ${tokens.text}`}>
+                      <span className={`max-w-[110px] truncate text-[11px] font-medium ${tokens.text}`}>
                         {idx + 1}. {item.name}
                       </span>
                       <div className="flex items-center gap-1">
                         <button
                           type="button"
-                          aria-label={s.common.moveLeft}
+                          aria-label={`${s.common.moveLeft}: ${item.name}`}
                           disabled={idx === 0}
                           onClick={() => moveImage(idx, -1)}
-                          className={`rounded border px-1.5 py-0.5 text-[10px] disabled:opacity-30 ${tokens.pillIdle}`}
+                          className={`inline-flex h-7 min-w-7 items-center justify-center rounded-md border px-1.5 text-xs disabled:opacity-30 ${tokens.focusRing} ${tokens.pillIdle}`}
                         >
                           ←
                         </button>
                         <button
                           type="button"
-                          aria-label={s.common.moveRight}
+                          aria-label={`${s.common.moveRight}: ${item.name}`}
                           disabled={idx === images.length - 1}
                           onClick={() => moveImage(idx, 1)}
-                          className={`rounded border px-1.5 py-0.5 text-[10px] disabled:opacity-30 ${tokens.pillIdle}`}
+                          className={`inline-flex h-7 min-w-7 items-center justify-center rounded-md border px-1.5 text-xs disabled:opacity-30 ${tokens.focusRing} ${tokens.pillIdle}`}
                         >
                           →
                         </button>
                         <button
                           type="button"
-                          aria-label={s.common.remove}
+                          aria-label={`${s.common.remove}: ${item.name}`}
                           onClick={() => removeImage(item.id)}
-                          className="rounded border border-rose-300/60 px-1.5 py-0.5 text-[10px] text-rose-500 hover:bg-rose-500/10"
+                          className={`inline-flex h-7 min-w-7 items-center justify-center rounded-md border px-1.5 text-xs font-semibold ${tokens.focusRing} ${tokens.dangerGhost}`}
                         >
                           ×
                         </button>
@@ -260,6 +295,7 @@ export function MergeQuickTool({
               title={s.common.dropMultipleTitle}
               hint={s.common.dropHint}
               buttonLabel={s.merge.addMore}
+              invalidFileMessage={s.common.invalidFileError}
               onFiles={handleFiles}
             />
           </div>
@@ -311,7 +347,7 @@ export function MergeQuickTool({
                   { value: '1:1', label: '1:1' },
                   { value: '4:3', label: '4:3' },
                   { value: '3:4', label: '3:4' },
-                  { value: 'auto', label: 'Auto' },
+                  { value: 'auto', label: s.common.auto },
                 ]}
                 onChange={setAspectCell}
               />
@@ -326,7 +362,7 @@ export function MergeQuickTool({
             theme={theme}
             label={s.common.background}
             value={background}
-            options={BG_SWATCHES}
+            options={bgSwatches}
             onChange={setBackground}
           />
 
@@ -345,18 +381,18 @@ export function MergeQuickTool({
 
         <div className="space-y-2 border-t pt-4 border-current/10">
           {error && (
-            <p role="alert" className="text-xs font-medium text-rose-500">
+            <p role="alert" className={`text-xs font-medium ${tokens.errorText}`}>
               {error}
             </p>
           )}
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <button
               type="button"
-              disabled={!activeResult || rendering}
+              disabled={!activeResult || isBusy}
               onClick={() => activeResult && triggerBlobDownload(activeResult.blob, activeResult.filename)}
-              className={`inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-xs font-semibold transition-colors disabled:opacity-50 ${tokens.buttonPrimary}`}
+              className={`inline-flex min-h-9 items-center justify-center rounded-xl px-4 py-2.5 text-xs font-semibold transition-colors disabled:opacity-50 ${tokens.focusRing} ${tokens.buttonPrimary}`}
             >
-              {rendering ? s.common.processing : s.common.downloadImage}
+              {isBusy ? s.common.processing : s.common.downloadImage}
             </button>
             <StudioHandoffButton
               theme={theme}

@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on src/tools barrel (loadImageItem, disposeImageItems, mergeImages, splitImage, compressImages, transformImages, composeIdCardSheet, packBlobsToZip, replaceFileExtension, extensionForFormat) and src/workspace/types (WorkspaceEngines and option/output contracts)
- * [OUTPUT]: exports parseBackgroundFill and createToolsWorkspaceEngines adapting src/tools pure canvas engines to the WorkspaceEngines DIP contract with guaranteed LoadedImageItem disposal
+ * [INPUT]: depends on src/tools barrel (loadImageItem, disposeImageItems, mergeImages, splitImage, compressImages, transformImages, composeIdCardSheet, packBlobsToZip, sanitizeFilenameStem, extensionForFormat) and src/workspace/types (WorkspaceEngines and option/output contracts)
+ * [OUTPUT]: exports parseBackgroundFill, formatSuffixedFilename, and createToolsWorkspaceEngines adapting src/tools pure canvas engines to the WorkspaceEngines DIP contract with guaranteed LoadedImageItem disposal
  * [POS]: concrete integration adapter inside src/workspace; bridges UI panels in src/workspace/tools to the tested pure-canvas engines in src/tools
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -12,7 +12,7 @@ import {
   loadImageItem,
   mergeImages,
   packBlobsToZip,
-  replaceFileExtension,
+  sanitizeFilenameStem,
   splitImage,
   transformImages,
   type AspectPreset,
@@ -27,6 +27,7 @@ import type {
   WorkspaceCompressOptions,
   WorkspaceEngines,
   WorkspaceIdCardOptions,
+  WorkspaceImageFormat,
   WorkspaceImageInput,
   WorkspaceMergeOptions,
   WorkspaceSplitOptions,
@@ -115,6 +116,22 @@ export function parseBackgroundFill(background: string): BackgroundFill {
 function mapAspectPreset(aspect: WorkspaceAspectPreset): Exclude<AspectPreset, 'original'> | undefined {
   if (aspect === 'free') return undefined
   return aspect
+}
+
+/**
+ * Formats an output filename by sanitizing the original stem (with a safe non-empty
+ * fallback stem), appending an optional suffix, and applying the format extension.
+ */
+export function formatSuffixedFilename(
+  originalName: string,
+  suffix: string,
+  format: WorkspaceImageFormat,
+  fallbackStem = 'image',
+): string {
+  const stem = sanitizeFilenameStem(originalName, fallbackStem)
+  const cleanSuffix = suffix.replace(/^-+/, '')
+  const finalStem = cleanSuffix ? `${stem}-${cleanSuffix}` : stem
+  return `${finalStem}.${extensionForFormat(format)}`
 }
 
 async function toBlobOutput(
@@ -215,7 +232,7 @@ export function createToolsWorkspaceEngines(): WorkspaceEngines {
             const originalBytes = source?.sizeBytes && source.sizeBytes > 0
               ? source.sizeBytes
               : item.originalBytes
-            const filename = replaceFileExtension(originalName, options.format, '-compressed')
+            const filename = formatSuffixedFilename(originalName, 'compressed', options.format)
             const base = await toBlobOutput(
               item.blob,
               item.width,
@@ -255,7 +272,7 @@ export function createToolsWorkspaceEngines(): WorkspaceEngines {
             : undefined,
           crop: options.mode === 'crop'
             ? {
-                aspect: mappedAspect ?? '1:1',
+                aspect: mappedAspect,
               }
             : undefined,
           pad: options.mode === 'pad'
@@ -276,7 +293,7 @@ export function createToolsWorkspaceEngines(): WorkspaceEngines {
           batch.items.map((item, index) => {
             const source = images[index]
             const filename = source
-              ? replaceFileExtension(source.name, options.format, `-${options.mode}`)
+              ? formatSuffixedFilename(source.name, options.mode, options.format)
               : item.filename
             return toBlobOutput(item.blob, item.width, item.height, filename, item.format)
           }),
