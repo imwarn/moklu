@@ -40,10 +40,12 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
   const { uiLocale, t, onChangeLocale } = useStudioLocale()
   const {
     project,
+    activeSlideGroupId,
     selectedLayerIds,
     createGroup,
   } = useEditorStore(useShallow((s) => ({
     project: s.project,
+    activeSlideGroupId: s.activeSlideGroupId,
     selectedLayerIds: s.selectedLayerIds,
     createGroup: s.createGroup,
   })))
@@ -97,6 +99,7 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
   const [templatesOpen, setTemplatesOpen] = useState(false)
   const [quickOpen, setQuickOpen] = useState(false)
   const [canvasSizeOpen, setCanvasSizeOpen] = useState(false)
+  const [isQuickExporting, setIsQuickExporting] = useState(false)
   const [quickExportError, setQuickExportError] = useState<string | null>(null)
   const [langMenuOpen, setLangMenuOpen] = useState(false)
   const langMenuRef = useRef<HTMLDivElement>(null)
@@ -122,19 +125,24 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
   const activeLocaleOption =
     STUDIO_UI_LOCALES.find((item) => item.code === uiLocale) ?? STUDIO_UI_LOCALES[0]
 
+  const activeSlideGroup = project.slideGroups.find((g) => g.id === activeSlideGroupId)
+
   const exportQuickPng = async () => {
+    if (isQuickExporting) return
     const stage = getStage()
-    const group = project.slideGroups.find((g) => g.id === useEditorStore.getState().activeSlideGroupId)
-    if (!stage || !group) return
+    if (!stage || !activeSlideGroup) return
     try {
+      setIsQuickExporting(true)
       setQuickExportError(null)
       await runExclusiveCapture(async () => {
         await waitForStageSettled(stage, { timeoutMs: 1800 })
-        const png = await exportSlide(stage, 0, group)
+        const png = await exportSlide(stage, 0, activeSlideGroup)
         downloadDataUrl(png, 'moklu.png')
       })
     } catch (error) {
       setQuickExportError(error instanceof Error ? error.message : String(error))
+    } finally {
+      setIsQuickExporting(false)
     }
   }
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -156,10 +164,6 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeProjectMeta?.updatedAt])
-
-  const activeSlideGroup = project.slideGroups.find(
-    (g) => g.id === useEditorStore.getState().activeSlideGroupId,
-  )
 
   return (
     <header
@@ -208,6 +212,7 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
             }
           }}
           title={t.toolbar.backToToolsTitle}
+          aria-label={t.toolbar.backToToolsTitle}
           className="inline-flex shrink-0 items-center gap-1 rounded-md border border-white/10 px-2 py-1 text-xs font-medium text-[#b8b8c8] transition-colors hover:border-white/25 hover:bg-white/5 hover:text-white"
         >
           <span aria-hidden="true">←</span>
@@ -221,6 +226,7 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
         {editingName ? (
           <input
             ref={nameInputRef}
+            aria-label={t.toolbar.renameProjectTitle}
             value={tempName}
             onChange={(e) => setTempName(e.target.value)}
             onBlur={commitName}
@@ -228,44 +234,14 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
               if (e.key === 'Enter') commitName()
               if (e.key === 'Escape') cancelName()
             }}
-            style={{
-              background: 'rgba(255,255,255,0.07)',
-              border: '1px solid rgba(124,110,246,0.6)',
-              borderRadius: 5,
-              color: '#e8e8f0',
-              fontSize: 12,
-              padding: '3px 8px',
-              width: 160,
-              outline: 'none',
-              flexShrink: 0,
-            }}
+            className="w-40 shrink-0 rounded-[5px] border border-[#7c6ef6]/60 bg-white/[0.07] px-2 py-[3px] text-xs text-[#e8e8f0] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#7c6ef6]"
           />
         ) : (
           <button
+            type="button"
             onClick={startEditingName}
             title={t.toolbar.renameProjectTitle}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#a0a0b0',
-              cursor: 'text',
-              fontSize: 12,
-              padding: '3px 6px',
-              borderRadius: 5,
-              maxWidth: 'clamp(96px, 14vw, 180px)',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
-            }}
-            onMouseEnter={(e) => {
-              ;(e.currentTarget as HTMLButtonElement).style.color = '#e8e8f0'
-              ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.05)'
-            }}
-            onMouseLeave={(e) => {
-              ;(e.currentTarget as HTMLButtonElement).style.color = '#a0a0b0'
-              ;(e.currentTarget as HTMLButtonElement).style.background = 'none'
-            }}
+            className="max-w-[clamp(96px,14vw,180px)] shrink-0 cursor-text truncate whitespace-nowrap rounded-[5px] bg-transparent px-1.5 py-[3px] text-xs text-[#a0a0b0] transition-colors hover:bg-white/[0.05] hover:text-[#e8e8f0]"
           >
             {displayProjectName}
           </button>
@@ -273,31 +249,13 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
 
         {/* Projects button */}
         <button
+          type="button"
           onClick={() => setProjectsOpen(true)}
           title={t.toolbar.projectsTitle}
-          style={{
-            background: 'none',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: 6,
-            color: '#a0a0b0',
-            cursor: 'pointer',
-            fontSize: 12,
-            padding: '3px 10px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 5,
-            whiteSpace: 'nowrap',
-          }}
-          onMouseEnter={(e) => {
-            ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.25)'
-            ;(e.currentTarget as HTMLButtonElement).style.color = '#e8e8f0'
-          }}
-          onMouseLeave={(e) => {
-            ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.1)'
-            ;(e.currentTarget as HTMLButtonElement).style.color = '#a0a0b0'
-          }}
+          aria-label={t.toolbar.projects}
+          className="inline-flex shrink-0 cursor-pointer items-center gap-[5px] whitespace-nowrap rounded-md border border-white/10 bg-transparent px-2.5 py-[3px] text-xs text-[#a0a0b0] transition-colors hover:border-white/25 hover:text-[#e8e8f0]"
         >
-          <span className="min-[1100px]:hidden">▦</span>
+          <span aria-hidden="true" className="min-[1100px]:hidden">▦</span>
           <span className="max-[1099px]:hidden">{t.toolbar.projects}</span>
         </button>
 
@@ -306,20 +264,22 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
           onClick={() => setQuickOpen(true)}
           title={t.toolbar.quickDesignTitle}
           aria-label={t.toolbar.quickDesignAria}
-          className="shrink-0 rounded-lg border border-[#8276e8]/60 bg-[#8276e8]/20 px-3 py-1.5 text-xs font-semibold text-[#d6d1ff] hover:bg-[#8276e8]/30"
+          className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-[#8276e8]/60 bg-[#8276e8]/20 px-3 py-1.5 text-xs font-semibold text-[#d6d1ff] transition-colors hover:bg-[#8276e8]/30"
         >
-          ✦ {t.toolbar.quickDesign}
+          <span aria-hidden="true">✦</span>
+          <span>{t.toolbar.quickDesign}</span>
         </button>
 
         <button
           type="button"
           onClick={() => setCanvasSizeOpen(true)}
           title={t.toolbar.canvasSizeTitle}
-          className="shrink-0 rounded-lg border border-white/15 px-3 py-1.5 text-xs text-[#d6d6e4] hover:border-white/30 hover:bg-white/5"
+          className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-white/15 px-3 py-1.5 text-xs text-[#d6d6e4] transition-colors hover:border-white/30 hover:bg-white/5"
         >
-          ▣ {t.toolbar.canvasSize}
+          <span aria-hidden="true">▣</span>
+          <span>{t.toolbar.canvasSize}</span>
           {activeSlideGroup && (
-            <span className="ml-1 hidden text-[#888a9d] min-[1350px]:inline">
+            <span className="ml-0.5 hidden text-[#9494a8] min-[1350px]:inline">
               {activeSlideGroup.slideWidth}×{activeSlideGroup.slideHeight}
             </span>
           )}
@@ -329,45 +289,44 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
 
         {/* Templates button */}
         <button
+          type="button"
           onClick={() => setTemplatesOpen(true)}
           title={t.toolbar.templatesTitle}
-          style={{
-            background: 'none',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: 6,
-            color: '#a0a0b0',
-            cursor: 'pointer',
-            fontSize: 12,
-            padding: '3px 10px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 5,
-            whiteSpace: 'nowrap',
-          }}
-          onMouseEnter={(e) => {
-            ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.25)'
-            ;(e.currentTarget as HTMLButtonElement).style.color = '#e8e8f0'
-          }}
-          onMouseLeave={(e) => {
-            ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.1)'
-            ;(e.currentTarget as HTMLButtonElement).style.color = '#a0a0b0'
-          }}
+          aria-label={t.toolbar.templates}
+          className="inline-flex shrink-0 cursor-pointer items-center gap-[5px] whitespace-nowrap rounded-md border border-white/10 bg-transparent px-2.5 py-[3px] text-xs text-[#a0a0b0] transition-colors hover:border-white/25 hover:text-[#e8e8f0]"
         >
-          <span>🗂</span>
+          <span aria-hidden="true">🗂</span>
           <span className="max-[1099px]:hidden">{t.toolbar.templates}</span>
         </button>
 
         <BrandKitButton />
 
         {quickExportError && (
-          <span title={quickExportError} className="max-w-32 truncate text-xs text-red-400">
-            {t.toolbar.exportError}
-          </span>
+          <div
+            role="alert"
+            title={quickExportError}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded border border-red-400/35 bg-red-500/10 px-2 py-0.5 text-xs text-red-300"
+          >
+            <span className="max-w-32 truncate">{t.toolbar.exportError}</span>
+            <button
+              type="button"
+              onClick={() => setQuickExportError(null)}
+              aria-label={t.common.close}
+              title={t.common.close}
+              className="rounded px-0.5 text-red-200 transition-colors hover:bg-red-400/20 hover:text-white"
+            >
+              <span aria-hidden="true">×</span>
+            </button>
+          </div>
         )}
 
         {/* Save indicator */}
         {saveLabel && (
-          <span style={{ fontSize: 11, color: '#6ee7b7', opacity: 0.8, whiteSpace: 'nowrap', flexShrink: 0 }}>
+          <span
+            role="status"
+            aria-live="polite"
+            className="shrink-0 whitespace-nowrap text-[11px] text-[#6ee7b7]/80"
+          >
             {saveLabel === 'saving' ? t.toolbar.saving : t.toolbar.saved}
           </span>
         )}
@@ -377,22 +336,24 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
         {/* Undo / Redo */}
         <div className="flex items-center gap-0.5">
           <button
+            type="button"
             onClick={() => undo()}
             disabled={!canUndo}
             title={t.toolbar.undoTitle}
-            className="w-7 h-7 flex items-center justify-center text-sm rounded hover:bg-[rgba(255,255,255,0.06)] disabled:opacity-30 disabled:cursor-not-allowed"
-            style={{ color: canUndo ? '#e8e8f0' : '#3a3a4a' }}
+            aria-label={t.toolbar.undoTitle}
+            className="flex h-7 w-7 items-center justify-center rounded text-sm text-[#e8e8f0] transition-colors hover:bg-[rgba(255,255,255,0.06)] disabled:cursor-not-allowed disabled:text-[#3a3a4a] disabled:opacity-40"
           >
-            ↩
+            <span aria-hidden="true">↩</span>
           </button>
           <button
+            type="button"
             onClick={() => redo()}
             disabled={!canRedo}
             title={t.toolbar.redoTitle}
-            className="w-7 h-7 flex items-center justify-center text-sm rounded hover:bg-[rgba(255,255,255,0.06)] disabled:opacity-30 disabled:cursor-not-allowed"
-            style={{ color: canRedo ? '#e8e8f0' : '#3a3a4a' }}
+            aria-label={t.toolbar.redoTitle}
+            className="flex h-7 w-7 items-center justify-center rounded text-sm text-[#e8e8f0] transition-colors hover:bg-[rgba(255,255,255,0.06)] disabled:cursor-not-allowed disabled:text-[#3a3a4a] disabled:opacity-40"
           >
-            ↪
+            <span aria-hidden="true">↪</span>
           </button>
         </div>
 
@@ -402,11 +363,13 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
         <div className="flex items-center gap-1.5">
           {selectedLayerIds.length >= 2 && (
             <button
+              type="button"
               onClick={() => createGroup(selectedLayerIds)}
               title={t.toolbar.groupLayersTitle}
-              className="text-xs text-[#e8e8f0] px-2.5 py-1 rounded border border-[rgba(124,110,246,0.5)] bg-[rgba(124,110,246,0.15)] hover:bg-[rgba(124,110,246,0.25)] transition-colors"
+              className="inline-flex items-center gap-1 rounded border border-[rgba(124,110,246,0.5)] bg-[rgba(124,110,246,0.15)] px-2.5 py-1 text-xs text-[#e8e8f0] transition-colors hover:bg-[rgba(124,110,246,0.25)]"
             >
-              ⊞ {t.toolbar.groupLayers} ({selectedLayerIds.length})
+              <span aria-hidden="true">⊞</span>
+              <span>{t.toolbar.groupLayers} ({selectedLayerIds.length})</span>
             </button>
           )}
         </div>
@@ -415,11 +378,15 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
       {/* Right section — pinned so Settings/Help/Language/GitHub never scroll out of reach */}
       <button
         type="button"
+        disabled={isQuickExporting}
+        aria-busy={isQuickExporting}
         onClick={() => { void exportQuickPng() }}
         title={t.toolbar.quickPngTitle}
-        className="shrink-0 rounded-lg border border-white/15 px-3 py-1.5 text-xs text-white hover:bg-white/10"
+        aria-label={t.toolbar.quickPngTitle}
+        className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-white/15 px-3 py-1.5 text-xs text-white transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        ↓ PNG
+        <span aria-hidden="true">{isQuickExporting ? '⏳' : '↓'}</span>
+        <span>PNG</span>
       </button>
       <div data-testid="toolbar-right" className="flex shrink-0 items-center gap-2 max-[1099px]:gap-1">
         {/* Compact Studio UI Language Switcher */}
@@ -482,33 +449,40 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
         </div>
 
         <button
+          type="button"
           onClick={() => setSettingsOpen(true)}
           title={t.toolbar.settingsTitle}
-          className="inline-flex items-center gap-1.5 text-xs text-[#e8e8f0] px-3 py-1.5 rounded border border-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] hover:bg-[rgba(255,255,255,0.05)] transition-colors"
+          aria-label={t.toolbar.settings}
+          className="inline-flex items-center gap-1.5 rounded border border-[rgba(255,255,255,0.1)] px-3 py-1.5 text-xs text-[#e8e8f0] transition-colors hover:border-[rgba(255,255,255,0.2)] hover:bg-[rgba(255,255,255,0.05)]"
         >
           <span aria-hidden="true">⚙</span>
           <span className="max-[1099px]:hidden">{t.toolbar.settings}</span>
         </button>
 
         <button
+          type="button"
           onClick={() => onSetMode(mode === 'localization' ? 'editor' : 'localization')}
           title={t.toolbar.localizationTitle}
-          className={`text-xs px-3 py-1.5 rounded border transition-colors ${
+          aria-label={mode === 'localization' ? t.toolbar.backToDesign : t.toolbar.localization}
+          aria-pressed={mode === 'localization'}
+          className={`rounded border px-3 py-1.5 text-xs transition-colors ${
             mode === 'localization'
-              ? 'text-white bg-[rgba(124,110,246,0.22)] border-[rgba(124,110,246,0.45)]'
-              : 'text-[#e8e8f0] border-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] hover:bg-[rgba(255,255,255,0.05)]'
+              ? 'border-[rgba(124,110,246,0.45)] bg-[rgba(124,110,246,0.22)] text-white'
+              : 'border-[rgba(255,255,255,0.1)] text-[#e8e8f0] hover:border-[rgba(255,255,255,0.2)] hover:bg-[rgba(255,255,255,0.05)]'
           }`}
         >
           <span className="max-[1099px]:hidden">
             {mode === 'localization' ? t.toolbar.backToDesign : t.toolbar.localization}
           </span>
-          <span className="min-[1100px]:hidden">◉</span>
+          <span aria-hidden="true" className="min-[1100px]:hidden">◉</span>
         </button>
 
         <button
+          type="button"
           onClick={() => setHelpOpen(true)}
           title={t.toolbar.helpTitle}
-          className="flex items-center gap-1.5 text-xs text-[#a0a0b0] px-3 py-1.5 rounded border border-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] hover:bg-[rgba(255,255,255,0.05)] hover:text-[#e8e8f0] transition-colors"
+          aria-label={t.toolbar.help}
+          className="flex items-center gap-1.5 rounded border border-[rgba(255,255,255,0.1)] px-3 py-1.5 text-xs text-[#a0a0b0] transition-colors hover:border-[rgba(255,255,255,0.2)] hover:bg-[rgba(255,255,255,0.05)] hover:text-[#e8e8f0]"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <circle cx="12" cy="12" r="10"/>
@@ -524,7 +498,8 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
           target="_blank"
           rel="noopener noreferrer"
           title={t.toolbar.githubTitle}
-          className="flex items-center gap-1.5 text-xs text-[#a0a0b0] px-3 py-1.5 rounded border border-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] hover:bg-[rgba(255,255,255,0.05)] hover:text-[#e8e8f0] transition-colors"
+          aria-label={t.toolbar.githubTitle}
+          className="flex items-center gap-1.5 rounded border border-[rgba(255,255,255,0.1)] px-3 py-1.5 text-xs text-[#a0a0b0] transition-colors hover:border-[rgba(255,255,255,0.2)] hover:bg-[rgba(255,255,255,0.05)] hover:text-[#e8e8f0]"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.009-.868-.013-1.703-2.782.604-3.369-1.342-3.369-1.342-.454-1.154-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0 1 12 6.836a9.59 9.59 0 0 1 2.504.337c1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/>
