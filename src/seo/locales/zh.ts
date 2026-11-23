@@ -28,6 +28,8 @@ export const ZH_LOCALE: LocaleBundle = {
     toggleThemeAria: '切换浅色与深色主题',
     languageLabel: '切换语言',
     menuToggleAria: '展开或收起导航菜单',
+    primaryNavAria: '主要工具导航',
+    mobileNavAria: '移动端工具导航',
     navCategories: {
       mockup: '截图套壳',
       merge: '拼图合并',
@@ -61,6 +63,7 @@ export const ZH_LOCALE: LocaleBundle = {
     studioBannerDescription:
       '将当前作品一键送入 Moklu Studio —— 完整的 Konva 多图层画布编辑器，支持多层阴影、网格渐变、文字标注与多语言套图管理。',
     studioBannerAction: '启动 Moklu Studio',
+    studioBannerProAction: '了解 Moklu Pro',
     footerDescription: '开源、本地优先的截图美化与浏览器图片工具集。无追踪、无文件上传。',
     footerGroups: {
       mockups: '套壳与发布视觉',

@@ -1,7 +1,7 @@
 /**
- * [INPUT]: depends on useEffect, useRef, useState from react; depends on ResolvedRoute from ./types.ts; depends on PRIMARY_TOOL_SLUGS and buildLocalizedPath from ./routes.ts; depends on SUPPORTED_LOCALES and getUiLabels from ./i18n.ts; depends on NAV_TOOL_ORDER and handleSpaLinkClick from ./navHelpers.ts
+ * [INPUT]: depends on useEffect, useRef, useState from react; depends on ResolvedRoute from ./types.ts; depends on PRIMARY_TOOL_SLUGS and buildLocalizedPath from ./routes.ts; depends on SUPPORTED_LOCALES and getUiLabels from ./i18n.ts; depends on NAV_TOOL_ORDER, handleSpaLinkClick, and isToolNavActive from ./navHelpers.ts
  * [OUTPUT]: exports SiteHeader component and SiteHeaderProps type
- * [POS]: top-level semantic site navigation bar within src/seo, rendering crawlable tool category links, 4-locale switcher, theme toggle, Pro CTA, and Studio link
+ * [POS]: top-level semantic site navigation bar within src/seo, rendering skip-to-content link, crawlable tool category nav, accessible mobile drawer, 4-locale switcher, theme toggle, Pro CTA, and Studio link
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { ResolvedRoute } from './types.ts'
 import { PRIMARY_TOOL_SLUGS, buildLocalizedPath } from './routes.ts'
 import { SUPPORTED_LOCALES, getUiLabels } from './i18n.ts'
-import { NAV_TOOL_ORDER, handleSpaLinkClick } from './navHelpers.ts'
+import { NAV_TOOL_ORDER, handleSpaLinkClick, isToolNavActive } from './navHelpers.ts'
 
 export interface SiteHeaderProps {
   route: ResolvedRoute
@@ -33,6 +33,7 @@ export function SiteHeader({
   const [langOpen, setLangOpen] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const langRef = useRef<HTMLDivElement | null>(null)
+  const menuBtnRef = useRef<HTMLButtonElement | null>(null)
 
   const homeHref = buildLocalizedPath(route.locale, '')
   const studioHref = buildLocalizedPath(route.locale, 'studio')
@@ -57,6 +58,20 @@ export function SiteHeader({
     }
   }, [langOpen])
 
+  useEffect(() => {
+    if (!mobileOpen) return
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setMobileOpen(false)
+        menuBtnRef.current?.focus()
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [mobileOpen])
+
   const surfaceCls = isDark
     ? 'bg-[#0f0f13]/85 border-white/10 text-zinc-100'
     : 'bg-white/85 border-zinc-200/80 text-zinc-900'
@@ -65,10 +80,28 @@ export function SiteHeader({
     ? 'border-white/10 bg-white/[0.04] text-zinc-200 hover:bg-white/[0.09] hover:text-white'
     : 'border-zinc-200 bg-zinc-50 text-zinc-700 hover:bg-zinc-100 hover:text-zinc-950'
 
+  const proBtnToneCls = isPro
+    ? isDark
+      ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-300'
+      : 'border-emerald-200 bg-emerald-50 text-emerald-700'
+    : isDark
+      ? 'border-amber-400/30 bg-amber-400/10 text-amber-200 hover:bg-amber-400/20'
+      : 'border-amber-300/80 bg-amber-50 text-amber-800 hover:bg-amber-100'
+
   return (
     <header
       className={`sticky top-0 z-40 border-b backdrop-blur-md transition-colors ${surfaceCls}`}
     >
+      <a
+        href="#main-content"
+        className={`sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-lg focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-violet-500 ${
+          isDark
+            ? 'focus:bg-[#18181f] focus:text-zinc-50'
+            : 'focus:bg-white focus:text-zinc-950'
+        }`}
+      >
+        {ui.skipToContent}
+      </a>
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
         {/* Brand */}
         <div className="flex items-center gap-6">
@@ -117,16 +150,13 @@ export function SiteHeader({
 
           {/* Primary desktop tool navigation */}
           <nav
-            aria-label="Primary tools"
+            aria-label={ui.primaryNavAria}
             className="hidden items-center gap-1 lg:flex"
           >
             {NAV_TOOL_ORDER.map((toolId) => {
               const targetSlug = PRIMARY_TOOL_SLUGS[toolId]
               const href = buildLocalizedPath(route.locale, targetSlug)
-              const isActive =
-                !route.isStudio &&
-                ((route.slug === '' && toolId === 'mockup') ||
-                  (route.slug !== '' && route.tool === toolId))
+              const isActive = isToolNavActive(route, toolId)
 
               return (
                 <a
@@ -134,7 +164,7 @@ export function SiteHeader({
                   href={href}
                   aria-current={isActive ? 'page' : undefined}
                   onClick={(event) => handleSpaLinkClick(event, href, onNavigate)}
-                  className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                  className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${
                     isActive
                       ? isDark
                         ? 'bg-violet-500/20 text-violet-200'
@@ -266,17 +296,9 @@ export function SiteHeader({
             <button
               type="button"
               onClick={onOpenProModal}
-              className={`hidden h-9 items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition-colors sm:inline-flex ${
-                isPro
-                  ? isDark
-                    ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-300'
-                    : 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                  : isDark
-                    ? 'border-amber-400/30 bg-amber-400/10 text-amber-200 hover:bg-amber-400/20'
-                    : 'border-amber-300/80 bg-amber-50 text-amber-800 hover:bg-amber-100'
-              }`}
+              className={`hidden h-9 items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 sm:inline-flex ${proBtnToneCls}`}
             >
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-current" />
+              <span aria-hidden="true" className="inline-block h-1.5 w-1.5 rounded-full bg-current" />
               <span>{isPro ? ui.proActive : ui.proUpgrade}</span>
             </button>
           )}
@@ -297,11 +319,13 @@ export function SiteHeader({
 
           {/* Mobile menu toggle */}
           <button
+            ref={menuBtnRef}
             type="button"
             onClick={() => setMobileOpen((open) => !open)}
             aria-expanded={mobileOpen}
+            aria-controls="mobile-tool-nav"
             aria-label={ui.menuToggleAria}
-            className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border lg:hidden ${subtleBtnCls}`}
+            className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 lg:hidden ${subtleBtnCls}`}
           >
             <svg
               aria-hidden="true"
@@ -324,7 +348,8 @@ export function SiteHeader({
       {/* Mobile drawer */}
       {mobileOpen && (
         <nav
-          aria-label="Mobile tools"
+          id="mobile-tool-nav"
+          aria-label={ui.mobileNavAria}
           className={`border-t px-4 py-3 lg:hidden ${
             isDark ? 'border-white/10 bg-[#14141b]' : 'border-zinc-200 bg-zinc-50'
           }`}
@@ -332,16 +357,17 @@ export function SiteHeader({
           <div className="grid grid-cols-2 gap-1.5">
             {NAV_TOOL_ORDER.map((toolId) => {
               const href = buildLocalizedPath(route.locale, PRIMARY_TOOL_SLUGS[toolId])
-              const isActive = !route.isStudio && route.tool === toolId && route.slug !== ''
+              const isActive = isToolNavActive(route, toolId)
               return (
                 <a
                   key={toolId}
                   href={href}
+                  aria-current={isActive ? 'page' : undefined}
                   onClick={(event) => {
                     setMobileOpen(false)
                     handleSpaLinkClick(event, href, onNavigate)
                   }}
-                  className={`rounded-lg px-3 py-2 text-sm font-medium ${
+                  className={`rounded-lg px-3 py-2 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${
                     isActive
                       ? isDark
                         ? 'bg-violet-500/20 text-violet-200'
@@ -363,12 +389,9 @@ export function SiteHeader({
                 setMobileOpen(false)
                 onOpenProModal()
               }}
-              className={`mt-2.5 flex w-full items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold sm:hidden ${
-                isDark
-                  ? 'border-amber-400/30 bg-amber-400/10 text-amber-200'
-                  : 'border-amber-300 bg-amber-50 text-amber-800'
-              }`}
+              className={`mt-2.5 flex w-full items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 sm:hidden ${proBtnToneCls}`}
             >
+              <span aria-hidden="true" className="inline-block h-1.5 w-1.5 rounded-full bg-current" />
               <span>{isPro ? ui.proActive : ui.proUpgrade}</span>
             </button>
           )}

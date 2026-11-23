@@ -28,6 +28,8 @@ export const JA_LOCALE: LocaleBundle = {
     toggleThemeAria: 'ライトテーマとダークテーマを切り替え',
     languageLabel: '言語',
     menuToggleAria: 'ナビゲーションメニューを開閉',
+    primaryNavAria: '主要ツールナビゲーション',
+    mobileNavAria: 'モバイルツールナビゲーション',
     navCategories: {
       mockup: 'モックアップ',
       merge: '画像結合',
@@ -61,6 +63,7 @@ export const JA_LOCALE: LocaleBundle = {
     studioBannerDescription:
       '現在の画像をそのまま Moklu Studio へ送信。Konva ベースの多層レイヤーキャンバスで、タイポグラフィ・影・グラデーション・複数スライドを一括編集できます。',
     studioBannerAction: 'Moklu Studio を起動',
+    studioBannerProAction: 'Moklu Pro を見る',
     footerDescription:
       'オープンソースでローカル優先のスクリーンショット美化＆ブラウザ画像ツールキット。追跡なし、アップロードなし。',
     footerGroups: {

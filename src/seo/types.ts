@@ -124,6 +124,8 @@ export interface UiLabels {
   toggleThemeAria: string
   languageLabel: string
   menuToggleAria: string
+  primaryNavAria: string
+  mobileNavAria: string
   navCategories: Record<ToolId, string>
   dropzoneTitle: string
   dropzoneSubtitle: string
@@ -144,6 +146,7 @@ export interface UiLabels {
   studioBannerTitle: string
   studioBannerDescription: string
   studioBannerAction: string
+  studioBannerProAction: string
   footerDescription: string
   footerGroups: {
     mockups: string
