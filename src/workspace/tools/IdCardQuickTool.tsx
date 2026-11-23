@@ -148,7 +148,7 @@ export function IdCardQuickTool({
         className={`flex flex-wrap items-center justify-between gap-3 rounded-2xl border px-4 py-3 ${tokens.privacyBanner}`}
       >
         <div className="flex items-center gap-2.5">
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-xs font-bold text-white" aria-hidden="true">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-success text-xs font-bold text-white" aria-hidden="true">
             ✓
           </span>
           <div>
@@ -343,7 +343,7 @@ export function IdCardQuickTool({
                 type="checkbox"
                 checked={grayscale}
                 onChange={(e) => setGrayscale(e.target.checked)}
-                className={`h-4 w-4 accent-violet-600 ${tokens.focusRing}`}
+                className={`h-4 w-4 accent-accent ${tokens.focusRing}`}
               />
               {s.idCard.grayscaleLabel}
             </label>

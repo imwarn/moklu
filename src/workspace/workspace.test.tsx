@@ -418,12 +418,18 @@ describe('workspace i18n and utilities', () => {
     expect(busyStage).toContain('aria-busy="true"')
     expect(busyStage).toContain('data-testid="workspace-preview-busy"')
 
-    // Violet brand unification & WCAG-safe dark contrast tokens.
+    // Neutral Zinc + Signal Orange brand unification & WCAG AA semantic tokens.
     for (const theme of ['light', 'dark'] as const) {
       const tokens = getWorkspaceThemeTokens(theme)
       const joined = Object.values(tokens).join(' ')
-      expect(joined).not.toContain('indigo-')
-      expect(joined).toContain('violet-')
+      expect(joined).not.toMatch(/#[0-9a-f]{3,8}/i)
+      expect(joined).toContain('bg-accent-strong')
+      expect(joined).toContain('text-accent-text')
+      expect(joined).toContain('bg-accent-soft')
+      expect(joined).toContain('ring-accent')
+      expect(joined).toContain('bg-panel')
+      expect(joined).toContain('border-border')
+      expect(joined).toContain('text-muted')
       expect(tokens.accentChip.length).toBeGreaterThan(0)
       expect(tokens.badgePositive.length).toBeGreaterThan(0)
       expect(tokens.badgeWarning.length).toBeGreaterThan(0)

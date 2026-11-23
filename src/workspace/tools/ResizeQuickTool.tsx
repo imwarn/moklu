@@ -128,7 +128,7 @@ export function ResizePreviewStage({
             <button
               type="button"
               onClick={onClearAll}
-              className={`min-h-8 rounded-lg px-2.5 py-1 text-xs font-medium ${tokens.focusRing} ${tokens.textMuted} hover:text-rose-500`}
+              className={`min-h-8 rounded-lg px-2.5 py-1 text-xs font-medium ${tokens.focusRing} ${tokens.textMuted} hover:text-danger`}
             >
               {s.common.clearAll}
             </button>
@@ -596,7 +596,7 @@ export function ResizeQuickTool({
                       type="checkbox"
                       checked={lockAspect}
                       onChange={(e) => setLockAspect(e.target.checked)}
-                      className={`h-4 w-4 accent-violet-600 ${tokens.focusRing}`}
+                      className={`h-4 w-4 accent-accent ${tokens.focusRing}`}
                     />
                     {s.resize.lockAspect}
                   </label>
@@ -653,7 +653,7 @@ export function ResizeQuickTool({
                   type="checkbox"
                   checked={shadow}
                   onChange={(e) => setShadow(e.target.checked)}
-                  className={`h-4 w-4 accent-violet-600 ${tokens.focusRing}`}
+                  className={`h-4 w-4 accent-accent ${tokens.focusRing}`}
                 />
                 {s.resize.shadowLabel}
               </label>

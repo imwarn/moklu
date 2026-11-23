@@ -41,7 +41,7 @@ export function MergeQuickTool({
       { label: s.swatches.softGray, value: '#f1f5f9' },
       { label: s.swatches.slateDark, value: '#0f172a' },
       { label: s.swatches.aurora, value: 'linear-gradient(135deg, #b5b0f2, #e5efff)' },
-      { label: s.swatches.sunset, value: 'linear-gradient(135deg, #f97316, #ec4899)' },
+      { label: s.swatches.sunset, value: 'linear-gradient(135deg, #f97316, #f43f5e)' },
       { label: s.swatches.transparent, value: 'transparent' },
     ],
     [s.swatches],
@@ -206,7 +206,7 @@ export function MergeQuickTool({
                     setImages([])
                     setResult(null)
                   }}
-                  className={`min-h-8 rounded-lg px-2.5 py-1 text-xs font-medium ${tokens.focusRing} ${tokens.textMuted} hover:text-rose-500`}
+                  className={`min-h-8 rounded-lg px-2.5 py-1 text-xs font-medium ${tokens.focusRing} ${tokens.textMuted} hover:text-danger`}
                 >
                   {s.common.clearAll}
                 </button>

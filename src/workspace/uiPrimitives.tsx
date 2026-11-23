@@ -168,7 +168,7 @@ export function PrivacyBadge({ theme, label }: { theme: WorkspaceTheme; label: s
   const tokens = getWorkspaceThemeTokens(theme)
   return (
     <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${tokens.privacyBadge}`}>
-      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
+      <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden="true" />
       {label}
     </span>
   )
@@ -309,7 +309,7 @@ export function SliderField({
         step={step}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className={`h-1.5 w-full cursor-pointer accent-violet-600 ${tokens.focusRing}`}
+        className={`h-1.5 w-full cursor-pointer accent-accent ${tokens.focusRing}`}
       />
     </div>
   )
@@ -383,8 +383,8 @@ export function ColorSwatchRow({
               }}
               className={`h-8 w-8 rounded-full border transition-transform ${tokens.focusRing} ${
                 active
-                  ? 'scale-110 border-violet-500 ring-2 ring-violet-500/40'
-                  : 'border-zinc-300/80 hover:scale-105'
+                  ? `scale-110 ${tokens.accentRing}`
+                  : 'border-border hover:scale-105'
               }`}
             />
           )

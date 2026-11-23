@@ -226,7 +226,7 @@ export function MockupQuickTool({
             </button>
           </div>
 
-          <div aria-busy={isExporting} className="relative rounded-xl bg-[#111119] p-1">
+          <div aria-busy={isExporting} className="relative rounded-xl bg-zinc-950 p-1">
             {isExporting && <PreviewBusyOverlay theme="dark" label={s.common.downloading} />}
             <QuickDesignPreview
               width={customWidth}

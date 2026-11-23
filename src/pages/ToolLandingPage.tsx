@@ -98,10 +98,8 @@ export function ToolLandingPage({ route, onNavigate }: ToolLandingPageProps) {
     <div
       data-testid="tool-landing-page"
       data-theme={resolvedTheme}
-      className={`min-h-screen flex flex-col transition-colors ${
-        isDark
-          ? 'bg-[#0b0b10] text-zinc-100'
-          : 'bg-[#f8f9fc] text-zinc-950'
+      className={`min-h-screen flex flex-col bg-surface transition-colors ${
+        isDark ? 'text-zinc-100' : 'text-zinc-950'
       }`}
     >
       <SiteHeader
@@ -119,11 +117,7 @@ export function ToolLandingPage({ route, onNavigate }: ToolLandingPageProps) {
           <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div className="max-w-3xl space-y-1.5">
               <span
-                className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold tracking-wide ${
-                  isDark
-                    ? 'border-violet-400/30 bg-violet-500/10 text-violet-300'
-                    : 'border-violet-200 bg-violet-50 text-violet-700'
-                }`}
+                className="inline-flex items-center rounded-full border border-accent/30 bg-accent-soft px-2.5 py-0.5 text-[11px] font-semibold tracking-wide text-accent-text"
               >
                 {copy.badge}
               </span>
@@ -134,7 +128,7 @@ export function ToolLandingPage({ route, onNavigate }: ToolLandingPageProps) {
               >
                 {copy.h1}
               </h1>
-              <p className={`text-sm sm:text-base ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
+              <p className="text-sm text-muted sm:text-base">
                 {copy.subtitle}
               </p>
             </div>

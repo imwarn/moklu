@@ -355,7 +355,7 @@ describe('SEO UI chrome SSR rendering', () => {
     expect(isToolNavActive(studio, 'merge')).toBe(false)
   })
 
-  it('renders below-the-fold Pro CTA in SeoLandingSections and emerald active Pro state', () => {
+  it('renders below-the-fold Pro CTA in SeoLandingSections and semantic success active Pro state', () => {
     const noop = () => {}
     const route = resolvePathname('/zh/browser-mockup')
     const ui = getUiLabels('zh')
@@ -370,7 +370,7 @@ describe('SEO UI chrome SSR rendering', () => {
       }),
     )
     expect(freeSections).toContain(escapeHtml(ui.studioBannerProAction))
-    expect(freeSections).toContain('border-amber-300/90')
+    expect(freeSections).toContain('border-warning/40')
 
     const proSections = renderToStaticMarkup(
       createElement(SeoLandingSections, {
@@ -382,7 +382,7 @@ describe('SEO UI chrome SSR rendering', () => {
       }),
     )
     expect(proSections).toContain(escapeHtml(ui.proActive))
-    expect(proSections).toContain('border-emerald-500/40')
+    expect(proSections).toContain('border-success/40')
   })
 
   it('aligns Tailwind v4 dark variant to data-theme="dark" and defines light/dark scrollbars in src/index.css', async () => {
