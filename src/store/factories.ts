@@ -1,5 +1,5 @@
 /**
- * [INPUT]: depends on nanoid, Project/SlideGroup/Layer/BackgroundLayer/CanvasBackground/ProjectSettings/LocaleContent types from @/types, BASE_CANVAS_FORMAT from @/utils/canvasFormats, and EditorSet/EditorGet from ./types
+ * [INPUT]: depends on nanoid, Project/SlideGroup/Layer/BackgroundLayer/CanvasBackground/ProjectSettings/LocaleContent types from @/types, BASE_CANVAS_FORMAT from @/utils/canvasFormats, BRAND from @/theme/brand, and EditorSet/EditorGet from ./types
  * [OUTPUT]: exports ID/project/slide-group/background factories (newId, createBackgroundLayer, bgFromLegacy, newSlideGroup, newProject), layer cloning/scaling/key utilities (getLayerDefaultsScaleFactor, cloneLayerWithNewIds, bakeLayerScale, cloneWithNewIds, STYLE_KEYS, seedLocaleContent, pickLayerKeys), shape/persistence helpers (assertProjectShape, stripDataUrls), and immutable state mutators (touchProject, touchSettings, getActiveGroup, mutateActiveGroup)
  * [POS]: foundational pure factories and state-mutation primitives in src/store/; depended on by migrations.ts, helpers.ts, and editor slices without circular dependencies
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
@@ -11,6 +11,7 @@ import type {
   LocaleContent,
 } from '@/types'
 import { BASE_CANVAS_FORMAT } from '@/utils/canvasFormats'
+import { BRAND } from '@/theme/brand'
 import type { EditorSet, EditorGet } from './types'
 
 // ─── ID & Layer Primitives ────────────────────────────────────────────────────
@@ -123,9 +124,9 @@ export function createBackgroundLayer(overrides?: Partial<BackgroundLayer>): Bac
       type: 'linear',
       angle: 160,
       stops: [
-        { offset: 0, color: '#12101E' },
-        { offset: 0.58, color: '#1C1929' },
-        { offset: 1, color: '#0F0E1A' },
+        { offset: 0, color: BRAND.panel },
+        { offset: 0.58, color: BRAND.border },
+        { offset: 1, color: BRAND.panel },
       ],
     },
     accents: [],
