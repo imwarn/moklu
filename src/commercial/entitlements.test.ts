@@ -1,10 +1,12 @@
 /**
- * [INPUT]: depends on vitest; depends on entitlements and pricingCopy modules in src/commercial
- * [OUTPUT]: verifies Free-tier guarantees, Pro preview toggle, extensible license verifier hook, and 4-locale pricing copy
+ * [INPUT]: depends on vitest, react, and react-dom/server; depends on entitlements, pricingCopy, and PricingModal modules in src/commercial
+ * [OUTPUT]: verifies Free-tier guarantees, Pro preview toggle, extensible license verifier hook, 4-locale pricing copy, and PricingModal light/dark rendering
  * [POS]: Unit test suite for src/commercial
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
   PRO_FEATURES,
@@ -16,6 +18,7 @@ import {
   type FreeCoreTool,
   type ProFeature,
 } from './entitlements'
+import { PricingModal } from './PricingModal'
 import { resolvePricingLabels, type PricingLocale } from './pricingCopy'
 
 describe('commercial entitlements', () => {
@@ -128,5 +131,37 @@ describe('commercial entitlements', () => {
     })
     expect(custom.title).toBe('Custom Plans')
     expect(custom.proFeatureLabels['export-4k-batch']).toBe('Custom 4K Batch')
+  })
+
+  it('renders PricingModal with adaptive light and dark surfaces and contrast-safe controls', () => {
+    const noop = () => {}
+
+    const lightHtml = renderToStaticMarkup(
+      createElement(PricingModal, {
+        open: true,
+        onClose: noop,
+        locale: 'zh',
+        theme: 'light',
+        highlightedFeature: 'export-4k-batch',
+      }),
+    )
+    expect(lightHtml).toContain('data-theme="light"')
+    expect(lightHtml).toContain('background:#ffffff')
+    expect(lightHtml).toContain('text-zinc-900')
+    expect(lightHtml).toContain('bg-violet-100/90')
+    expect(lightHtml).not.toContain('#16171f')
+
+    const darkHtml = renderToStaticMarkup(
+      createElement(PricingModal, {
+        open: true,
+        onClose: noop,
+        locale: 'en',
+        highlightedFeature: 'brand-kit-presets',
+      }),
+    )
+    expect(darkHtml).toContain('data-theme="dark"')
+    expect(darkHtml).toContain('background:#16171f')
+    expect(darkHtml).toContain('text-[#f5f5f8]')
+    expect(darkHtml).toContain('bg-[#7c6ef6]/25')
   })
 })

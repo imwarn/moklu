@@ -28,6 +28,8 @@ export const EN_LOCALE: LocaleBundle = {
     toggleThemeAria: 'Toggle light and dark theme',
     languageLabel: 'Language',
     menuToggleAria: 'Toggle navigation menu',
+    primaryNavAria: 'Primary tools',
+    mobileNavAria: 'Mobile tools',
     navCategories: {
       mockup: 'Mockups',
       merge: 'Merge',
@@ -61,6 +63,7 @@ export const EN_LOCALE: LocaleBundle = {
     studioBannerDescription:
       'Send your current composition straight into Moklu Studio — our full Konva multi-layer canvas editor with shadows, gradients, annotations, and batch localization.',
     studioBannerAction: 'Launch Moklu Studio',
+    studioBannerProAction: 'Explore Moklu Pro',
     footerDescription:
       'Open-source, local-first screenshot mockup studio and browser image toolkit. Zero tracking, zero server uploads.',
     footerGroups: {

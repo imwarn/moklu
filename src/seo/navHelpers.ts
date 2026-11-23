@@ -1,12 +1,12 @@
 /**
- * [INPUT]: depends on MouseEvent from react; depends on ToolId and RouteSlug from ./types.ts
- * [OUTPUT]: exports isModifiedClick, handleSpaLinkClick, NAV_TOOL_ORDER, and FOOTER_LINK_GROUPS
- * [POS]: shared navigation event and grouping helper within src/seo, preventing duplicated link-handling logic across SiteHeader, SeoLandingSections, and SiteFooter
+ * [INPUT]: depends on MouseEvent from react; depends on ResolvedRoute, RouteSlug, and ToolId from ./types.ts
+ * [OUTPUT]: exports isModifiedClick, handleSpaLinkClick, isToolNavActive, NAV_TOOL_ORDER, and FOOTER_LINK_GROUPS
+ * [POS]: shared navigation event, active-state, and grouping helper within src/seo, preventing duplicated link-handling logic across SiteHeader, SeoLandingSections, and SiteFooter
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
 import type { MouseEvent } from 'react'
-import type { RouteSlug, ToolId } from './types.ts'
+import type { ResolvedRoute, RouteSlug, ToolId } from './types.ts'
 
 export const NAV_TOOL_ORDER: readonly ToolId[] = [
   'mockup',
@@ -71,4 +71,15 @@ export function handleSpaLinkClick(
   if (!onNavigate || isModifiedClick(event)) return
   event.preventDefault()
   onNavigate(href)
+}
+
+export function isToolNavActive(
+  route: Pick<ResolvedRoute, 'isStudio' | 'slug' | 'tool'>,
+  toolId: ToolId,
+): boolean {
+  return (
+    !route.isStudio &&
+    ((route.slug === '' && toolId === 'mockup') ||
+      (route.slug !== '' && route.tool === toolId))
+  )
 }

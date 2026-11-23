@@ -28,6 +28,8 @@ export const KO_LOCALE: LocaleBundle = {
     toggleThemeAria: '라이트 및 다크 테마 전환',
     languageLabel: '언어',
     menuToggleAria: '내비게이션 메뉴 열기 또는 닫기',
+    primaryNavAria: '주요 도구 내비게이션',
+    mobileNavAria: '모바일 도구 내비게이션',
     navCategories: {
       mockup: '목업',
       merge: '합치기',
@@ -61,6 +63,7 @@ export const KO_LOCALE: LocaleBundle = {
     studioBannerDescription:
       '현재 작업물을 바로 Moklu Studio로 넘겨보세요. Konva 멀티 레이어 캔버스에서 타이포그래피, 그림자, 메시 그라디언트, 다국어 앱스토어 세트를 자유롭게 편집할 수 있습니다.',
     studioBannerAction: 'Moklu Studio 실행',
+    studioBannerProAction: 'Moklu Pro 알아보기',
     footerDescription:
       '오픈소스 로컬 우선 스크린샷 목업 스튜디오 및 브라우저 이미지 툴킷. 추적 없음, 서버 업로드 없음.',
     footerGroups: {
