@@ -247,8 +247,9 @@ export function createToolsWorkspaceEngines(): WorkspaceEngines {
           mode: options.mode,
           resize: options.mode === 'resize'
             ? {
-                width: options.width,
-                height: options.height,
+                width: options.scale ? undefined : options.width,
+                height: options.scale ? undefined : options.height,
+                scale: options.scale,
                 lockAspect: options.lockAspect,
               }
             : undefined,

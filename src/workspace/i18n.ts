@@ -37,6 +37,11 @@ export interface WorkspaceStrings {
     padding: string
     radius: string
     emptyPreview: string
+    previousImage: string
+    nextImage: string
+    downloadSingle: string
+    closePreview: string
+    inspectPreview: string
   }
   mockup: {
     deviceLabel: string
@@ -89,12 +94,17 @@ export interface WorkspaceStrings {
     beforeAfter: string
     compressing: string
     addImages: string
+    clickToPreview: string
   }
   resize: {
     modeLabel: string
     resizeMode: string
     cropMode: string
     padMode: string
+    resizeByLabel: string
+    byPixels: string
+    byScale: string
+    scaleLabel: string
     aspectLabel: string
     freeAspect: string
     widthLabel: string
@@ -103,6 +113,7 @@ export interface WorkspaceStrings {
     borderLabel: string
     shadowLabel: string
     batchReady: string
+    batchStripLabel: string
   }
   idCard: {
     privacyTitle: string
@@ -165,6 +176,11 @@ const EN: WorkspaceStrings = {
     padding: 'Outer Padding',
     radius: 'Corner Radius',
     emptyPreview: 'Upload an image or try the instant demo',
+    previousImage: 'Previous image',
+    nextImage: 'Next image',
+    downloadSingle: 'Download this image',
+    closePreview: 'Close preview',
+    inspectPreview: 'Preview image',
   },
   mockup: {
     deviceLabel: 'Frame',
@@ -217,12 +233,17 @@ const EN: WorkspaceStrings = {
     beforeAfter: 'Size Change',
     compressing: 'Compressing…',
     addImages: 'Add Images to Compress',
+    clickToPreview: 'Click thumbnail to inspect',
   },
   resize: {
     modeLabel: 'Transform Mode',
     resizeMode: 'Resize',
     cropMode: 'Crop',
     padMode: 'Border & Pad',
+    resizeByLabel: 'Resize By',
+    byPixels: 'Dimensions (px)',
+    byScale: 'Scale (%)',
+    scaleLabel: 'Scale Percentage',
     aspectLabel: 'Aspect Ratio',
     freeAspect: 'Free',
     widthLabel: 'Width (px)',
@@ -231,6 +252,7 @@ const EN: WorkspaceStrings = {
     borderLabel: 'Border Size',
     shadowLabel: 'Drop shadow',
     batchReady: 'processed',
+    batchStripLabel: 'Processed images',
   },
   idCard: {
     privacyTitle: '100% Offline Browser Processing · Never Uploaded',
@@ -293,6 +315,11 @@ const ZH: WorkspaceStrings = {
     padding: '外边距',
     radius: '圆角半径',
     emptyPreview: '上传图片或点击体验示例图即可实时预览',
+    previousImage: '上一张图片',
+    nextImage: '下一张图片',
+    downloadSingle: '下载当前图片',
+    closePreview: '关闭预览',
+    inspectPreview: '查看大图预览',
   },
   mockup: {
     deviceLabel: '设备与窗口框',
@@ -345,12 +372,17 @@ const ZH: WorkspaceStrings = {
     beforeAfter: '体积变化',
     compressing: '正在压缩…',
     addImages: '添加待压缩图片',
+    clickToPreview: '点击缩略图放大预览',
   },
   resize: {
     modeLabel: '处理模式',
     resizeMode: '缩放尺寸',
     cropMode: '比例裁剪',
     padMode: '留白加边框',
+    resizeByLabel: '缩放依据',
+    byPixels: '按像素 (px)',
+    byScale: '按比例 (%)',
+    scaleLabel: '缩放比例',
     aspectLabel: '目标比例',
     freeAspect: '自由比例',
     widthLabel: '宽度 (px)',
@@ -359,6 +391,7 @@ const ZH: WorkspaceStrings = {
     borderLabel: '边框厚度',
     shadowLabel: '柔和投影',
     batchReady: '张已处理',
+    batchStripLabel: '已处理图片列表',
   },
   idCard: {
     privacyTitle: '100% 浏览器本地离线处理 · 绝不上传',
@@ -421,6 +454,11 @@ const JA: WorkspaceStrings = {
     padding: '外側余白',
     radius: '角丸',
     emptyPreview: '画像をアップロードするかデモ画像をお試しください',
+    previousImage: '前の画像',
+    nextImage: '次の画像',
+    downloadSingle: 'この画像を保存',
+    closePreview: 'プレビューを閉じる',
+    inspectPreview: '画像を拡大表示',
   },
   mockup: {
     deviceLabel: 'フレーム',
@@ -473,12 +511,17 @@ const JA: WorkspaceStrings = {
     beforeAfter: '容量変化',
     compressing: '圧縮中…',
     addImages: '圧縮する画像を追加',
+    clickToPreview: 'サムネイルをクリックして拡大',
   },
   resize: {
     modeLabel: '変換モード',
     resizeMode: 'リサイズ',
     cropMode: '切り抜き',
     padMode: '余白・フレーム',
+    resizeByLabel: '指定方法',
+    byPixels: 'ピクセル指定',
+    byScale: '倍率指定 (%)',
+    scaleLabel: '拡大・縮小率',
     aspectLabel: '縦横比',
     freeAspect: '自由',
     widthLabel: '幅 (px)',
@@ -487,6 +530,7 @@ const JA: WorkspaceStrings = {
     borderLabel: '余白サイズ',
     shadowLabel: 'ドロップシャドウ',
     batchReady: '件処理済み',
+    batchStripLabel: '処理済み画像一覧',
   },
   idCard: {
     privacyTitle: '100% オフライン処理・アップロード一切なし',
@@ -549,6 +593,11 @@ const KO: WorkspaceStrings = {
     padding: '바깥 여백',
     radius: '모서리 둥글기',
     emptyPreview: '이미지를 올리거나 데모 버튼으로 바로 체험하세요',
+    previousImage: '이전 이미지',
+    nextImage: '다음 이미지',
+    downloadSingle: '이 이미지 다운로드',
+    closePreview: '미리보기 닫기',
+    inspectPreview: '이미지 크게 보기',
   },
   mockup: {
     deviceLabel: '프레임',
@@ -601,12 +650,17 @@ const KO: WorkspaceStrings = {
     beforeAfter: '용량 변화',
     compressing: '압축 중…',
     addImages: '압축할 이미지 추가',
+    clickToPreview: '썸네일을 눌러 크게 보기',
   },
   resize: {
     modeLabel: '변환 모드',
     resizeMode: '크기 조정',
     cropMode: '비율 자르기',
     padMode: '테두리·여백',
+    resizeByLabel: '조정 기준',
+    byPixels: '픽셀 (px)',
+    byScale: '비율 (%)',
+    scaleLabel: '축소·확대 비율',
     aspectLabel: '화면 비율',
     freeAspect: '자유',
     widthLabel: '너비 (px)',
@@ -615,6 +669,7 @@ const KO: WorkspaceStrings = {
     borderLabel: '테두리 두께',
     shadowLabel: '그림자 효과',
     batchReady: '장 처리 완료',
+    batchStripLabel: '처리된 이미지 목록',
   },
   idCard: {
     privacyTitle: '100% 오프라인 브라우저 처리 · 서버 전송 없음',

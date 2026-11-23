@@ -1,27 +1,65 @@
 /**
- * [INPUT]: depends on vitest, react-dom/server, jszip, QuickWorkspace, getWorkspaceStrings, canvasUtils, and workspace types
- * [OUTPUT]: Vitest suite validating all 6 Quick Workspace tools, 4 locales, light/dark theming, preset propagation, demo generators, and ZIP packing
+ * [INPUT]: depends on vitest, react, react-dom/server, jszip, QuickWorkspace, batchHelpers, ResizePreviewStage, CompressPreviewModal, getWorkspaceStrings, canvasUtils, and workspace types
+ * [OUTPUT]: Vitest suite validating all 6 Quick Workspace tools, 4 locales, light/dark theming, preset propagation, multi-image Resize filmstrip UX, Compress preview modal, demo generators, and ZIP packing
  * [POS]: automated verification suite for src/workspace
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 import JSZip from 'jszip'
+import { Children, isValidElement, type ReactElement, type ReactNode } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
 import {
   QuickWorkspace,
+  buildBatchStudioHandoff,
+  clampBatchIndex,
   createDefaultWorkspaceEngines,
   createDemoImageInput,
   createDemoScreenshotDataUrl,
   formatBytes,
   getWorkspaceStrings,
+  removeBatchEntry,
+  stepBatchIndex,
   type DemoVariant,
+  type WorkspaceBlobOutput,
+  type WorkspaceCompressItem,
   type WorkspaceLocale,
   type WorkspacePreset,
   type WorkspaceToolId,
 } from './index'
+import { CompressPreviewModal } from './tools/CompressQuickTool'
+import { ResizePreviewStage } from './tools/ResizeQuickTool'
 
 const ALL_TOOLS: WorkspaceToolId[] = ['mockup', 'merge', 'split', 'compress', 'resize', 'id-card']
 const ALL_LOCALES: WorkspaceLocale[] = ['en', 'zh', 'ja', 'ko']
+
+interface InspectableElementProps {
+  children?: ReactNode
+  onClick?: () => void
+  'data-testid'?: string
+  [key: string]: unknown
+}
+
+function findElementByTestId(node: ReactNode, testId: string): ReactElement<InspectableElementProps> | null {
+  if (!isValidElement<InspectableElementProps>(node)) return null
+  if (node.props['data-testid'] === testId) return node
+  let found: ReactElement<InspectableElementProps> | null = null
+  Children.forEach(node.props.children, (child) => {
+    if (!found) found = findElementByTestId(child, testId)
+  })
+  return found
+}
+
+function makeMockOutput(name: string, width: number, height: number, sizeBytes: number): WorkspaceBlobOutput {
+  return {
+    blob: new Blob(['mock'], { type: 'image/png' }),
+    dataUrl: `data:image/png;base64,${name}`,
+    width,
+    height,
+    filename: name,
+    sizeBytes,
+    mimeType: 'image/png',
+  }
+}
 
 describe('QuickWorkspace', () => {
   it('renders all 6 tools cleanly in both light and dark themes', () => {
@@ -89,6 +127,7 @@ describe('QuickWorkspace', () => {
       { preset: { tool: 'split', splitMode: 'grid' }, expectSnippet: '3×3 Nine-Grid' },
       { preset: { tool: 'compress', targetFormat: 'image/jpeg' }, expectSnippet: 'aria-checked="true"' },
       { preset: { tool: 'resize', resizeMode: 'pad' }, expectSnippet: 'Border Size' },
+      { preset: { tool: 'resize', resizeMode: 'resize' }, expectSnippet: 'Scale (%)' },
     ]
 
     for (const { preset, expectSnippet } of presets) {
@@ -123,6 +162,145 @@ describe('QuickWorkspace', () => {
   })
 })
 
+describe('ResizeQuickTool multi-image preview filmstrip UX', () => {
+  const batchOutputs: WorkspaceBlobOutput[] = [
+    makeMockOutput('hero-01.png', 800, 600, 12_288),
+    makeMockOutput('portrait-02.png', 1080, 1350, 24_576),
+    makeMockOutput('square-03.png', 1200, 1200, 18_432),
+  ]
+
+  it('renders all N thumbnails, switches main preview src and badge on thumbnail #2 click, and removes single item cleanly', () => {
+    let items = [...batchOutputs]
+    let selectedIndex = 0
+    const downloaded: number[] = []
+
+    const renderStageTree = () =>
+      ResizePreviewStage({
+        theme: 'light',
+        locale: 'zh',
+        outputs: items,
+        selectedIndex,
+        hasSourceImages: items.length > 0,
+        onSelectIndex: (next) => {
+          selectedIndex = next
+        },
+        onDownloadAt: (idx) => {
+          downloaded.push(idx)
+        },
+        onRemoveAt: (removeIdx) => {
+          const next = removeBatchEntry(items, removeIdx, selectedIndex)
+          items = next.items
+          selectedIndex = next.nextIndex
+        },
+        onClearAll: () => {
+          items = []
+          selectedIndex = 0
+        },
+        onLoadDemo: vi.fn(),
+        onFiles: vi.fn(),
+      })
+
+    // Initial render: all 3 thumbnails present, item #1 shown in main preview.
+    const initialHtml = renderToStaticMarkup(renderStageTree())
+    expect(initialHtml).toContain('data-testid="resize-thumbnail-strip"')
+    expect(initialHtml).toContain('data-testid="resize-thumb-0"')
+    expect(initialHtml).toContain('data-testid="resize-thumb-1"')
+    expect(initialHtml).toContain('data-testid="resize-thumb-2"')
+    expect(initialHtml).toContain('1/3 · 800 × 600')
+    expect(initialHtml).toContain('src="data:image/png;base64,hero-01.png"')
+
+    // Click thumbnail #2 -> updates selectedIndex to 1, main preview src & dimension badge switch to item #2.
+    const thumb2Btn = findElementByTestId(renderStageTree(), 'resize-thumb-select-1')
+    expect(thumb2Btn?.props.onClick).toBeTypeOf('function')
+    thumb2Btn?.props.onClick?.()
+    expect(selectedIndex).toBe(1)
+
+    const secondHtml = renderToStaticMarkup(renderStageTree())
+    expect(secondHtml).toContain('2/3 · 1080 × 1350')
+    expect(secondHtml).toContain('src="data:image/png;base64,portrait-02.png"')
+
+    // Click single-item download on item #2.
+    const dlBtn = findElementByTestId(renderStageTree(), 'resize-thumb-download-1')
+    dlBtn?.props.onClick?.()
+    expect(downloaded).toEqual([1])
+
+    // Click single-item remove on item #2 -> count drops from 3 to 2 and selection stays valid.
+    const removeBtn = findElementByTestId(renderStageTree(), 'resize-thumb-remove-1')
+    removeBtn?.props.onClick?.()
+    expect(items).toHaveLength(2)
+    expect(selectedIndex).toBe(1)
+
+    const afterRemoveHtml = renderToStaticMarkup(renderStageTree())
+    expect(afterRemoveHtml).toContain('2/2 · 1200 × 1200')
+    expect(afterRemoveHtml).toContain('src="data:image/png;base64,square-03.png"')
+    expect(afterRemoveHtml).not.toContain('data-testid="resize-thumb-2"')
+  })
+
+  it('passes all processed images to Studio handoff in carousel mode when multiple items exist', () => {
+    const multiPayload = buildBatchStudioHandoff(batchOutputs, 1)
+    expect(multiPayload).not.toBeNull()
+    expect(multiPayload?.mode).toBe('carousel')
+    expect(multiPayload?.images).toHaveLength(3)
+    expect(multiPayload?.images.map((img) => img.name)).toEqual([
+      'hero-01.png',
+      'portrait-02.png',
+      'square-03.png',
+    ])
+    expect(multiPayload?.slideWidth).toBe(1080)
+    expect(multiPayload?.slideHeight).toBe(1350)
+
+    const singlePayload = buildBatchStudioHandoff([batchOutputs[0]], 0)
+    expect(singlePayload?.mode).toBe('canvas')
+    expect(singlePayload?.images).toHaveLength(1)
+    expect(buildBatchStudioHandoff([], 0)).toBeNull()
+  })
+
+  it('clamps, wraps, and adjusts batch selection indices across edge cases', () => {
+    expect(clampBatchIndex(5, 3)).toBe(2)
+    expect(clampBatchIndex(-1, 3)).toBe(0)
+    expect(clampBatchIndex(2, 0)).toBe(0)
+    expect(stepBatchIndex(0, -1, 3)).toBe(2)
+    expect(stepBatchIndex(2, 1, 3)).toBe(0)
+
+    // Removing an item before the selected index shifts selectedIndex left by 1.
+    const shifted = removeBatchEntry(['a', 'b', 'c'], 0, 2)
+    expect(shifted.items).toEqual(['b', 'c'])
+    expect(shifted.nextIndex).toBe(1)
+
+    // Removing the last remaining item resets nextIndex to 0.
+    const empty = removeBatchEntry(['only'], 0, 0)
+    expect(empty.items).toEqual([])
+    expect(empty.nextIndex).toBe(0)
+  })
+})
+
+describe('CompressPreviewModal', () => {
+  it('renders dialog preview with savings metadata and close button', () => {
+    const mockItem: WorkspaceCompressItem = {
+      ...makeMockOutput('banner-compressed.webp', 1200, 630, 50_000),
+      id: 'c1',
+      originalName: 'banner.png',
+      originalBytes: 100_000,
+      outputBytes: 50_000,
+      savedRatio: 0.5,
+    }
+    const html = renderToStaticMarkup(
+      <CompressPreviewModal
+        item={mockItem}
+        theme="dark"
+        locale="en"
+        onClose={vi.fn()}
+        onDownload={vi.fn()}
+      />,
+    )
+    expect(html).toContain('role="dialog"')
+    expect(html).toContain('banner-compressed.webp')
+    expect(html).toContain('1200 × 630')
+    expect(html).toContain('-50%')
+    expect(html).toContain('data-testid="compress-preview-close"')
+  })
+})
+
 describe('workspace i18n and utilities', () => {
   it('provides complete non-empty dictionaries for all 4 locales', () => {
     for (const locale of ALL_LOCALES) {
@@ -133,6 +311,10 @@ describe('workspace i18n and utilities', () => {
         expect(dict.tabs[tool].description.trim().length).toBeGreaterThan(0)
       }
       expect(dict.common.privacyBadge.trim().length).toBeGreaterThan(0)
+      expect(dict.common.previousImage.trim().length).toBeGreaterThan(0)
+      expect(dict.common.nextImage.trim().length).toBeGreaterThan(0)
+      expect(dict.resize.byScale.trim().length).toBeGreaterThan(0)
+      expect(dict.compress.clickToPreview.trim().length).toBeGreaterThan(0)
       expect(dict.idCard.defaultWatermark.trim().length).toBeGreaterThan(0)
     }
   })
