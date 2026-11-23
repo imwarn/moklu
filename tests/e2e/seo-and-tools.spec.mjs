@@ -349,3 +349,36 @@ test('Pre-rendered SSG renders full styled UI with JS disabled and has zero FOUC
     await server.close()
   }
 })
+
+test('ResizeQuickTool multi-image upload renders thumbnail filmstrip, switches preview, and removes single items', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Multi-image filmstrip regression runs once on Chromium')
+  await page.goto('/resize-image')
+  const workspace = page.getByTestId('quick-workspace')
+  await expect(workspace).toHaveAttribute('data-active-tool', 'resize')
+
+  const imgA = await createSyntheticPngBuffer(page, 640, 400, '#4f46e5')
+  const imgB = await createSyntheticPngBuffer(page, 320, 480, '#10b981')
+  await workspace.locator('input[type="file"]').setInputFiles([
+    { name: 'slide-alpha.png', mimeType: 'image/png', buffer: imgA },
+    { name: 'slide-beta.png', mimeType: 'image/png', buffer: imgB },
+  ])
+
+  const strip = workspace.getByTestId('resize-thumbnail-strip')
+  await expect(strip).toBeVisible()
+  const meta = workspace.getByTestId('resize-preview-meta')
+  await expect(meta).toContainText('1/2')
+
+  const mainPreview = workspace.getByTestId('resize-preview-image')
+  await expect(mainPreview).toBeVisible()
+  const firstSrc = await mainPreview.getAttribute('src')
+
+  // Switch to image #2 via thumbnail filmstrip and verify preview src + meta badge update
+  await workspace.getByTestId('resize-thumb-select-1').click()
+  await expect(meta).toContainText('2/2')
+  const secondSrc = await mainPreview.getAttribute('src')
+  expect(secondSrc).not.toBe(firstSrc)
+
+  // Remove first item and verify count updates to 1/1
+  await workspace.getByTestId('resize-thumb-remove-0').click()
+  await expect(meta).toContainText('1/1')
+})
