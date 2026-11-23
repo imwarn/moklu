@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on react, zustand useShallow, useEditorStore, PropertyControls, OverrideDot, ShadowControls, per-layer property editors, canvasFormats, alignLayers, locale, and useStudioLocale from @/i18n
- * [OUTPUT]: exports PropertiesPanel component with localized Layout/Style/Content tabs, field labels, alignment controls, copy/paste style, and empty selection hint
+ * [INPUT]: depends on react, zustand useShallow, useEditorStore, PropertyControls, OverrideDot, ShadowControls, panelConstants contrast tokens, per-layer property editors, canvasFormats, alignLayers, locale, and useStudioLocale from @/i18n
+ * [OUTPUT]: exports PropertiesPanel component with WCAG AA contrast, ARIA-labeled controls, localized Layout/Style/Content tabs, alignment controls, copy/paste style, and empty selection hint
  * [POS]: right inspector panel of StudioPage inside src/components/panels
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -32,6 +32,8 @@ import {
   panelSectionCls,
   pauseTemporal,
   resumeTemporal,
+  STUDIO_TEXT_MUTED_CLS,
+  STUDIO_TEXT_SUBTLE_CLS,
   type PanelTab,
 } from '@/components/properties/panelConstants'
 import { ShadowControls } from '@/components/properties/shared'
@@ -118,7 +120,7 @@ function AlignmentSection({
     }
   }
 
-  const btnCls = 'flex items-center justify-center rounded border border-[rgba(255,255,255,0.1)] p-1.5 text-[#8f90a3] hover:border-[rgba(124,110,246,0.5)] hover:text-[#e8e8f0] hover:bg-[rgba(255,255,255,0.04)] transition-colors'
+  const btnCls = `flex items-center justify-center rounded border border-[rgba(255,255,255,0.1)] p-1.5 ${STUDIO_TEXT_MUTED_CLS} hover:border-[rgba(124,110,246,0.5)] hover:text-[#e8e8f0] hover:bg-[rgba(255,255,255,0.04)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c6ef6]/70 transition-colors`
 
   // SVG icons for alignment axes
   const icons: Record<AlignAxis, React.ReactNode> = {
@@ -149,16 +151,17 @@ function AlignmentSection({
           <button
             key={axis}
             type="button"
+            aria-label={titles[axis]}
             title={titles[axis]}
             onClick={() => align(axis)}
             className={btnCls}
           >
-            {icons[axis]}
+            <span aria-hidden="true">{icons[axis]}</span>
           </button>
         ))}
       </div>
       {isMulti && (
-        <p className="mt-1.5 text-[10px] text-[#525261]">{t.properties.alignSelectionHint}</p>
+        <p className={`mt-1.5 text-[10px] ${STUDIO_TEXT_SUBTLE_CLS}`}>{t.properties.alignSelectionHint}</p>
       )}
     </div>
   )
@@ -225,8 +228,9 @@ function LayoutTab({ layer }: { layer: Layer }) {
       <div className={panelSectionCls}>
         <div className="flex items-start gap-2">
           <div className="flex-1 min-w-0">
-            <label className={labelCls}>{t.properties.name}</label>
+            <label htmlFor="layer-name-input" className={labelCls}>{t.properties.name}</label>
             <input
+              id="layer-name-input"
               type="text"
               value={layer.name}
               onChange={(e) => upd({ name: e.target.value })}
@@ -237,27 +241,31 @@ function LayoutTab({ layer }: { layer: Layer }) {
             <div className="flex gap-1 pt-[18px]">
               <button
                 type="button"
+                aria-label={layer.visible ? t.properties.hideLayer : t.properties.showLayer}
+                aria-pressed={layer.visible}
                 title={layer.visible ? t.properties.hideLayer : t.properties.showLayer}
                 onClick={() => upd({ visible: !layer.visible })}
-                className={`h-[30px] w-[30px] flex items-center justify-center rounded border text-sm transition-colors ${
+                className={`h-[30px] w-[30px] flex items-center justify-center rounded border text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c6ef6]/70 ${
                   layer.visible
                     ? 'border-[rgba(255,255,255,0.12)] text-[#e8e8f0]'
-                    : 'border-[rgba(255,255,255,0.06)] text-[#3a3a4a]'
+                    : `border-[rgba(255,255,255,0.06)] ${STUDIO_TEXT_SUBTLE_CLS}`
                 } hover:border-[rgba(255,255,255,0.22)]`}
               >
-                {layer.visible ? '●' : '○'}
+                <span aria-hidden="true">{layer.visible ? '●' : '○'}</span>
               </button>
               <button
                 type="button"
+                aria-label={layer.locked ? t.properties.unlockLayer : t.properties.lockLayer}
+                aria-pressed={layer.locked}
                 title={layer.locked ? t.properties.unlockLayer : t.properties.lockLayer}
                 onClick={() => upd({ locked: !layer.locked })}
-                className={`h-[30px] w-[30px] flex items-center justify-center rounded border text-xs transition-colors ${
+                className={`h-[30px] w-[30px] flex items-center justify-center rounded border text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c6ef6]/70 ${
                   layer.locked
-                    ? 'border-[#7c6ef6] text-[#7c6ef6] bg-[rgba(124,110,246,0.1)]'
-                    : 'border-[rgba(255,255,255,0.1)] text-[#6b6b7a]'
+                    ? 'border-[#7c6ef6] text-[#9b8fff] bg-[rgba(124,110,246,0.1)]'
+                    : `border-[rgba(255,255,255,0.1)] ${STUDIO_TEXT_MUTED_CLS}`
                 } hover:border-[rgba(255,255,255,0.22)]`}
               >
-                {layer.locked ? '⚿' : '⚷'}
+                <span aria-hidden="true">{layer.locked ? '⚿' : '⚷'}</span>
               </button>
             </div>
           )}
@@ -277,11 +285,12 @@ function LayoutTab({ layer }: { layer: Layer }) {
                 <button
                   key={fmtId}
                   type="button"
+                  aria-pressed={isVisible}
                   onClick={() => setLayerFormatVisibility(layer.id, fmtId, isVisible ? false : undefined)}
                   className={`text-[10px] px-2 py-0.5 rounded border transition-colors ${
                     isVisible
                       ? 'border-[rgba(255,255,255,0.15)] text-[#e8e8f0] bg-[rgba(255,255,255,0.06)]'
-                      : 'border-[rgba(255,255,255,0.06)] text-[#555665] line-through'
+                      : `border-[rgba(255,255,255,0.06)] ${STUDIO_TEXT_SUBTLE_CLS} line-through`
                   }`}
                 >
                   {getFormatLabel(fmtId, project.settings.customFormats)}
@@ -289,7 +298,7 @@ function LayoutTab({ layer }: { layer: Layer }) {
               )
             })}
           </div>
-          <p className="mt-1.5 text-[10px] text-[#6b6b7a]">{t.properties.visibleInHint}</p>
+          <p className={`mt-1.5 text-[10px] ${STUDIO_TEXT_MUTED_CLS}`}>{t.properties.visibleInHint}</p>
         </div>
       )}
 
@@ -313,12 +322,13 @@ function LayoutTab({ layer }: { layer: Layer }) {
                     <label className={labelCls + ' !mb-0'}>H</label>
                     <button
                       type="button"
+                      aria-pressed={(layer as TextLayer).height == null}
                       title={(layer as TextLayer).height != null ? t.properties.autoHeightTitle : t.properties.autoHeightActiveTitle}
                       onClick={() => upd({ height: undefined } as Partial<Layer>)}
                       className={`text-[10px] px-2 py-0.5 rounded border transition-colors ${
                         (layer as TextLayer).height == null
                           ? 'border-[#7c6ef6] text-[#9d90f8] bg-[rgba(124,110,246,0.12)] cursor-default'
-                          : 'border-[rgba(255,255,255,0.1)] text-[#6b6b7a] hover:text-[#e8e8f0]'
+                          : `border-[rgba(255,255,255,0.1)] ${STUDIO_TEXT_MUTED_CLS} hover:text-[#e8e8f0]`
                       }`}
                     >
                       {(layer as TextLayer).height == null ? `✓ ${t.common.auto}` : t.common.auto}
@@ -412,7 +422,7 @@ function ContentTab({ layer }: { layer: Layer }) {
   if (layer.type === 'background') return (
     <div className={panelSectionCls}>
       <p className="text-sm text-[#e8e8f0]">{t.properties.background}</p>
-      <p className="mt-1 text-xs text-[#6b6b7a]">{t.properties.backgroundContentHint}</p>
+      <p className={`mt-1 text-xs ${STUDIO_TEXT_MUTED_CLS}`}>{t.properties.backgroundContentHint}</p>
     </div>
   )
   if (layer.type === 'phone') return <PhoneProperties layer={layer as PhoneLayer} />
@@ -422,7 +432,7 @@ function ContentTab({ layer }: { layer: Layer }) {
   if (layer.type === 'brand') return <BrandProperties layer={layer as BrandLayer} />
   if (layer.type === 'shape') return <ShapeProperties layer={layer as ShapeLayer} />
   if (layer.type === 'group') return <GroupProperties layer={layer as GroupLayer} />
-  return <div className={panelSectionCls}><p className="text-xs text-[#6b6b7a]">{t.properties.unknownLayerType}</p></div>
+  return <div className={panelSectionCls}><p className={`text-xs ${STUDIO_TEXT_MUTED_CLS}`}>{t.properties.unknownLayerType}</p></div>
 }
 
 // ─── PropertiesPanel shell ────────────────────────────────────────────────────
@@ -550,14 +560,14 @@ export function PropertiesPanel() {
     <aside data-properties-panel className="h-full w-64 shrink-0 flex flex-col overflow-hidden min-[1440px]:w-72" style={{ background: '#18181f', borderLeft: `1px solid ${borderColor}` }}>
       <div className="shrink-0 border-b px-3 py-2" style={{ borderColor }}>
         <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold uppercase tracking-wider text-[#6b6b7a]">{t.properties.title}</span>
+          <span className={`text-xs font-semibold uppercase tracking-wider ${STUDIO_TEXT_MUTED_CLS}`}>{t.properties.title}</span>
           {selectedLayer && (
             <div className="flex gap-1">
               <button
                 type="button"
                 title={t.properties.copyStyleTitle}
                 onClick={() => copyLayerStyle(selectedLayer!.id)}
-                className="text-[10px] px-2 py-1 rounded border border-[rgba(255,255,255,0.1)] text-[#6b6b7a] hover:text-[#e8e8f0] hover:border-[rgba(255,255,255,0.2)] transition-colors"
+                className={`text-[10px] px-2 py-1 rounded border border-[rgba(255,255,255,0.1)] ${STUDIO_TEXT_MUTED_CLS} hover:text-[#e8e8f0] hover:border-[rgba(255,255,255,0.2)] transition-colors`}
               >
                 {t.properties.copyStyle}
               </button>
@@ -576,7 +586,7 @@ export function PropertiesPanel() {
                   className={`text-[10px] px-2 py-1 rounded border transition-colors ${
                     styleClipboard.layerType === selectedLayer.type
                       ? 'border-[rgba(124,110,246,0.4)] text-[#9d90f8] hover:text-white hover:border-[#7c6ef6] hover:bg-[rgba(124,110,246,0.15)]'
-                      : 'border-[rgba(255,255,255,0.06)] text-[#3a3a4a] cursor-not-allowed'
+                      : `border-[rgba(255,255,255,0.06)] ${STUDIO_TEXT_SUBTLE_CLS} opacity-60 cursor-not-allowed`
                   }`}
                 >
                   {t.properties.pasteStyle}
@@ -587,7 +597,7 @@ export function PropertiesPanel() {
         </div>
 
         {selectedLayer && !isBackgroundSelected && (
-          <div className="mt-3 flex gap-4 border-b border-[rgba(255,255,255,0.06)]">
+          <div role="tablist" aria-label={t.properties.title} className="mt-3 flex gap-4 border-b border-[rgba(255,255,255,0.06)]">
             {([
               ['layout', t.properties.tabs.layout],
               ['style', t.properties.tabs.style],
@@ -596,8 +606,10 @@ export function PropertiesPanel() {
               <button
                 key={value}
                 type="button"
+                role="tab"
+                aria-selected={activeTab === value}
                 onClick={() => setActiveTab(value)}
-                className={`h-7 border-b-2 text-[11px] font-medium transition-colors ${activeTab === value ? 'border-[#7c6ef6] text-white' : 'border-transparent text-[#6b6b7a] hover:text-[#e8e8f0]'}`}
+                className={`h-7 border-b-2 text-[11px] font-medium transition-colors ${activeTab === value ? 'border-[#7c6ef6] text-white' : `border-transparent ${STUDIO_TEXT_MUTED_CLS} hover:text-[#e8e8f0]`}`}
               >
                 {label}
               </button>
@@ -608,7 +620,7 @@ export function PropertiesPanel() {
 
       <div className="flex-1 overflow-y-auto px-3 py-3" onFocusCapture={handlePanelFocus} onBlurCapture={handlePanelBlur}>
         {!selectedLayer ? (
-          <p className="px-2 py-6 text-center text-xs leading-relaxed text-[#6b6b7a]">
+          <p className={`px-2 py-6 text-center text-xs leading-relaxed ${STUDIO_TEXT_MUTED_CLS}`}>
             {t.properties.emptySelectionHint}
           </p>
         ) : (
@@ -674,7 +686,7 @@ export function PropertiesPanel() {
 
             {isBackgroundSelected ? (
               <div className={panelSectionCls}>
-                <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#6b6b7a]">{t.properties.background}</div>
+                <div className={`mb-3 text-xs font-semibold uppercase tracking-wider ${STUDIO_TEXT_MUTED_CLS}`}>{t.properties.background}</div>
                 <BackgroundProperties layer={selectedLayer as BackgroundLayer} />
               </div>
             ) : (

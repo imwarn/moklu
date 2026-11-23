@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on react, react-konva, konva, zustand useShallow, useEditorStore, useAssetStore, resolveGroupView from @/utils/canvasFormats, getEffectivePano, studioTokens, multiDrag helper, and stage sub-hooks/overlays
+ * [OUTPUT]: exports StageCanvas component with blur-safe Ctrl tracking and view-resolved multi-layer drag
+ * [POS]: primary Konva editing viewport inside src/components/canvas mounted by StudioPage
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Stage, Layer, Rect, Line, Transformer } from 'react-konva'
 import type Konva from 'konva'
@@ -7,9 +13,11 @@ import { useAssetStore } from '@/store/assets'
 import { resolveGroupView } from '@/utils/canvasFormats'
 import { getEffectivePano } from '@/utils/panoGeometry'
 import type { Layer as AppLayer, BackgroundLayer } from '@/types'
+import { STUDIO_TEXT_MUTED_CLS } from '@/components/ui/studioTokens'
 import { CanvasTextEditor } from './CanvasTextEditor'
 import { StageLayerItem } from './stage/StageLayerItem'
 import { CanvasShadow, SeamGuides, StageChrome } from './stage/StageOverlays'
+import { resolveMultiDragStartPositions, type MultiDragStartEntry } from './stage/multiDrag'
 import { useAssetDropTarget } from './stage/useAssetDropTarget'
 import { useRubberBandSelection } from './stage/useRubberBandSelection'
 import { useSelectionTransformers } from './stage/useSelectionTransformers'
@@ -21,9 +29,15 @@ function useCtrlKey() {
   useEffect(() => {
     const down = (e: KeyboardEvent) => { if (e.ctrlKey || e.metaKey) ref.current = true }
     const up = (e: KeyboardEvent) => { if (!e.ctrlKey && !e.metaKey) ref.current = false }
+    const reset = () => { ref.current = false }
     window.addEventListener('keydown', down)
     window.addEventListener('keyup', up)
-    return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up) }
+    window.addEventListener('blur', reset)
+    return () => {
+      window.removeEventListener('keydown', down)
+      window.removeEventListener('keyup', up)
+      window.removeEventListener('blur', reset)
+    }
   }, [])
   return ref
 }
@@ -36,7 +50,7 @@ export function StageCanvas({ stageRef }: StageCanvasProps) {
     draggingId: string
     startX: number
     startY: number
-    startPositions: Map<string, { nodeX: number; nodeY: number; layerX: number; layerY: number }>
+    startPositions: Map<string, MultiDragStartEntry>
   } | null>(null)
   const {
     project, activeSlideGroupId, zoom, viewportX, viewportY, showGrid, showSeamGuides,
@@ -120,19 +134,30 @@ export function StageCanvas({ stageRef }: StageCanvasProps) {
     const nodeId = node.id()
     if (!nodeId.startsWith('layer-')) return
     const layerId = nodeId.slice(6)
-    const ids = useEditorStore.getState().selectedLayerIds
+    const {
+      selectedLayerIds: ids,
+      project: currentProject,
+      activeSlideGroupId: currentGroupId,
+      activeLocale: currentLocale,
+      activeCanvasFormat: currentFormat,
+      editingGroupId: currentEditingGroupId,
+    } = useEditorStore.getState()
     if (ids.length < 2 || !ids.includes(layerId)) return
     const stage = stageRef.current
     if (!stage) return
-    const startPositions = new Map<string, { nodeX: number; nodeY: number; layerX: number; layerY: number }>()
-    const { project: currentProject, activeSlideGroupId: currentGroupId } = useEditorStore.getState()
-    const currentGroup = currentProject.slideGroups.find((item) => item.id === currentGroupId)
-    for (const id of ids) {
-      if (id === layerId) continue
-      const layer = currentGroup?.layers.find((item) => item.id === id)
-      const layerNode = stage.findOne(`#layer-${id}`) as Konva.Node | undefined
-      if (layer && layerNode) startPositions.set(id, { nodeX: layerNode.x(), nodeY: layerNode.y(), layerX: layer.x, layerY: layer.y })
-    }
+    const startPositions = resolveMultiDragStartPositions({
+      project: currentProject,
+      activeSlideGroupId: currentGroupId,
+      activeLocale: currentLocale,
+      activeCanvasFormat: currentFormat,
+      editingGroupId: currentEditingGroupId,
+      selectedLayerIds: ids,
+      draggingLayerId: layerId,
+      findNodePos: (id) => {
+        const layerNode = stage.findOne(`#layer-${id}`) as Konva.Node | undefined
+        return layerNode ? { x: layerNode.x(), y: layerNode.y() } : null
+      },
+    })
     multiDragRef.current = { draggingId: layerId, startX: node.x(), startY: node.y(), startPositions }
   }, [stageRef])
   const handleContentLayerDragMove = useCallback((e: Konva.KonvaEventObject<DragEvent>) => {
@@ -168,7 +193,7 @@ export function StageCanvas({ stageRef }: StageCanvasProps) {
   const renderStageLayerItem = (layer: AppLayer) => <StageLayerItem key={layer.id} layer={layer} isSelected={selection?.layerId === layer.id && !editingGroupId} isEditing={layer.type === 'group' && editingGroupId === layer.id} selectedChildId={editingGroupId === layer.id ? (selection?.layerId ?? null) : null} canvasWidth={totalWidth} canvasHeight={totalHeight} ctrlRef={ctrlRef} selectedAccentIndex={selection?.layerId === layer.id ? selectedAccentIndex : null} />
 
   return <div ref={containerRef} style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', cursor: spaceDown ? (isPanning ? 'grabbing' : 'grab') : 'default' }} onMouseDown={handleContainerMouseDown} onDragOver={handleAssetDragOver} onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setAssetDropHighlight(null) }} onDrop={(e) => { void handleAssetDrop(e) }}>
-    {!group ? <div className="flex items-center justify-center w-full h-full text-[#6b6b7a] text-sm">No slide group selected</div> : containerSize.w > 0 && <>
+    {!group ? <div className={`flex items-center justify-center w-full h-full ${STUDIO_TEXT_MUTED_CLS} text-sm`}>No slide group selected</div> : containerSize.w > 0 && <>
       <CanvasShadow group={group} viewportX={viewportX} viewportY={viewportY} displayWidth={displayWidth} displayHeight={displayHeight} />
       <Stage ref={stageRef} width={containerSize.w} height={containerSize.h} scaleX={zoom} scaleY={zoom} x={viewportX} y={viewportY} onClick={handleStageClick} onTap={handleStageClick} onMouseDown={handleStageMouseDown} onMouseMove={handleStageMouseMove} onMouseUp={handleStageMouseUp} style={{ position: 'absolute', top: 0, left: 0 }}>
         <Layer name="editor-export-overlay" listening={false}>{gridLines}</Layer>

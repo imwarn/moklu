@@ -1,4 +1,11 @@
+/**
+ * [INPUT]: depends on ReactNode from react; depends on STUDIO_TEXT_MUTED_CLS from ./studioTokens
+ * [OUTPUT]: exports SegmentedControl component and SegmentedOption type with AA-compliant inactive contrast
+ * [POS]: reusable segmented toggle button group inside src/components/ui for Studio property panels and modals
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { ReactNode } from 'react'
+import { STUDIO_TEXT_MUTED_CLS } from './studioTokens'
 
 export interface SegmentedOption<T extends string> {
   value: T
@@ -27,9 +34,9 @@ export function SegmentedControl<T extends string>({
   options,
   onChange,
   className = 'grid grid-cols-3 gap-2',
-  optionClassName = 'rounded-lg border px-2 py-2 text-xs transition-colors',
+  optionClassName = 'rounded-lg border px-2 py-2 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c6ef6]/70',
   activeClassName = 'border-[#7c6ef6] bg-[#7c6ef6] text-white',
-  inactiveClassName = 'border-[rgba(255,255,255,0.1)] text-[#6b6b7a] hover:bg-[rgba(255,255,255,0.06)] hover:text-[#e8e8f0]',
+  inactiveClassName = `border-[rgba(255,255,255,0.1)] ${STUDIO_TEXT_MUTED_CLS} hover:bg-[rgba(255,255,255,0.06)] hover:text-[#e8e8f0]`,
   renderOption,
 }: SegmentedControlProps<T>) {
   return (

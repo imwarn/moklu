@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on react, react-dom, zustand useShallow, useAssetStore, fileToDataUrl, Layer type, and useStudioLocale from @/i18n
- * [OUTPUT]: exports AssetsSection component with localized asset import controls, empty hint, and asset browser modal
+ * [INPUT]: depends on react, react-dom, zustand useShallow, useAssetStore, fileToDataUrl, Layer type, STUDIO_TEXT_MUTED_CLS from @/components/ui/studioTokens, and useStudioLocale from @/i18n
+ * [OUTPUT]: exports AssetsSection component with localized asset import controls, AA contrast, empty hint, and asset browser modal
  * [POS]: screenshot asset library subsection inside src/components/panels/layers
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -12,6 +12,7 @@ import { useAssetStore } from '@/store/assets'
 import { fileToDataUrl } from '@/utils/files'
 import type { AssetEntry } from '@/store/assets'
 import type { Layer } from '@/types'
+import { STUDIO_TEXT_MUTED_CLS } from '@/components/ui/studioTokens'
 import { useStudioLocale } from '@/i18n'
 
 interface AssetsSectionProps {
@@ -79,7 +80,7 @@ function Chevron({ open }: { open: boolean }) {
       width="10"
       height="10"
       fill="none"
-      className={`shrink-0 text-[#6b6b7a] transition-transform duration-150 ${open ? 'rotate-90' : ''}`}
+      className={`shrink-0 ${STUDIO_TEXT_MUTED_CLS} transition-transform duration-150 ${open ? 'rotate-90' : ''}`}
       aria-hidden="true"
     >
       <path d="M4 2.5 L8 6 L4 9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -237,7 +238,7 @@ export function AssetsSection({ imageInputRef, selectedLayer, addImage, updateLa
               className="h-full w-full object-cover"
               loading="lazy"
             />
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent px-1.5 pb-1 pt-5 text-left text-[9px] text-white opacity-0 transition-opacity group-hover:opacity-100">
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent px-1.5 pb-1 pt-5 text-left text-[9px] text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
               {t.layers.dragToCanvas} · {primaryAction}
             </div>
           </div>
@@ -257,7 +258,7 @@ export function AssetsSection({ imageInputRef, selectedLayer, addImage, updateLa
             type="button"
             aria-label={`${t.layers.removeAsset}: ${asset.filename}`}
             onClick={() => removeAsset(asset.filename)}
-            className="rounded px-1 text-[10px] text-[#7f8094] hover:bg-[rgba(248,113,113,0.16)] hover:text-[#f87171]"
+            className={`rounded px-1 text-[10px] ${STUDIO_TEXT_MUTED_CLS} hover:bg-[rgba(248,113,113,0.16)] hover:text-[#f87171]`}
             title={t.layers.removeAsset}
           >
             ×
@@ -338,11 +339,12 @@ export function AssetsSection({ imageInputRef, selectedLayer, addImage, updateLa
           <button
             type="button"
             aria-label={assetsCollapsed ? t.layers.showAssets : t.layers.minimizeAssets}
+            aria-expanded={!assetsCollapsed}
             onClick={() => setAssetsCollapsed((value) => !value)}
-            className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#6b6b7a] hover:text-[#e8e8f0]"
+            className={`flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.2em] ${STUDIO_TEXT_MUTED_CLS} hover:text-[#e8e8f0]`}
             title={assetsCollapsed ? t.layers.showAssets : t.layers.minimizeAssets}
           >
-            <span className="tracking-normal">{assetsCollapsed ? '▸' : '▾'}</span>
+            <span className="tracking-normal" aria-hidden="true">{assetsCollapsed ? '▸' : '▾'}</span>
             {t.layers.assets}
           </button>
           <div className="flex items-center gap-1">
@@ -390,7 +392,7 @@ export function AssetsSection({ imageInputRef, selectedLayer, addImage, updateLa
                 {renderGroups(false, false)}
               </div>
             ) : (
-              <p className="mt-3 rounded-lg border border-dashed border-[rgba(255,255,255,0.08)] px-2 py-3 text-center text-[10px] leading-4 text-[#6b6b7a]">
+              <p className={`mt-3 rounded-lg border border-dashed border-[rgba(255,255,255,0.08)] px-2 py-3 text-center text-[10px] leading-4 ${STUDIO_TEXT_MUTED_CLS}`}>
                 {t.layers.emptyAssetsHint}
               </p>
             )}
