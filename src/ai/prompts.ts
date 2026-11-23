@@ -1,4 +1,10 @@
 /**
+ * [INPUT]: pure prompt templates and builders with no module dependencies
+ * [OUTPUT]: exports TRANSLATION_SYSTEM_PROMPT, buildSingleTranslationPrompt, buildSingleTranslationRetryPrompt, buildBatchTranslationPrompt, buildBatchTranslationRetryPrompt, IMAGE_LOCALIZATION_SYSTEM_PROMPT, and buildImageLocalizationPrompt
+ * [POS]: single source of truth for AI system, user, and retry prompts in src/ai/; consumed by features/translateText.ts and features/localizeImage.ts
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
+/**
  * ────────────────────────────────────────────────────────────────────────────
  * AI PROMPTS — single source of truth
  *

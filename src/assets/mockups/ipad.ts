@@ -1,4 +1,10 @@
 /**
+ * [INPUT]: static inline SVG template with no module dependencies
+ * [OUTPUT]: exports IPAD_SVG
+ * [POS]: iPad masked vector bezel of src/assets/mockups/; registered in registry.ts and paired with IPAD_13 in specs.ts
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
+/**
  * iPad mockup SVG as a string.
  * Screen area is TRULY transparent via SVG mask.
  * ViewBox: 0 0 420 560

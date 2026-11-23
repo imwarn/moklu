@@ -1,4 +1,10 @@
 /**
+ * [INPUT]: static inline SVG template with no module dependencies
+ * [OUTPUT]: exports IPHONE_16_PRO_PLAIN_SVG
+ * [POS]: iPhone 16 Pro (no Dynamic Island) masked vector bezel of src/assets/mockups/; registered in registry.ts and paired with IPHONE_16_PRO_PLAIN in specs.ts
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
+/**
  * iPhone 16 Pro mockup — variant WITHOUT Dynamic Island.
  * Identical to iphone-16-pro.ts except the Dynamic Island pill is removed.
  * ViewBox: 0 0 390 844

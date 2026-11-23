@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: pure domain schema definitions with no module dependencies
+ * [OUTPUT]: exports core Moklu domain types — GradientStop, LinearGradient, RadialGradient, FillValue, ShadowConfig, BrandColor, CustomFontRef, PhoneModel, BuiltInFormatId, CustomFormatId, CanvasFormatId, CustomCanvasFormat, PhoneScreenRect, PhoneStatusBarInfo, PhoneModelSpec, LocaleLayerPatch, LayoutDelta, LocaleContent, LocalizationMode, LocaleContentBatchEntry, FormatLayerPatch, BaseLayer, LegacyLocaleLayoutFields, LayerType, BackgroundAccent, BackgroundLayer, PhoneBorder, BrowserChromeOptions, PhoneLayer, TextSpan, TextMark, TextLayer, ImageLayer, ShapeType, ShapeLayer, EmojiLayer, BrandLayer, GroupLayer, Layer, CanvasBackground, SlideGroup, PanoSettings, ProjectSettings, Project, Selection, and Template
+ * [POS]: canonical TypeScript domain model of src/types/; imported across store, canvas components, utils, AI, hooks, bridge, and CLI
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 // ─── Brand & Colors ──────────────────────────────────────────────────────────
 
 export interface GradientStop {

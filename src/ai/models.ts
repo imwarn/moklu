@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on getProviderConfig, AiModel, and AiProvider from @/ai/providers; formatAiNetworkError from @/ai/errors; buildOpenAiCompatibleHeaders from @/ai/headers
+ * [OUTPUT]: exports listModels and searchModels
+ * [POS]: remote model catalog fetcher and search filter of src/ai/ with static fallback lists for OpenAI and Google
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { getProviderConfig } from '@/ai/providers'
 import { formatAiNetworkError } from '@/ai/errors'
 import { buildOpenAiCompatibleHeaders } from '@/ai/headers'
