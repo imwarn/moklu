@@ -207,7 +207,7 @@ function buildMockupGroupSpec(
     model: targetModel,
     name: targetModel.startsWith('browser-') ? 'Browser Mockup' : spec.label,
     screenshotPath: primary.key,
-    screenshotDataUrl: primary.dataUrl,
+    screenshotDataUrl: undefined,
     showStatusBar: spec.statusBar.height > 0 && !targetModel.startsWith('browser-'),
   }
   const seededPhone = seedLocaleContent(configuredPhone, defaultLocale)

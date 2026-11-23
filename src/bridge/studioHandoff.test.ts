@@ -51,8 +51,10 @@ describe('stageImagesIntoStudio', () => {
     const phone = activeGroup!.layers[1] as PhoneLayer
     expect(phone.model).toBe('iphone-16-pro')
     expect(phone.screenshotPath).toBeTruthy()
+    expect(phone.screenshotDataUrl).toBeUndefined()
     expect(useAssetStore.getState().getAsset(phone.screenshotPath!)).toBe(TINY_PNG)
     expect(phone.localeContent?.en?.screenshotPath).toBe(phone.screenshotPath)
+    expect(phone.localeContent?.en?.screenshotDataUrl).toBeUndefined()
 
     expect(state.activeCanvasFormat).toBe(BASE_CANVAS_FORMAT)
     expect(state.selection).toEqual({
