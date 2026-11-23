@@ -1,11 +1,11 @@
 /**
- * [INPUT]: depends on react, src/seo (SiteHeader, SeoLandingSections, SiteFooter, useSeoHead, getRouteCopy, buildLocalizedPath, ResolvedRoute), src/workspace (QuickWorkspace, StudioHandoffPayload), src/workspace/engineAdapter (createToolsWorkspaceEngines), src/bridge/studioHandoff (stageImagesIntoStudio), src/commercial (PricingModal, isEffectivePro, useEntitlementStore), src/theme/themeStore (applyDocumentTheme, useThemeStore), and PhoneModel from @/types
+ * [INPUT]: depends on react, src/seo (SiteHeader, SeoLandingSections, SiteFooter, useSeoHead, getRouteCopy, buildLocalizedPath, ResolvedRoute), src/workspace (QuickWorkspace, StudioHandoffPayload), src/workspace/engineAdapter (createToolsWorkspaceEngines), src/bridge/studioHandoff (stageImagesIntoStudioAfterBootstrap), src/commercial (PricingModal, isEffectivePro, useEntitlementStore), src/theme/themeStore (applyDocumentTheme, useThemeStore), and PhoneModel from @/types
  * [OUTPUT]: exports ToolLandingPage component rendering the zero-splash above-the-fold QuickWorkspace, localized SEO sections, adaptive Light/Dark chrome, PricingModal, and Studio handoff
  * [POS]: primary landing page in src/pages; serves '/' and all 18 SEO tool routes across en/zh/ja/ko without loading Konva
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { stageImagesIntoStudio } from '@/bridge/studioHandoff'
+import { stageImagesIntoStudioAfterBootstrap } from '@/bridge/studioHandoff'
 import { isEffectivePro, useEntitlementStore } from '@/commercial/entitlements'
 import { PricingModal } from '@/commercial/PricingModal'
 import {
@@ -80,14 +80,15 @@ export function ToolLandingPage({ route, onNavigate }: ToolLandingPageProps) {
 
   const handleOpenInStudio = useCallback(
     (payload: WorkspaceHandoffPayload) => {
-      stageImagesIntoStudio({
+      void stageImagesIntoStudioAfterBootstrap({
         images: payload.images,
         mode: payload.mode,
         mockupModel: toPhoneModel(payload.mockupModel),
         slideWidth: payload.slideWidth,
         slideHeight: payload.slideHeight,
+      }).then(() => {
+        onNavigate(buildLocalizedPath(route.locale, 'studio'))
       })
-      onNavigate(buildLocalizedPath(route.locale, 'studio'))
     },
     [onNavigate, route.locale],
   )

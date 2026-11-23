@@ -15,7 +15,8 @@
 - `locales/koTools.ts`: Korean route copy for split, compress, resize, and ID-card routes
 - `i18n.ts`: locale bundle facade returning localized UI strings, route copy, and Open Graph locale codes
 - `schema.ts`: pure Schema.org JSON-LD builders (`WebApplication`, `HowTo`, `FAQPage`) and `<`-safe serializer shared by runtime and SSG
-- `ssg.ts`: pure, Node-agnostic SSG HTML shell, `<head>` injector, multilingual `sitemap.xml`, and `robots.txt` string generators
+- `ssg.ts`: pure, Node-agnostic SSG `<head>` injector, dark Studio skeleton renderer, multilingual `sitemap.xml`, and `robots.txt` string generators
+- `ssrEntry.ts`: build-time `react-dom/server` `renderToString` entry rendering `<ToolLandingPage />` for all 72 landing routes and `renderStudioSkeleton` for the 4 Studio routes
 - `useSeoHead.ts`: client-side `<head>` synchronizer (`applySeoHead` + `useSeoHead`) managing title, lang, canonical, OG/Twitter, hreflang, and JSON-LD without node leaks
 - `navHelpers.ts`: shared SPA link-click guard and navigation/footer route grouping constants
 - `SiteHeader.tsx`: dual-theme semantic top bar with category nav, 4-locale anchor switcher, theme toggle, Pro modal trigger, and Studio CTA

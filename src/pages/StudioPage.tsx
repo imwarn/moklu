@@ -22,7 +22,7 @@ import { applyCanvasFormat, resolveGroupView } from '@/utils/canvasFormats'
 import { registerStage } from '@/utils/stageRegistry'
 import { getScopedEditingIndicator } from '@/utils/scopedEditingIndicator'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
-import { useProjectsStore } from '@/store/projects'
+import { ensureProjectsBootstrapped, useProjectsStore } from '@/store/projects'
 import { applyDocumentTheme } from '@/theme/themeStore'
 import { buildLocalizedPath, type LocaleCode } from '@/seo'
 
@@ -89,6 +89,18 @@ export function StudioPage({ locale = 'en', onNavigate }: StudioPageProps) {
   const [previewReturnTo, setPreviewReturnTo] = useState<'localization' | null>(null)
   const [hasCompletedInitialLoad, setHasCompletedInitialLoad] = useState(false)
   const [hasMetMinimumSplashTime, setHasMetMinimumSplashTime] = useState(false)
+  const [projectsReady, setProjectsReady] = useState(() => useProjectsStore.getState().initialized)
+
+  useEffect(() => {
+    if (projectsReady) return
+    let active = true
+    void ensureProjectsBootstrapped().finally(() => {
+      if (active) setProjectsReady(true)
+    })
+    return () => {
+      active = false
+    }
+  }, [projectsReady])
 
   const {
     thumbnails,
@@ -115,7 +127,7 @@ export function StudioPage({ locale = 'en', onNavigate }: StudioPageProps) {
 
   useEffect(() => {
     if (hasCompletedInitialLoad) return
-    if (!hasMetMinimumSplashTime) return
+    if (!hasMetMinimumSplashTime || !projectsReady) return
 
     // Only the visible group gates first paint; background thumbnails precache at idle.
     if (project.slideGroups.length > 0) {
@@ -124,7 +136,7 @@ export function StudioPage({ locale = 'en', onNavigate }: StudioPageProps) {
 
     const timeoutId = window.setTimeout(() => setHasCompletedInitialLoad(true), 0)
     return () => window.clearTimeout(timeoutId)
-  }, [hasCompletedInitialLoad, hasMetMinimumSplashTime, project.slideGroups.length, activeSlideGroupId, thumbnails])
+  }, [hasCompletedInitialLoad, hasMetMinimumSplashTime, projectsReady, project.slideGroups.length, activeSlideGroupId, thumbnails])
 
   useEffect(() => {
     if (project.slideGroups.length === 0) return

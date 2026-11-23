@@ -1,4 +1,9 @@
-/** Project library state and async persistence. */
+/**
+ * [INPUT]: depends on zustand, Project types, useEditorStore, useAssetStore, idbStorage, getProjectStorage, and project validation helpers
+ * [OUTPUT]: exports useProjectsStore, ProjectMeta, notifyProjectConflict, abandonBootstrap, bootstrapProjects, and ensureProjectsBootstrapped
+ * [POS]: project library persistence store in src/store; provides non-blocking shared hydration via ensureProjectsBootstrapped()
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 
 import { create } from 'zustand'
 import type { Project } from '@/types'
@@ -334,6 +339,43 @@ export const useProjectsStore = create<ProjectsStore>((set, get) => ({
 
 export async function bootstrapProjects(): Promise<void> {
   await useProjectsStore.getState().initialize()
+}
+
+let bootstrapPromise: Promise<void> | null = null
+
+/**
+ * Shared idempotent project hydration gate.
+ * Non-studio routes kick this off in the background on tick 0 without blocking render;
+ * StudioPage and Studio handoff await it so saved IndexedDB projects never race edits.
+ */
+export function ensureProjectsBootstrapped(timeoutMs = 8000): Promise<void> {
+  if (useProjectsStore.getState().initialized) {
+    return Promise.resolve()
+  }
+  if (!bootstrapPromise) {
+    bootstrapPromise = (async () => {
+      let timer: ReturnType<typeof setTimeout> | undefined
+      try {
+        await Promise.race([
+          bootstrapProjects(),
+          new Promise<never>((_, reject) => {
+            timer = setTimeout(() => {
+              abandonBootstrap()
+              reject(new Error('bootstrap timeout'))
+            }, timeoutMs)
+          }),
+        ])
+      } catch (err) {
+        console.error('[Moklu] Project bootstrap failed', err)
+      } finally {
+        if (timer) clearTimeout(timer)
+        if (!useProjectsStore.getState().initialized) {
+          bootstrapPromise = null
+        }
+      }
+    })()
+  }
+  return bootstrapPromise
 }
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null

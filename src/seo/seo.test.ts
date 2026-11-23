@@ -40,7 +40,9 @@ import {
   generateSitemapXml,
   getRouteRelativeHtmlPath,
   renderRouteHtml,
+  renderStudioSkeleton,
 } from './ssg.ts'
+import { renderRouteMarkup } from './ssrEntry.ts'
 
 const execFileAsync = promisify(execFile)
 
@@ -346,18 +348,21 @@ describe('Build-time SSG prerenderer, sitemap.xml, robots.txt, and CSP safety', 
 </html>
 `
 
-  it('injects localized metadata, JSON-LD, and crawlable shell with zero executable inline scripts', () => {
+  it('injects localized metadata, JSON-LD, and full React-rendered markup with zero raw ssg shell or inline scripts', () => {
     const route = resolvePathname('/ja/merge-images')
-    const rendered = renderRouteHtml(SAMPLE_DIST_TEMPLATE, route, 'https://moklu.tech')
+    const markup = renderRouteMarkup(route)
+    const rendered = renderRouteHtml(SAMPLE_DIST_TEMPLATE, route, 'https://moklu.tech', markup)
     const copy = getRouteCopy('ja', 'merge-images')
 
-    expect(rendered).toContain('<html lang="ja">')
+    expect(rendered).toContain('<html lang="ja" data-theme="light" data-surface="workspace">')
     expect(rendered).toContain(`<title>${copy.title}</title>`)
     expect(rendered).toContain('<link rel="canonical" href="https://moklu.tech/ja/merge-images" />')
     expect(rendered).toContain('hreflang="x-default" href="https://moklu.tech/merge-images"')
-    expect(rendered).toContain(`<h1>${copy.h1}</h1>`)
+    expect(rendered).toContain(copy.h1)
     expect(rendered).toContain(copy.faqs[0].question)
-    expect(rendered).toContain('data-ssg-shell="true"')
+    expect(rendered).toContain('data-testid="tool-landing-page"')
+    expect(rendered).toContain('data-testid="quick-workspace"')
+    expect(rendered).not.toContain('data-ssg-shell')
     expect(rendered).toContain('<script type="module" crossorigin src="/assets/index-abc123.js"></script>')
 
     // Strict CSP check: EVERY <script> tag must either have src= or type="application/ld+json"
@@ -369,10 +374,22 @@ describe('Build-time SSG prerenderer, sitemap.xml, robots.txt, and CSP safety', 
       expect(isExternal || isJsonLd).toBe(true)
     }
 
+    // Studio routes emit a styled dark skeleton without loading Konva
+    const studioRoute = resolvePathname('/studio')
+    const studioHtml = renderRouteHtml(
+      SAMPLE_DIST_TEMPLATE,
+      studioRoute,
+      'https://moklu.tech',
+      renderStudioSkeleton(studioRoute),
+    )
+    expect(studioHtml).toContain('<html lang="en" data-theme="dark" data-surface="studio">')
+    expect(studioHtml).toContain('data-testid="studio-ssg-skeleton"')
+    expect(studioHtml).not.toContain('data-ssg-shell')
+
     // Re-rendering an already prerendered page stays idempotent
-    const rerendered = renderRouteHtml(rendered, route, 'https://moklu.tech')
+    const rerendered = renderRouteHtml(rendered, route, 'https://moklu.tech', markup)
     expect(rerendered.match(/<link rel="canonical"/g)?.length).toBe(1)
-    expect(rerendered.match(/data-ssg-shell="true"/g)?.length).toBe(1)
+    expect(rerendered.match(/data-testid="tool-landing-page"/g)?.length).toBe(1)
   })
 
   it('executes scripts/prerender-seo.mjs via Node ESM and writes all 76 static HTML files, sitemap.xml, and robots.txt', async () => {
@@ -416,8 +433,15 @@ describe('Build-time SSG prerenderer, sitemap.xml, robots.txt, and CSP safety', 
         const outPath = path.join(tmpDir, ...getRouteRelativeHtmlPath(route))
         expect(outPath).toBe(path.join(tmpDir, expectedRel))
         const html = await readFile(outPath, 'utf8')
-        expect(html).toContain(`<html lang="${route.locale}">`)
-        expect(html).toContain(`<h1>${escapeHtml(getRouteCopy(route.locale, route.slug).h1)}</h1>`)
+        expect(html).toContain(`<html lang="${route.locale}"`)
+        expect(html).toContain(escapeHtml(getRouteCopy(route.locale, route.slug).h1))
+        expect(html).not.toContain('data-ssg-shell')
+        if (route.isStudio) {
+          expect(html).toContain('data-testid="studio-ssg-skeleton"')
+        } else {
+          expect(html).toContain('data-testid="tool-landing-page"')
+          expect(html).toContain('data-testid="quick-workspace"')
+        }
       }
 
       const sitemap = await readFile(path.join(tmpDir, 'sitemap.xml'), 'utf8')
@@ -432,5 +456,5 @@ describe('Build-time SSG prerenderer, sitemap.xml, robots.txt, and CSP safety', 
     } finally {
       await rm(tmpDir, { recursive: true, force: true })
     }
-  })
+  }, 30_000)
 })
