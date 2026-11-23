@@ -1,0 +1,18 @@
+{
+  "type": "design",
+  "designSystems": [],
+  "primaryDesignSystem": null,
+  "assets": {
+    "Moklu Brand Preview": {
+      "versions": [
+        {
+          "path": "preview.html",
+          "createdAt": "2026-11-23T17:04:46.100Z",
+          "status": "needs-review"
+        }
+      ]
+    }
+  },
+  "createdAt": "2026-11-23T17:04:46.101Z",
+  "updatedAt": "2026-11-23T17:25:15.258Z"
+}

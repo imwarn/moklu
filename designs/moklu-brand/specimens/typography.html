@@ -1,0 +1,144 @@
+<!-- @dsCard group="Type" viewport="700x340" name="Geist & Geist Mono Scale" subtitle="Self-hosted geometric sans paired with tabular monospace for canvas metrics and shortcuts" -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        font-family: var(--font-sans);
+        background: var(--color-surface);
+        color: var(--color-ink);
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .specimen {
+        display: grid;
+        grid-template-columns: 150px minmax(0, 1fr);
+        align-items: baseline;
+        gap: 16px;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--color-border);
+      }
+      .specimen:last-child { border-bottom: none; padding-bottom: 0; }
+      .spec-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .spec-role {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--color-ink);
+      }
+      .spec-val {
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+        color: var(--color-muted);
+      }
+      .t-display {
+        font-size: 34px;
+        font-weight: 600;
+        line-height: 1.08;
+        letter-spacing: var(--tracking-display);
+      }
+      .t-h2 {
+        font-size: 20px;
+        font-weight: 600;
+        line-height: 1.25;
+        letter-spacing: var(--tracking-heading);
+      }
+      .t-body {
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 1.6;
+        color: var(--color-muted);
+        max-width: 58ch;
+      }
+      .t-ui {
+        font-size: 12.5px;
+        font-weight: 500;
+        line-height: 1.4;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .t-mono {
+        font-family: var(--font-mono);
+        font-size: 12.5px;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: var(--tracking-mono);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+      .kbd {
+        padding: 2px 6px;
+        border-radius: 5px;
+        background: var(--color-panel);
+        border: 1px solid var(--color-border);
+        color: var(--color-ink);
+        font-size: 11px;
+      }
+      .accent-dot {
+        color: var(--color-accent-text);
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="specimen">
+      <div class="spec-meta">
+        <span class="spec-role">Display / Hero</span>
+        <span class="spec-val">Geist 600 · 34px · -0.03em</span>
+      </div>
+      <div class="t-display">Frame screenshots locally.</div>
+    </div>
+
+    <div class="specimen">
+      <div class="spec-meta">
+        <span class="spec-role">Section Heading</span>
+        <span class="spec-val">Geist 600 · 20px · -0.02em</span>
+      </div>
+      <div class="t-h2">Browser mockups without cloud uploads</div>
+    </div>
+
+    <div class="specimen">
+      <div class="spec-meta">
+        <span class="spec-role">Body Copy</span>
+        <span class="spec-val">Geist 400 · 14px · 1.6 lh</span>
+      </div>
+      <p class="t-body">Every export renders directly in your browser canvas. Switch between daylight Quick Workspace and dark Studio chrome with zero layout shift.</p>
+    </div>
+
+    <div class="specimen">
+      <div class="spec-meta">
+        <span class="spec-role">UI Controls</span>
+        <span class="spec-val">Geist 500 · 12.5px</span>
+      </div>
+      <div class="t-ui">
+        <span>Export PNG 2x</span>
+        <span style="color: var(--color-muted);">Canvas Padding</span>
+        <span class="accent-dot">Active Format</span>
+      </div>
+    </div>
+
+    <div class="specimen">
+      <div class="spec-meta">
+        <span class="spec-role">Tabular Mono</span>
+        <span class="spec-val">Geist Mono 400 · tabular</span>
+      </div>
+      <div class="t-mono">
+        <span>1440 × 900 px</span>
+        <span style="color: var(--color-muted);">X: 120 Y: 64</span>
+        <span class="accent-dot">#E5541F</span>
+        <span class="kbd">⌘ E</span>
+        <span class="kbd">⇧ ⌘ Z</span>
+      </div>
+    </div>
+  </body>
+</html>

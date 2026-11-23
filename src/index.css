@@ -1,43 +1,77 @@
 /**
- * [INPUT]: depends on Tailwind CSS v4 core (`tailwindcss`); reads `html[data-theme]` and `html[data-surface]` attributes set by themeStore and SSG
- * [OUTPUT]: provides Tailwind v4 `@custom-variant dark` bound to `data-theme="dark"`, theme tokens, light/dark surface and scrollbar rules, and Studio loader animations
- * [POS]: global stylesheet entry imported by src/main.tsx and bundled into all workspace and Studio builds
+ * [INPUT]: depends on Tailwind CSS v4 core (`tailwindcss`), `@fontsource-variable/geist`, and `@fontsource-variable/geist-mono`; reads `html[data-theme]` and `html[data-surface]` attributes set by themeStore and SSG
+ * [OUTPUT]: provides self-hosted Geist + Geist Mono variable font faces, Tailwind v4 `@custom-variant dark` bound to `data-theme="dark"`, static light/dark Signal Orange + Neutral Zinc design tokens, scrollbar rules, and Studio loader animations
+ * [POS]: global stylesheet entry imported by src/main.tsx and bundled into all workspace and Studio builds; mirrors hex values in src/theme/brand.ts
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist/wght-italic.css";
+@import "@fontsource-variable/geist-mono";
 @import "tailwindcss";
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
-@theme {
-  --font-sans: 'Inter', system-ui, sans-serif;
-  --color-surface: #0f0f13;
-  --color-panel: #18181f;
-  --color-border: rgba(255,255,255,0.08);
-  --color-muted: #6b6b7a;
-  --color-accent: #7c6ef6;
-  --color-accent-2: #ec4899;
+@theme static {
+  --font-sans: 'Geist Variable', 'Geist', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Geist Mono Variable', 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Neutral Zinc — light default (overridden in dark/studio below) */
+  --color-surface: #fafafa;
+  --color-panel: #ffffff;
+  --color-border: #e4e4e7;
+  --color-muted: #52525b;
+
+  /* Single Brand Accent — Signal Orange */
+  --color-accent: #e5541f;
+  --color-accent-strong: #c24217;
+  --color-accent-soft: #fcf2ed;
+  --color-accent-text: #af3b14;
+  --color-accent-fg: #ffffff;
+
+  /* Semantic Status */
+  --color-success: #15803d;
+  --color-warning: #9a6312;
+  --color-danger: #b91c3c;
+}
+
+html[data-theme="dark"],
+html[data-surface="studio"] {
+  --color-surface: #09090b;
+  --color-panel: #141417;
+  --color-border: #27272a;
+  --color-muted: #a1a1aa;
+
+  --color-accent: #e76536;
+  --color-accent-strong: #c64519;
+  --color-accent-soft: #2c1811;
+  --color-accent-text: #eb7f59;
+  --color-accent-fg: #ffffff;
+
+  --color-success: #34d399;
+  --color-warning: #e8b339;
+  --color-danger: #eb6079;
 }
 
 * { box-sizing: border-box; }
 
 body {
   margin: 0;
-  background: #f8f9fc;
+  background: var(--color-surface);
   color: #18181b;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-sans);
   overflow-x: hidden;
   overflow-y: auto;
   color-scheme: light;
 }
 
 html[data-theme="dark"] body {
-  background: #0b0b10;
-  color: #e8e8f0;
+  background: var(--color-surface);
+  color: #f4f4f5;
   color-scheme: dark;
 }
 
 html[data-surface="studio"] body {
-  background: #0f0f13;
-  color: #e8e8f0;
+  background: var(--color-surface);
+  color: #f4f4f5;
   overflow: hidden;
   color-scheme: dark;
 }
@@ -50,11 +84,11 @@ html[data-surface="studio"] body {
 html[data-theme="dark"]::-webkit-scrollbar-thumb,
 html[data-theme="dark"] ::-webkit-scrollbar-thumb,
 html[data-surface="studio"]::-webkit-scrollbar-thumb,
-html[data-surface="studio"] ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.16); }
+html[data-surface="studio"] ::-webkit-scrollbar-thumb { background: rgba(244, 244, 245, 0.16); }
 html[data-theme="dark"]::-webkit-scrollbar-thumb:hover,
 html[data-theme="dark"] ::-webkit-scrollbar-thumb:hover,
 html[data-surface="studio"]::-webkit-scrollbar-thumb:hover,
-html[data-surface="studio"] ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.28); }
+html[data-surface="studio"] ::-webkit-scrollbar-thumb:hover { background: rgba(244, 244, 245, 0.28); }
 
 @keyframes moklu-loader-enter {
   from { opacity: 0; transform: translateY(7px); }
@@ -80,23 +114,23 @@ html[data-surface="studio"] ::-webkit-scrollbar-thumb:hover { background: rgba(2
 }
 
 .moklu-loader-words {
-  --moklu-loader-bg: #18181f;
+  --moklu-loader-bg: var(--color-panel);
   display: flex;
   align-items: center;
   height: 42px;
   padding: 8px 14px;
   overflow: hidden;
-  border: 1px solid rgba(203,191,255,0.09);
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   background: var(--moklu-loader-bg);
-  box-shadow: 0 12px 34px rgba(0,0,0,0.22), 0 0 22px rgba(124,110,246,0.055);
+  box-shadow: 0 12px 32px rgba(9, 9, 11, 0.32);
   font-size: 14px;
   font-weight: 500;
   line-height: 24px;
 }
 
 .moklu-loader-label {
-  color: #7d7a90;
+  color: var(--color-muted);
 }
 
 .moklu-loader-window {
@@ -126,7 +160,7 @@ html[data-surface="studio"] ::-webkit-scrollbar-thumb:hover { background: rgba(2
   display: flex;
   height: 168px;
   flex-direction: column;
-  color: #9b8fff;
+  color: var(--color-accent-text);
   animation: moklu-loader-words 10s cubic-bezier(0.65, 0, 0.35, 1) infinite;
   will-change: transform;
 }

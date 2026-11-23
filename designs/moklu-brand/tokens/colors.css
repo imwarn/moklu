@@ -1,0 +1,47 @@
+:root {
+  /* Neutral Zinc — Light (Quick Workspace & SEO Landing default) */
+  --color-surface: #fafafa;
+  --color-panel: #ffffff;
+  --color-border: #e4e4e7;
+  --color-ink: #18181b;
+  --color-muted: #52525b;
+
+  /* Single Brand Accent — Signal Orange (HSL S < 80%) */
+  --color-accent: #e5541f;
+  --color-accent-strong: #c24217;
+  --color-accent-soft: #fcf2ed;
+  --color-accent-text: #af3b14;
+  --color-accent-fg: #ffffff;
+
+  /* Semantic Status */
+  --color-success: #15803d;
+  --color-warning: #9a6312;
+  --color-danger: #b91c3c;
+
+  /* Radii & Shadows */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --shadow-card: 0 1px 2px rgba(24, 24, 27, 0.05), 0 8px 24px -12px rgba(24, 24, 27, 0.08);
+}
+
+[data-theme="dark"],
+[data-surface="studio"] {
+  --color-surface: #09090b;
+  --color-panel: #141417;
+  --color-border: #27272a;
+  --color-ink: #f4f4f5;
+  --color-muted: #a1a1aa;
+
+  --color-accent: #e76536;
+  --color-accent-strong: #c64519;
+  --color-accent-soft: #2c1811;
+  --color-accent-text: #eb7f59;
+  --color-accent-fg: #ffffff;
+
+  --color-success: #34d399;
+  --color-warning: #e8b339;
+  --color-danger: #eb6079;
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.45), 0 12px 32px -12px rgba(0, 0, 0, 0.6);
+}
