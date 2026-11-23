@@ -101,7 +101,7 @@ export function buildWebApplicationSchema(
       priceCurrency: 'USD',
     },
     featureList: copy.highlights.map((item) => `${item.title}: ${item.description}`),
-    image: `${base}/logo.svg`,
+    image: `${base}/og-image.png`,
     publisher: {
       '@type': 'Organization',
       name: 'Moklu',

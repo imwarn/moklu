@@ -81,7 +81,7 @@ function buildHeadTags(route: ResolvedRoute, siteUrl?: string): string {
   const base = getSiteUrl(siteUrl)
   const copy = getRouteCopy(route.locale, route.slug)
   const canonicalUrl = buildCanonicalUrl(route.locale, route.slug, base)
-  const ogImage = `${base}/logo.svg`
+  const ogImage = `${base}/og-image.png`
   const ogLocale = getOgLocale(route.locale)
   const hreflangs = getHreflangLinks(route.slug, base)
   const schemas = buildRouteSchemaList(route, base)

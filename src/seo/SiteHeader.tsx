@@ -113,27 +113,16 @@ export function SiteHeader({
           >
             <svg
               aria-hidden="true"
-              viewBox="0 0 36 36"
+              viewBox="0 0 32 32"
               fill="none"
               className="h-8 w-8 shrink-0"
             >
-              <rect
-                x="2.5"
-                y="5"
-                width="29"
-                height="26"
-                rx="6.5"
-                stroke="currentColor"
-                strokeWidth="2.8"
-              />
               <path
-                d="M9.5 24.5V15l7.5 5.5 7.5-11v15"
-                stroke="currentColor"
-                strokeWidth="2.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+                fill="currentColor"
+                d="M6 8a4 4 0 0 0-4 4v14a4 4 0 0 0 4 4h14a4 4 0 0 0 4-4v-4h-4v4H6V12h4V8H6Z"
               />
-              <circle cx="29" cy="7.5" r="3" fill="var(--color-accent)" />
+              <rect fill="var(--color-accent)" x="12" y="2" width="18" height="18" rx="4" />
+              <rect fill="var(--color-accent-fg)" x="18" y="6" width="6" height="2" rx="1" />
             </svg>
             <span className="text-lg font-bold tracking-tight">
               {ui.brandName}

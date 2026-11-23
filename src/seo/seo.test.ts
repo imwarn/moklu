@@ -420,6 +420,8 @@ describe('Build-time SSG prerenderer, sitemap.xml, robots.txt, and CSP safety', 
     expect(rendered).toContain('<html lang="ja" data-theme="light" data-surface="workspace">')
     expect(rendered).toContain(`<title>${copy.title}</title>`)
     expect(rendered).toContain('<link rel="canonical" href="https://moklu.app/ja/merge-images" />')
+    expect(rendered).toContain('<meta property="og:image" content="https://moklu.app/og-image.png" />')
+    expect(rendered).toContain('<meta name="twitter:image" content="https://moklu.app/og-image.png" />')
     expect(rendered).toContain('hreflang="x-default" href="https://moklu.app/merge-images"')
     expect(rendered).toContain(copy.h1)
     expect(rendered).toContain(copy.faqs[0].question)

@@ -51,7 +51,7 @@ export function applySeoHead(
   const base = getSiteUrl(siteUrl)
   const copy = getRouteCopy(route.locale, route.slug)
   const canonicalUrl = buildCanonicalUrl(route.locale, route.slug, base)
-  const ogImage = `${base}/logo.svg`
+  const ogImage = `${base}/og-image.png`
   const ogLocale = getOgLocale(route.locale)
 
   doc.documentElement.lang = route.locale
