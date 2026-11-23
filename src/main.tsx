@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on react (StrictMode, lazy, Suspense), react-dom/client (createRoot), ./index.css, ./App.tsx, loadGoogleFonts from @/utils/fonts, and ensureProjectsBootstrapped from @/store/projects
- * [OUTPUT]: mounts the Moklu SPA immediately on tick 0 (or headless ExportApp when window.__EXPORT_CONFIG__ is present) while kicking off non-blocking IndexedDB project hydration
+ * [INPUT]: depends on react (StrictMode, lazy, Suspense), react-dom/client (createRoot), ./index.css, ./App.tsx, loadGoogleFonts from @/utils/fonts, installChunkRecoveryListener from @/utils/chunkRecovery, and ensureProjectsBootstrapped from @/store/projects
+ * [OUTPUT]: installs Vite preloadError auto-recovery and mounts the Moklu SPA immediately on tick 0 (or headless ExportApp when window.__EXPORT_CONFIG__ is present) while kicking off non-blocking IndexedDB project hydration
  * [POS]: browser application entry point of src/; avoids blocking initial paint on IndexedDB so pre-rendered landing pages mount without FOUC
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -9,6 +9,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import { loadGoogleFonts } from '@/utils/fonts'
+import { installChunkRecoveryListener } from '@/utils/chunkRecovery'
 import { ensureProjectsBootstrapped } from '@/store/projects'
 
 declare global {
@@ -34,6 +35,8 @@ const ExportApp = lazy(() =>
 )
 
 if (!isExportMode) {
+  // Auto-recover once per cooldown if a deploy rollover invalidates a stale HTML chunk hash.
+  installChunkRecoveryListener()
   // Non-blocking background hydration; StudioPage and Studio handoff await this shared promise.
   void ensureProjectsBootstrapped()
 }

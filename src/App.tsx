@@ -1,11 +1,12 @@
 /**
- * [INPUT]: depends on react (lazy, Suspense, useCallback, useEffect, useState), resolvePathname and useSeoHead from @/seo, ToolLandingPage from @/pages/ToolLandingPage, and lazy-loaded StudioPage from @/pages/StudioPage
- * [OUTPUT]: exports default App SPA router mapping '/' and 18 localized SEO tool slugs to ToolLandingPage and '/studio' (plus '/<locale>/studio') to lazy-loaded StudioPage
+ * [INPUT]: depends on react (lazy, Suspense, useCallback, useEffect, useState), resolvePathname/buildLocalizedPath/useSeoHead from @/seo, ChunkErrorBoundary from @/components/common/ChunkErrorBoundary, ToolLandingPage from @/pages/ToolLandingPage, and lazy-loaded StudioPage from @/pages/StudioPage
+ * [OUTPUT]: exports default App SPA router mapping '/' and 18 localized SEO tool slugs to ToolLandingPage and '/studio' (plus '/<locale>/studio') to lazy-loaded StudioPage wrapped in ChunkErrorBoundary
  * [POS]: root router shell of src/; ensures landing routes render instantaneously without loading Konva or triggering the Studio splash screen
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 import { Suspense, lazy, useCallback, useEffect, useState } from 'react'
-import { resolvePathname, useSeoHead, type ResolvedRoute } from '@/seo'
+import { buildLocalizedPath, resolvePathname, useSeoHead, type ResolvedRoute } from '@/seo'
+import { ChunkErrorBoundary } from '@/components/common/ChunkErrorBoundary'
 import { ToolLandingPage } from '@/pages/ToolLandingPage'
 
 const StudioPage = lazy(() =>
@@ -25,16 +26,23 @@ function StudioRouteShell({
   onNavigate: (path: string) => void
 }) {
   useSeoHead(route)
+  const homeHref = buildLocalizedPath(route.locale, '')
   return (
-    <Suspense
-      fallback={
-        <div className="flex h-screen w-screen items-center justify-center bg-[#0f0f13] text-sm text-[#a0a0b0]">
-          Loading Moklu Studio…
-        </div>
-      }
+    <ChunkErrorBoundary
+      locale={route.locale}
+      homeHref={homeHref}
+      onNavigateHome={() => onNavigate(homeHref)}
     >
-      <StudioPage locale={route.locale} onNavigate={onNavigate} />
-    </Suspense>
+      <Suspense
+        fallback={
+          <div className="flex h-screen w-screen items-center justify-center bg-[#0f0f13] text-sm text-[#a0a0b0]">
+            Loading Moklu Studio…
+          </div>
+        }
+      >
+        <StudioPage locale={route.locale} onNavigate={onNavigate} />
+      </Suspense>
+    </ChunkErrorBoundary>
   )
 }
 

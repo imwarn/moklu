@@ -167,9 +167,9 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
       footerClassName="shrink-0 px-5 py-2.5 border-t border-[rgba(255,255,255,0.06)] flex items-center gap-3"
       footer={(
         <>
-          <span className="text-[11px] text-[#4a4a5a] font-mono select-all">v{__APP_VERSION__}</span>
+          <span className="text-[11px] text-[#4a4a5a] font-mono select-all">v{typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev'}</span>
           <span className="text-[#2a2a3a]">·</span>
-          <span className="text-[11px] text-[#4a4a5a] font-mono select-all" title="Git commit hash">{__GIT_HASH__}</span>
+          <span className="text-[11px] text-[#4a4a5a] font-mono select-all" title="Git commit hash">{typeof __GIT_HASH__ !== 'undefined' ? __GIT_HASH__ : 'local'}</span>
           <span className="flex-1" />
           <a href="https://github.com/imwarn/moklu" target="_blank" rel="noopener noreferrer" className="text-[11px] text-[#4a4a5a] hover:text-[#7c6ef6] transition-colors">github.com/imwarn/moklu</a>
         </>
