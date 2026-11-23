@@ -1,11 +1,12 @@
 /**
- * [INPUT]: depends on ModalShell from @/components/ui/ModalShell; depends on PRO_FEATURES, ProFeature, and useEntitlementStore from ./entitlements; depends on PricingLocale, PricingModalLabels, and resolvePricingLabels from ./pricingCopy
+ * [INPUT]: depends on ModalShell from @/components/ui/ModalShell; depends on getBrandPalette from @/theme/brand; depends on PRO_FEATURES, ProFeature, and useEntitlementStore from ./entitlements; depends on PricingLocale, PricingModalLabels, and resolvePricingLabels from ./pricingCopy
  * [OUTPUT]: exports PricingModal component, PricingModalProps, PricingLocale, and PricingModalLabels types
  * [POS]: Accessible light/dark-adaptive Free vs Moklu Studio Pro comparison dialog with Escape/Tab focus trapping and 4-locale fallback copy
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
 import { ModalShell } from '@/components/ui/ModalShell'
+import { getBrandPalette } from '@/theme/brand'
 import { PRO_FEATURES, useEntitlementStore, type ProFeature } from './entitlements'
 import { resolvePricingLabels, type PricingLocale, type PricingModalLabels } from './pricingCopy'
 
@@ -38,6 +39,7 @@ export function PricingModal({
   const isProTier = tier === 'pro'
   const isPreview = !isProTier && proPreviewEnabled
   const isLight = theme === 'light'
+  const palette = getBrandPalette(theme)
 
   const handleProAction = () => {
     if (onUpgradeClick) {
@@ -55,30 +57,28 @@ export function PricingModal({
       title={copy.title}
       closeLabel={copy.closeLabel}
       backdropStyle={{
-        background: isLight ? 'rgba(15, 23, 42, 0.45)' : 'rgba(0,0,0,0.65)',
+        background: isLight ? 'rgba(24, 24, 27, 0.42)' : 'rgba(9, 9, 11, 0.72)',
       }}
-      panelClassName={`relative rounded-2xl border shadow-2xl w-full mx-4 max-h-[90vh] flex flex-col overflow-hidden ${
-        isLight ? 'text-zinc-900' : 'text-[#f5f5f8]'
+      panelClassName={`relative rounded-2xl border w-full mx-4 max-h-[90vh] flex flex-col overflow-hidden ${
+        isLight
+          ? 'text-zinc-900 shadow-[0_24px_60px_-20px_rgba(24,24,27,0.2)]'
+          : 'text-zinc-100 shadow-[0_24px_60px_-20px_rgba(9,9,11,0.85)]'
       }`}
       panelStyle={{
-        background: isLight ? '#ffffff' : '#16171f',
-        borderColor: isLight ? 'rgba(228, 228, 231, 0.95)' : 'rgba(255,255,255,0.12)',
+        background: palette.panel,
+        borderColor: palette.border,
       }}
       closeButtonClassName={
         isLight
-          ? 'absolute top-4 right-4 z-10 text-zinc-500 hover:text-zinc-900 transition-colors text-lg w-8 h-8 flex items-center justify-center rounded-lg hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600'
-          : 'absolute top-4 right-4 z-10 text-[#9494a8] hover:text-[#f5f5f8] transition-colors text-lg w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b9afff]'
+          ? 'absolute top-4 right-4 z-10 text-muted hover:text-zinc-900 transition-colors text-lg w-8 h-8 flex items-center justify-center rounded-lg hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
+          : 'absolute top-4 right-4 z-10 text-muted hover:text-zinc-100 transition-colors text-lg w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
       }
       header={
-        <div
-          className={`border-b px-6 py-5 pr-14 shrink-0 ${
-            isLight ? 'border-zinc-200' : 'border-white/10'
-          }`}
-        >
+        <div className="border-b border-border px-6 py-5 pr-14 shrink-0">
           <div className="flex flex-wrap items-center gap-2.5">
             <h2
               className={`text-lg font-semibold tracking-tight ${
-                isLight ? 'text-zinc-950' : 'text-[#f5f5f8]'
+                isLight ? 'text-zinc-950' : 'text-zinc-50'
               }`}
             >
               {copy.title}
@@ -87,26 +87,20 @@ export function PricingModal({
               <span
                 className={`rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${
                   isLight
-                    ? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
-                    : 'bg-emerald-500/15 text-emerald-300 ring-emerald-400/30'
+                    ? 'bg-panel text-success ring-success/30'
+                    : 'bg-success/12 text-success ring-success/30'
                 }`}
               >
                 {copy.proActiveBadge}
               </span>
             )}
             {isPreview && (
-              <span
-                className={`rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${
-                  isLight
-                    ? 'bg-violet-100 text-violet-700 ring-violet-300'
-                    : 'bg-[#7c6ef6]/20 text-[#c8c1ff] ring-[#7c6ef6]/40'
-                }`}
-              >
+              <span className="rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-medium text-accent-text ring-1 ring-accent/35">
                 {copy.proPreviewActiveBadge}
               </span>
             )}
           </div>
-          <p className={`mt-1.5 text-sm ${isLight ? 'text-zinc-600' : 'text-[#a6a8bc]'}`}>
+          <p className="mt-1.5 text-sm text-muted">
             {copy.subtitle}
           </p>
         </div>
@@ -114,10 +108,8 @@ export function PricingModal({
       bodyClassName="overflow-y-auto px-6 py-5"
       footer={
         <div
-          className={`border-t px-6 py-3.5 text-xs ${
-            isLight
-              ? 'border-zinc-200 bg-zinc-50/70 text-zinc-600'
-              : 'border-white/10 text-[#9496aa]'
+          className={`border-t border-border px-6 py-3.5 text-xs text-muted ${
+            isLight ? 'bg-surface' : ''
           }`}
         >
           {copy.footerNote}
@@ -127,35 +119,28 @@ export function PricingModal({
       <div data-theme={theme} className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <section
           aria-label={copy.freePlanName}
-          className={`flex flex-col justify-between rounded-xl border p-5 ${
-            isLight
-              ? 'border-zinc-200 bg-zinc-50/70'
-              : 'border-white/10 bg-white/[0.03]'
-          }`}
+          className="flex flex-col justify-between rounded-xl border border-border bg-surface p-5"
         >
           <div>
             <div className="flex items-baseline justify-between gap-2">
-              <h3 className={`text-base font-semibold ${isLight ? 'text-zinc-950' : 'text-white'}`}>
+              <h3 className={`text-base font-semibold ${isLight ? 'text-zinc-950' : 'text-zinc-50'}`}>
                 {copy.freePlanName}
               </h3>
-              <span className={`text-xl font-bold ${isLight ? 'text-zinc-950' : 'text-white'}`}>
+              <span className={`text-xl font-bold ${isLight ? 'text-zinc-950' : 'text-zinc-50'}`}>
                 {copy.freePlanPrice}
               </span>
             </div>
-            <p className={`mt-2 text-xs leading-5 ${isLight ? 'text-zinc-600' : 'text-[#a6a8bc]'}`}>
+            <p className="mt-2 text-xs leading-5 text-muted">
               {copy.freePlanTagline}
             </p>
             <ul
               className={`mt-4 space-y-2.5 text-sm ${
-                isLight ? 'text-zinc-700' : 'text-[#d9dbe8]'
+                isLight ? 'text-zinc-700' : 'text-zinc-200'
               }`}
             >
               {copy.freeFeatures.map((item) => (
                 <li key={item} className="flex items-start gap-2.5">
-                  <span
-                    aria-hidden="true"
-                    className={`mt-0.5 ${isLight ? 'text-emerald-600' : 'text-emerald-400'}`}
-                  >
+                  <span aria-hidden="true" className="mt-0.5 text-success">
                     ✓
                   </span>
                   <span>{item}</span>
@@ -166,10 +151,10 @@ export function PricingModal({
           <button
             type="button"
             onClick={onClose}
-            className={`mt-6 w-full rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 ${
+            className={`mt-6 w-full rounded-lg border border-border px-4 py-2.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:scale-[0.98] ${
               isLight
-                ? 'border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-100 focus-visible:outline-violet-600'
-                : 'border-white/15 bg-white/5 text-white hover:bg-white/10 focus-visible:outline-[#b9afff]'
+                ? 'bg-panel text-zinc-900 hover:bg-zinc-100'
+                : 'bg-zinc-900 text-zinc-100 hover:bg-zinc-800'
             }`}
           >
             {copy.freeCta}
@@ -178,42 +163,28 @@ export function PricingModal({
 
         <section
           aria-label={copy.proPlanName}
-          className={`flex flex-col justify-between rounded-xl border p-5 ${
-            isLight
-              ? 'border-violet-300 bg-gradient-to-b from-violet-50 via-white to-indigo-50/60'
-              : 'border-[#7c6ef6]/50 bg-gradient-to-b from-[#7c6ef6]/15 via-[#1b1c28] to-[#171822]'
-          }`}
+          className="flex flex-col justify-between rounded-xl border border-accent/40 bg-panel p-5"
         >
           <div>
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <h3 className={`text-base font-semibold ${isLight ? 'text-zinc-950' : 'text-white'}`}>
+                <h3 className={`text-base font-semibold ${isLight ? 'text-zinc-950' : 'text-zinc-50'}`}>
                   {copy.proPlanName}
                 </h3>
-                <span
-                  className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                    isLight
-                      ? 'bg-violet-100 text-violet-700'
-                      : 'bg-[#7c6ef6]/25 text-[#d3ceff]'
-                  }`}
-                >
+                <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-semibold text-accent-text">
                   {copy.proPlanBadge}
                 </span>
               </div>
-              <span
-                className={`text-sm font-semibold ${
-                  isLight ? 'text-violet-700' : 'text-[#c8c1ff]'
-                }`}
-              >
+              <span className="text-sm font-semibold text-accent-text">
                 {copy.proPlanPrice}
               </span>
             </div>
-            <p className={`mt-2 text-xs leading-5 ${isLight ? 'text-zinc-600' : 'text-[#b7b9ce]'}`}>
+            <p className="mt-2 text-xs leading-5 text-muted">
               {copy.proPlanTagline}
             </p>
             <ul
               className={`mt-4 space-y-2.5 text-sm ${
-                isLight ? 'text-zinc-800' : 'text-[#e8e9f4]'
+                isLight ? 'text-zinc-800' : 'text-zinc-100'
               }`}
             >
               {PRO_FEATURES.map((feature) => {
@@ -223,17 +194,10 @@ export function PricingModal({
                     key={feature}
                     data-feature={feature}
                     className={`flex items-start gap-2.5 rounded-lg px-2 py-1 -mx-2 transition-colors ${
-                      highlighted
-                        ? isLight
-                          ? 'bg-violet-100/90 ring-1 ring-violet-300'
-                          : 'bg-[#7c6ef6]/25 ring-1 ring-[#a99eff]/50'
-                        : ''
+                      highlighted ? 'bg-accent-soft ring-1 ring-accent/40' : ''
                     }`}
                   >
-                    <span
-                      aria-hidden="true"
-                      className={`mt-0.5 ${isLight ? 'text-violet-600' : 'text-[#a99eff]'}`}
-                    >
+                    <span aria-hidden="true" className="mt-0.5 text-accent-text">
                       ✦
                     </span>
                     <span>{copy.proFeatureLabels[feature]}</span>
@@ -246,11 +210,7 @@ export function PricingModal({
             type="button"
             onClick={handleProAction}
             aria-pressed={!onUpgradeClick ? proPreviewEnabled : undefined}
-            className={`mt-6 w-full rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 ${
-              isLight
-                ? 'bg-violet-600 hover:bg-violet-500 focus-visible:outline-violet-600'
-                : 'bg-[#7c6ef6] hover:bg-[#8d81f8] focus-visible:outline-[#d3ceff]'
-            }`}
+            className="mt-6 w-full rounded-lg bg-accent-strong px-4 py-2.5 text-sm font-semibold text-accent-fg transition-all hover:brightness-95 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             {proPreviewEnabled ? copy.proPreviewDisableCta : copy.proPreviewEnableCta}
           </button>

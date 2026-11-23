@@ -73,20 +73,20 @@ export function SiteHeader({
   }, [mobileOpen])
 
   const surfaceCls = isDark
-    ? 'bg-[#0f0f13]/85 border-white/10 text-zinc-100'
-    : 'bg-white/85 border-zinc-200/80 text-zinc-900'
+    ? 'bg-surface/85 border-border text-zinc-100'
+    : 'bg-panel/85 border-border text-zinc-900'
 
   const subtleBtnCls = isDark
-    ? 'border-white/10 bg-white/[0.04] text-zinc-200 hover:bg-white/[0.09] hover:text-white'
-    : 'border-zinc-200 bg-zinc-50 text-zinc-700 hover:bg-zinc-100 hover:text-zinc-950'
+    ? 'border-border bg-white/[0.04] text-zinc-200 hover:bg-white/[0.09] hover:text-white'
+    : 'border-border bg-surface text-zinc-700 hover:bg-zinc-100 hover:text-zinc-950'
 
   const proBtnToneCls = isPro
     ? isDark
-      ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-300'
-      : 'border-emerald-200 bg-emerald-50 text-emerald-700'
+      ? 'border-success/40 bg-success/12 text-success'
+      : 'border-success/35 bg-panel text-success'
     : isDark
-      ? 'border-amber-400/30 bg-amber-400/10 text-amber-200 hover:bg-amber-400/20'
-      : 'border-amber-300/80 bg-amber-50 text-amber-800 hover:bg-amber-100'
+      ? 'border-warning/35 bg-warning/12 text-warning hover:bg-warning/20'
+      : 'border-warning/35 bg-panel text-warning hover:bg-warning/[0.06]'
 
   return (
     <header
@@ -94,10 +94,8 @@ export function SiteHeader({
     >
       <a
         href="#main-content"
-        className={`sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-lg focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-violet-500 ${
-          isDark
-            ? 'focus:bg-[#18181f] focus:text-zinc-50'
-            : 'focus:bg-white focus:text-zinc-950'
+        className={`sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-lg focus:bg-panel focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-accent ${
+          isDark ? 'focus:text-zinc-50' : 'focus:text-zinc-950'
         }`}
       >
         {ui.skipToContent}
@@ -111,37 +109,20 @@ export function SiteHeader({
               setMobileOpen(false)
               handleSpaLinkClick(event, homeHref, onNavigate)
             }}
-            className="group flex items-center gap-2.5 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
+            className="group flex items-center gap-2.5 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             <svg
               aria-hidden="true"
-              viewBox="0 0 36 36"
+              viewBox="0 0 32 32"
               fill="none"
               className="h-8 w-8 shrink-0"
             >
-              <defs>
-                <linearGradient id="moklu-header-grad" x1="0" y1="0" x2="1" y2="1">
-                  <stop stopColor="#6ee7b7" />
-                  <stop offset="1" stopColor="#6366f1" />
-                </linearGradient>
-              </defs>
-              <rect
-                x="2.5"
-                y="5"
-                width="29"
-                height="26"
-                rx="6.5"
-                stroke="url(#moklu-header-grad)"
-                strokeWidth="2.8"
-              />
               <path
-                d="M9.5 24.5V15l7.5 5.5 7.5-11v15"
-                stroke="url(#moklu-header-grad)"
-                strokeWidth="2.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+                fill="currentColor"
+                d="M6 8a4 4 0 0 0-4 4v14a4 4 0 0 0 4 4h14a4 4 0 0 0 4-4v-4h-4v4H6V12h4V8H6Z"
               />
-              <circle cx="29" cy="7.5" r="3" fill="#f59e0b" />
+              <rect fill="var(--color-accent)" x="12" y="2" width="18" height="18" rx="4" />
+              <rect fill="var(--color-accent-fg)" x="18" y="6" width="6" height="2" rx="1" />
             </svg>
             <span className="text-lg font-bold tracking-tight">
               {ui.brandName}
@@ -164,14 +145,12 @@ export function SiteHeader({
                   href={href}
                   aria-current={isActive ? 'page' : undefined}
                   onClick={(event) => handleSpaLinkClick(event, href, onNavigate)}
-                  className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${
+                  className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                     isActive
-                      ? isDark
-                        ? 'bg-violet-500/20 text-violet-200'
-                        : 'bg-violet-50 text-violet-700'
+                      ? 'bg-accent-soft text-accent-text'
                       : isDark
                         ? 'text-zinc-300 hover:bg-white/[0.06] hover:text-white'
-                        : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950'
+                        : 'text-muted hover:bg-zinc-100 hover:text-zinc-950'
                   }`}
                 >
                   {ui.navCategories[toolId]}
@@ -191,7 +170,7 @@ export function SiteHeader({
               aria-expanded={langOpen}
               aria-haspopup="menu"
               aria-label={ui.languageLabel}
-              className={`inline-flex h-9 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-medium transition-colors ${subtleBtnCls}`}
+              className={`inline-flex h-9 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${subtleBtnCls}`}
             >
               <svg
                 aria-hidden="true"
@@ -211,10 +190,10 @@ export function SiteHeader({
               <div
                 role="menu"
                 aria-label={ui.languageLabel}
-                className={`absolute right-0 mt-2 w-40 overflow-hidden rounded-xl border p-1 shadow-xl ${
+                className={`absolute right-0 mt-2 w-40 overflow-hidden rounded-xl border border-border bg-panel p-1 ${
                   isDark
-                    ? 'border-white/10 bg-[#18181f] text-zinc-100'
-                    : 'border-zinc-200 bg-white text-zinc-900'
+                    ? 'text-zinc-100 shadow-[0_18px_40px_-16px_rgba(9,9,11,0.85)]'
+                    : 'text-zinc-900 shadow-[0_18px_40px_-16px_rgba(24,24,27,0.16)]'
                 }`}
               >
                 {SUPPORTED_LOCALES.map((item) => {
@@ -233,9 +212,7 @@ export function SiteHeader({
                       }}
                       className={`flex items-center justify-between rounded-lg px-3 py-2 text-xs font-medium transition-colors ${
                         active
-                          ? isDark
-                            ? 'bg-violet-500/20 text-violet-200'
-                            : 'bg-violet-50 text-violet-700'
+                          ? 'bg-accent-soft text-accent-text'
                           : isDark
                             ? 'text-zinc-300 hover:bg-white/[0.06] hover:text-white'
                             : 'text-zinc-700 hover:bg-zinc-100 hover:text-zinc-950'
@@ -256,7 +233,7 @@ export function SiteHeader({
             onClick={onToggleTheme}
             aria-label={ui.toggleThemeAria}
             title={isDark ? ui.themeLight : ui.themeDark}
-            className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border transition-colors ${subtleBtnCls}`}
+            className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${subtleBtnCls}`}
           >
             {isDark ? (
               <svg
@@ -296,7 +273,7 @@ export function SiteHeader({
             <button
               type="button"
               onClick={onOpenProModal}
-              className={`hidden h-9 items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 sm:inline-flex ${proBtnToneCls}`}
+              className={`hidden h-9 items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:inline-flex ${proBtnToneCls}`}
             >
               <span aria-hidden="true" className="inline-block h-1.5 w-1.5 rounded-full bg-current" />
               <span>{isPro ? ui.proActive : ui.proUpgrade}</span>
@@ -310,7 +287,7 @@ export function SiteHeader({
               setMobileOpen(false)
               handleSpaLinkClick(event, studioHref, onNavigate)
             }}
-            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-violet-600 px-3.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-violet-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-accent-strong px-3.5 text-xs font-semibold text-accent-fg shadow-[0_1px_2px_rgba(24,24,27,0.1)] transition-all hover:brightness-95 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             <span className="hidden sm:inline">{ui.openStudio}</span>
             <span className="sm:hidden">{ui.openStudioShort}</span>
@@ -325,7 +302,7 @@ export function SiteHeader({
             aria-expanded={mobileOpen}
             aria-controls="mobile-tool-nav"
             aria-label={ui.menuToggleAria}
-            className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 lg:hidden ${subtleBtnCls}`}
+            className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border focus:outline-none focus-visible:ring-2 focus-visible:ring-accent lg:hidden ${subtleBtnCls}`}
           >
             <svg
               aria-hidden="true"
@@ -350,9 +327,7 @@ export function SiteHeader({
         <nav
           id="mobile-tool-nav"
           aria-label={ui.mobileNavAria}
-          className={`border-t px-4 py-3 lg:hidden ${
-            isDark ? 'border-white/10 bg-[#14141b]' : 'border-zinc-200 bg-zinc-50'
-          }`}
+          className="border-t border-border bg-panel px-4 py-3 lg:hidden"
         >
           <div className="grid grid-cols-2 gap-1.5">
             {NAV_TOOL_ORDER.map((toolId) => {
@@ -367,11 +342,9 @@ export function SiteHeader({
                     setMobileOpen(false)
                     handleSpaLinkClick(event, href, onNavigate)
                   }}
-                  className={`rounded-lg px-3 py-2 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${
+                  className={`rounded-lg px-3 py-2 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                     isActive
-                      ? isDark
-                        ? 'bg-violet-500/20 text-violet-200'
-                        : 'bg-violet-100 text-violet-800'
+                      ? 'bg-accent-soft text-accent-text'
                       : isDark
                         ? 'text-zinc-200 hover:bg-white/[0.06]'
                         : 'text-zinc-700 hover:bg-zinc-200/70'
@@ -389,7 +362,7 @@ export function SiteHeader({
                 setMobileOpen(false)
                 onOpenProModal()
               }}
-              className={`mt-2.5 flex w-full items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 sm:hidden ${proBtnToneCls}`}
+              className={`mt-2.5 flex w-full items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:hidden ${proBtnToneCls}`}
             >
               <span aria-hidden="true" className="inline-block h-1.5 w-1.5 rounded-full bg-current" />
               <span>{isPro ? ui.proActive : ui.proUpgrade}</span>

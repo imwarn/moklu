@@ -273,8 +273,8 @@ describe('Studio UI localized rendering and content-locale isolation', () => {
       id: 'bg-1',
       name: 'Background',
       type: 'background',
-      fill: '#18181f',
-      accents: [{ color: '#7c6ef6', opacity: 0.3, cx: 50, cy: 50, rx: 300, ry: 300 }],
+      fill: '#141417',
+      accents: [{ color: '#e76536', opacity: 0.3, cx: 50, cy: 50, rx: 300, ry: 300 }],
     }
     const brandLayer: BrandLayer = {
       ...baseCommon,
@@ -316,7 +316,7 @@ describe('Studio UI localized rendering and content-locale isolation', () => {
       shapeType: 'rect',
       width: 200,
       height: 100,
-      fill: '#7c6ef6',
+      fill: '#e76536',
       cornerRadius: 12,
     }
     const textLayer: TextLayer = {

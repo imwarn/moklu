@@ -176,7 +176,7 @@ export function SplitQuickTool({
                   {Array.from({ length: guideCols * guideRows }).map((_, idx) => (
                     <div
                       key={idx}
-                      className="flex items-start justify-start border border-dashed border-white/85 bg-violet-500/5 p-1"
+                      className="flex items-start justify-start border border-dashed border-white/85 bg-accent/10 p-1"
                     >
                       <span className="rounded bg-zinc-900/80 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-white">
                         {idx + 1}

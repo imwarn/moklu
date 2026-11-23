@@ -41,12 +41,10 @@ export function SiteFooter({ route, theme, onNavigate }: SiteFooterProps) {
                 onClick={(event) => handleSpaLinkClick(event, href, onNavigate)}
                 className={`text-sm transition-colors ${
                   active
-                    ? isDark
-                      ? 'font-medium text-violet-300'
-                      : 'font-medium text-violet-700'
+                    ? 'font-medium text-accent-text'
                     : isDark
-                      ? 'text-zinc-400 hover:text-zinc-100'
-                      : 'text-zinc-600 hover:text-zinc-950'
+                      ? 'text-muted hover:text-zinc-100'
+                      : 'text-muted hover:text-zinc-950'
                 }`}
               >
                 {itemCopy.navLabel}
@@ -60,10 +58,8 @@ export function SiteFooter({ route, theme, onNavigate }: SiteFooterProps) {
 
   return (
     <footer
-      className={`border-t transition-colors ${
-        isDark
-          ? 'border-white/10 bg-[#0b0b0f] text-zinc-300'
-          : 'border-zinc-200 bg-zinc-50 text-zinc-700'
+      className={`border-t border-border bg-surface transition-colors ${
+        isDark ? 'text-zinc-300' : 'text-zinc-700'
       }`}
     >
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
@@ -81,21 +77,17 @@ export function SiteFooter({ route, theme, onNavigate }: SiteFooterProps) {
             >
               <span>{ui.brandName}</span>
             </a>
-            <p
-              className={`max-w-xs text-sm leading-relaxed ${
-                isDark ? 'text-zinc-400' : 'text-zinc-600'
-              }`}
-            >
+            <p className="max-w-xs text-sm leading-relaxed text-muted">
               {ui.footerDescription}
             </p>
             <p
               className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium ${
                 isDark
-                  ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-300'
-                  : 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                  ? 'border-success/30 bg-success/12 text-success'
+                  : 'border-success/30 bg-panel text-success'
               }`}
             >
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              <span className="h-1.5 w-1.5 rounded-full bg-success" />
               <span>{ui.footerLocalFirstNote}</span>
             </p>
           </div>
@@ -107,11 +99,7 @@ export function SiteFooter({ route, theme, onNavigate }: SiteFooterProps) {
         </div>
 
         {/* Bottom bar with language alternates & repo link */}
-        <div
-          className={`mt-10 flex flex-col gap-4 border-t pt-6 text-xs sm:flex-row sm:items-center sm:justify-between ${
-            isDark ? 'border-white/10 text-zinc-400' : 'border-zinc-200 text-zinc-500'
-          }`}
-        >
+        <div className="mt-10 flex flex-col gap-4 border-t border-border pt-6 text-xs text-muted sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <span>{ui.footerCopyright}</span>
             <a
@@ -137,9 +125,7 @@ export function SiteFooter({ route, theme, onNavigate }: SiteFooterProps) {
                   onClick={(event) => handleSpaLinkClick(event, href, onNavigate)}
                   className={`transition-colors ${
                     isCurrent
-                      ? isDark
-                        ? 'font-semibold text-violet-300'
-                        : 'font-semibold text-violet-700'
+                      ? 'font-semibold text-accent-text'
                       : isDark
                         ? 'hover:text-zinc-100'
                         : 'hover:text-zinc-950'

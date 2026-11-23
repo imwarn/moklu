@@ -1,5 +1,5 @@
 /**
- * [INPUT]: depends on nanoid, getMockupSvg from @/assets/mockups/registry, getPhoneSpec from @/assets/mockups/specs, QUICK_THEMES from @/utils/quickDesign, getQuickPreviewGeometry and makeSvgImageDataUrl from @/utils/quickPreview, demoAssets, and workspace types from ./types
+ * [INPUT]: depends on nanoid, getMockupSvg from @/assets/mockups/registry, getPhoneSpec from @/assets/mockups/specs, BRAND from @/theme/brand, QUICK_THEMES from @/utils/quickDesign, getQuickPreviewGeometry and makeSvgImageDataUrl from @/utils/quickPreview, demoAssets, and workspace types from ./types
  * [OUTPUT]: exports low-level canvas primitives, readFileAsImageInput, triggerBlobDownload, formatBytes, renderMockupCanvasToPng, and re-exports demoAssets helpers
  * [POS]: memory-safe browser image I/O and offscreen mockup PNG renderer for src/workspace
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
@@ -7,6 +7,7 @@
 import { nanoid } from 'nanoid'
 import { getMockupSvg } from '@/assets/mockups/registry'
 import { getPhoneSpec } from '@/assets/mockups/specs'
+import { BRAND } from '@/theme/brand'
 import type { BrowserChromeOptions } from '@/types'
 import {
   QUICK_THEMES,
@@ -125,7 +126,7 @@ export function fillBackground(
     return
   }
   if (background.startsWith('linear-gradient(')) {
-    const colors = background.match(/#[0-9a-fA-F]{3,8}/g) ?? ['#6366f1', '#ec4899']
+    const colors = background.match(/#[0-9a-fA-F]{3,8}/g) ?? [BRAND.panel, BRAND.accentStrong]
     const grad = ctx.createLinearGradient(0, 0, width, height)
     colors.forEach((c, idx) => {
       grad.addColorStop(colors.length === 1 ? 0 : idx / (colors.length - 1), c)

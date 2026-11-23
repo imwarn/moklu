@@ -355,7 +355,7 @@ describe('SEO UI chrome SSR rendering', () => {
     expect(isToolNavActive(studio, 'merge')).toBe(false)
   })
 
-  it('renders below-the-fold Pro CTA in SeoLandingSections and emerald active Pro state', () => {
+  it('renders below-the-fold Pro CTA in SeoLandingSections and semantic success active Pro state', () => {
     const noop = () => {}
     const route = resolvePathname('/zh/browser-mockup')
     const ui = getUiLabels('zh')
@@ -370,7 +370,7 @@ describe('SEO UI chrome SSR rendering', () => {
       }),
     )
     expect(freeSections).toContain(escapeHtml(ui.studioBannerProAction))
-    expect(freeSections).toContain('border-amber-300/90')
+    expect(freeSections).toContain('border-warning/40')
 
     const proSections = renderToStaticMarkup(
       createElement(SeoLandingSections, {
@@ -382,7 +382,7 @@ describe('SEO UI chrome SSR rendering', () => {
       }),
     )
     expect(proSections).toContain(escapeHtml(ui.proActive))
-    expect(proSections).toContain('border-emerald-500/40')
+    expect(proSections).toContain('border-success/40')
   })
 
   it('aligns Tailwind v4 dark variant to data-theme="dark" and defines light/dark scrollbars in src/index.css', async () => {
@@ -420,6 +420,8 @@ describe('Build-time SSG prerenderer, sitemap.xml, robots.txt, and CSP safety', 
     expect(rendered).toContain('<html lang="ja" data-theme="light" data-surface="workspace">')
     expect(rendered).toContain(`<title>${copy.title}</title>`)
     expect(rendered).toContain('<link rel="canonical" href="https://moklu.app/ja/merge-images" />')
+    expect(rendered).toContain('<meta property="og:image" content="https://moklu.app/og-image.png" />')
+    expect(rendered).toContain('<meta name="twitter:image" content="https://moklu.app/og-image.png" />')
     expect(rendered).toContain('hreflang="x-default" href="https://moklu.app/merge-images"')
     expect(rendered).toContain(copy.h1)
     expect(rendered).toContain(copy.faqs[0].question)
