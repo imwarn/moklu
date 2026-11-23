@@ -5,6 +5,12 @@
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 export { QuickWorkspace } from './QuickWorkspace'
+export {
+  buildBatchStudioHandoff,
+  clampBatchIndex,
+  removeBatchEntry,
+  stepBatchIndex,
+} from './batchHelpers'
 export { getWorkspaceStrings, type WorkspaceStrings } from './i18n'
 export { getWorkspaceThemeTokens, type WorkspaceThemeTokens } from './themeTokens'
 export { createDefaultWorkspaceEngines } from './defaultEngines'

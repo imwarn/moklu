@@ -1,22 +1,19 @@
 /**
- * [INPUT]: depends on ResolvedRoute from ./types.ts; depends on ALL_ROUTES, TOOL_ROUTE_DEFINITIONS, buildCanonicalUrl, buildLocalizedPath, getHreflangLinks, getRelatedRoutes, and getSiteUrl from ./routes.ts; depends on SUPPORTED_LOCALES, getOgLocale, getRouteCopy, and getUiLabels from ./i18n.ts; depends on buildRouteSchemaList and serializeJsonLd from ./schema.ts
- * [OUTPUT]: exports escapeHtml, getRouteRelativeHtmlPath, renderSsgShell, renderRouteHtml, generateSitemapXml, and generateRobotsTxt
- * [POS]: pure, Node-agnostic SSG HTML/XML string generator within src/seo, executed at build time by scripts/prerender-seo.mjs and unit-tested directly by src/seo/seo.test.ts
+ * [INPUT]: depends on ResolvedRoute from ./types.ts; depends on ALL_ROUTES, buildCanonicalUrl, buildLocalizedPath, getHreflangLinks, and getSiteUrl from ./routes.ts; depends on getOgLocale, getRouteCopy, and getUiLabels from ./i18n.ts; depends on buildRouteSchemaList and serializeJsonLd from ./schema.ts
+ * [OUTPUT]: exports escapeHtml, getRouteRelativeHtmlPath, renderStudioSkeleton, renderRouteHtml, generateSitemapXml, and generateRobotsTxt
+ * [POS]: pure, Node-agnostic SSG HTML/XML string generator within src/seo, executed at build time by scripts/prerender-seo.mjs with rendered React markup and unit-tested by src/seo/seo.test.ts
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
 import type { ResolvedRoute } from './types.ts'
 import {
   ALL_ROUTES,
-  TOOL_ROUTE_DEFINITIONS,
   buildCanonicalUrl,
   buildLocalizedPath,
   getHreflangLinks,
-  getRelatedRoutes,
   getSiteUrl,
 } from './routes.ts'
 import {
-  SUPPORTED_LOCALES,
   getOgLocale,
   getRouteCopy,
   getUiLabels,
@@ -40,70 +37,33 @@ export function getRouteRelativeHtmlPath(route: ResolvedRoute): readonly string[
   return [...route.path.replace(/^\/+/, '').split('/'), 'index.html']
 }
 
-export function renderSsgShell(route: ResolvedRoute): string {
+/**
+ * Styled dark `#0f0f13` Studio topbar and canvas skeleton for the 4 `/studio`
+ * routes so Konva never executes in Node while initial paint matches StudioPage.
+ */
+export function renderStudioSkeleton(route: ResolvedRoute): string {
   const ui = getUiLabels(route.locale)
   const copy = getRouteCopy(route.locale, route.slug)
   const homeHref = buildLocalizedPath(route.locale, '')
-  const studioHref = buildLocalizedPath(route.locale, 'studio')
-  const related = getRelatedRoutes(route.slug, route.locale)
-
-  const stepsHtml = copy.steps
-    .map(
-      (step, idx) =>
-        `<li id="step-${idx + 1}"><h3>${escapeHtml(step.title)}</h3><p>${escapeHtml(step.description)}</p></li>`,
-    )
-    .join('')
-
-  const highlightsHtml = copy.highlights
-    .map(
-      (item) =>
-        `<li><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.description)}</p></li>`,
-    )
-    .join('')
-
-  const faqsHtml = copy.faqs
-    .map(
-      (faq) =>
-        `<dt>${escapeHtml(faq.question)}</dt><dd>${escapeHtml(faq.answer)}</dd>`,
-    )
-    .join('')
-
-  const relatedHtml = related
-    .map((rel) => {
-      const relCopy = getRouteCopy(rel.locale, rel.slug)
-      return `<li><a href="${escapeHtml(rel.path)}">${escapeHtml(relCopy.navLabel)}</a></li>`
-    })
-    .join('')
-
-  const directoryHtml = TOOL_ROUTE_DEFINITIONS.map((def) => {
-    const href = buildLocalizedPath(route.locale, def.slug)
-    const itemCopy = getRouteCopy(route.locale, def.slug)
-    return `<li><a href="${escapeHtml(href)}">${escapeHtml(itemCopy.navLabel)}</a></li>`
-  }).join('')
-
-  const localeLinksHtml = SUPPORTED_LOCALES.map((loc) => {
-    const href = buildLocalizedPath(loc.code, route.slug)
-    return `<a href="${escapeHtml(href)}" hreflang="${escapeHtml(loc.code)}">${escapeHtml(loc.nativeName)}</a>`
-  }).join(' ')
 
   return [
-    '<!--moklu-ssg:start-->',
-    `<div data-ssg-shell="true" lang="${escapeHtml(route.locale)}">`,
-    `<header><a href="${escapeHtml(homeHref)}">${escapeHtml(ui.brandName)}</a> <a href="${escapeHtml(studioHref)}">${escapeHtml(ui.openStudio)}</a></header>`,
-    '<main>',
-    `<p>${escapeHtml(copy.badge)}</p>`,
-    `<h1>${escapeHtml(copy.h1)}</h1>`,
-    `<p>${escapeHtml(copy.subtitle)}</p>`,
-    `<p>${escapeHtml(ui.privacyBannerTitle)} — ${escapeHtml(ui.privacyBannerDescription)}</p>`,
-    `<section><h2>${escapeHtml(ui.howToHeading)}</h2><ol>${stepsHtml}</ol></section>`,
-    `<section><h2>${escapeHtml(ui.highlightsHeading)}</h2><ul>${highlightsHtml}</ul></section>`,
-    `<section><h2>${escapeHtml(ui.faqHeading)}</h2><dl>${faqsHtml}</dl></section>`,
-    `<nav aria-label="${escapeHtml(ui.relatedToolsHeading)}"><ul>${relatedHtml}</ul></nav>`,
-    `<nav aria-label="${escapeHtml(ui.directoryHeading)}"><ul>${directoryHtml}</ul></nav>`,
-    '</main>',
-    `<footer><nav aria-label="${escapeHtml(ui.footerLanguages)}">${localeLinksHtml}</nav></footer>`,
+    '<div data-testid="studio-ssg-skeleton" class="w-screen h-screen flex flex-col overflow-hidden bg-[#0f0f13] text-[#e8e8f0]">',
+    '  <header class="flex h-12 shrink-0 items-center justify-between gap-2 border-b border-white/10 bg-[#18181f] px-3">',
+    '    <div class="flex items-center gap-3">',
+    `      <a href="${escapeHtml(homeHref)}" class="inline-flex shrink-0 items-center gap-1 rounded-md border border-white/10 px-2 py-1 text-xs font-medium text-[#b8b8c8]">← Tools</a>`,
+    `      <span class="text-sm font-semibold tracking-tight text-white">${escapeHtml(ui.brandName)} <span class="ml-1 text-[10px] font-medium uppercase tracking-widest text-[#8f8fa3]">Studio</span></span>`,
+    '    </div>',
+    '    <span class="text-xs text-[#8f8fa3]">Loading Moklu Studio…</span>',
+    '  </header>',
+    '  <div class="flex min-w-0 flex-1 overflow-hidden">',
+    '    <aside aria-hidden="true" class="hidden w-56 shrink-0 border-r border-white/10 bg-[#14141b] lg:block"></aside>',
+    '    <main class="flex flex-1 flex-col items-center justify-center bg-[#111118] px-6 text-center">',
+    `      <h1 class="text-lg font-semibold tracking-tight text-zinc-100">${escapeHtml(copy.h1)}</h1>`,
+    `      <p class="mt-2 max-w-md text-xs text-zinc-400">${escapeHtml(copy.subtitle)}</p>`,
+    '    </main>',
+    '    <aside aria-hidden="true" class="hidden w-72 shrink-0 border-l border-white/10 bg-[#14141b] lg:block"></aside>',
+    '  </div>',
     '</div>',
-    '<!--moklu-ssg:end-->',
   ].join('\n')
 }
 
@@ -159,24 +119,28 @@ export function renderRouteHtml(
   templateHtml: string,
   route: ResolvedRoute,
   siteUrl?: string,
+  bodyHtml?: string,
 ): string {
+  const themeAttr = route.isStudio ? 'dark' : 'light'
+  const surfaceAttr = route.isStudio ? 'studio' : 'workspace'
   let html = templateHtml.replace(
     /<html\b[^>]*>/i,
-    `<html lang="${escapeHtml(route.locale)}">`,
+    `<html lang="${escapeHtml(route.locale)}" data-theme="${themeAttr}" data-surface="${surfaceAttr}">`,
   )
 
   html = stripManagedHeadTags(html)
   const headTags = buildHeadTags(route, siteUrl)
   html = html.replace(/<\/head>/i, `${headTags}\n  </head>`)
 
-  const shell = renderSsgShell(route)
+  const innerMarkup = bodyHtml ?? renderStudioSkeleton(route)
+  const wrapped = `<!--moklu-ssg:start-->${innerMarkup}<!--moklu-ssg:end-->`
   const markerPattern = /<!--moklu-ssg:start-->[\s\S]*?<!--moklu-ssg:end-->/i
   const emptyRootPattern = /<div\s+id="root">\s*<\/div>/i
 
   if (markerPattern.test(html)) {
-    html = html.replace(markerPattern, shell)
+    html = html.replace(markerPattern, () => wrapped)
   } else if (emptyRootPattern.test(html)) {
-    html = html.replace(emptyRootPattern, `<div id="root">\n${shell}\n    </div>`)
+    html = html.replace(emptyRootPattern, () => `<div id="root">${wrapped}</div>`)
   } else {
     throw new Error('Expected <div id="root"></div> or SSG marker inside HTML template')
   }

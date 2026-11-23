@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on react, zustand useShallow, useEditorStore, PropertyControls, OverrideDot, ShadowControls, per-layer property editors, canvasFormats, alignLayers, locale, and useStudioLocale from @/i18n
+ * [OUTPUT]: exports PropertiesPanel component with localized Layout/Style/Content tabs, field labels, alignment controls, copy/paste style, and empty selection hint
+ * [POS]: right inspector panel of StudioPage inside src/components/panels
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useEffect, useMemo, useState } from 'react'
 import type { FocusEvent } from 'react'
 import { useShallow } from 'zustand/react/shallow'
@@ -41,6 +47,7 @@ import { getCanvasFormat, getFormatCanvasDims, getFormatLabel, getProjectActiveF
 import type { CanvasFormatId } from '@/types'
 import { getLayerBBox, getUnionBBox, computeAlignPatch, type AlignAxis } from '@/utils/alignLayers'
 import { getLanguageName } from '@/utils/locale'
+import { useStudioLocale } from '@/i18n'
 
 // ─── Alignment Section ────────────────────────────────────────────────────────
 
@@ -63,6 +70,7 @@ function AlignmentSection({
   slideHeight: number
   slideOffsetX: number
 }) {
+  const { t } = useStudioLocale()
   const { updateLayer, selectedLayerIds, project, activeSlideGroupId, editingGroupId } = useEditorStore(
     useShallow((s) => ({
       updateLayer: s.updateLayer,
@@ -123,18 +131,18 @@ function AlignmentSection({
   }
 
   const titles: Record<AlignAxis, string> = {
-    'left':     isMulti ? 'Align left edges' : 'Align to slide left',
-    'center-h': isMulti ? 'Center horizontally' : 'Center on slide (H)',
-    'right':    isMulti ? 'Align right edges' : 'Align to slide right',
-    'top':      isMulti ? 'Align top edges' : 'Align to slide top',
-    'center-v': isMulti ? 'Center vertically' : 'Center on slide (V)',
-    'bottom':   isMulti ? 'Align bottom edges' : 'Align to slide bottom',
+    'left':     isMulti ? t.properties.align.multiLeft : t.properties.align.left,
+    'center-h': isMulti ? t.properties.align.multiCenterH : t.properties.align.centerH,
+    'right':    isMulti ? t.properties.align.multiRight : t.properties.align.right,
+    'top':      isMulti ? t.properties.align.multiTop : t.properties.align.top,
+    'center-v': isMulti ? t.properties.align.multiCenterV : t.properties.align.centerV,
+    'bottom':   isMulti ? t.properties.align.multiBottom : t.properties.align.bottom,
   }
 
   return (
     <div className={panelSectionCls}>
       <label className={labelCls}>
-        {isMulti ? `Align selection (${selectedLayerIds.length})` : 'Align to slide'}
+        {isMulti ? `${t.properties.alignSelection} (${selectedLayerIds.length})` : t.properties.alignToSlide}
       </label>
       <div className="grid grid-cols-6 gap-1">
         {(['left', 'center-h', 'right', 'top', 'center-v', 'bottom'] as AlignAxis[]).map((axis) => (
@@ -150,7 +158,7 @@ function AlignmentSection({
         ))}
       </div>
       {isMulti && (
-        <p className="mt-1.5 text-[10px] text-[#525261]">Aligns selected layers to each other</p>
+        <p className="mt-1.5 text-[10px] text-[#525261]">{t.properties.alignSelectionHint}</p>
       )}
     </div>
   )
@@ -159,6 +167,7 @@ function AlignmentSection({
 // ─── Layout Tab ───────────────────────────────────────────────────────────────
 
 function LayoutTab({ layer }: { layer: Layer }) {
+  const { t } = useStudioLocale()
   const { updateLayer, project, activeSlideGroupId, activeCanvasFormat, editingGroupId, setLayerFormatVisibility } = useEditorStore(
     useShallow((s) => ({
       updateLayer: s.updateLayer,
@@ -216,7 +225,7 @@ function LayoutTab({ layer }: { layer: Layer }) {
       <div className={panelSectionCls}>
         <div className="flex items-start gap-2">
           <div className="flex-1 min-w-0">
-            <label className={labelCls}>Name</label>
+            <label className={labelCls}>{t.properties.name}</label>
             <input
               type="text"
               value={layer.name}
@@ -228,7 +237,7 @@ function LayoutTab({ layer }: { layer: Layer }) {
             <div className="flex gap-1 pt-[18px]">
               <button
                 type="button"
-                title={layer.visible ? 'Hide layer' : 'Show layer'}
+                title={layer.visible ? t.properties.hideLayer : t.properties.showLayer}
                 onClick={() => upd({ visible: !layer.visible })}
                 className={`h-[30px] w-[30px] flex items-center justify-center rounded border text-sm transition-colors ${
                   layer.visible
@@ -240,7 +249,7 @@ function LayoutTab({ layer }: { layer: Layer }) {
               </button>
               <button
                 type="button"
-                title={layer.locked ? 'Unlock layer' : 'Lock layer'}
+                title={layer.locked ? t.properties.unlockLayer : t.properties.lockLayer}
                 onClick={() => upd({ locked: !layer.locked })}
                 className={`h-[30px] w-[30px] flex items-center justify-center rounded border text-xs transition-colors ${
                   layer.locked
@@ -258,7 +267,7 @@ function LayoutTab({ layer }: { layer: Layer }) {
       {/* Platform visibility — only shown when multiple formats are active and layer is not format-owned */}
       {!isBackground && activeFormats.length > 1 && !rawLayer?.ownerFormat && (
         <div className={panelSectionCls}>
-          <label className={labelCls}>Visible in</label>
+          <label className={labelCls}>{t.properties.visibleIn}</label>
           <div className="flex flex-wrap gap-1.5">
             {activeFormats.map((fmtId) => {
               const vis = rawLayer?.formatVisibility?.[fmtId]
@@ -280,7 +289,7 @@ function LayoutTab({ layer }: { layer: Layer }) {
               )
             })}
           </div>
-          <p className="mt-1.5 text-[10px] text-[#6b6b7a]">Click to hide/show this layer in a format</p>
+          <p className="mt-1.5 text-[10px] text-[#6b6b7a]">{t.properties.visibleInHint}</p>
         </div>
       )}
 
@@ -304,7 +313,7 @@ function LayoutTab({ layer }: { layer: Layer }) {
                     <label className={labelCls + ' !mb-0'}>H</label>
                     <button
                       type="button"
-                      title={(layer as TextLayer).height != null ? 'Switch to automatic height (box grows with content)' : 'Box height is automatic'}
+                      title={(layer as TextLayer).height != null ? t.properties.autoHeightTitle : t.properties.autoHeightActiveTitle}
                       onClick={() => upd({ height: undefined } as Partial<Layer>)}
                       className={`text-[10px] px-2 py-0.5 rounded border transition-colors ${
                         (layer as TextLayer).height == null
@@ -312,7 +321,7 @@ function LayoutTab({ layer }: { layer: Layer }) {
                           : 'border-[rgba(255,255,255,0.1)] text-[#6b6b7a] hover:text-[#e8e8f0]'
                       }`}
                     >
-                      {(layer as TextLayer).height == null ? '✓ Auto' : 'Auto'}
+                      {(layer as TextLayer).height == null ? `✓ ${t.common.auto}` : t.common.auto}
                     </button>
                   </div>
                   {(layer as TextLayer).height != null && (
@@ -321,10 +330,10 @@ function LayoutTab({ layer }: { layer: Layer }) {
                 </div>
               </>
             )}
-            <SliderField label="Rotation" value={layer.rotation} min={-180} max={180} unit="°" onChange={(v) => upd({ rotation: v })} onInteractionStart={pauseTemporal} onInteractionEnd={resumeTemporal} labelAddon={<OverrideDot layerId={layer.id} propKey="rotation" />} />
+            <SliderField label={t.properties.rotation} value={layer.rotation} min={-180} max={180} unit="°" onChange={(v) => upd({ rotation: v })} onInteractionStart={pauseTemporal} onInteractionEnd={resumeTemporal} labelAddon={<OverrideDot layerId={layer.id} propKey="rotation" />} />
           </>
         )}
-        <SliderField label="Opacity" value={Math.round(layer.opacity * 100)} min={0} max={100} unit="%" onChange={(v) => upd({ opacity: v / 100 })} onInteractionStart={pauseTemporal} onInteractionEnd={resumeTemporal} className="!mb-0" />
+        <SliderField label={t.properties.opacity} value={Math.round(layer.opacity * 100)} min={0} max={100} unit="%" onChange={(v) => upd({ opacity: v / 100 })} onInteractionStart={pauseTemporal} onInteractionEnd={resumeTemporal} className="!mb-0" />
       </div>
 
       {/* Alignment — all non-background layers */}
@@ -343,6 +352,7 @@ function LayoutTab({ layer }: { layer: Layer }) {
 // ─── Style Tab ────────────────────────────────────────────────────────────────
 
 function StyleTab({ layer }: { layer: Layer }) {
+  const { t } = useStudioLocale()
   const updateLayer = useEditorStore((s) => s.updateLayer)
   const upd = (patch: Partial<Layer>) => updateLayer(layer.id, patch)
 
@@ -359,7 +369,7 @@ function StyleTab({ layer }: { layer: Layer }) {
       {/* Fill — background, text, shape */}
       {fillValue !== null && (
         <div className={panelSectionCls}>
-          <label className={labelCls}>Fill</label>
+          <label className={labelCls}>{t.properties.fill}</label>
           {/* key=layer.id resets editor state (selected stop, drag) when switching layers */}
           <FillControl
             key={layer.id}
@@ -376,11 +386,11 @@ function StyleTab({ layer }: { layer: Layer }) {
         <div className={panelSectionCls}>
           <div className={rowCls + ' !mb-0'}>
             <div className={fieldCls}>
-              <label className={labelCls}>Stroke</label>
+              <label className={labelCls}>{t.properties.stroke}</label>
               <ColorField value={(layer as ShapeLayer).stroke ?? '#FFFFFF'} onChange={(value) => upd({ stroke: value } as Partial<Layer>)} onInteractionStart={pauseTemporal} onInteractionEnd={resumeTemporal} />
             </div>
             <div className={fieldCls}>
-              <SliderField label="Width" value={(layer as ShapeLayer).strokeWidth ?? 0} min={0} max={50} unit="px" onChange={(v) => upd({ strokeWidth: v } as Partial<Layer>)} onInteractionStart={pauseTemporal} onInteractionEnd={resumeTemporal} className="!mb-0" />
+              <SliderField label={t.properties.width} value={(layer as ShapeLayer).strokeWidth ?? 0} min={0} max={50} unit="px" onChange={(v) => upd({ strokeWidth: v } as Partial<Layer>)} onInteractionStart={pauseTemporal} onInteractionEnd={resumeTemporal} className="!mb-0" />
             </div>
           </div>
         </div>
@@ -388,7 +398,7 @@ function StyleTab({ layer }: { layer: Layer }) {
 
       {/* Blur + Shadow — all layers */}
       <div className={panelSectionCls}>
-        <SliderField label="Blur" value={layer.blur ?? 0} min={0} max={100} unit="px" onChange={(v) => upd({ blur: v })} onInteractionStart={pauseTemporal} onInteractionEnd={resumeTemporal} />
+        <SliderField label={t.properties.blur} value={layer.blur ?? 0} min={0} max={100} unit="px" onChange={(v) => upd({ blur: v })} onInteractionStart={pauseTemporal} onInteractionEnd={resumeTemporal} />
         <ShadowControls layer={layer} />
       </div>
     </div>
@@ -398,10 +408,11 @@ function StyleTab({ layer }: { layer: Layer }) {
 // ─── Content Tab (per-type router) ────────────────────────────────────────────
 
 function ContentTab({ layer }: { layer: Layer }) {
+  const { t } = useStudioLocale()
   if (layer.type === 'background') return (
     <div className={panelSectionCls}>
-      <p className="text-sm text-[#e8e8f0]">Background</p>
-      <p className="mt-1 text-xs text-[#6b6b7a]">The background layer is always at the bottom. Edit its fill, presets, and accent bubbles in the Style tab.</p>
+      <p className="text-sm text-[#e8e8f0]">{t.properties.background}</p>
+      <p className="mt-1 text-xs text-[#6b6b7a]">{t.properties.backgroundContentHint}</p>
     </div>
   )
   if (layer.type === 'phone') return <PhoneProperties layer={layer as PhoneLayer} />
@@ -411,12 +422,13 @@ function ContentTab({ layer }: { layer: Layer }) {
   if (layer.type === 'brand') return <BrandProperties layer={layer as BrandLayer} />
   if (layer.type === 'shape') return <ShapeProperties layer={layer as ShapeLayer} />
   if (layer.type === 'group') return <GroupProperties layer={layer as GroupLayer} />
-  return <div className={panelSectionCls}><p className="text-xs text-[#6b6b7a]">Unknown layer type</p></div>
+  return <div className={panelSectionCls}><p className="text-xs text-[#6b6b7a]">{t.properties.unknownLayerType}</p></div>
 }
 
 // ─── PropertiesPanel shell ────────────────────────────────────────────────────
 
 export function PropertiesPanel() {
+  const { t } = useStudioLocale()
   const {
     project,
     activeSlideGroupId,
@@ -538,24 +550,24 @@ export function PropertiesPanel() {
     <aside data-properties-panel className="h-full w-64 shrink-0 flex flex-col overflow-hidden min-[1440px]:w-72" style={{ background: '#18181f', borderLeft: `1px solid ${borderColor}` }}>
       <div className="shrink-0 border-b px-3 py-2" style={{ borderColor }}>
         <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold uppercase tracking-wider text-[#6b6b7a]">Properties</span>
+          <span className="text-xs font-semibold uppercase tracking-wider text-[#6b6b7a]">{t.properties.title}</span>
           {selectedLayer && (
             <div className="flex gap-1">
               <button
                 type="button"
-                title="Copy style (Ctrl+Alt+C)"
+                title={t.properties.copyStyleTitle}
                 onClick={() => copyLayerStyle(selectedLayer!.id)}
                 className="text-[10px] px-2 py-1 rounded border border-[rgba(255,255,255,0.1)] text-[#6b6b7a] hover:text-[#e8e8f0] hover:border-[rgba(255,255,255,0.2)] transition-colors"
               >
-                Copy Style
+                {t.properties.copyStyle}
               </button>
               {styleClipboard && (
                 <button
                   type="button"
                   title={
                     styleClipboard.layerType === selectedLayer.type
-                      ? 'Paste style (Ctrl+Alt+V)'
-                      : `Paste style — copied from ${styleClipboard.layerType}, select a ${styleClipboard.layerType} layer`
+                      ? t.properties.pasteStyleTitle
+                      : `${t.properties.pasteStyle} (${styleClipboard.layerType})`
                   }
                   onClick={() => {
                     if (styleClipboard.layerType === selectedLayer!.type) pasteLayerStyle(selectedLayer!.id)
@@ -567,7 +579,7 @@ export function PropertiesPanel() {
                       : 'border-[rgba(255,255,255,0.06)] text-[#3a3a4a] cursor-not-allowed'
                   }`}
                 >
-                  Paste Style
+                  {t.properties.pasteStyle}
                 </button>
               )}
             </div>
@@ -577,9 +589,9 @@ export function PropertiesPanel() {
         {selectedLayer && !isBackgroundSelected && (
           <div className="mt-3 flex gap-4 border-b border-[rgba(255,255,255,0.06)]">
             {([
-              ['layout', 'Layout'],
-              ['style', 'Style'],
-              ['content', 'Content'],
+              ['layout', t.properties.tabs.layout],
+              ['style', t.properties.tabs.style],
+              ['content', t.properties.tabs.content],
             ] as const).map(([value, label]) => (
               <button
                 key={value}
@@ -596,12 +608,14 @@ export function PropertiesPanel() {
 
       <div className="flex-1 overflow-y-auto px-3 py-3" onFocusCapture={handlePanelFocus} onBlurCapture={handlePanelBlur}>
         {!selectedLayer ? (
-          null
+          <p className="px-2 py-6 text-center text-xs leading-relaxed text-[#6b6b7a]">
+            {t.properties.emptySelectionHint}
+          </p>
         ) : (
           <>
             {editingGroupId && selection?.layerId && (
               <div className="mb-4 rounded-xl border border-[rgba(124,110,246,0.3)] bg-[rgba(124,110,246,0.14)] px-3 py-2 text-xs text-[#c4b5fd]">
-                ✦ Editing inside group
+                {t.properties.editingInsideGroup}
               </div>
             )}
 
@@ -609,13 +623,13 @@ export function PropertiesPanel() {
               <div className="mb-3 rounded-lg border border-[rgba(124,110,246,0.3)] bg-[rgba(124,110,246,0.08)] px-3 py-2">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[10px] text-[#c4b5fd]">
-                    Only in {activeFormatInfo.label} · Added specifically for this format
+                    {activeFormatInfo.label}
                   </span>
                   <button
                     onClick={() => makeLayerShared(rawSelectedLayer!.id)}
                     className="text-[10px] text-[#c4b5fd] hover:text-white underline shrink-0"
                   >
-                    Make shared
+                    {t.properties.makeShared}
                   </button>
                 </div>
               </div>
@@ -625,11 +639,11 @@ export function PropertiesPanel() {
               <div className="mb-3 rounded-lg border border-[rgba(245,158,11,0.25)] bg-[rgba(245,158,11,0.06)] px-3 py-2">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[10px] text-[#fbbf24]">
-                    {Object.keys(rawSelectedLayer.formatOverrides?.[activeCanvasFormat] ?? {}).length} layout adjustments for {activeFormatInfo.label}
+                    {activeFormatInfo.label} ({Object.keys(rawSelectedLayer.formatOverrides?.[activeCanvasFormat] ?? {}).length})
                   </span>
                   <div className="flex gap-1.5">
-                    <button onClick={() => clearLayerFormatOverride(rawSelectedLayer!.id)} className="text-[10px] text-[#fbbf24] hover:text-white underline">Reset</button>
-                    <button onClick={() => syncLayerFormatToShared(rawSelectedLayer!.id)} className="text-[10px] text-[#fbbf24] hover:text-white underline">Share</button>
+                    <button onClick={() => clearLayerFormatOverride(rawSelectedLayer!.id)} className="text-[10px] text-[#fbbf24] hover:text-white underline">{t.common.reset}</button>
+                    <button onClick={() => syncLayerFormatToShared(rawSelectedLayer!.id)} className="text-[10px] text-[#fbbf24] hover:text-white underline">{t.common.share}</button>
                   </div>
                 </div>
               </div>
@@ -645,14 +659,14 @@ export function PropertiesPanel() {
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[10px]" style={{ color: isBaseFormat ? '#9d90f8' : '#22d3ee' }}>
-                    {localeAdjustCount} locale layout adjustment{localeAdjustCount !== 1 ? 's' : ''} for {activeLocaleLabel} · {isBaseFormat ? 'Base (applies on top of every format, including ones with their own overrides)' : activeFormatInfo.label}
+                    {activeLocaleLabel} · {isBaseFormat ? t.context.base : activeFormatInfo.label} ({localeAdjustCount})
                   </span>
                   <button
                     onClick={() => clearLayerLocaleAdjust(rawSelectedLayer!.id, activeLocale, activeCanvasFormat)}
                     className="shrink-0 text-[10px] underline hover:text-white"
                     style={{ color: isBaseFormat ? '#9d90f8' : '#22d3ee' }}
                   >
-                    Reset
+                    {t.common.reset}
                   </button>
                 </div>
               </div>
@@ -660,7 +674,7 @@ export function PropertiesPanel() {
 
             {isBackgroundSelected ? (
               <div className={panelSectionCls}>
-                <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#6b6b7a]">Background</div>
+                <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#6b6b7a]">{t.properties.background}</div>
                 <BackgroundProperties layer={selectedLayer as BackgroundLayer} />
               </div>
             ) : (

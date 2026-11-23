@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on nanoid from nanoid; depends on BackgroundLayer, ImageLayer, Layer, PhoneLayer, PhoneModel, and SlideGroup from @/types; depends on getPhoneSpec from @/assets/mockups/specs; depends on useEditorStore from @/store; depends on useAssetStore from @/store/assets; depends on createBackgroundLayer, newId, newSlideGroup, and seedLocaleContent from @/store/helpers; depends on BASE_CANVAS_FORMAT from @/utils/canvasFormats; depends on QUICK_MOCKUPS, QUICK_SIZES, QuickMockup, QuickSize, and makeQuickLayers from @/utils/quickDesign
- * [OUTPUT]: exports StudioHandoffImage, StudioHandoffMode, StudioHandoffPayload, and stageImagesIntoStudio()
+ * [INPUT]: depends on nanoid from nanoid; depends on BackgroundLayer, ImageLayer, Layer, PhoneLayer, PhoneModel, and SlideGroup from @/types; depends on getPhoneSpec from @/assets/mockups/specs; depends on useEditorStore from @/store; depends on useAssetStore from @/store/assets; depends on ensureProjectsBootstrapped from @/store/projects; depends on createBackgroundLayer, newId, newSlideGroup, and seedLocaleContent from @/store/helpers; depends on BASE_CANVAS_FORMAT from @/utils/canvasFormats; depends on QUICK_MOCKUPS, QUICK_SIZES, QuickMockup, QuickSize, and makeQuickLayers from @/utils/quickDesign
+ * [OUTPUT]: exports StudioHandoffImage, StudioHandoffMode, StudioHandoffPayload, stageImagesIntoStudio(), and stageImagesIntoStudioAfterBootstrap()
  * [POS]: Quick-Workspace-to-Studio handoff bridge; registers browser-generated images in useAssetStore and stages an editable SlideGroup in useEditorStore with the primary layer selected
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -17,6 +17,7 @@ import type {
 import { getPhoneSpec } from '@/assets/mockups/specs'
 import { useEditorStore } from '@/store'
 import { useAssetStore } from '@/store/assets'
+import { ensureProjectsBootstrapped } from '@/store/projects'
 import {
   createBackgroundLayer,
   newId,
@@ -363,4 +364,15 @@ export function stageImagesIntoStudio(payload: StudioHandoffPayload): void {
   useEditorStore.getState().setActiveSlideGroup(targetGroupId)
   useEditorStore.getState().setActiveCanvasFormat(BASE_CANVAS_FORMAT)
   useEditorStore.getState().select(staged.primaryLayerId)
+}
+
+/**
+ * Awaits shared IndexedDB project hydration before staging handoff images so
+ * fast Quick-Workspace -> Studio transitions never race initial project load.
+ */
+export async function stageImagesIntoStudioAfterBootstrap(
+  payload: StudioHandoffPayload,
+): Promise<void> {
+  await ensureProjectsBootstrapped()
+  stageImagesIntoStudio(payload)
 }

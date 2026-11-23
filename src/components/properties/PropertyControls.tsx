@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on react, FillValue/GradientStop/LinearGradient/RadialGradient from @/types, useEditorStore, useBrandColors, brandColors utils, fillToCss, SegmentedControl, colorUtils, and useStudioLocale from @/i18n
+ * [OUTPUT]: exports ColorField, GradientEditor, FillControl, and SliderField with localized Solid/Linear/Radial/Stops/Presets/Brand labels
+ * [POS]: core reusable property form controls inside src/components/properties
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent, ReactNode } from 'react'
 import type { FillValue, GradientStop, LinearGradient, RadialGradient } from '@/types'
@@ -6,119 +12,26 @@ import { useBrandColors } from '@/hooks/useBrandColors'
 import { isBrandToken, parseBrandToken, resolveBrandColor, toBrandToken } from '@/utils/brandColors'
 import { fillToCss } from '@/utils/gradients'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { useStudioLocale } from '@/i18n'
+import {
+  GRADIENT_PRESETS,
+  SOLID_PRESETS,
+  clamp,
+  colorAtOffset,
+  createLinearGradient,
+  createRadialGradient,
+  ensureEndStops,
+  isEndStop,
+  normalizeHexColor,
+  setStopOffset,
+  updateStopColor,
+} from './colorUtils'
 
 const inputCls =
   'bg-[#0f0f13] border border-[rgba(255,255,255,0.1)] rounded px-2 py-1 text-sm text-[#e8e8f0] w-full focus:outline-none focus:border-[rgba(124,110,246,0.5)]'
 const labelCls = 'text-[11px] text-[#6b6b7a] mb-1 block uppercase tracking-[0.08em]'
 const rowCls = 'flex gap-2 mb-3'
 const fieldCls = 'flex-1 min-w-0'
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value))
-}
-
-function normalizeHexColor(value: string, fallback = '#ffffff') {
-  const raw = value.trim()
-  const withHash = raw.startsWith('#') ? raw : `#${raw}`
-  if (/^#[0-9a-fA-F]{6}$/.test(withHash)) return withHash.toUpperCase()
-  if (/^#[0-9a-fA-F]{3}$/.test(withHash)) {
-    const [, r, g, b] = withHash
-    return `#${r}${r}${g}${g}${b}${b}`.toUpperCase()
-  }
-  const rgbMatch = raw.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i)
-  if (rgbMatch) {
-    return rgbToHex(Number(rgbMatch[1]), Number(rgbMatch[2]), Number(rgbMatch[3]))
-  }
-  return fallback.toUpperCase()
-}
-
-function hexToRgb(hex: string) {
-  const safe = normalizeHexColor(hex)
-  return {
-    r: Number.parseInt(safe.slice(1, 3), 16),
-    g: Number.parseInt(safe.slice(3, 5), 16),
-    b: Number.parseInt(safe.slice(5, 7), 16),
-  }
-}
-
-function rgbToHex(r: number, g: number, b: number) {
-  return `#${[r, g, b]
-    .map((value) => clamp(Math.round(value), 0, 255).toString(16).padStart(2, '0'))
-    .join('')}`.toUpperCase()
-}
-
-function interpolateHex(from: string, to: string, t: number) {
-  const a = hexToRgb(from)
-  const b = hexToRgb(to)
-  return rgbToHex(
-    a.r + (b.r - a.r) * t,
-    a.g + (b.g - a.g) * t,
-    a.b + (b.b - a.b) * t,
-  )
-}
-
-function sortStops(stops: GradientStop[]) {
-  return [...stops].sort((a, b) => a.offset - b.offset)
-}
-
-function colorAtOffset(stops: GradientStop[], offset: number) {
-  const sorted = sortStops(stops)
-  const safeOffset = clamp(offset, 0, 1)
-  if (safeOffset <= sorted[0].offset) return normalizeHexColor(sorted[0].color)
-  if (safeOffset >= sorted[sorted.length - 1].offset) return normalizeHexColor(sorted[sorted.length - 1].color)
-
-  for (let i = 0; i < sorted.length - 1; i += 1) {
-    const left = sorted[i]
-    const right = sorted[i + 1]
-    if (safeOffset >= left.offset && safeOffset <= right.offset) {
-      const span = right.offset - left.offset || 1
-      const t = (safeOffset - left.offset) / span
-      return interpolateHex(left.color, right.color, t)
-    }
-  }
-
-  return normalizeHexColor(sorted[0].color)
-}
-
-function createLinearGradient(base = '#FFFFFF'): LinearGradient {
-  return {
-    type: 'linear',
-    angle: 135,
-    stops: [
-      { offset: 0, color: normalizeHexColor(base) },
-      { offset: 1, color: '#0F0F13' },
-    ],
-  }
-}
-
-function createRadialGradient(base = '#FFFFFF'): RadialGradient {
-  return {
-    type: 'radial',
-    cx: 0.5,
-    cy: 0.5,
-    radius: 1,
-    stops: [
-      { offset: 0, color: normalizeHexColor(base) },
-      { offset: 1, color: '#0F0F13' },
-    ],
-  }
-}
-
-function setStopOffset(stops: GradientStop[], index: number, nextOffset: number) {
-  const target = { ...stops[index], offset: clamp(nextOffset, 0, 1) }
-  const nextStops = stops.map((stop, stopIndex) => (stopIndex === index ? target : stop))
-  const sorted = sortStops(nextStops)
-  return { stops: sorted, index: sorted.indexOf(target) }
-}
-
-function updateStopColor(stops: GradientStop[], index: number, color: string) {
-  // Preserve brand tokens as-is — only normalize plain hex/color strings
-  const resolved = isBrandToken(color) ? color : normalizeHexColor(color, stops[index].color)
-  const target = { ...stops[index], color: resolved }
-  const nextStops = stops.map((stop, stopIndex) => (stopIndex === index ? target : stop))
-  const sorted = sortStops(nextStops)
-  return { stops: sorted, index: sorted.indexOf(target) }
-}
 
 export function ColorField({
   value,
@@ -133,6 +46,7 @@ export function ColorField({
   onInteractionStart?: () => void
   onInteractionEnd?: () => void
 }) {
+  const { t } = useStudioLocale()
   const brandColors = useBrandColors()
   const resolvedValue = resolveBrandColor(value, brandColors)
   const safeValue = normalizeHexColor(resolvedValue)
@@ -181,7 +95,7 @@ export function ColorField({
         {activeBrand && (
           <button
             type="button"
-            title="Clear brand binding"
+            title={t.properties.clearBrandBinding}
             onClick={() => onChange(safeValue)}
             className="text-[10px] px-1.5 py-0.5 rounded border border-[rgba(124,110,246,0.4)] text-[#9d90f8] hover:text-white hover:border-[#7c6ef6] transition-colors"
           >
@@ -223,55 +137,8 @@ export interface GradientEditorProps {
   onInteractionEnd?: () => void
 }
 
-function isEndStop(stop: GradientStop) {
-  return stop.offset === 0 || stop.offset === 1
-}
-
-function ensureEndStops(stops: GradientStop[]): GradientStop[] {
-  const sorted = sortStops(stops)
-  const result = [...sorted]
-  if (!result.some((s) => s.offset === 0))
-    result.unshift({ offset: 0, color: sorted[0]?.color ?? '#ffffff' })
-  if (!result.some((s) => s.offset === 1))
-    result.push({ offset: 1, color: sorted[sorted.length - 1]?.color ?? '#000000' })
-  return sortStops(result)
-}
-
-// ─── Gradient Presets ─────────────────────────────────────────────────────────
-
-const GRADIENT_PRESETS: Array<{ label: string; fill: LinearGradient }> = [
-  { label: 'Midnight', fill: { type: 'linear', angle: 160, stops: [{ offset: 0, color: '#12101E' }, { offset: 1, color: '#1a1240' }] } },
-  { label: 'Nordic',   fill: { type: 'linear', angle: 160, stops: [{ offset: 0, color: '#1c1c2e' }, { offset: 0.5, color: '#2d3561' }, { offset: 1, color: '#0d0d1a' }] } },
-  { label: 'Ocean',    fill: { type: 'linear', angle: 160, stops: [{ offset: 0, color: '#0052D4' }, { offset: 1, color: '#0D324D' }] } },
-  { label: 'Aurora',   fill: { type: 'linear', angle: 130, stops: [{ offset: 0, color: '#00C9FF' }, { offset: 0.5, color: '#005A8E' }, { offset: 1, color: '#7B2FBE' }] } },
-  { label: 'Candy',    fill: { type: 'linear', angle: 135, stops: [{ offset: 0, color: '#FF9A9E' }, { offset: 1, color: '#A18CD1' }] } },
-  { label: 'Sunset',   fill: { type: 'linear', angle: 135, stops: [{ offset: 0, color: '#FF6B6B' }, { offset: 0.5, color: '#FF8E53' }, { offset: 1, color: '#C850C0' }] } },
-  { label: 'Fire',     fill: { type: 'linear', angle: 45,  stops: [{ offset: 0, color: '#F83600' }, { offset: 1, color: '#F9D423' }] } },
-  { label: 'Forest',   fill: { type: 'linear', angle: 160, stops: [{ offset: 0, color: '#093028' }, { offset: 1, color: '#237A57' }] } },
-  { label: 'Peach',    fill: { type: 'linear', angle: 135, stops: [{ offset: 0, color: '#FFECD2' }, { offset: 1, color: '#FCB69F' }] } },
-  { label: 'Royal',    fill: { type: 'linear', angle: 160, stops: [{ offset: 0, color: '#141E30' }, { offset: 1, color: '#243B55' }] } },
-  { label: 'Lavender', fill: { type: 'linear', angle: 135, stops: [{ offset: 0, color: '#E0C3FC' }, { offset: 1, color: '#8EC5FC' }] } },
-  { label: 'Neon',     fill: { type: 'linear', angle: 135, stops: [{ offset: 0, color: '#00DBDE' }, { offset: 1, color: '#FC00FF' }] } },
-]
-
-const SOLID_PRESETS: Array<{ label: string; color: string }> = [
-  // Neutrals
-  { label: 'Black',       color: '#000000' },
-  { label: 'Near Black',  color: '#0f0f13' },
-  { label: 'Dark Gray',   color: '#1c1c2e' },
-  { label: 'Gray',        color: '#6b7280' },
-  { label: 'Light Gray',  color: '#d1d5db' },
-  { label: 'White',       color: '#ffffff' },
-  // iOS / App Store accents
-  { label: 'iOS Blue',    color: '#007AFF' },
-  { label: 'iOS Green',   color: '#34C759' },
-  { label: 'iOS Red',     color: '#FF3B30' },
-  { label: 'iOS Orange',  color: '#FF9500' },
-  { label: 'iOS Purple',  color: '#AF52DE' },
-  { label: 'iOS Teal',    color: '#5AC8FA' },
-]
-
 function AddBrandColorButton({ currentColor }: { currentColor: string }) {
+  const { t } = useStudioLocale()
   const [adding, setAdding] = useState(false)
   const [name, setName] = useState('')
   const addBrandColor = useEditorStore((s) => s.addBrandColor)
@@ -285,11 +152,11 @@ function AddBrandColorButton({ currentColor }: { currentColor: string }) {
     return (
       <button
         type="button"
-        title="Save as brand color"
+        title={t.properties.addBrand}
         onClick={() => { setAdding(true); setName('') }}
         className="text-[10px] px-1.5 py-0.5 rounded border border-dashed border-[rgba(255,255,255,0.2)] text-[#6b6b7a] hover:text-[#e8e8f0] hover:border-[rgba(255,255,255,0.4)] transition-colors"
       >
-        ＋ Brand
+        {t.properties.addBrand}
       </button>
     )
   }
@@ -308,7 +175,7 @@ function AddBrandColorButton({ currentColor }: { currentColor: string }) {
           if (e.key === 'Escape') setAdding(false)
           e.stopPropagation()
         }}
-        placeholder="Name…"
+        placeholder={t.properties.namePlaceholder}
         className="w-20 rounded border border-[rgba(124,110,246,0.5)] bg-[#0f0f13] px-1.5 py-0.5 text-[10px] text-[#e8e8f0] outline-none"
       />
       <button
@@ -331,6 +198,7 @@ function AddBrandColorButton({ currentColor }: { currentColor: string }) {
 }
 
 export function GradientEditor({ fill, onChange, onInteractionStart = () => {}, onInteractionEnd = () => {} }: GradientEditorProps) {
+  const { t } = useStudioLocale()
   const brandColors = useBrandColors()
   const savedGradients = useEditorStore((s) => s.project.savedGradients) ?? []
   const updateProject = useEditorStore((s) => s.updateProject)
@@ -434,9 +302,9 @@ export function GradientEditor({ fill, onChange, onInteractionStart = () => {}, 
       <SegmentedControl
         value={mode}
         options={[
-          { value: 'solid', label: 'Solid' },
-          { value: 'linear', label: 'Linear' },
-          { value: 'radial', label: 'Radial' },
+          { value: 'solid', label: t.properties.solid },
+          { value: 'linear', label: t.properties.linear },
+          { value: 'radial', label: t.properties.radial },
         ]}
         onChange={switchMode}
         className="grid grid-cols-3 gap-1 rounded-lg border border-[rgba(255,255,255,0.08)] bg-[#121219] p-1"
@@ -455,7 +323,7 @@ export function GradientEditor({ fill, onChange, onInteractionStart = () => {}, 
           <div className="space-y-1.5">
             {hasBrand && (
               <div>
-                <span className={labelCls}>Brand</span>
+                <span className={labelCls}>{t.properties.brand}</span>
                 <div className="mt-1 flex flex-wrap gap-1.5 items-center">
                   {brandColors.map((bc) => {
                     const isActive = typeof fill === 'string' && isBrandToken(fill) && parseBrandToken(fill) === bc.id
@@ -477,7 +345,7 @@ export function GradientEditor({ fill, onChange, onInteractionStart = () => {}, 
             )}
             {hasSaved && (
               <div>
-                <span className={labelCls}>Saved</span>
+                <span className={labelCls}>{t.properties.saved}</span>
                 <div className="mt-1 flex flex-wrap gap-1">
                   {savedSolids.map((color, i) => (
                     <div key={i} className="relative group">
@@ -490,7 +358,7 @@ export function GradientEditor({ fill, onChange, onInteractionStart = () => {}, 
                       />
                       <button
                         type="button"
-                        title="Remove"
+                        title={t.common.delete}
                         onClick={() => updateProject({ savedGradients: savedGradients.filter((g) => g !== color) })}
                         className="absolute -top-1 -right-1 hidden group-hover:flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#1a1a2e] border border-[rgba(255,255,255,0.2)] text-[8px] text-[#f87171] hover:text-white leading-none"
                       >
@@ -508,17 +376,17 @@ export function GradientEditor({ fill, onChange, onInteractionStart = () => {}, 
       {mode !== 'solid' && (
         <div>
           <div className="flex items-center justify-between mb-1">
-            <span className={labelCls}>Presets</span>
+            <span className={labelCls}>{t.properties.presets}</span>
             <button
               type="button"
-              title="Save current gradient"
+              title={t.properties.saveGradient}
               onClick={() => {
                 if (typeof fill === 'string') return
                 updateProject({ savedGradients: [...savedGradients, fill] })
               }}
               className="text-[10px] text-[#7c6ef6] hover:text-[#9d90f8] transition-colors px-1.5 py-0.5 rounded border border-[rgba(124,110,246,0.3)] hover:border-[rgba(124,110,246,0.6)]"
             >
-              + Save
+              {t.properties.saveGradient}
             </button>
           </div>
           {/* Built-in presets */}
@@ -537,7 +405,7 @@ export function GradientEditor({ fill, onChange, onInteractionStart = () => {}, 
           {/* Saved gradients (non-string only — strings live in Swatches tray) */}
           {savedGradients.filter((g) => typeof g !== 'string').length > 0 && (
             <div className="mt-2">
-              <span className="text-[10px] text-[#4a4a5a] uppercase tracking-wider">Custom</span>
+              <span className="text-[10px] text-[#4a4a5a] uppercase tracking-wider">{t.common.custom}</span>
             </div>
           )}
           {savedGradients.filter((g) => typeof g !== 'string').length > 0 && (
@@ -546,14 +414,14 @@ export function GradientEditor({ fill, onChange, onInteractionStart = () => {}, 
                 <div key={i} className="relative group">
                   <button
                     type="button"
-                    title="Apply saved gradient"
+                    title={t.properties.saved}
                     onClick={() => onChange(g)}
                     className="h-5 w-9 rounded border border-[rgba(255,255,255,0.12)] hover:border-[rgba(124,110,246,0.6)] transition-all hover:scale-105"
                     style={{ background: fillToCss(g) }}
                   />
                   <button
                     type="button"
-                    title="Remove"
+                    title={t.common.delete}
                     onClick={() => updateProject({ savedGradients: savedGradients.filter((sg) => sg !== g) })}
                     className="absolute -top-1 -right-1 hidden group-hover:flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#1a1a2e] border border-[rgba(255,255,255,0.2)] text-[8px] text-[#f87171] hover:text-white leading-none"
                   >
@@ -568,7 +436,7 @@ export function GradientEditor({ fill, onChange, onInteractionStart = () => {}, 
 
       {mode === 'solid' && (
         <div>
-          <span className={labelCls}>Presets</span>
+          <span className={labelCls}>{t.properties.presets}</span>
           <div className="mt-1 flex flex-wrap gap-1">
             {SOLID_PRESETS.map((p) => (
               <button
@@ -601,20 +469,20 @@ export function GradientEditor({ fill, onChange, onInteractionStart = () => {}, 
               }}
               className="text-[10px] text-[#7c6ef6] hover:text-[#9d90f8] transition-colors px-1.5 py-0.5 rounded border border-[rgba(124,110,246,0.3)] hover:border-[rgba(124,110,246,0.6)]"
             >
-              + Save color
+              {t.properties.saveColor}
             </button>
           )}
         </>
       ) : gradient && selectedStop ? (
         <>
           <div className="flex items-center justify-between">
-            <span className="text-[11px] text-[#6b6b7a] uppercase tracking-[0.08em]">Stops</span>
+            <span className="text-[11px] text-[#6b6b7a] uppercase tracking-[0.08em]">{t.properties.position}</span>
             <button
               type="button"
               onClick={addStop}
               className="text-[11px] text-[#7c6ef6] hover:text-[#9d90f8] transition-colors px-1.5 py-0.5 rounded border border-[rgba(124,110,246,0.3)] hover:border-[rgba(124,110,246,0.6)]"
             >
-              + Add stop
+              {t.properties.addStop}
             </button>
           </div>
 
@@ -673,7 +541,7 @@ export function GradientEditor({ fill, onChange, onInteractionStart = () => {}, 
 
           <div className="rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#101017] p-3 space-y-3">
             <div>
-              <label className={labelCls}>Color</label>
+              <label className={labelCls}>{t.properties.color}</label>
               <ColorField
                 value={selectedStop.color}
                 onChange={(value) => {
@@ -688,7 +556,7 @@ export function GradientEditor({ fill, onChange, onInteractionStart = () => {}, 
             {!isEndStop(selectedStop) && (
               <div>
                 <div className="mb-1 flex items-center justify-between">
-                  <label className={labelCls + ' !mb-0'}>Position</label>
+                  <label className={labelCls + ' !mb-0'}>{t.properties.position}</label>
                   <span className="text-xs text-[#e8e8f0]">{Math.round(selectedStop.offset * 100)}%</span>
                 </div>
                 <input
@@ -713,19 +581,19 @@ export function GradientEditor({ fill, onChange, onInteractionStart = () => {}, 
                 onClick={deleteStop}
                 className="text-xs text-[#f0b4b4] hover:text-[#ffd0d0] transition-colors"
               >
-                Delete stop ×
+                {t.properties.deleteStop}
               </button>
             )}
 
             {isEndStop(selectedStop) && (
-              <p className="text-[10px] text-[#525261]">Fixed stop — position locked</p>
+              <p className="text-[10px] text-[#525261]">{t.properties.fixedStopHint}</p>
             )}
           </div>
 
           {gradient.type === 'linear' && (
             <div>
               <div className="mb-1 flex items-center justify-between">
-                <label className={labelCls + ' !mb-0'}>Angle</label>
+                <label className={labelCls + ' !mb-0'}>{t.properties.angle}</label>
                 <span className="text-xs text-[#e8e8f0]">{Math.round(gradient.angle)}°</span>
               </div>
               <input
@@ -742,7 +610,7 @@ export function GradientEditor({ fill, onChange, onInteractionStart = () => {}, 
               <div className={rowCls}>
                 <div className={fieldCls}>
                   <div className="mb-1 flex items-center justify-between">
-                    <label className={labelCls + ' !mb-0'}>Center X</label>
+                    <label className={labelCls + ' !mb-0'}>{t.properties.centerX}</label>
                     <span className="text-xs text-[#e8e8f0]">{Math.round(gradient.cx * 100)}%</span>
                   </div>
                   <input type="range" min={0} max={100} value={Math.round(gradient.cx * 100)}
@@ -752,7 +620,7 @@ export function GradientEditor({ fill, onChange, onInteractionStart = () => {}, 
                 </div>
                 <div className={fieldCls}>
                   <div className="mb-1 flex items-center justify-between">
-                    <label className={labelCls + ' !mb-0'}>Center Y</label>
+                    <label className={labelCls + ' !mb-0'}>{t.properties.centerY}</label>
                     <span className="text-xs text-[#e8e8f0]">{Math.round(gradient.cy * 100)}%</span>
                   </div>
                   <input type="range" min={0} max={100} value={Math.round(gradient.cy * 100)}
@@ -763,7 +631,7 @@ export function GradientEditor({ fill, onChange, onInteractionStart = () => {}, 
               </div>
               <div>
                 <div className="mb-1 flex items-center justify-between">
-                  <label className={labelCls + ' !mb-0'}>Radius</label>
+                  <label className={labelCls + ' !mb-0'}>{t.properties.radius}</label>
                   <span className="text-xs text-[#e8e8f0]">{Math.round(gradient.radius * 100)}%</span>
                 </div>
                 <input type="range" min={0} max={200} value={Math.round(gradient.radius * 100)}

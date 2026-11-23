@@ -5,7 +5,8 @@ Above-the-fold instant Quick Workspace UI for all 6 Moklu image tools, built wit
 
 ## Member list
 - `types.ts`: Dependency-inverted contracts (`WorkspaceToolId`, `WorkspacePreset`, `WorkspaceLocale`, `WorkspaceEngines`, `StudioHandoffPayload`, `QuickWorkspaceProps`).
-- `i18n.ts`: Complete EN/ZH/JA/KO UI strings for tool tabs, dropzones, sliders, privacy badges, and localized default ID-card watermarks.
+- `batchHelpers.ts`: Pure multi-image batch navigation, safe index clamping, single-item removal, and multi-image Studio handoff payload builder.
+- `i18n.ts`: Complete EN/ZH/JA/KO UI strings for tool tabs, dropzones, sliders, batch preview controls, privacy badges, and localized default ID-card watermarks.
 - `themeTokens.ts`: Crisp light and dark semantic Tailwind class token maps (`getWorkspaceThemeTokens`).
 - `uiPrimitives.tsx`: Shared accessible primitives (`DropZone` with drag-drop + clipboard paste, `PrivacyBadge`, `SegmentedControl`, `SliderField`, `StudioHandoffButton`, `ColorSwatchRow`).
 - `demoAssets.ts`: Deterministic SVG demo screenshot and sample ID card generators (`createDemoScreenshotDataUrl`, `createDemoImageInput`).

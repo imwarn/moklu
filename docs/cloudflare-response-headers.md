@@ -5,7 +5,7 @@
 
 ## 一、现状（2026-10-21 实测）
 
-`curl -sSI https://moklu.tech/` 的结果：
+`curl -sSI https://moklu.app/` 的结果：
 
 | 头 | 现状 | 问题 |
 | --- | --- | --- |
@@ -86,19 +86,19 @@ Moklu 的 Coolify Resource 是 **Application / Nixpacks / SPA**，由应用容�
 ### 阶段 A：合并 / 部署 UI 修复，先不强制 CSP
 
 1. PR 的普通 CI 和 **Live Reliability Gate** 先通过；合并到 `main`。
-2. 在 Coolify 部署对应 commit，确认 `https://moklu.tech/` 的 UI 已更新（浏览器 DevTools / 新版右侧 toolbar）。
+2. 在 Coolify 部署对应 commit，确认 `https://moklu.app/` 的 UI 已更新（浏览器 DevTools / 新版右侧 toolbar）。
 3. 在 GitHub Actions → **Deployment Smoke** 运行两种阶段：
    - `include_acceptance=false`、`require_csp=false`：基础连通性、项目备份恢复等，不要求新 UI 或已配置 CSP。
    - Coolify 已部署新版后，设 `include_acceptance=true`、`require_csp=false`：加入 UI-01/02/03/04/05/07 等修复验收。**旧版线上站点不应运行这个门禁**。
-4. 不要将本地 `serve-headers` 的 CSP 测试通过，解释为 `moklu.tech` 的 CSP 已上线。
+4. 不要将本地 `serve-headers` 的 CSP 测试通过，解释为 `moklu.app` 的 CSP 已上线。
 
 ### 阶段 B：启用安全头（优先在 Cloudflare 边缘配置）
 
-如果 `moklu.tech` 经过 Cloudflare 代理（DNS 为橙云），可以在 Cloudflare Dashboard 为该域名创建 **Rules → Transform Rules → Modify Response Header**（菜单位置随计划和 UI 版本略有变化）：
+如果 `moklu.app` 经过 Cloudflare 代理（DNS 为橙云），可以在 Cloudflare Dashboard 为该域名创建 **Rules → Transform Rules → Modify Response Header**（菜单位置随计划和 UI 版本略有变化）：
 
-- 匹配条件为 `http.host eq "moklu.tech"`，而不是误影响其他项目域名；
+- 匹配条件为 `http.host eq "moklu.app"`，而不是误影响其他项目域名；
 - 选择 **Set static**，按 `public/_headers` 中 `/*` 规则逐条填写 `X-Content-Type-Options`、`Referrer-Policy`、`X-Frame-Options`、`Permissions-Policy` 和 **完整** `Content-Security-Policy`；
-- 复制 **完整 CSP**，保存后用 `curl -sSI https://moklu.tech/` 检查返回值，不要只相信控制台已保存；验证是否出现截断、重复 CSP 或其他规则覆盖；
+- 复制 **完整 CSP**，保存后用 `curl -sSI https://moklu.app/` 检查返回值，不要只相信控制台已保存；验证是否出现截断、重复 CSP 或其他规则覆盖；
 - 若当前 Cloudflare 套餐、权限或规则限制不允许配置完整 CSP，请改为**在应用自身静态服务器配置响应头**，而不是放宽 CSP 以掩盖限制。不同计划的额度和长度限制以 Dashboard 的校验及真实响应为准。
 
 注意：不要同时在 Cloudflare 和 Coolify 源站设置互相冲突的 CSP；多个 CSP 响应头会同时被浏览器执行，不是“后者覆盖前者”。
@@ -214,4 +214,4 @@ const gitHash = process.env.SOURCE_COMMIT?.slice(0, 7)
   ?? execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim()
 ```
 
-这样 `curl -s https://moklu.tech/version.json` 就能确认线上版本，不用开浏览器点弹窗。
+这样 `curl -s https://moklu.app/version.json` 就能确认线上版本，不用开浏览器点弹窗。

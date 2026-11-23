@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on react, konva, zustand useShallow, Toolbar, LayersPanel, PreviewModal, PropertiesPanel, SlideNavigator, StageCanvas, EditingContext, AppLoadingScreen, ConfirmDialog, useThumbnails, useImageCacheWarmer, useEditorStore/useUndoRedo, useProjectsStore, applyCanvasFormat/resolveGroupView, registerStage, getScopedEditingIndicator, applyDocumentTheme from @/theme/themeStore, and buildLocalizedPath/LocaleCode from @/seo
- * [OUTPUT]: exports StudioPage component containing the full Konva multi-layer editor, localization mode, keyboard shortcuts, and Home/Tools navigation link
+ * [INPUT]: depends on react, konva, zustand useShallow, Toolbar, LayersPanel, PreviewModal, PropertiesPanel, SlideNavigator, StageCanvas, EditingContext, AppLoadingScreen, ConfirmDialog, useThumbnails, useImageCacheWarmer, useEditorStore/useUndoRedo, ensureProjectsBootstrapped/useProjectsStore, applyCanvasFormat/resolveGroupView, registerStage, getScopedEditingIndicator, applyDocumentTheme from @/theme/themeStore, buildLocalizedPath/LocaleCode from @/seo, and StudioLocaleProvider/getStudioDictionary from @/i18n
+ * [OUTPUT]: exports StudioPage component containing the full Konva multi-layer editor wrapped in StudioLocaleProvider, localization mode, keyboard shortcuts, and Home/Tools navigation link
  * [POS]: lazy-loaded full Studio editor page mounted by src/App.tsx on /studio and /<locale>/studio routes
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -22,9 +22,10 @@ import { applyCanvasFormat, resolveGroupView } from '@/utils/canvasFormats'
 import { registerStage } from '@/utils/stageRegistry'
 import { getScopedEditingIndicator } from '@/utils/scopedEditingIndicator'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
-import { useProjectsStore } from '@/store/projects'
+import { ensureProjectsBootstrapped, useProjectsStore } from '@/store/projects'
 import { applyDocumentTheme } from '@/theme/themeStore'
 import { buildLocalizedPath, type LocaleCode } from '@/seo'
+import { StudioLocaleProvider, getStudioDictionary } from '@/i18n'
 
 // Lazy-load the localization view — it's a separate mode and not needed on initial load.
 const LocalizationView = lazy(() =>
@@ -89,6 +90,18 @@ export function StudioPage({ locale = 'en', onNavigate }: StudioPageProps) {
   const [previewReturnTo, setPreviewReturnTo] = useState<'localization' | null>(null)
   const [hasCompletedInitialLoad, setHasCompletedInitialLoad] = useState(false)
   const [hasMetMinimumSplashTime, setHasMetMinimumSplashTime] = useState(false)
+  const [projectsReady, setProjectsReady] = useState(() => useProjectsStore.getState().initialized)
+
+  useEffect(() => {
+    if (projectsReady) return
+    let active = true
+    void ensureProjectsBootstrapped().finally(() => {
+      if (active) setProjectsReady(true)
+    })
+    return () => {
+      active = false
+    }
+  }, [projectsReady])
 
   const {
     thumbnails,
@@ -115,7 +128,7 @@ export function StudioPage({ locale = 'en', onNavigate }: StudioPageProps) {
 
   useEffect(() => {
     if (hasCompletedInitialLoad) return
-    if (!hasMetMinimumSplashTime) return
+    if (!hasMetMinimumSplashTime || !projectsReady) return
 
     // Only the visible group gates first paint; background thumbnails precache at idle.
     if (project.slideGroups.length > 0) {
@@ -124,7 +137,7 @@ export function StudioPage({ locale = 'en', onNavigate }: StudioPageProps) {
 
     const timeoutId = window.setTimeout(() => setHasCompletedInitialLoad(true), 0)
     return () => window.clearTimeout(timeoutId)
-  }, [hasCompletedInitialLoad, hasMetMinimumSplashTime, project.slideGroups.length, activeSlideGroupId, thumbnails])
+  }, [hasCompletedInitialLoad, hasMetMinimumSplashTime, projectsReady, project.slideGroups.length, activeSlideGroupId, thumbnails])
 
   useEffect(() => {
     if (project.slideGroups.length === 0) return
@@ -312,121 +325,128 @@ export function StudioPage({ locale = 'en', onNavigate }: StudioPageProps) {
     setPreviewLocale(undefined)
   }
 
+  const t = getStudioDictionary(locale)
+
   return (
-    <div className="w-screen h-screen flex flex-col overflow-hidden bg-[#0f0f13]">
-      <ConfirmDialog
-        open={conflictNotice !== null}
-        title="Project changed elsewhere"
-        message="This project was changed in another tab or device. Your local changes are not being saved. Save a copy of your local version, or manually reload the page to load the latest version and discard local changes."
-        confirmLabel="Save as Copy"
-        onConfirm={() => { void useProjectsStore.getState().saveConflictedProjectAsCopy() }}
-        onCancel={() => useProjectsStore.setState({ conflictNotice: null })}
-      />
-      <Toolbar
-        mode={view}
-        onSetMode={handleSetMode}
-        homeHref={homeHref}
-        onNavigateHome={onNavigate ? () => onNavigate(homeHref) : undefined}
-      />
-      <div className="relative flex flex-1 overflow-hidden">
-        {/* Localization view — absolutely covers the editor when active */}
-        {view === 'localization' && (
-          <main className="absolute inset-0 z-10 overflow-hidden bg-[#111118]">
-            <Suspense>
-              <LocalizationView embedded onBack={() => handleSetMode('editor')} onPreview={handlePreviewLocale} />
-            </Suspense>
-          </main>
-        )}
+    <StudioLocaleProvider
+      locale={locale}
+      onChangeLocale={(next) => onNavigate?.(buildLocalizedPath(next, 'studio'))}
+    >
+      <div className="w-screen h-screen flex flex-col overflow-hidden bg-[#0f0f13]">
+        <ConfirmDialog
+          open={conflictNotice !== null}
+          title={t.studio.conflictTitle}
+          message={t.studio.conflictMessage}
+          confirmLabel={t.studio.conflictConfirm}
+          onConfirm={() => { void useProjectsStore.getState().saveConflictedProjectAsCopy() }}
+          onCancel={() => useProjectsStore.setState({ conflictNotice: null })}
+        />
+        <Toolbar
+          mode={view}
+          onSetMode={handleSetMode}
+          homeHref={homeHref}
+          onNavigateHome={onNavigate ? () => onNavigate(homeHref) : undefined}
+        />
+        <div className="relative flex flex-1 overflow-hidden">
+          {/* Localization view — absolutely covers the editor when active */}
+          {view === 'localization' && (
+            <main className="absolute inset-0 z-10 overflow-hidden bg-[#111118]">
+              <Suspense>
+                <LocalizationView embedded onBack={() => handleSetMode('editor')} onPreview={handlePreviewLocale} />
+              </Suspense>
+            </main>
+          )}
 
-        {/* Editor view — always mounted so the Konva stage + ResizeObserver are always alive.
-            Hidden (pointer-events-none, invisible) when the localization view is on top. */}
-        <div
-          className="flex min-w-0 flex-1 overflow-hidden"
-          style={view === 'localization' ? { visibility: 'hidden', pointerEvents: 'none' } : undefined}
-        >
-          {/* Layers panel — always visible */}
-          <aside aria-label="Layers sidebar" className={`z-20 h-full shrink-0 lg:static lg:block ${mobilePanel === 'layers' ? 'absolute inset-y-0 left-0 block shadow-2xl' : 'hidden'}`}>
-            <LayersPanel />
-          </aside>
-
-          {/* Canvas area — fills remaining space */}
-          <main
-            className="flex-1 overflow-hidden bg-[#111118] flex flex-col"
-            style={{ minWidth: 0 }}
+          {/* Editor view — always mounted so the Konva stage + ResizeObserver are always alive.
+              Hidden (pointer-events-none, invisible) when the localization view is on top. */}
+          <div
+            className="flex min-w-0 flex-1 overflow-hidden"
+            style={view === 'localization' ? { visibility: 'hidden', pointerEvents: 'none' } : undefined}
           >
-            <nav aria-label="Editor panels" className="relative z-30 flex shrink-0 justify-end gap-2 border-b border-white/10 bg-[#18181f] px-3 py-2 lg:hidden">
-              <button
-                type="button"
-                aria-label="Toggle layers panel"
-                aria-expanded={mobilePanel === 'layers'}
-                onClick={() => setMobilePanel((panel) => panel === 'layers' ? null : 'layers')}
-                className="rounded-lg border border-white/20 bg-[#222330] px-3 py-1.5 text-xs text-white"
-              >
-                Layers
-              </button>
-              <button
-                type="button"
-                aria-label="Toggle properties panel"
-                aria-expanded={mobilePanel === 'properties'}
-                onClick={() => setMobilePanel((panel) => panel === 'properties' ? null : 'properties')}
-                className="rounded-lg border border-white/20 bg-[#222330] px-3 py-1.5 text-xs text-white"
-              >
-                Properties
-              </button>
-            </nav>
-            {/* Both editing axes share one compact top bar. */}
-            <EditingContextBar />
-            <EditingContextAlert />
+            {/* Layers panel — always visible */}
+            <aside aria-label={t.studio.layersSidebarAria} className={`z-20 h-full shrink-0 lg:static lg:block ${mobilePanel === 'layers' ? 'absolute inset-y-0 left-0 block shadow-2xl' : 'hidden'}`}>
+              <LayersPanel />
+            </aside>
 
-            {/* Canvas fills remaining height — StageCanvas takes full space */}
-            <div style={{ flex: 1, position: 'relative', zIndex: 0, overflow: 'hidden' }}>
-              <StageCanvas stageRef={stageRef} />
-              {(scopedEditingIndicator.isFormatScoped || scopedEditingIndicator.isLocaleScoped) && (
-                <div
-                  aria-hidden="true"
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    zIndex: 1,
-                    pointerEvents: 'none',
-                  }}
+            {/* Canvas area — fills remaining space */}
+            <main
+              className="flex-1 overflow-hidden bg-[#111118] flex flex-col"
+              style={{ minWidth: 0 }}
+            >
+              <nav aria-label={t.studio.editorPanelsAria} className="relative z-30 flex shrink-0 justify-end gap-2 border-b border-white/10 bg-[#18181f] px-3 py-2 lg:hidden">
+                <button
+                  type="button"
+                  aria-label={t.studio.toggleLayersAria}
+                  aria-expanded={mobilePanel === 'layers'}
+                  onClick={() => setMobilePanel((panel) => panel === 'layers' ? null : 'layers')}
+                  className="rounded-lg border border-white/20 bg-[#222330] px-3 py-1.5 text-xs text-white"
                 >
-                  <div style={{ position: 'absolute', top: 0, right: 0, left: 0, height: 2, pointerEvents: 'none', background: scopedEditingIndicator.horizontalFrameBackground }} />
-                  <div style={{ position: 'absolute', right: 0, bottom: 0, left: 0, height: 2, pointerEvents: 'none', background: scopedEditingIndicator.horizontalFrameBackground }} />
-                  <div style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: 2, pointerEvents: 'none', background: scopedEditingIndicator.leftFrameBackground }} />
-                  <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 2, pointerEvents: 'none', background: scopedEditingIndicator.rightFrameBackground }} />
-                </div>
-              )}
-            </div>
-          </main>
+                  {t.studio.layersButton}
+                </button>
+                <button
+                  type="button"
+                  aria-label={t.studio.togglePropertiesAria}
+                  aria-expanded={mobilePanel === 'properties'}
+                  onClick={() => setMobilePanel((panel) => panel === 'properties' ? null : 'properties')}
+                  className="rounded-lg border border-white/20 bg-[#222330] px-3 py-1.5 text-xs text-white"
+                >
+                  {t.studio.propertiesButton}
+                </button>
+              </nav>
+              {/* Both editing axes share one compact top bar. */}
+              <EditingContextBar />
+              <EditingContextAlert />
 
-          {/* Properties panel — always visible */}
-          <aside aria-label="Properties sidebar" className={`z-20 h-full shrink-0 lg:static lg:block ${mobilePanel === 'properties' ? 'absolute inset-y-0 right-0 block shadow-2xl' : 'hidden'}`}>
-            <PropertiesPanel />
-          </aside>
+              {/* Canvas fills remaining height — StageCanvas takes full space */}
+              <div style={{ flex: 1, position: 'relative', zIndex: 0, overflow: 'hidden' }}>
+                <StageCanvas stageRef={stageRef} />
+                {(scopedEditingIndicator.isFormatScoped || scopedEditingIndicator.isLocaleScoped) && (
+                  <div
+                    aria-hidden="true"
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      zIndex: 1,
+                      pointerEvents: 'none',
+                    }}
+                  >
+                    <div style={{ position: 'absolute', top: 0, right: 0, left: 0, height: 2, pointerEvents: 'none', background: scopedEditingIndicator.horizontalFrameBackground }} />
+                    <div style={{ position: 'absolute', right: 0, bottom: 0, left: 0, height: 2, pointerEvents: 'none', background: scopedEditingIndicator.horizontalFrameBackground }} />
+                    <div style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: 2, pointerEvents: 'none', background: scopedEditingIndicator.leftFrameBackground }} />
+                    <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 2, pointerEvents: 'none', background: scopedEditingIndicator.rightFrameBackground }} />
+                  </div>
+                )}
+              </div>
+            </main>
+
+            {/* Properties panel — always visible */}
+            <aside aria-label={t.studio.propertiesSidebarAria} className={`z-20 h-full shrink-0 lg:static lg:block ${mobilePanel === 'properties' ? 'absolute inset-y-0 right-0 block shadow-2xl' : 'hidden'}`}>
+              <PropertiesPanel />
+            </aside>
+          </div>
         </div>
-      </div>
-      <SlideNavigator
-        thumbnails={thumbnails}
-        staleGroupIds={staleGroupIds}
-        stageRef={stageRef}
-        onCaptureThumbnail={(groupId) => { void captureNow(groupId) }}
-        onOpenPreview={() => setPreviewOpen(true)}
-      />
+        <SlideNavigator
+          thumbnails={thumbnails}
+          staleGroupIds={staleGroupIds}
+          stageRef={stageRef}
+          onCaptureThumbnail={(groupId) => { void captureNow(groupId) }}
+          onOpenPreview={() => setPreviewOpen(true)}
+        />
 
-      <PreviewModal
-        open={previewOpen}
-        onClose={handleClosePreview}
-        thumbnails={thumbnails}
-        previewThumbs={previewThumbs}
-        isCapturingPreview={isCapturingPreview}
-        previewProgress={previewProgress}
-        captureAllHighRes={captureAllHighRes}
-        cancelCapture={cancelPreviewCapture}
-        initialLocale={previewLocale}
-      />
-      <AppLoadingScreen visible={!hasCompletedInitialLoad} />
-      {offscreenThumbnailElement}
-    </div>
+        <PreviewModal
+          open={previewOpen}
+          onClose={handleClosePreview}
+          thumbnails={thumbnails}
+          previewThumbs={previewThumbs}
+          isCapturingPreview={isCapturingPreview}
+          previewProgress={previewProgress}
+          captureAllHighRes={captureAllHighRes}
+          cancelCapture={cancelPreviewCapture}
+          initialLocale={previewLocale}
+        />
+        <AppLoadingScreen visible={!hasCompletedInitialLoad} />
+        {offscreenThumbnailElement}
+      </div>
+    </StudioLocaleProvider>
   )
 }

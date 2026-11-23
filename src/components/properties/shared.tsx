@@ -1,5 +1,8 @@
 /**
- * Shared sub-components used across multiple per-layer-type property files.
+ * [INPUT]: depends on useEditorStore, ColorField/SliderField from ./PropertyControls, Layer type, panelConstants, ToggleSwitch, and useStudioLocale from @/i18n
+ * [OUTPUT]: exports ShadowControls shared drop-shadow property section with localized labels
+ * [POS]: shared style inspector sub-component inside src/components/properties
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
 import { useEditorStore } from '@/store'
@@ -7,20 +10,20 @@ import { ColorField, SliderField } from '@/components/properties/PropertyControl
 import type { Layer } from '@/types'
 import { labelCls, pauseTemporal, resumeTemporal } from '@/components/properties/panelConstants'
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch'
-
-// ─── ShadowControls ──────────────────────────────────────────────────────────
+import { useStudioLocale } from '@/i18n'
 
 export function ShadowControls({ layer }: { layer: Layer }) {
+  const { t } = useStudioLocale()
   const updateLayer = useEditorStore((s) => s.updateLayer)
   const upd = (patch: Partial<Layer>) => updateLayer(layer.id, patch)
 
   return (
     <div>
       <div className="mb-2 flex items-center justify-between">
-        <label className={labelCls + ' !mb-0'}>Shadow</label>
+        <label className={labelCls + ' !mb-0'}>{t.properties.shadow}</label>
         <ToggleSwitch
           checked={Boolean(layer.shadow)}
-          ariaLabel="Toggle shadow"
+          ariaLabel={t.properties.shadow}
           onChange={() => {
             if (layer.shadow) {
               upd({ shadow: undefined })
@@ -40,13 +43,13 @@ export function ShadowControls({ layer }: { layer: Layer }) {
       {layer.shadow && (
         <div className="space-y-3 rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-3">
           <div>
-            <label className={labelCls}>Color</label>
+            <label className={labelCls}>{t.properties.color}</label>
             <ColorField value={layer.shadow.color} onChange={(value) => upd({ shadow: { ...layer.shadow!, color: value } })} onInteractionStart={pauseTemporal} onInteractionEnd={resumeTemporal} />
           </div>
-          <SliderField label="Blur" value={layer.shadow.blur} min={0} max={100} unit="px" onChange={(v) => upd({ shadow: { ...layer.shadow!, blur: v } })} onInteractionStart={pauseTemporal} onInteractionEnd={resumeTemporal} />
-          <SliderField label="Opacity" value={Math.round(layer.shadow.opacity * 100)} min={0} max={100} unit="%" onChange={(v) => upd({ shadow: { ...layer.shadow!, opacity: v / 100 } })} onInteractionStart={pauseTemporal} onInteractionEnd={resumeTemporal} />
-          <SliderField label="Offset X" value={layer.shadow.offsetX} min={-100} max={100} unit="px" onChange={(v) => upd({ shadow: { ...layer.shadow!, offsetX: v } })} onInteractionStart={pauseTemporal} onInteractionEnd={resumeTemporal} />
-          <SliderField label="Offset Y" value={layer.shadow.offsetY} min={-100} max={100} unit="px" onChange={(v) => upd({ shadow: { ...layer.shadow!, offsetY: v } })} onInteractionStart={pauseTemporal} onInteractionEnd={resumeTemporal} className="!mb-0" />
+          <SliderField label={t.properties.blur} value={layer.shadow.blur} min={0} max={100} unit="px" onChange={(v) => upd({ shadow: { ...layer.shadow!, blur: v } })} onInteractionStart={pauseTemporal} onInteractionEnd={resumeTemporal} />
+          <SliderField label={t.properties.opacity} value={Math.round(layer.shadow.opacity * 100)} min={0} max={100} unit="%" onChange={(v) => upd({ shadow: { ...layer.shadow!, opacity: v / 100 } })} onInteractionStart={pauseTemporal} onInteractionEnd={resumeTemporal} />
+          <SliderField label={t.properties.offsetX} value={layer.shadow.offsetX} min={-100} max={100} unit="px" onChange={(v) => upd({ shadow: { ...layer.shadow!, offsetX: v } })} onInteractionStart={pauseTemporal} onInteractionEnd={resumeTemporal} />
+          <SliderField label={t.properties.offsetY} value={layer.shadow.offsetY} min={-100} max={100} unit="px" onChange={(v) => upd({ shadow: { ...layer.shadow!, offsetY: v } })} onInteractionStart={pauseTemporal} onInteractionEnd={resumeTemporal} className="!mb-0" />
         </div>
       )}
     </div>

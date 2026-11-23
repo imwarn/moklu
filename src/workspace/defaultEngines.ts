@@ -304,10 +304,16 @@ async function transformFallback(
     const targetAspect = aspectRatioValue(options.aspectRatio)
 
     if (options.mode === 'resize') {
-      const targetW = options.width && options.width > 0 ? options.width : sw
-      const targetH = options.height && options.height > 0
-        ? options.height
-        : Math.max(1, Math.round((sh / sw) * targetW))
+      const targetW = options.scale && options.scale > 0
+        ? Math.max(1, Math.round(sw * options.scale))
+        : options.width && options.width > 0
+          ? options.width
+          : sw
+      const targetH = options.scale && options.scale > 0
+        ? Math.max(1, Math.round(sh * options.scale))
+        : options.height && options.height > 0
+          ? options.height
+          : Math.max(1, Math.round((sh / sw) * targetW))
       const clamped = clampDimensions(targetW, targetH)
       const canvas = document.createElement('canvas')
       canvas.width = clamped.width

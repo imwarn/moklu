@@ -32,13 +32,13 @@ jobs:
       - run: npm ci
       - name: Verify public HTTPS response, assets and headers
         env:
-          MOKLU_DEPLOY_URL: https://moklu.tech
+          MOKLU_DEPLOY_URL: https://moklu.app
         run: node scripts/check-deployment.mjs
       - name: Install browser engines
         run: npx playwright install --with-deps chromium firefox webkit
       - name: Run deployed-site browser smoke
         env:
-          MOKLU_DEPLOY_URL: https://moklu.tech
+          MOKLU_DEPLOY_URL: https://moklu.app
           MOKLU_LIVE_ACCEPTANCE: ${{ inputs.include_acceptance && '1' || '0' }}
           MOKLU_REQUIRE_CSP: ${{ inputs.require_csp && '1' || '0' }}
         run: npx playwright test --config tests/live/playwright.config.mjs

@@ -40,7 +40,9 @@ import {
   generateSitemapXml,
   getRouteRelativeHtmlPath,
   renderRouteHtml,
+  renderStudioSkeleton,
 } from './ssg.ts'
+import { renderRouteMarkup } from './ssrEntry.ts'
 
 const execFileAsync = promisify(execFile)
 
@@ -110,20 +112,20 @@ describe('SEO route registry and pathname resolution', () => {
 
   it('generates canonical URLs and 5 hreflang links with siteUrl override support', () => {
     expect(getSiteUrl()).toBe(DEFAULT_SITE_URL)
-    expect(getSiteUrl('https://preview.moklu.tech///')).toBe('https://preview.moklu.tech')
-    expect(buildCanonicalUrl('en', '', 'https://moklu.tech')).toBe('https://moklu.tech/')
-    expect(buildCanonicalUrl('zh', 'merge-images', 'https://moklu.tech')).toBe(
-      'https://moklu.tech/zh/merge-images',
+    expect(getSiteUrl('https://preview.moklu.app///')).toBe('https://preview.moklu.app')
+    expect(buildCanonicalUrl('en', '', 'https://moklu.app')).toBe('https://moklu.app/')
+    expect(buildCanonicalUrl('zh', 'merge-images', 'https://moklu.app')).toBe(
+      'https://moklu.app/zh/merge-images',
     )
 
-    const links = getHreflangLinks('id-card-watermark', 'https://moklu.tech')
+    const links = getHreflangLinks('id-card-watermark', 'https://moklu.app')
     expect(links).toHaveLength(5)
     expect(links).toEqual([
-      { hreflang: 'en', href: 'https://moklu.tech/id-card-watermark' },
-      { hreflang: 'zh', href: 'https://moklu.tech/zh/id-card-watermark' },
-      { hreflang: 'ja', href: 'https://moklu.tech/ja/id-card-watermark' },
-      { hreflang: 'ko', href: 'https://moklu.tech/ko/id-card-watermark' },
-      { hreflang: 'x-default', href: 'https://moklu.tech/id-card-watermark' },
+      { hreflang: 'en', href: 'https://moklu.app/id-card-watermark' },
+      { hreflang: 'zh', href: 'https://moklu.app/zh/id-card-watermark' },
+      { hreflang: 'ja', href: 'https://moklu.app/ja/id-card-watermark' },
+      { hreflang: 'ko', href: 'https://moklu.app/ko/id-card-watermark' },
+      { hreflang: 'x-default', href: 'https://moklu.app/id-card-watermark' },
     ])
   })
 })
@@ -174,10 +176,10 @@ describe('4-language SEO content uniqueness and completeness', () => {
 describe('Structured data JSON-LD and DOM head synchronization', () => {
   it('builds valid WebApplication, HowTo, and FAQPage schemas and escapes `<` safely', () => {
     const route = resolvePathname('/zh/id-card-watermark')
-    const schemas = buildRouteSchemas(route, 'https://moklu.tech')
+    const schemas = buildRouteSchemas(route, 'https://moklu.app')
 
     expect(schemas.webApplication['@type']).toBe('WebApplication')
-    expect(schemas.webApplication.url).toBe('https://moklu.tech/zh/id-card-watermark')
+    expect(schemas.webApplication.url).toBe('https://moklu.app/zh/id-card-watermark')
     expect(schemas.webApplication.inLanguage).toBe('zh')
     expect(schemas.webApplication.offers.price).toBe('0')
 
@@ -188,7 +190,7 @@ describe('Structured data JSON-LD and DOM head synchronization', () => {
     expect(schemas.faqPage['@type']).toBe('FAQPage')
     expect(schemas.faqPage.mainEntity).toHaveLength(4)
 
-    expect(buildRouteSchemaList(route, 'https://moklu.tech')).toHaveLength(3)
+    expect(buildRouteSchemaList(route, 'https://moklu.app')).toHaveLength(3)
 
     const serialized = serializeJsonLd({ danger: '</script><script>alert(1)</script>' })
     expect(serialized).not.toContain('</script>')
@@ -262,19 +264,19 @@ describe('Structured data JSON-LD and DOM head synchronization', () => {
       },
     } as unknown as Document
 
-    applySeoHead(mockDoc, resolvePathname('/browser-mockup'), 'https://moklu.tech')
+    applySeoHead(mockDoc, resolvePathname('/browser-mockup'), 'https://moklu.app')
     expect(mockDoc.documentElement.lang).toBe('en')
     expect(mockDoc.title).toContain('Browser Mockup')
     expect(headChildren.filter((el) => el.attrs.rel === 'alternate')).toHaveLength(5)
     expect(headChildren.filter((el) => el.attrs.type === 'application/ld+json')).toHaveLength(3)
 
     // Transition to Korean route and verify zero stale duplicates
-    applySeoHead(mockDoc, resolvePathname('/ko/merge-images'), 'https://moklu.tech')
+    applySeoHead(mockDoc, resolvePathname('/ko/merge-images'), 'https://moklu.app')
     expect(mockDoc.documentElement.lang).toBe('ko')
     expect(mockDoc.title).toBe(getRouteCopy('ko', 'merge-images').title)
     expect(headChildren.filter((el) => el.attrs.rel === 'canonical')).toHaveLength(1)
     expect(headChildren.find((el) => el.attrs.rel === 'canonical')?.attrs.href).toBe(
-      'https://moklu.tech/ko/merge-images',
+      'https://moklu.app/ko/merge-images',
     )
     expect(headChildren.filter((el) => el.attrs.rel === 'alternate')).toHaveLength(5)
     expect(headChildren.filter((el) => el.attrs.type === 'application/ld+json')).toHaveLength(3)
@@ -346,18 +348,21 @@ describe('Build-time SSG prerenderer, sitemap.xml, robots.txt, and CSP safety', 
 </html>
 `
 
-  it('injects localized metadata, JSON-LD, and crawlable shell with zero executable inline scripts', () => {
+  it('injects localized metadata, JSON-LD, and full React-rendered markup with zero raw ssg shell or inline scripts', () => {
     const route = resolvePathname('/ja/merge-images')
-    const rendered = renderRouteHtml(SAMPLE_DIST_TEMPLATE, route, 'https://moklu.tech')
+    const markup = renderRouteMarkup(route)
+    const rendered = renderRouteHtml(SAMPLE_DIST_TEMPLATE, route, 'https://moklu.app', markup)
     const copy = getRouteCopy('ja', 'merge-images')
 
-    expect(rendered).toContain('<html lang="ja">')
+    expect(rendered).toContain('<html lang="ja" data-theme="light" data-surface="workspace">')
     expect(rendered).toContain(`<title>${copy.title}</title>`)
-    expect(rendered).toContain('<link rel="canonical" href="https://moklu.tech/ja/merge-images" />')
-    expect(rendered).toContain('hreflang="x-default" href="https://moklu.tech/merge-images"')
-    expect(rendered).toContain(`<h1>${copy.h1}</h1>`)
+    expect(rendered).toContain('<link rel="canonical" href="https://moklu.app/ja/merge-images" />')
+    expect(rendered).toContain('hreflang="x-default" href="https://moklu.app/merge-images"')
+    expect(rendered).toContain(copy.h1)
     expect(rendered).toContain(copy.faqs[0].question)
-    expect(rendered).toContain('data-ssg-shell="true"')
+    expect(rendered).toContain('data-testid="tool-landing-page"')
+    expect(rendered).toContain('data-testid="quick-workspace"')
+    expect(rendered).not.toContain('data-ssg-shell')
     expect(rendered).toContain('<script type="module" crossorigin src="/assets/index-abc123.js"></script>')
 
     // Strict CSP check: EVERY <script> tag must either have src= or type="application/ld+json"
@@ -369,10 +374,22 @@ describe('Build-time SSG prerenderer, sitemap.xml, robots.txt, and CSP safety', 
       expect(isExternal || isJsonLd).toBe(true)
     }
 
+    // Studio routes emit a styled dark skeleton without loading Konva
+    const studioRoute = resolvePathname('/studio')
+    const studioHtml = renderRouteHtml(
+      SAMPLE_DIST_TEMPLATE,
+      studioRoute,
+      'https://moklu.app',
+      renderStudioSkeleton(studioRoute),
+    )
+    expect(studioHtml).toContain('<html lang="en" data-theme="dark" data-surface="studio">')
+    expect(studioHtml).toContain('data-testid="studio-ssg-skeleton"')
+    expect(studioHtml).not.toContain('data-ssg-shell')
+
     // Re-rendering an already prerendered page stays idempotent
-    const rerendered = renderRouteHtml(rendered, route, 'https://moklu.tech')
+    const rerendered = renderRouteHtml(rendered, route, 'https://moklu.app', markup)
     expect(rerendered.match(/<link rel="canonical"/g)?.length).toBe(1)
-    expect(rerendered.match(/data-ssg-shell="true"/g)?.length).toBe(1)
+    expect(rerendered.match(/data-testid="tool-landing-page"/g)?.length).toBe(1)
   })
 
   it('executes scripts/prerender-seo.mjs via Node ESM and writes all 76 static HTML files, sitemap.xml, and robots.txt', async () => {
@@ -385,7 +402,7 @@ describe('Build-time SSG prerenderer, sitemap.xml, robots.txt, and CSP safety', 
         {
           env: {
             ...process.env,
-            VITE_SITE_URL: 'https://moklu.tech',
+            VITE_SITE_URL: 'https://moklu.app',
             MOKLU_SSG_LASTMOD: '2026-11-23',
           },
         },
@@ -398,7 +415,7 @@ describe('Build-time SSG prerenderer, sitemap.xml, robots.txt, and CSP safety', 
       }
 
       expect(report.ok).toBe(true)
-      expect(report.siteUrl).toBe('https://moklu.tech')
+      expect(report.siteUrl).toBe('https://moklu.app')
       expect(report.routesWritten).toBe(76)
       expect(report.sitemapUrls).toBe(76)
 
@@ -416,21 +433,28 @@ describe('Build-time SSG prerenderer, sitemap.xml, robots.txt, and CSP safety', 
         const outPath = path.join(tmpDir, ...getRouteRelativeHtmlPath(route))
         expect(outPath).toBe(path.join(tmpDir, expectedRel))
         const html = await readFile(outPath, 'utf8')
-        expect(html).toContain(`<html lang="${route.locale}">`)
-        expect(html).toContain(`<h1>${escapeHtml(getRouteCopy(route.locale, route.slug).h1)}</h1>`)
+        expect(html).toContain(`<html lang="${route.locale}"`)
+        expect(html).toContain(escapeHtml(getRouteCopy(route.locale, route.slug).h1))
+        expect(html).not.toContain('data-ssg-shell')
+        if (route.isStudio) {
+          expect(html).toContain('data-testid="studio-ssg-skeleton"')
+        } else {
+          expect(html).toContain('data-testid="tool-landing-page"')
+          expect(html).toContain('data-testid="quick-workspace"')
+        }
       }
 
       const sitemap = await readFile(path.join(tmpDir, 'sitemap.xml'), 'utf8')
-      expect(sitemap).toBe(generateSitemapXml('https://moklu.tech', '2026-11-23'))
+      expect(sitemap).toBe(generateSitemapXml('https://moklu.app', '2026-11-23'))
       expect(sitemap.match(/<url>/g)?.length).toBe(76)
       expect(sitemap).toContain('xmlns:xhtml="http://www.w3.org/1999/xhtml"')
-      expect(sitemap).toContain('<loc>https://moklu.tech/zh/id-card-watermark</loc>')
+      expect(sitemap).toContain('<loc>https://moklu.app/zh/id-card-watermark</loc>')
 
       const robots = await readFile(path.join(tmpDir, 'robots.txt'), 'utf8')
-      expect(robots).toBe(generateRobotsTxt('https://moklu.tech'))
-      expect(robots).toContain('Sitemap: https://moklu.tech/sitemap.xml')
+      expect(robots).toBe(generateRobotsTxt('https://moklu.app'))
+      expect(robots).toContain('Sitemap: https://moklu.app/sitemap.xml')
     } finally {
       await rm(tmpDir, { recursive: true, force: true })
     }
-  })
+  }, 30_000)
 })

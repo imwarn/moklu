@@ -14,7 +14,7 @@ import type {
   ToolId,
 } from './types.ts'
 
-export const DEFAULT_SITE_URL = 'https://moklu.tech'
+export const DEFAULT_SITE_URL = 'https://moklu.app'
 export const DEFAULT_LOCALE: LocaleCode = 'en'
 export const LOCALE_CODES: readonly LocaleCode[] = ['en', 'zh', 'ja', 'ko'] as const
 

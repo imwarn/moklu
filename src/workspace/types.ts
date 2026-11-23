@@ -116,6 +116,7 @@ export interface WorkspaceTransformOptions {
   mode: 'resize' | 'crop' | 'pad'
   width?: number
   height?: number
+  scale?: number
   lockAspect: boolean
   aspectRatio: WorkspaceAspectPreset
   borderPx: number

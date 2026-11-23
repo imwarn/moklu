@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on useEditorStore from @/store; fillToCss, getLanguageName, canvasFormats, and panoGeometry utils; ModalShell/NumberInput/ToggleSwitch/SegmentedControl; useStudioLocale from @/i18n
+ * [OUTPUT]: exports PreviewModal component for full-strip slide previews across formats and project content locales
+ * [POS]: slide preview dialog within src/components/panels, mounted by StudioPage
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { Fragment, useEffect, useRef } from 'react'
 import { useEditorStore } from '@/store'
 import { fillToCss } from '@/utils/gradients'
@@ -10,6 +16,7 @@ import { ModalShell } from '@/components/ui/ModalShell'
 import { NumberInput } from '@/components/ui/NumberInput'
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { useStudioLocale } from '@/i18n'
 
 interface PreviewModalProps {
   open: boolean
@@ -34,6 +41,8 @@ export function PreviewModal({
   cancelCapture,
   initialLocale,
 }: PreviewModalProps) {
+  const { t } = useStudioLocale()
+  const pm = t.modals.preview
   const project = useEditorStore((s) => s.project)
   const settings = project.settings
   const activeSlideGroupId = useEditorStore((s) => s.activeSlideGroupId)
@@ -150,11 +159,11 @@ export function PreviewModal({
       showCloseButton={false}
       header={<div className="flex flex-wrap items-center justify-between gap-3 border-b border-[rgba(255,255,255,0.08)] px-6 py-4">
           <div>
-            <h2 className="text-sm font-semibold text-[#f3f0ff]">Preview</h2>
+            <h2 className="text-sm font-semibold text-[#f3f0ff]">{pm.title}</h2>
             {previewProgress.status === 'capturing' || previewProgress.status === 'preparing' ? (
               <div className="mt-1.5 w-48">
                 <div className="mb-1 flex items-center justify-between text-[10px] text-[#7d7a90]">
-                  <span>{previewProgress.completedSlides > 0 ? 'Updating previews' : 'Generating previews'}</span>
+                  <span>{previewProgress.completedSlides > 0 ? pm.updatingPreviews : pm.generatingPreviews}</span>
                   <span>{previewProgress.completedSlides} / {previewProgress.totalSlides}</span>
                 </div>
                 <div
@@ -163,17 +172,17 @@ export function PreviewModal({
                   aria-valuemin={0}
                   aria-valuemax={previewProgress.totalSlides}
                   aria-valuenow={previewProgress.completedSlides}
-                  aria-valuetext={`Generating preview ${previewProgress.completedSlides} of ${previewProgress.totalSlides}`}
+                  aria-valuetext={`${pm.generatingPreviews} ${previewProgress.completedSlides}/${previewProgress.totalSlides}`}
                 >
                   <div className="h-full bg-[#7c6ef6] transition-[width] duration-300 ease-out motion-reduce:transition-none" style={{ width: `${previewProgress.totalSlides ? (previewProgress.completedSlides / previewProgress.totalSlides) * 100 : 0}%` }} />
                 </div>
-                <p className="mt-1 text-[10px] text-[#7d7a90]">Slide {previewProgress.completedSlides} of {previewProgress.totalSlides}{previewProgress.currentGroupName ? ` · ${previewProgress.currentGroupName}` : ''}</p>
+                <p className="mt-1 text-[10px] text-[#7d7a90]">{previewProgress.completedSlides} / {previewProgress.totalSlides}{previewProgress.currentGroupName ? ` · ${previewProgress.currentGroupName}` : ''}</p>
               </div>
             ) : previewProgress.status === 'error' ? (
-              <p className="mt-1 rounded border border-[rgba(248,113,113,0.35)] bg-[rgba(248,113,113,0.08)] px-2 py-1 text-xs text-[#fca5a5]">Preview generation failed</p>
+              <p className="mt-1 rounded border border-[rgba(248,113,113,0.35)] bg-[rgba(248,113,113,0.08)] px-2 py-1 text-xs text-[#fca5a5]">{pm.generationFailed}</p>
             ) : (
               <p className="mt-1 text-xs text-[#7d7a90]">
-                {totalSlides} slide{totalSlides !== 1 ? 's' : ''} · {slideGroups.length} group{slideGroups.length !== 1 ? 's' : ''}
+                {totalSlides} · {slideGroups.length}
               </p>
             )}
           </div>
@@ -200,7 +209,7 @@ export function PreviewModal({
                   }}
                   checkboxClassName="h-3 w-3 accent-[#7c6ef6]"
                 />
-                <span>Compensate</span>
+                <span>{t.slides.compensate}</span>
                 <NumberInput
                   min={0}
                   max={MAX_PANO_COMPENSATION_PX}
@@ -224,7 +233,7 @@ export function PreviewModal({
             <button
               onClick={onClose}
               className="rounded-md px-2 py-1 text-xl leading-none text-[#8d89a3] transition-colors hover:text-white"
-              aria-label="Close preview"
+              aria-label={pm.closeAria}
             >
               ×
             </button>
@@ -298,7 +307,7 @@ export function PreviewModal({
                                   padding: '1px 6px',
                                 }}
                               >
-                                active
+                                {pm.active}
                               </span>
                             )}
                           </div>

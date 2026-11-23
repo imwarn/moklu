@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on vitest and ./client (AiClientError, chat, editImage, supportsImageEditing)
+ * [OUTPUT]: unit tests verifying direct browser AI client error handling, CSP origin explanations, and response parsing
+ * [POS]: unit test suite for src/ai/client.ts
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AiClientError, chat, editImage, supportsImageEditing } from './client'
 
@@ -286,12 +292,12 @@ describe('CSP-aware network errors', () => {
   })
 
   it('does not mistake a same-origin custom proxy for a blocked CSP endpoint', async () => {
-    vi.stubGlobal('location', { origin: 'https://moklu.tech' })
+    vi.stubGlobal('location', { origin: 'https://moklu.app' })
     globalThis.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'))
     const error = await chat({
       provider: 'custom',
       apiKey: 'sk-test',
-      baseUrl: 'https://moklu.tech/api/v1',
+      baseUrl: 'https://moklu.app/api/v1',
       model: 'gpt-4o-mini',
       messages: [{ role: 'user', content: 'hello' }],
       retries: 0,

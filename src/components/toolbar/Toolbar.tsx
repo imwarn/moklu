@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on react, zustand useShallow, useEditorStore/useUndoRedo from @/store, useProjectsStore from @/store/projects, toolbar buttons, lazy-loaded modals, stageRegistry, and export helpers
- * [OUTPUT]: exports Toolbar component providing project controls, Quick Design, Canvas Size, undo/redo, PNG export, localization toggle, and Home/Tools navigation back link
+ * [INPUT]: depends on react, zustand useShallow, useEditorStore/useUndoRedo from @/store, useProjectsStore from @/store/projects, toolbar buttons, lazy-loaded modals, stageRegistry, export helpers, buildLocalizedPath from @/seo, and STUDIO_UI_LOCALES/useStudioLocale from @/i18n
+ * [OUTPUT]: exports Toolbar component providing localized project controls, Quick Design, Canvas Size, undo/redo, PNG export, localization toggle, Studio UI language switcher, and Home/Tools navigation back link
  * [POS]: top chrome bar of StudioPage inside src/components/toolbar
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -17,6 +17,8 @@ import { ReplaceScreenshotButton } from '@/components/toolbar/ReplaceScreenshotB
 import { getStage } from '@/utils/stageRegistry'
 import { exportSlide, downloadDataUrl } from '@/utils/export'
 import { runExclusiveCapture, waitForStageSettled } from '@/utils/stageCapture'
+import { buildLocalizedPath } from '@/seo'
+import { STUDIO_UI_LOCALES, useStudioLocale } from '@/i18n'
 
 // Lazy-load heavy modals — only fetched when the user opens them for the first time.
 const ProjectsModal = lazy(() =>
@@ -40,6 +42,7 @@ interface ToolbarProps {
 }
 
 export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: ToolbarProps) {
+  const { uiLocale, t, onChangeLocale } = useStudioLocale()
   const {
     project,
     selectedLayerIds,
@@ -66,6 +69,11 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
   const [tempName, setTempName] = useState('')
   const nameInputRef = useRef<HTMLInputElement>(null)
 
+  const displayProjectName =
+    !project.name || project.name === 'Untitled Project'
+      ? t.common.untitledProject
+      : project.name
+
   function startEditingName() {
     setTempName(project.name)
     setEditingName(true)
@@ -89,11 +97,35 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
   useEffect(() => {
     if (editingName) nameInputRef.current?.select()
   }, [editingName])
+
   const [projectsOpen, setProjectsOpen] = useState(false)
   const [templatesOpen, setTemplatesOpen] = useState(false)
   const [quickOpen, setQuickOpen] = useState(false)
   const [canvasSizeOpen, setCanvasSizeOpen] = useState(false)
   const [quickExportError, setQuickExportError] = useState<string | null>(null)
+  const [langMenuOpen, setLangMenuOpen] = useState(false)
+  const langMenuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!langMenuOpen) return
+    const handlePointerDown = (event: globalThis.MouseEvent) => {
+      if (langMenuRef.current && !langMenuRef.current.contains(event.target as Node)) {
+        setLangMenuOpen(false)
+      }
+    }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setLangMenuOpen(false)
+    }
+    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [langMenuOpen])
+
+  const activeLocaleOption =
+    STUDIO_UI_LOCALES.find((item) => item.code === uiLocale) ?? STUDIO_UI_LOCALES[0]
 
   const exportQuickPng = async () => {
     const stage = getStage()
@@ -130,6 +162,10 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeProjectMeta?.updatedAt])
 
+  const activeSlideGroup = project.slideGroups.find(
+    (g) => g.id === useEditorStore.getState().activeSlideGroupId,
+  )
+
   return (
     <header
       className="flex h-12 shrink-0 items-center gap-2 border-b px-3 max-[1099px]:gap-2 max-[1099px]:px-2"
@@ -152,231 +188,323 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
         data-testid="toolbar-left"
         className="flex min-w-0 flex-1 items-center gap-3 overflow-x-auto max-[1099px]:gap-2"
       >
-      {/* Back to Quick Tools hub */}
-      <a
-        href={homeHref}
-        onClick={(e: MouseEvent<HTMLAnchorElement>) => {
-          if (
-            onNavigateHome &&
-            e.button === 0 &&
-            !e.metaKey &&
-            !e.ctrlKey &&
-            !e.shiftKey &&
-            !e.altKey
-          ) {
-            e.preventDefault()
-            onNavigateHome()
-          }
-        }}
-        title="Back to Home & Quick Tools"
-        className="inline-flex shrink-0 items-center gap-1 rounded-md border border-white/10 px-2 py-1 text-xs font-medium text-[#b8b8c8] transition-colors hover:border-white/25 hover:bg-white/5 hover:text-white"
-      >
-        <span aria-hidden="true">←</span>
-        <span className="max-[1099px]:hidden">Tools</span>
-      </a>
-
-      {/* Logo */}
-      <Logo />
-
-      {/* Current project name — click to rename inline */}
-      {editingName ? (
-        <input
-          ref={nameInputRef}
-          value={tempName}
-          onChange={(e) => setTempName(e.target.value)}
-          onBlur={commitName}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') commitName()
-            if (e.key === 'Escape') cancelName()
+        {/* Back to Quick Tools hub */}
+        <a
+          href={homeHref}
+          onClick={(e: MouseEvent<HTMLAnchorElement>) => {
+            if (
+              onNavigateHome &&
+              e.button === 0 &&
+              !e.metaKey &&
+              !e.ctrlKey &&
+              !e.shiftKey &&
+              !e.altKey
+            ) {
+              e.preventDefault()
+              onNavigateHome()
+            }
           }}
-          style={{
-            background: 'rgba(255,255,255,0.07)',
-            border: '1px solid rgba(124,110,246,0.6)',
-            borderRadius: 5,
-            color: '#e8e8f0',
-            fontSize: 12,
-            padding: '3px 8px',
-            width: 160,
-            outline: 'none',
-            flexShrink: 0,
-          }}
-        />
-      ) : (
-        <button
-          onClick={startEditingName}
-          title="Click to rename project"
-          style={{
-            background: 'none',
-            border: 'none',
-            color: '#a0a0b0',
-            cursor: 'text',
-            fontSize: 12,
-            padding: '3px 6px',
-            borderRadius: 5,
-            maxWidth: 'clamp(96px, 14vw, 180px)',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            flexShrink: 0,
-          }}
-          onMouseEnter={(e) => {
-            ;(e.currentTarget as HTMLButtonElement).style.color = '#e8e8f0'
-            ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.05)'
-          }}
-          onMouseLeave={(e) => {
-            ;(e.currentTarget as HTMLButtonElement).style.color = '#a0a0b0'
-            ;(e.currentTarget as HTMLButtonElement).style.background = 'none'
-          }}
+          title={t.toolbar.backToToolsTitle}
+          className="inline-flex shrink-0 items-center gap-1 rounded-md border border-white/10 px-2 py-1 text-xs font-medium text-[#b8b8c8] transition-colors hover:border-white/25 hover:bg-white/5 hover:text-white"
         >
-          {project.name}
-        </button>
-      )}
+          <span aria-hidden="true">←</span>
+          <span className="max-[1099px]:hidden">{t.toolbar.tools}</span>
+        </a>
 
-      {/* Projects button */}
-      <button
-        onClick={() => setProjectsOpen(true)}
-        title="Manage projects"
-        style={{
-          background: 'none',
-          border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: 6,
-          color: '#a0a0b0',
-          cursor: 'pointer',
-          fontSize: 12,
-          padding: '3px 10px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 5,
-          whiteSpace: 'nowrap',
-        }}
-        onMouseEnter={(e) => {
-          ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.25)'
-          ;(e.currentTarget as HTMLButtonElement).style.color = '#e8e8f0'
-        }}
-        onMouseLeave={(e) => {
-          ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.1)'
-          ;(e.currentTarget as HTMLButtonElement).style.color = '#a0a0b0'
-        }}
-      >
-        <span className="min-[1100px]:hidden">▦</span>
-        <span className="max-[1099px]:hidden">Projects</span>
-      </button>
+        {/* Logo */}
+        <Logo />
 
-      <button type="button" onClick={() => setQuickOpen(true)} title="Quick Design: upload a screenshot, choose a device and background, then export" aria-label="Quick Design: guided screenshot mockup" className="shrink-0 rounded-lg border border-[#8276e8]/60 bg-[#8276e8]/20 px-3 py-1.5 text-xs font-semibold text-[#d6d1ff] hover:bg-[#8276e8]/30">✦ Quick Design</button>
-
-      <button type="button" onClick={() => setCanvasSizeOpen(true)} title="Change canvas size and aspect ratio without losing layers" className="shrink-0 rounded-lg border border-white/15 px-3 py-1.5 text-xs text-[#d6d6e4] hover:border-white/30 hover:bg-white/5">▣ Canvas Size<span className="ml-1 hidden text-[#888a9d] min-[1350px]:inline">{project.slideGroups.find((g) => g.id === useEditorStore.getState().activeSlideGroupId)?.slideWidth}×{project.slideGroups.find((g) => g.id === useEditorStore.getState().activeSlideGroupId)?.slideHeight}</span></button>
-
-      <ReplaceScreenshotButton />
-
-      {/* Templates button */}
-      <button
-        onClick={() => setTemplatesOpen(true)}
-        title="Browse and manage templates"
-        style={{
-          background: 'none',
-          border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: 6,
-          color: '#a0a0b0',
-          cursor: 'pointer',
-          fontSize: 12,
-          padding: '3px 10px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 5,
-          whiteSpace: 'nowrap',
-        }}
-        onMouseEnter={(e) => {
-          ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.25)'
-          ;(e.currentTarget as HTMLButtonElement).style.color = '#e8e8f0'
-        }}
-        onMouseLeave={(e) => {
-          ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.1)'
-          ;(e.currentTarget as HTMLButtonElement).style.color = '#a0a0b0'
-        }}
-      >
-        <span>🗂</span>
-        <span className="max-[1099px]:hidden">Templates</span>
-      </button>
-
-      <BrandKitButton />
-
-      {quickExportError && <span title={quickExportError} className="max-w-32 truncate text-xs text-red-400">Export error</span>}
-
-      {/* Save indicator */}
-      {saveLabel && (
-        <span style={{ fontSize: 11, color: '#6ee7b7', opacity: 0.8 }}>
-          {saveLabel === 'saving' ? '⏳ Saving…' : '✓ Saved'}
-        </span>
-      )}
-
-      <div className="h-6 w-px shrink-0 bg-[rgba(255,255,255,0.1)]" />
-
-      {/* Undo / Redo */}
-      <div className="flex items-center gap-0.5">
-        <button
-          onClick={() => undo()}
-          disabled={!canUndo}
-          title="Undo (Ctrl+Z)"
-          className="w-7 h-7 flex items-center justify-center text-sm rounded hover:bg-[rgba(255,255,255,0.06)] disabled:opacity-30 disabled:cursor-not-allowed"
-          style={{ color: canUndo ? '#e8e8f0' : '#3a3a4a' }}
-        >
-          ↩
-        </button>
-        <button
-          onClick={() => redo()}
-          disabled={!canRedo}
-          title="Redo (Ctrl+Shift+Z)"
-          className="w-7 h-7 flex items-center justify-center text-sm rounded hover:bg-[rgba(255,255,255,0.06)] disabled:opacity-30 disabled:cursor-not-allowed"
-          style={{ color: canRedo ? '#e8e8f0' : '#3a3a4a' }}
-        >
-          ↪
-        </button>
-      </div>
-
-      <div className="h-6 w-px shrink-0 bg-[rgba(255,255,255,0.1)]" />
-
-      {/* Group actions */}
-      <div className="flex items-center gap-1.5">
-        {selectedLayerIds.length >= 2 && (
+        {/* Current project name — click to rename inline */}
+        {editingName ? (
+          <input
+            ref={nameInputRef}
+            value={tempName}
+            onChange={(e) => setTempName(e.target.value)}
+            onBlur={commitName}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') commitName()
+              if (e.key === 'Escape') cancelName()
+            }}
+            style={{
+              background: 'rgba(255,255,255,0.07)',
+              border: '1px solid rgba(124,110,246,0.6)',
+              borderRadius: 5,
+              color: '#e8e8f0',
+              fontSize: 12,
+              padding: '3px 8px',
+              width: 160,
+              outline: 'none',
+              flexShrink: 0,
+            }}
+          />
+        ) : (
           <button
-            onClick={() => createGroup(selectedLayerIds)}
-            title="Group selected layers"
-            className="text-xs text-[#e8e8f0] px-2.5 py-1 rounded border border-[rgba(124,110,246,0.5)] bg-[rgba(124,110,246,0.15)] hover:bg-[rgba(124,110,246,0.25)] transition-colors"
+            onClick={startEditingName}
+            title={t.toolbar.renameProjectTitle}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#a0a0b0',
+              cursor: 'text',
+              fontSize: 12,
+              padding: '3px 6px',
+              borderRadius: 5,
+              maxWidth: 'clamp(96px, 14vw, 180px)',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+            }}
+            onMouseEnter={(e) => {
+              ;(e.currentTarget as HTMLButtonElement).style.color = '#e8e8f0'
+              ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.05)'
+            }}
+            onMouseLeave={(e) => {
+              ;(e.currentTarget as HTMLButtonElement).style.color = '#a0a0b0'
+              ;(e.currentTarget as HTMLButtonElement).style.background = 'none'
+            }}
           >
-            ⊞ Group ({selectedLayerIds.length})
+            {displayProjectName}
           </button>
         )}
+
+        {/* Projects button */}
+        <button
+          onClick={() => setProjectsOpen(true)}
+          title={t.toolbar.projectsTitle}
+          style={{
+            background: 'none',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 6,
+            color: '#a0a0b0',
+            cursor: 'pointer',
+            fontSize: 12,
+            padding: '3px 10px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            whiteSpace: 'nowrap',
+          }}
+          onMouseEnter={(e) => {
+            ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.25)'
+            ;(e.currentTarget as HTMLButtonElement).style.color = '#e8e8f0'
+          }}
+          onMouseLeave={(e) => {
+            ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.1)'
+            ;(e.currentTarget as HTMLButtonElement).style.color = '#a0a0b0'
+          }}
+        >
+          <span className="min-[1100px]:hidden">▦</span>
+          <span className="max-[1099px]:hidden">{t.toolbar.projects}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setQuickOpen(true)}
+          title={t.toolbar.quickDesignTitle}
+          aria-label={t.toolbar.quickDesignAria}
+          className="shrink-0 rounded-lg border border-[#8276e8]/60 bg-[#8276e8]/20 px-3 py-1.5 text-xs font-semibold text-[#d6d1ff] hover:bg-[#8276e8]/30"
+        >
+          ✦ {t.toolbar.quickDesign}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setCanvasSizeOpen(true)}
+          title={t.toolbar.canvasSizeTitle}
+          className="shrink-0 rounded-lg border border-white/15 px-3 py-1.5 text-xs text-[#d6d6e4] hover:border-white/30 hover:bg-white/5"
+        >
+          ▣ {t.toolbar.canvasSize}
+          {activeSlideGroup && (
+            <span className="ml-1 hidden text-[#888a9d] min-[1350px]:inline">
+              {activeSlideGroup.slideWidth}×{activeSlideGroup.slideHeight}
+            </span>
+          )}
+        </button>
+
+        <ReplaceScreenshotButton />
+
+        {/* Templates button */}
+        <button
+          onClick={() => setTemplatesOpen(true)}
+          title={t.toolbar.templatesTitle}
+          style={{
+            background: 'none',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 6,
+            color: '#a0a0b0',
+            cursor: 'pointer',
+            fontSize: 12,
+            padding: '3px 10px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            whiteSpace: 'nowrap',
+          }}
+          onMouseEnter={(e) => {
+            ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.25)'
+            ;(e.currentTarget as HTMLButtonElement).style.color = '#e8e8f0'
+          }}
+          onMouseLeave={(e) => {
+            ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.1)'
+            ;(e.currentTarget as HTMLButtonElement).style.color = '#a0a0b0'
+          }}
+        >
+          <span>🗂</span>
+          <span className="max-[1099px]:hidden">{t.toolbar.templates}</span>
+        </button>
+
+        <BrandKitButton />
+
+        {quickExportError && (
+          <span title={quickExportError} className="max-w-32 truncate text-xs text-red-400">
+            {t.toolbar.exportError}
+          </span>
+        )}
+
+        {/* Save indicator */}
+        {saveLabel && (
+          <span style={{ fontSize: 11, color: '#6ee7b7', opacity: 0.8, whiteSpace: 'nowrap', flexShrink: 0 }}>
+            {saveLabel === 'saving' ? t.toolbar.saving : t.toolbar.saved}
+          </span>
+        )}
+
+        <div className="h-6 w-px shrink-0 bg-[rgba(255,255,255,0.1)]" />
+
+        {/* Undo / Redo */}
+        <div className="flex items-center gap-0.5">
+          <button
+            onClick={() => undo()}
+            disabled={!canUndo}
+            title={t.toolbar.undoTitle}
+            className="w-7 h-7 flex items-center justify-center text-sm rounded hover:bg-[rgba(255,255,255,0.06)] disabled:opacity-30 disabled:cursor-not-allowed"
+            style={{ color: canUndo ? '#e8e8f0' : '#3a3a4a' }}
+          >
+            ↩
+          </button>
+          <button
+            onClick={() => redo()}
+            disabled={!canRedo}
+            title={t.toolbar.redoTitle}
+            className="w-7 h-7 flex items-center justify-center text-sm rounded hover:bg-[rgba(255,255,255,0.06)] disabled:opacity-30 disabled:cursor-not-allowed"
+            style={{ color: canRedo ? '#e8e8f0' : '#3a3a4a' }}
+          >
+            ↪
+          </button>
+        </div>
+
+        <div className="h-6 w-px shrink-0 bg-[rgba(255,255,255,0.1)]" />
+
+        {/* Group actions */}
+        <div className="flex items-center gap-1.5">
+          {selectedLayerIds.length >= 2 && (
+            <button
+              onClick={() => createGroup(selectedLayerIds)}
+              title={t.toolbar.groupLayersTitle}
+              className="text-xs text-[#e8e8f0] px-2.5 py-1 rounded border border-[rgba(124,110,246,0.5)] bg-[rgba(124,110,246,0.15)] hover:bg-[rgba(124,110,246,0.25)] transition-colors"
+            >
+              ⊞ {t.toolbar.groupLayers} ({selectedLayerIds.length})
+            </button>
+          )}
+        </div>
       </div>
 
-      </div>
-
-      {/* Right section — pinned so Settings/Help/GitHub never scroll out of reach */}
-      <button type="button" onClick={() => { void exportQuickPng() }} title="Export the active canvas at its original size" className="shrink-0 rounded-lg border border-white/15 px-3 py-1.5 text-xs text-white hover:bg-white/10">↓ PNG</button>
+      {/* Right section — pinned so Settings/Help/Language/GitHub never scroll out of reach */}
+      <button
+        type="button"
+        onClick={() => { void exportQuickPng() }}
+        title={t.toolbar.quickPngTitle}
+        className="shrink-0 rounded-lg border border-white/15 px-3 py-1.5 text-xs text-white hover:bg-white/10"
+      >
+        ↓ PNG
+      </button>
       <div data-testid="toolbar-right" className="flex shrink-0 items-center gap-2 max-[1099px]:gap-1">
+        {/* Compact Studio UI Language Switcher */}
+        <div ref={langMenuRef} className="relative">
+          <button
+            type="button"
+            onClick={() => setLangMenuOpen((open) => !open)}
+            aria-expanded={langMenuOpen}
+            aria-haspopup="menu"
+            aria-label={t.toolbar.uiLanguageAria}
+            title={t.toolbar.uiLanguageTitle}
+            className="inline-flex items-center gap-1 rounded border border-[rgba(255,255,255,0.1)] px-2.5 py-1.5 text-xs text-[#e8e8f0] transition-colors hover:border-[rgba(255,255,255,0.2)] hover:bg-[rgba(255,255,255,0.05)]"
+          >
+            <span aria-hidden="true">🌐</span>
+            <span>{activeLocaleOption.shortLabel}</span>
+          </button>
+          {langMenuOpen && (
+            <div
+              role="menu"
+              aria-label={t.toolbar.uiLanguageAria}
+              className="absolute right-0 top-full z-50 mt-1.5 w-36 overflow-hidden rounded-lg border border-white/15 bg-[#1b1b24] p-1 shadow-2xl"
+            >
+              {STUDIO_UI_LOCALES.map((item) => {
+                const href = buildLocalizedPath(item.code, 'studio')
+                const active = item.code === uiLocale
+                return (
+                  <a
+                    key={item.code}
+                    href={href}
+                    hrefLang={item.code}
+                    role="menuitem"
+                    aria-current={active ? 'true' : undefined}
+                    onClick={(event: MouseEvent<HTMLAnchorElement>) => {
+                      setLangMenuOpen(false)
+                      if (
+                        onChangeLocale &&
+                        event.button === 0 &&
+                        !event.metaKey &&
+                        !event.ctrlKey &&
+                        !event.shiftKey &&
+                        !event.altKey
+                      ) {
+                        event.preventDefault()
+                        onChangeLocale(item.code)
+                      }
+                    }}
+                    className={`flex items-center justify-between rounded-md px-2.5 py-1.5 text-xs transition-colors ${
+                      active
+                        ? 'bg-[rgba(124,110,246,0.24)] font-medium text-[#d8d1ff]'
+                        : 'text-[#c2c2d0] hover:bg-white/5 hover:text-white'
+                    }`}
+                  >
+                    <span>{item.nativeName}</span>
+                    <span className="text-[10px] uppercase opacity-60">{item.code}</span>
+                  </a>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
         <button
           onClick={() => setSettingsOpen(true)}
-          title="Open settings"
-          className="text-xs text-[#e8e8f0] px-3 py-1.5 rounded border border-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] hover:bg-[rgba(255,255,255,0.05)] transition-colors"
+          title={t.toolbar.settingsTitle}
+          className="inline-flex items-center gap-1.5 text-xs text-[#e8e8f0] px-3 py-1.5 rounded border border-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] hover:bg-[rgba(255,255,255,0.05)] transition-colors"
         >
-          <span>⚙</span><span className="max-[1099px]:hidden">Settings</span>
+          <span aria-hidden="true">⚙</span>
+          <span className="max-[1099px]:hidden">{t.toolbar.settings}</span>
         </button>
 
         <button
           onClick={() => onSetMode(mode === 'localization' ? 'editor' : 'localization')}
-          title="Manage translations inside the editor flow"
+          title={t.toolbar.localizationTitle}
           className={`text-xs px-3 py-1.5 rounded border transition-colors ${
             mode === 'localization'
               ? 'text-white bg-[rgba(124,110,246,0.22)] border-[rgba(124,110,246,0.45)]'
               : 'text-[#e8e8f0] border-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] hover:bg-[rgba(255,255,255,0.05)]'
           }`}
         >
-          <span className="max-[1099px]:hidden">{mode === 'localization' ? 'Back to Design' : 'Localization'}</span>
+          <span className="max-[1099px]:hidden">
+            {mode === 'localization' ? t.toolbar.backToDesign : t.toolbar.localization}
+          </span>
           <span className="min-[1100px]:hidden">◉</span>
         </button>
 
         <button
           onClick={() => setHelpOpen(true)}
-          title="Help & keyboard shortcuts"
+          title={t.toolbar.helpTitle}
           className="flex items-center gap-1.5 text-xs text-[#a0a0b0] px-3 py-1.5 rounded border border-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] hover:bg-[rgba(255,255,255,0.05)] hover:text-[#e8e8f0] transition-colors"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -384,7 +512,7 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
             <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
             <line x1="12" y1="17" x2="12.01" y2="17"/>
           </svg>
-          <span className="max-[1099px]:hidden">Help</span>
+          <span className="max-[1099px]:hidden">{t.toolbar.help}</span>
         </button>
 
         {/* GitHub link */}
@@ -392,7 +520,7 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
           href="https://github.com/imwarn/moklu"
           target="_blank"
           rel="noopener noreferrer"
-          title="View on GitHub"
+          title={t.toolbar.githubTitle}
           className="flex items-center gap-1.5 text-xs text-[#a0a0b0] px-3 py-1.5 rounded border border-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] hover:bg-[rgba(255,255,255,0.05)] hover:text-[#e8e8f0] transition-colors"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
