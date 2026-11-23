@@ -12,6 +12,17 @@ versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Template discovery, mobile editor controls and keyboard-accessible Quick Design
 - Release-candidate evidence collection, production build verification and deployment/rollback guidance
 
+### Changed
+- Studio UI 4-language (`en`/`zh`/`ja`/`ko`) coverage extended to all 7 property sub-panels, `ContentSyncModal`, `CreateFormatLayoutModal`, `ApiKeysModal`, `ProjectsModal` (`Intl.RelativeTimeFormat`), `AiProviderSettings`, and the full Localization view
+- Quick Workspace performance, theming, and accessibility: 150ms debouncing for 5 image tools, on-demand `jszip` dynamic import, language-switch image preservation, draft-mode dimension inputs, violet/zinc AA dark tokens, larger touch targets, keyboard navigation (`Tablist`/`SegmentedControl`), `useId` label binding, `DropZone` invalid-file alerts, and `ModalShell` focus trapping
+- Landing page and Studio shell UX/a11y: Tailwind v4 `@custom-variant dark` bound to `[data-theme="dark"]`, adaptive light/dark scrollbars, skip-to-content link, mobile nav active state with `Escape`/focus return, below-the-fold Pro CTA, light-mode `PricingModal`, AA Studio dark tokens, viewport-clamped `role="menu"` context menus, `ModalShell`-backed `ConfirmDialog`, responsive `Toolbar`, and `Suspense` fallback for lazy `LocalizationView`
+
+### Fixed
+- Offline CSP-compliant ZIP/directory export (removed `fetch(dataUrl)` and guaranteed `writable.close()` cleanup); Studio shortcut normalization (`Shift+Z`/`Shift+G`/CapsLock), view gating, and locked/background layer protection
+- Quick Workspace free-aspect crop preservation, empty-stem filename fallback, live Mockup scale preview, full style handoff to Studio (`theme`/`screenshotFit`/`scaleFactor`/`browserChrome`), and ZIP export error/loading handling
+- Multi-selection drag coordinate resolution under format/locale overrides, `Ctrl`/`Space` release on `window.blur` with interactive target guards, and unified `useStageViewport` zoom/fit transitions (0 ESLint warnings)
+- AI `asDataUrl` raw PNG base64 handling, IndexedDB `tx.onabort` error propagation, `ExportApp` preload failure signaling, CLI `=` argument parsing and server shutdown race prevention, protocol-relative URL rejection in `assertOfflineSafeImageUrl`, and `import.meta.dirname` in `vitest.config.ts`
+
 ### Pending before release
 - Security and asset-license disposition, browser acceptance, performance evidence, deployed CSP verification and rollback exercise
 

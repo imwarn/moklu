@@ -16,6 +16,7 @@ package.json - Project metadata (`https://moklu.app`), dependencies, and `build`
 vite.config.ts - Vite bundler config with `@` path alias and code-splitting
 index.html - Base HTML shell for SPA boot and SSG prerendering (`https://moklu.app`)
 playwright.config.mjs - Multi-browser Playwright E2E configuration (Chromium, Firefox, WebKit)
+vitest.config.ts - Vitest unit test and benchmark configuration (`import.meta.dirname` alias)
 tsconfig.json - TypeScript project references
 eslint.config.js - Flat ESLint rules for React, Hooks, and TypeScript
 </config>
