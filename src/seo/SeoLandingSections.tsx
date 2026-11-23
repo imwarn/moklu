@@ -1,7 +1,7 @@
 /**
  * [INPUT]: depends on useState from react; depends on ResolvedRoute from ./types.ts; depends on TOOL_ROUTE_DEFINITIONS, buildLocalizedPath, and getRelatedRoutes from ./routes.ts; depends on getRouteCopy and getUiLabels from ./i18n.ts; depends on handleSpaLinkClick from ./navHelpers.ts
  * [OUTPUT]: exports SeoLandingSections component and SeoLandingSectionsProps type
- * [POS]: below-the-fold crawlable editorial and conversion sections within src/seo, rendering privacy proof banner, 3-step How-To guide, scenario highlights, Studio CTA, related tool cross-links, full tool directory, and interactive FAQ accordion
+ * [POS]: below-the-fold crawlable editorial and conversion sections within src/seo, rendering privacy proof banner, 3-step How-To guide, scenario highlights, Studio + Pro conversion banner, related tool cross-links, full tool directory, and interactive FAQ accordion
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
@@ -20,12 +20,15 @@ export interface SeoLandingSectionsProps {
   theme: 'light' | 'dark'
   onNavigate: (path: string) => void
   onOpenProModal?: () => void
+  isPro?: boolean
 }
 
 export function SeoLandingSections({
   route,
   theme,
   onNavigate,
+  onOpenProModal,
+  isPro = false,
 }: SeoLandingSectionsProps) {
   const isDark = theme === 'dark'
   const ui = getUiLabels(route.locale)
@@ -172,14 +175,34 @@ export function SeoLandingSections({
             {ui.studioBannerDescription}
           </p>
         </div>
-        <a
-          href={studioHref}
-          onClick={(event) => handleSpaLinkClick(event, studioHref, onNavigate)}
-          className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-violet-500"
-        >
-          <span>{ui.studioBannerAction}</span>
-          <span aria-hidden="true">↗</span>
-        </a>
+        <div className="flex flex-wrap shrink-0 items-center gap-2.5">
+          <a
+            href={studioHref}
+            onClick={(event) => handleSpaLinkClick(event, studioHref, onNavigate)}
+            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-violet-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
+          >
+            <span>{ui.studioBannerAction}</span>
+            <span aria-hidden="true">↗</span>
+          </a>
+          {onOpenProModal && (
+            <button
+              type="button"
+              onClick={onOpenProModal}
+              className={`inline-flex shrink-0 items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${
+                isPro
+                  ? isDark
+                    ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/20'
+                    : 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                  : isDark
+                    ? 'border-amber-400/40 bg-amber-400/10 text-amber-200 hover:bg-amber-400/20'
+                    : 'border-amber-300/90 bg-amber-50/90 text-amber-900 hover:bg-amber-100'
+              }`}
+            >
+              <span aria-hidden="true" className="inline-block h-1.5 w-1.5 rounded-full bg-current" />
+              <span>{isPro ? ui.proActive : ui.studioBannerProAction}</span>
+            </button>
+          )}
+        </div>
       </section>
 
       {/* 5. Related Tools Internal Cross-Links */}
@@ -277,7 +300,13 @@ export function SeoLandingSections({
           <p className={`text-sm sm:text-base ${mutedCls}`}>{ui.faqSubheading}</p>
         </div>
 
-        <div className="divide-y divide-zinc-200/70 overflow-hidden rounded-2xl border dark:divide-white/10" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(228,228,231,0.9)' }}>
+        <div
+          className={`divide-y overflow-hidden rounded-2xl border ${
+            isDark
+              ? 'divide-white/10 border-white/10'
+              : 'divide-zinc-200/70 border-zinc-200/90'
+          }`}
+        >
           {copy.faqs.map((faq, index) => {
             const isOpen = openFaqIndex === index
             const panelId = `seo-faq-panel-${index}`

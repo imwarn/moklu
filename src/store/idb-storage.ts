@@ -1,7 +1,8 @@
 /**
- * Minimal IndexedDB key-value storage adapter compatible with Zustand's persist middleware.
- * Uses a single DB / object store shared across all persist keys.
- * Falls back silently to a no-op if IndexedDB is unavailable (e.g., SSR, private mode).
+ * [INPUT]: depends on browser global indexedDB (or fake-indexeddb in tests)
+ * [OUTPUT]: exports idbStorage async key-value adapter (getItem, setItem, removeItem) compatible with Zustand persist
+ * [POS]: low-level IndexedDB persistence adapter in src/store/; falls back safely on errors or transaction aborts without hanging callers
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
 const DB_NAME = 'pixeldeck'
@@ -10,6 +11,10 @@ const STORE_NAME = 'kv'
 // Singleton DB promise — opened once, reused for every read/write.
 let _db: Promise<IDBDatabase> | null = null
 let storageWarningShown = false
+
+function transactionError(tx: IDBTransaction, fallbackMessage: string): Error {
+  return tx.error ?? new Error(fallbackMessage)
+}
 
 function getDB(): Promise<IDBDatabase> {
   if (_db) return _db
@@ -33,13 +38,13 @@ export const idbStorage = {
   async getItem(key: string): Promise<string | null> {
     try {
       const db = await getDB()
-      return new Promise((resolve, reject) => {
-        const req = db
-          .transaction(STORE_NAME, 'readonly')
-          .objectStore(STORE_NAME)
-          .get(key)
+      return await new Promise<string | null>((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readonly')
+        const req = tx.objectStore(STORE_NAME).get(key)
         req.onsuccess = () => resolve((req.result as string | undefined) ?? null)
-        req.onerror = () => reject(req.error)
+        req.onerror = () => reject(req.error ?? new Error('IndexedDB getItem request failed'))
+        tx.onerror = () => reject(transactionError(tx, 'IndexedDB getItem transaction failed'))
+        tx.onabort = () => reject(transactionError(tx, 'IndexedDB getItem transaction aborted'))
       })
     } catch {
       return null
@@ -53,7 +58,8 @@ export const idbStorage = {
         const tx = db.transaction(STORE_NAME, 'readwrite')
         tx.objectStore(STORE_NAME).put(value, key)
         tx.oncomplete = () => resolve()
-        tx.onerror = () => reject(tx.error)
+        tx.onerror = () => reject(transactionError(tx, 'IndexedDB setItem transaction failed'))
+        tx.onabort = () => reject(transactionError(tx, 'IndexedDB setItem transaction aborted'))
       })
     } catch (e) {
       console.warn('[idbStorage] setItem failed:', e)
@@ -73,7 +79,8 @@ export const idbStorage = {
         const tx = db.transaction(STORE_NAME, 'readwrite')
         tx.objectStore(STORE_NAME).delete(key)
         tx.oncomplete = () => resolve()
-        tx.onerror = () => reject(tx.error)
+        tx.onerror = () => reject(transactionError(tx, 'IndexedDB removeItem transaction failed'))
+        tx.onabort = () => reject(transactionError(tx, 'IndexedDB removeItem transaction aborted'))
       })
     } catch {
       // best-effort

@@ -1,13 +1,14 @@
 /**
- * [INPUT]: depends on nanoid from nanoid; depends on BackgroundLayer, ImageLayer, Layer, PhoneLayer, PhoneModel, and SlideGroup from @/types; depends on getPhoneSpec from @/assets/mockups/specs; depends on useEditorStore from @/store; depends on useAssetStore from @/store/assets; depends on ensureProjectsBootstrapped from @/store/projects; depends on createBackgroundLayer, newId, newSlideGroup, and seedLocaleContent from @/store/helpers; depends on BASE_CANVAS_FORMAT from @/utils/canvasFormats; depends on QUICK_MOCKUPS, QUICK_SIZES, QuickMockup, QuickSize, and makeQuickLayers from @/utils/quickDesign
+ * [INPUT]: depends on nanoid from nanoid; depends on BackgroundLayer, BrowserChromeOptions, ImageLayer, Layer, PhoneLayer, PhoneModel, and SlideGroup from @/types; depends on getPhoneSpec from @/assets/mockups/specs; depends on useEditorStore from @/store; depends on useAssetStore from @/store/assets; depends on ensureProjectsBootstrapped from @/store/projects; depends on createBackgroundLayer, newId, newSlideGroup, and seedLocaleContent from @/store/helpers; depends on BASE_CANVAS_FORMAT from @/utils/canvasFormats; depends on QUICK_MOCKUPS, QUICK_SIZES, QuickMockup, QuickScreenshotFit, QuickSize, QuickTheme, and makeQuickLayers from @/utils/quickDesign
  * [OUTPUT]: exports StudioHandoffImage, StudioHandoffMode, StudioHandoffPayload, stageImagesIntoStudio(), and stageImagesIntoStudioAfterBootstrap()
- * [POS]: Quick-Workspace-to-Studio handoff bridge; registers browser-generated images in useAssetStore and stages an editable SlideGroup in useEditorStore with the primary layer selected
+ * [POS]: Quick-Workspace-to-Studio handoff bridge; registers browser-generated images in useAssetStore and stages an editable SlideGroup in useEditorStore preserving user mockup style, fit, scale, and browser chrome
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
 import { nanoid } from 'nanoid'
 import type {
   BackgroundLayer,
+  BrowserChromeOptions,
   ImageLayer,
   Layer,
   PhoneLayer,
@@ -30,7 +31,9 @@ import {
   QUICK_SIZES,
   makeQuickLayers,
   type QuickMockup,
+  type QuickScreenshotFit,
   type QuickSize,
+  type QuickTheme,
 } from '@/utils/quickDesign'
 
 export interface StudioHandoffImage {
@@ -48,6 +51,10 @@ export interface StudioHandoffPayload {
   mockupModel?: PhoneModel
   slideWidth?: number
   slideHeight?: number
+  theme?: QuickTheme
+  screenshotFit?: QuickScreenshotFit
+  scaleFactor?: number
+  browserChrome?: BrowserChromeOptions
 }
 
 interface RegisteredImage extends StudioHandoffImage {
@@ -145,12 +152,19 @@ function pickQuickSizeForModel(model: PhoneModel): QuickSize {
   return 'portrait'
 }
 
-function computeModelPlacement(model: PhoneModel, width: number, height: number) {
+function computeModelPlacement(
+  model: PhoneModel,
+  width: number,
+  height: number,
+  scaleFactor = 1,
+) {
   const spec = getPhoneSpec(model)
   const isLandscapeFrame = model.startsWith('browser-') || model.startsWith('screen-')
   const fitWidth = isLandscapeFrame ? 0.85 : 0.66
   const fitHeight = isLandscapeFrame ? 0.75 : 0.78
-  const scale = Math.min((width * fitWidth) / spec.frameWidth, (height * fitHeight) / spec.frameHeight, 1.5)
+  const baseScale = Math.min((width * fitWidth) / spec.frameWidth, (height * fitHeight) / spec.frameHeight, 1.5)
+  const clampedFactor = Number.isFinite(scaleFactor) ? Math.max(0.65, Math.min(1.15, scaleFactor)) : 1
+  const scale = baseScale * clampedFactor
   return {
     scale,
     x: Math.round((width - spec.frameWidth * scale) / 2),
@@ -184,7 +198,9 @@ function buildMockupGroupSpec(
     ? targetModel
     : (targetModel.startsWith('screen-') ? 'browser-chrome' : 'iphone-16-pro')
 
-  const quickLayers = makeQuickLayers([], baseSize, 'aurora', quickModel, 'cover')
+  const resolvedTheme: QuickTheme = payload.theme ?? 'aurora'
+  const resolvedFit: QuickScreenshotFit = payload.screenshotFit ?? 'cover'
+  const quickLayers = makeQuickLayers([], baseSize, resolvedTheme, quickModel, resolvedFit)
   const bgLayer = quickLayers[0] as BackgroundLayer
   const phoneLayer = quickLayers[1] as PhoneLayer
 
@@ -199,7 +215,7 @@ function buildMockupGroupSpec(
   }
 
   const spec = getPhoneSpec(targetModel)
-  const placement = computeModelPlacement(targetModel, slideWidth, slideHeight)
+  const placement = computeModelPlacement(targetModel, slideWidth, slideHeight, payload.scaleFactor)
   const primary = registered[0]
 
   const configuredPhone: PhoneLayer = {
@@ -209,7 +225,9 @@ function buildMockupGroupSpec(
     name: targetModel.startsWith('browser-') ? 'Browser Mockup' : spec.label,
     screenshotPath: primary.key,
     screenshotDataUrl: undefined,
+    screenshotFit: resolvedFit,
     showStatusBar: spec.statusBar.height > 0 && !targetModel.startsWith('browser-'),
+    ...(payload.browserChrome ? { browserChrome: { ...payload.browserChrome } } : {}),
   }
   const seededPhone = seedLocaleContent(configuredPhone, defaultLocale)
 

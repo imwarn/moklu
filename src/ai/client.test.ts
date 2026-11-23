@@ -209,6 +209,50 @@ describe('editImage', () => {
     ] }])
   })
 
+  it('extracts raw PNG base64 from OpenAI b64_json responses', async () => {
+    const rawPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='.padEnd(120, 'A')
+    const fetchMock = makeJsonFetchMock({ data: [{ b64_json: `${rawPngBase64.slice(0, 60)}\n${rawPngBase64.slice(60)}` }] })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await editImage({
+      provider: 'openai',
+      apiKey: 'sk-test',
+      model: 'gpt-image-1',
+      prompt: 'localize',
+      imageDataUrl: sourceImage,
+    })
+
+    expect(result).toBe(`data:image/png;base64,${rawPngBase64}`)
+  })
+
+  it('extracts raw PNG and WebP base64 from inline_data / inlineData fields', async () => {
+    const rawBase64 = 'A'.repeat(120)
+    vi.stubGlobal('fetch', makeJsonFetchMock({
+      candidates: [{ content: { parts: [{ inline_data: { mime_type: 'image/png', data: rawBase64 } }] } }],
+    }))
+    await expect(editImage({
+      provider: 'custom', apiKey: 'sk-test', baseUrl: 'https://custom.example.com/v1', model: 'image-model',
+      prompt: 'localize', imageDataUrl: sourceImage,
+    })).resolves.toBe(`data:image/png;base64,${rawBase64}`)
+
+    vi.stubGlobal('fetch', makeJsonFetchMock({
+      candidates: [{ content: { parts: [{ inlineData: { mimeType: 'image/webp', data: rawBase64 } }] } }],
+    }))
+    await expect(editImage({
+      provider: 'custom', apiKey: 'sk-test', baseUrl: 'https://custom.example.com/v1', model: 'image-model',
+      prompt: 'localize', imageDataUrl: sourceImage,
+    })).resolves.toBe(`data:image/webp;base64,${rawBase64}`)
+  })
+
+  it('does not treat arbitrary long base64-like text fields as generated images', async () => {
+    const arbitraryText = 'A'.repeat(140)
+    vi.stubGlobal('fetch', makeJsonFetchMock({ choices: [{ message: { content: arbitraryText } }] }))
+    await expect(editImage({
+      provider: 'custom', apiKey: 'sk-test', baseUrl: 'https://custom.example.com/v1', model: 'text-model',
+      prompt: 'localize', imageDataUrl: sourceImage,
+    })).rejects.toThrow(/did not return an image/i)
+  })
+
   it('surfaces model-reported image errors', async () => {
     vi.stubGlobal('fetch', makeJsonFetchMock({ choices: [{ message: { content: '{"error":"Cannot generate images."}' } }] }))
     await expect(editImage({

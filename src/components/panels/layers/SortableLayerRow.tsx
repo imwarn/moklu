@@ -1,8 +1,21 @@
+/**
+ * [INPUT]: depends on @dnd-kit/sortable, @dnd-kit/utilities, Layer/GroupLayer types, InlineEditableLabel, studioTokens from @/components/ui/studioTokens, and LAYER_ICON/ItemData from ./constants
+ * [OUTPUT]: exports SortableLayer, SortableChild, SortableGroup, and DragPreview with keyboard focus-within, touch visibility, ARIA state, and AA contrast
+ * [POS]: sortable layer tree row components inside src/components/panels/layers rendered by LayersPanel
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useSortable, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import type { Layer, GroupLayer } from '@/types'
 import { InlineEditableLabel } from '@/components/ui/InlineEditableLabel'
+import { STUDIO_COLORS, STUDIO_TEXT_MUTED_CLS } from '@/components/ui/studioTokens'
 import { LAYER_ICON, type ItemData } from './constants'
+
+const ROW_ACTION_VISIBILITY_CLS =
+  'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity'
+const CHILD_ACTION_VISIBILITY_CLS =
+  'opacity-0 group-hover/child:opacity-100 group-focus-within/child:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity'
+const ACTION_FOCUS_CLS = 'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#7c6ef6]'
 
 // ─── SortableLayer (regular top-level layers) ────────────────────────────────
 
@@ -27,6 +40,9 @@ export function SortableLayer({
     id: layer.id,
     data: { container: 'root' } satisfies ItemData,
   })
+  const showActions = isSelected || isMultiSelected
+  const actionVisibilityCls = showActions ? 'opacity-100' : ROW_ACTION_VISIBILITY_CLS
+  const lockVisibilityCls = showActions || layer.locked ? 'opacity-100' : ROW_ACTION_VISIBILITY_CLS
 
   return (
     <div
@@ -43,41 +59,48 @@ export function SortableLayer({
       onClick={(e) => { if (e.ctrlKey || e.metaKey) onCtrlSelect(layer.id); else onSelect(layer.id) }}
     >
       <button
+        type="button"
         {...attributes} {...listeners}
         aria-label={`Drag ${layer.name}`}
-        style={{ cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'none', color: '#6b6b7a' }}
-        className="w-4 h-5 flex items-center justify-center text-xs rounded hover:bg-[rgba(255,255,255,0.08)] shrink-0 opacity-0 group-hover:opacity-100"
+        style={{ cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'none', color: STUDIO_COLORS.textMuted }}
+        className={`w-4 h-5 flex items-center justify-center text-xs rounded hover:bg-[rgba(255,255,255,0.08)] shrink-0 ${actionVisibilityCls} ${ACTION_FOCUS_CLS}`}
         onClick={(e) => e.stopPropagation()}
-      >⠿</button>
+      ><span aria-hidden="true">⠿</span></button>
 
       <button
+        type="button"
         aria-label={layer.visible ? `Hide ${layer.name}` : `Show ${layer.name}`}
+        aria-pressed={layer.visible}
         onClick={(e) => { e.stopPropagation(); onVisibilityToggle(layer.id, !layer.visible) }}
-        className="w-5 h-5 flex items-center justify-center text-xs rounded hover:bg-[rgba(255,255,255,0.08)] shrink-0"
-        style={{ color: layer.visible ? '#e8e8f0' : '#3a3a4a' }}
-      >{layer.visible ? '◉' : '○'}</button>
+        className={`w-5 h-5 flex items-center justify-center text-xs rounded hover:bg-[rgba(255,255,255,0.08)] shrink-0 ${ACTION_FOCUS_CLS}`}
+        style={{ color: layer.visible ? STUDIO_COLORS.textPrimary : STUDIO_COLORS.textSubtle }}
+      ><span aria-hidden="true">{layer.visible ? '◉' : '○'}</span></button>
 
-      <span className="text-xs shrink-0" style={{ color: '#6b6b7a' }}>{LAYER_ICON[layer.type]}</span>
+      <span className="text-xs shrink-0" style={{ color: STUDIO_COLORS.textMuted }} aria-hidden="true">{LAYER_ICON[layer.type]}</span>
 
       <InlineEditableLabel
         value={layer.name}
         onCommit={onRename}
         className="flex-1 text-xs truncate"
-        style={{ color: isSelected ? '#e8e8f0' : '#b0b0c4', cursor: 'text' }}
+        style={{ color: isSelected ? STUDIO_COLORS.textPrimary : '#b0b0c4', cursor: 'text' }}
       />
 
       <button
+        type="button"
         aria-label={layer.locked ? `Unlock ${layer.name}` : `Lock ${layer.name}`}
+        aria-pressed={layer.locked}
         onClick={(e) => { e.stopPropagation(); onLockToggle(layer.id, !layer.locked) }}
-        className="w-5 h-5 flex items-center justify-center text-xs rounded hover:bg-[rgba(255,255,255,0.08)] shrink-0 opacity-0 group-hover:opacity-100"
-        style={{ color: layer.locked ? '#e8e8f0' : '#6b6b7a' }}
-      >{layer.locked ? '🔒' : '🔓'}</button>
+        className={`w-5 h-5 flex items-center justify-center text-xs rounded hover:bg-[rgba(255,255,255,0.08)] shrink-0 ${lockVisibilityCls} ${ACTION_FOCUS_CLS}`}
+        style={{ color: layer.locked ? STUDIO_COLORS.textPrimary : STUDIO_COLORS.textMuted }}
+      ><span aria-hidden="true">{layer.locked ? '🔒' : '🔓'}</span></button>
 
       <button
+        type="button"
         aria-label={`Open ${layer.name} layer menu`}
+        aria-haspopup="menu"
         onClick={(e) => { e.stopPropagation(); onMenuOpen(e, layer.id) }}
-        className="w-5 h-5 flex items-center justify-center text-xs rounded hover:bg-[rgba(255,255,255,0.08)] shrink-0 opacity-0 group-hover:opacity-100 text-[#6b6b7a] hover:text-[#e8e8f0]"
-      >⋮</button>
+        className={`w-5 h-5 flex items-center justify-center text-xs rounded hover:bg-[rgba(255,255,255,0.08)] shrink-0 ${actionVisibilityCls} ${ACTION_FOCUS_CLS} ${STUDIO_TEXT_MUTED_CLS} hover:text-[#e8e8f0]`}
+      ><span aria-hidden="true">⋮</span></button>
     </div>
   )
 }
@@ -97,6 +120,7 @@ export function SortableChild({ child, groupId, isSelected, onSelect, onRename }
     id: child.id,
     data: { container: 'group', groupId } satisfies ItemData,
   })
+  const dragVisibilityCls = isSelected ? 'opacity-100' : CHILD_ACTION_VISIBILITY_CLS
 
   return (
     <div
@@ -112,21 +136,22 @@ export function SortableChild({ child, groupId, isSelected, onSelect, onRename }
 
       {/* Drag handle */}
       <button
+        type="button"
         {...attributes} {...listeners}
         aria-label={`Drag ${child.name}`}
-        style={{ cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'none', color: '#6b6b7a' }}
-        className="w-3 h-4 flex items-center justify-center text-[10px] opacity-0 group-hover/child:opacity-100 shrink-0 ml-0.5 rounded hover:bg-[rgba(255,255,255,0.08)]"
+        style={{ cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'none', color: STUDIO_COLORS.textMuted }}
+        className={`w-3 h-4 flex items-center justify-center text-[10px] ${dragVisibilityCls} ${ACTION_FOCUS_CLS} shrink-0 ml-0.5 rounded hover:bg-[rgba(255,255,255,0.08)]`}
         onClick={(e) => e.stopPropagation()}
-      >⠿</button>
+      ><span aria-hidden="true">⠿</span></button>
 
-      <span className="text-xs shrink-0 w-4 text-center text-[#7d7898]">
+      <span className="text-xs shrink-0 w-4 text-center text-[#9494a8]" aria-hidden="true">
         {LAYER_ICON[child.type] ?? '◯'}
       </span>
       <InlineEditableLabel
         value={child.name}
         onCommit={onRename}
         className="flex-1 text-xs truncate"
-        style={{ color: isSelected ? '#e8e8f0' : '#6b6b7a', cursor: 'text' }}
+        style={{ color: isSelected ? STUDIO_COLORS.textPrimary : STUDIO_COLORS.textMuted, cursor: 'text' }}
       />
     </div>
   )
@@ -164,6 +189,9 @@ export function SortableGroup({
     id: layer.id,
     data: { container: 'root', isGroup: true } satisfies ItemData,
   })
+  const showActions = isSelected || isMultiSelected
+  const actionVisibilityCls = showActions ? 'opacity-100' : ROW_ACTION_VISIBILITY_CLS
+  const lockVisibilityCls = showActions || layer.locked ? 'opacity-100' : ROW_ACTION_VISIBILITY_CLS
 
   // Reverse children so panel-top = frontmost (consistent with top-level layers)
   const reversedChildren = [...layer.children].reverse()
@@ -188,35 +216,40 @@ export function SortableGroup({
         onClick={(e) => { if (e.ctrlKey || e.metaKey) onCtrlSelect(layer.id); else onSelect(layer.id) }}
       >
         <button
+          type="button"
           {...attributes} {...listeners}
           aria-label={`Drag ${layer.name}`}
-          style={{ cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'none', color: '#8d84f8' }}
-          className="w-4 h-5 flex items-center justify-center text-xs rounded hover:bg-[rgba(255,255,255,0.08)] shrink-0 opacity-0 group-hover:opacity-100"
+          style={{ cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'none', color: STUDIO_COLORS.textAccent }}
+          className={`w-4 h-5 flex items-center justify-center text-xs rounded hover:bg-[rgba(255,255,255,0.08)] shrink-0 ${actionVisibilityCls} ${ACTION_FOCUS_CLS}`}
           onClick={(e) => e.stopPropagation()}
-        >⠿</button>
+        ><span aria-hidden="true">⠿</span></button>
 
         <button
+          type="button"
           aria-label={layer.visible ? `Hide ${layer.name}` : `Show ${layer.name}`}
+          aria-pressed={layer.visible}
           onClick={(e) => { e.stopPropagation(); onVisibilityToggle(layer.id, !layer.visible) }}
-          className="w-5 h-5 flex items-center justify-center text-xs rounded hover:bg-[rgba(255,255,255,0.08)] shrink-0"
-          style={{ color: layer.visible ? '#e8e8f0' : '#3a3a4a' }}
-        >{layer.visible ? '◉' : '○'}</button>
+          className={`w-5 h-5 flex items-center justify-center text-xs rounded hover:bg-[rgba(255,255,255,0.08)] shrink-0 ${ACTION_FOCUS_CLS}`}
+          style={{ color: layer.visible ? STUDIO_COLORS.textPrimary : STUDIO_COLORS.textSubtle }}
+        ><span aria-hidden="true">{layer.visible ? '◉' : '○'}</span></button>
 
         <button
+          type="button"
           aria-label={isCollapsed ? `Expand ${layer.name}` : `Collapse ${layer.name}`}
+          aria-expanded={!isCollapsed}
           onClick={(e) => { e.stopPropagation(); onToggleCollapse() }}
           title={isCollapsed ? 'Expand group' : 'Collapse group'}
-          className="w-5 h-5 flex items-center justify-center text-[10px] rounded hover:bg-[rgba(255,255,255,0.08)] shrink-0 text-[#d8d2ff]"
+          className={`w-5 h-5 flex items-center justify-center text-[10px] rounded hover:bg-[rgba(255,255,255,0.08)] shrink-0 text-[#d8d2ff] ${ACTION_FOCUS_CLS}`}
           style={{ transition: 'transform 0.15s', transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}
-        >▼</button>
+        ><span aria-hidden="true">▼</span></button>
 
-        <span className="text-xs shrink-0 text-[#b6adff]">▥</span>
+        <span className="text-xs shrink-0 text-[#b6adff]" aria-hidden="true">▥</span>
 
         <InlineEditableLabel
           value={layer.name}
           onCommit={onRename}
           className="flex-1 text-xs truncate font-semibold"
-          style={{ color: isSelected ? '#e8e8f0' : '#d8d2ff', cursor: 'text' }}
+          style={{ color: isSelected ? STUDIO_COLORS.textPrimary : '#d8d2ff', cursor: 'text' }}
         />
 
         <span className="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] leading-none border border-[rgba(124,110,246,0.28)] bg-[rgba(124,110,246,0.12)] text-[#b6adff]">
@@ -224,17 +257,21 @@ export function SortableGroup({
         </span>
 
         <button
+          type="button"
           aria-label={layer.locked ? `Unlock ${layer.name}` : `Lock ${layer.name}`}
+          aria-pressed={layer.locked}
           onClick={(e) => { e.stopPropagation(); onLockToggle(layer.id, !layer.locked) }}
-          className="w-5 h-5 flex items-center justify-center text-xs rounded hover:bg-[rgba(255,255,255,0.08)] shrink-0 opacity-0 group-hover:opacity-100"
-          style={{ color: layer.locked ? '#e8e8f0' : '#8a84b6' }}
-        >{layer.locked ? '🔒' : '🔓'}</button>
+          className={`w-5 h-5 flex items-center justify-center text-xs rounded hover:bg-[rgba(255,255,255,0.08)] shrink-0 ${lockVisibilityCls} ${ACTION_FOCUS_CLS}`}
+          style={{ color: layer.locked ? STUDIO_COLORS.textPrimary : STUDIO_COLORS.textMuted }}
+        ><span aria-hidden="true">{layer.locked ? '🔒' : '🔓'}</span></button>
 
         <button
+          type="button"
           aria-label={`Open ${layer.name} layer menu`}
+          aria-haspopup="menu"
           onClick={(e) => { e.stopPropagation(); onMenuOpen(e, layer.id) }}
-          className="w-5 h-5 flex items-center justify-center text-xs rounded hover:bg-[rgba(255,255,255,0.08)] shrink-0 opacity-0 group-hover:opacity-100 text-[#8a84b6] hover:text-[#e8e8f0]"
-        >⋮</button>
+          className={`w-5 h-5 flex items-center justify-center text-xs rounded hover:bg-[rgba(255,255,255,0.08)] shrink-0 ${actionVisibilityCls} ${ACTION_FOCUS_CLS} ${STUDIO_TEXT_MUTED_CLS} hover:text-[#e8e8f0]`}
+        ><span aria-hidden="true">⋮</span></button>
       </div>
 
       {/* Children — nested SortableContext for intra-group reordering */}
@@ -270,8 +307,8 @@ export function SortableGroup({
 export function DragPreview({ label, icon }: { label: string; icon: string }) {
   return (
     <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg shadow-2xl border text-xs"
-      style={{ background: '#1e1e2a', borderColor: 'rgba(124,110,246,0.4)', color: '#e8e8f0', pointerEvents: 'none', minWidth: 120 }}>
-      <span style={{ color: '#7c6ef6' }}>{icon}</span>
+      style={{ background: '#1e1e2a', borderColor: 'rgba(124,110,246,0.4)', color: STUDIO_COLORS.textPrimary, pointerEvents: 'none', minWidth: 120 }}>
+      <span style={{ color: '#7c6ef6' }} aria-hidden="true">{icon}</span>
       <span className="truncate">{label}</span>
     </div>
   )

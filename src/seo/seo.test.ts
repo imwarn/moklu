@@ -43,6 +43,7 @@ import {
   renderStudioSkeleton,
 } from './ssg.ts'
 import { renderRouteMarkup } from './ssrEntry.ts'
+import { isToolNavActive } from './navHelpers.ts'
 
 const execFileAsync = promisify(execFile)
 
@@ -318,15 +319,77 @@ describe('SEO UI chrome SSR rendering', () => {
       )
 
       const copy = getRouteCopy(route.locale, route.slug)
+      const ui = getUiLabels(route.locale)
       expect(headerHtml).toContain('Moklu')
+      expect(headerHtml).toContain(`href="#main-content"`)
+      expect(headerHtml).toContain(escapeHtml(ui.skipToContent))
+      expect(headerHtml).toContain(`aria-label="${escapeHtml(ui.primaryNavAria)}"`)
+      expect(headerHtml).toContain('aria-controls="mobile-tool-nav"')
       expect(headerHtml).toContain(`href="${buildLocalizedPath(route.locale, 'studio')}"`)
       expect(sectionsHtml).toContain(escapeHtml(copy.steps[0].title))
       expect(sectionsHtml).toContain(escapeHtml(copy.faqs[0].question))
+      expect(sectionsHtml).not.toContain('dark:divide-white/10')
+      expect(sectionsHtml).toContain(theme === 'dark' ? 'divide-white/10' : 'divide-zinc-200/70')
       expect(footerHtml).toMatch(/hreflang="en"/i)
       expect(footerHtml).toMatch(/hreflang="zh"/i)
       expect(footerHtml).toMatch(/hreflang="ja"/i)
       expect(footerHtml).toMatch(/hreflang="ko"/i)
     }
+  })
+
+  it('computes active tool navigation state consistently for home, tool, and studio routes', () => {
+    const home = resolvePathname('/')
+    expect(isToolNavActive(home, 'mockup')).toBe(true)
+    expect(isToolNavActive(home, 'merge')).toBe(false)
+
+    const zhHome = resolvePathname('/zh')
+    expect(isToolNavActive(zhHome, 'mockup')).toBe(true)
+    expect(isToolNavActive(zhHome, 'id-card')).toBe(false)
+
+    const merge = resolvePathname('/zh/stitch-images-vertically')
+    expect(isToolNavActive(merge, 'merge')).toBe(true)
+    expect(isToolNavActive(merge, 'mockup')).toBe(false)
+
+    const studio = resolvePathname('/studio')
+    expect(isToolNavActive(studio, 'mockup')).toBe(false)
+    expect(isToolNavActive(studio, 'merge')).toBe(false)
+  })
+
+  it('renders below-the-fold Pro CTA in SeoLandingSections and emerald active Pro state', () => {
+    const noop = () => {}
+    const route = resolvePathname('/zh/browser-mockup')
+    const ui = getUiLabels('zh')
+
+    const freeSections = renderToStaticMarkup(
+      createElement(SeoLandingSections, {
+        route,
+        theme: 'light',
+        onNavigate: noop,
+        onOpenProModal: noop,
+        isPro: false,
+      }),
+    )
+    expect(freeSections).toContain(escapeHtml(ui.studioBannerProAction))
+    expect(freeSections).toContain('border-amber-300/90')
+
+    const proSections = renderToStaticMarkup(
+      createElement(SeoLandingSections, {
+        route,
+        theme: 'dark',
+        onNavigate: noop,
+        onOpenProModal: noop,
+        isPro: true,
+      }),
+    )
+    expect(proSections).toContain(escapeHtml(ui.proActive))
+    expect(proSections).toContain('border-emerald-500/40')
+  })
+
+  it('aligns Tailwind v4 dark variant to data-theme="dark" and defines light/dark scrollbars in src/index.css', async () => {
+    const css = await readFile(path.resolve('src/index.css'), 'utf8')
+    expect(css).toContain('@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));')
+    expect(css).toContain('::-webkit-scrollbar-thumb { background: rgba(24, 24, 27, 0.22);')
+    expect(css).toContain('html[data-theme="dark"]::-webkit-scrollbar-thumb')
   })
 })
 

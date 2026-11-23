@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on @playwright/test, node:fs/promises, and node:zlib
+ * [OUTPUT]: Playwright live acceptance suite (UI-01..07, DATA-05..06, OPS-03) targeting Studio at /studio
+ * [POS]: live acceptance E2E spec inside tests/live
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { expect, test } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { inflateSync } from 'node:zlib'
@@ -93,7 +99,7 @@ test.describe('v0.12 live acceptance', () => {
     const context = await browser.newContext({ viewport: { width: 393, height: 852 } })
     const page = await context.newPage()
     try {
-      await page.goto('/', { waitUntil: 'domcontentloaded' })
+      await page.goto('/studio', { waitUntil: 'domcontentloaded' })
       const design = await openQuickDesign(page)
       const sample = await syntheticScreenshot(page)
       await design.locator('input[type=file]').setInputFiles({
@@ -150,7 +156,7 @@ test.describe('v0.12 live acceptance', () => {
 
   test('UI-02 add-format menu stays inside the mobile viewport', async ({ page }) => {
     await page.setViewportSize({ width: 393, height: 852 })
-    await page.goto('/', { waitUntil: 'domcontentloaded' })
+    await page.goto('/studio', { waitUntil: 'domcontentloaded' })
     const addFormat = page.getByRole('button', { name: 'Add a canvas format' })
     await expect(addFormat).toBeVisible()
     await addFormat.click()
@@ -181,7 +187,7 @@ test.describe('v0.12 live acceptance', () => {
   test('UI-03 sidebars and header controls stay reachable at tablet and desktop widths', async ({ page }) => {
     for (const [width, height] of [[820, 1180], [1440, 900], [393, 852]]) {
       await page.setViewportSize({ width, height })
-      await page.goto('/', { waitUntil: 'domcontentloaded' })
+      await page.goto('/studio', { waitUntil: 'domcontentloaded' })
       // Below 1100px the panels are collapsible; at/above it they are pinned and
       // no toggle is rendered, so only assert the toggles where they exist.
       const layers = page.getByRole('button', { name: 'Toggle layers panel' })
@@ -224,7 +230,7 @@ test.describe('v0.12 live acceptance', () => {
   test('UI-04 keyboard focus is trapped in dialogs and Escape restores it', async ({ page }) => {
     test.setTimeout(180_000)
     await page.setViewportSize({ width: 1440, height: 900 })
-    await page.goto('/', { waitUntil: 'domcontentloaded' })
+    await page.goto('/studio', { waitUntil: 'domcontentloaded' })
     await expect(page.getByRole('button', { name: /Quick Design/ }).first()).toBeVisible()
     const dialogs = [
       { opener: page.getByRole('button', { name: /Quick Design/ }).first(), name: 'Quick Design' },
@@ -262,7 +268,7 @@ test.describe('v0.12 live acceptance', () => {
     const context = await browser.newContext({ acceptDownloads: true, viewport: { width: 1280, height: 900 } })
     const page = await context.newPage()
     try {
-      await page.goto('/', { waitUntil: 'domcontentloaded' })
+      await page.goto('/studio', { waitUntil: 'domcontentloaded' })
       for (const [name, shape] of [['landscape', 'wide'], ['portrait', 'portrait']]) {
         const design = await openQuickDesign(page)
         const sample = await syntheticScreenshot(page)
@@ -298,7 +304,7 @@ test.describe('v0.12 live acceptance', () => {
 
   test('UI-07 narrow toolbar keeps the PNG export reachable', async ({ page }) => {
     await page.setViewportSize({ width: 393, height: 852 })
-    await page.goto('/', { waitUntil: 'domcontentloaded' })
+    await page.goto('/studio', { waitUntil: 'domcontentloaded' })
     // The app mounts behind a lazy-loading overlay (z-[10000]); probing geometry
     // before it disappears hit-tests the overlay, not the toolbar.
     await expect(page.locator('.konvajs-content').first()).toBeVisible({ timeout: 30_000 })
@@ -346,7 +352,7 @@ test.describe('v0.12 live acceptance', () => {
     const context = await browser.newContext({ acceptDownloads: true, viewport: { width: 1280, height: 900 } })
     const page = await context.newPage()
     try {
-      await page.goto('/', { waitUntil: 'domcontentloaded' })
+      await page.goto('/studio', { waitUntil: 'domcontentloaded' })
       const design = await openQuickDesign(page)
       await design.getByRole('button', { name: /Start with Empty Mockup|Apply & Edit Design/ }).first().click()
       await expect(page.locator('.konvajs-content').first()).toBeVisible()
@@ -407,7 +413,7 @@ test.describe('v0.12 live acceptance', () => {
     const context = await browser.newContext({ viewport: { width: 1280, height: 900 } })
     const page = await context.newPage()
     try {
-      await page.goto('/', { waitUntil: 'domcontentloaded' })
+      await page.goto('/studio', { waitUntil: 'domcontentloaded' })
       const design = await openQuickDesign(page)
       const sample = await syntheticScreenshot(page)
       await design.locator('input[type=file]').setInputFiles({
@@ -461,7 +467,7 @@ test.describe('v0.12 live acceptance', () => {
   test('OPS-03 editor makes no third-party requests carrying screenshot data', async ({ page }) => {
     const requests = []
     page.on('request', (request) => requests.push({ url: request.url(), method: request.method(), type: request.resourceType() }))
-    await page.goto('/', { waitUntil: 'domcontentloaded' })
+    await page.goto('/studio', { waitUntil: 'domcontentloaded' })
     const design = await openQuickDesign(page)
     const sample = await syntheticScreenshot(page)
     await design.locator('input[type=file]').setInputFiles({

@@ -1,4 +1,11 @@
+/**
+ * [INPUT]: depends on effectiveLocalizationMode from @/utils/locale, LocalizableRow from ./types, getFileLabel from ./helpers, and useStudioLocale from @/i18n
+ * [OUTPUT]: exports ImageOverrideCell localized screenshot/image cell editor across EN/ZH/JA/KO
+ * [POS]: image override cell component inside SlideGroupSection within src/pages/localization
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { effectiveLocalizationMode } from '@/utils/locale'
+import { useStudioLocale } from '@/i18n'
 import type { LocalizableRow } from './types'
 import { getFileLabel } from './helpers'
 
@@ -21,6 +28,9 @@ export function ImageOverrideCell({
   onUpload,
   onClear,
 }: ImageOverrideCellProps) {
+  const { t } = useStudioLocale()
+  const tl = t.modals.localization
+  const fileLabels = { noImage: tl.noImage, embeddedImage: tl.embeddedImage }
   const override = row.layer.localeContent?.[locale]
   const isDefaultLocale = locale === defaultLocale
   const isActiveColumn = locale === activeLocale
@@ -48,14 +58,14 @@ export function ImageOverrideCell({
       >
         {previewSrc ? (
           <div className="flex items-center gap-3">
-            <img src={previewSrc} alt="base" className="h-12 w-9 rounded-lg border border-white/10 object-cover shrink-0" />
+            <img src={previewSrc} alt={tl.baseImageAlt} className="h-12 w-9 rounded-lg border border-white/10 object-cover shrink-0" />
             <div className="min-w-0 flex-1">
-              <div className="truncate text-xs text-[#ecebfa]">{getFileLabel(row.defaultImageRef)}</div>
+              <div className="truncate text-xs text-[#ecebfa]">{getFileLabel(row.defaultImageRef, fileLabels)}</div>
               <div className="mt-1.5 flex items-center justify-between gap-2">
                 <button type="button" onClick={onUpload} className="text-[10px] text-[#9d90f8] hover:text-white transition">
-                  Change
+                  {tl.change}
                 </button>
-                <span className="text-[10px] text-[#6b6b7a]">Base image</span>
+                <span className="text-[10px] text-[#6b6b7a]">{tl.baseImage}</span>
               </div>
             </div>
           </div>
@@ -66,9 +76,9 @@ export function ImageOverrideCell({
               onClick={onUpload}
               className="rounded-lg border border-[rgba(124,110,246,0.4)] bg-[rgba(124,110,246,0.1)] px-3 py-1.5 text-xs font-medium text-[#c5befd] transition hover:bg-[rgba(124,110,246,0.2)]"
             >
-              + Upload
+              {tl.upload}
             </button>
-            <span className="text-[10px] text-[#6b6b7a]">Base image</span>
+            <span className="text-[10px] text-[#6b6b7a]">{tl.baseImage}</span>
           </div>
         )}
       </div>
@@ -78,7 +88,7 @@ export function ImageOverrideCell({
   if (isSkipped) {
     return (
       <div className="min-h-[80px] rounded-xl border border-dashed border-[rgba(239,68,68,0.2)] bg-[rgba(239,68,68,0.04)] px-4 py-3 flex items-center justify-center mb-3">
-        <span className="text-xs text-[#f87171]">— skipped —</span>
+        <span className="text-xs text-[#f87171]">{tl.skippedCell}</span>
       </div>
     )
   }
@@ -105,15 +115,15 @@ export function ImageOverrideCell({
           <div className="min-w-0 flex-1">
             <div className="truncate text-xs text-[#ecebfa]">
               {row.layerType === 'phone'
-                ? getFileLabel(override?.screenshotPath ?? override?.screenshotDataUrl)
-                : getFileLabel(override?.src)}
+                ? getFileLabel(override?.screenshotPath ?? override?.screenshotDataUrl, fileLabels)
+                : getFileLabel(override?.src, fileLabels)}
             </div>
             <div className="flex gap-2 mt-1.5">
               <button type="button" onClick={onUpload} className="text-[10px] text-[#9d90f8] hover:text-white transition">
-                Change
+                {tl.change}
               </button>
               <button type="button" onClick={onClear} className="text-[10px] text-[#f87171] hover:text-white transition">
-                × Clear
+                {tl.clearCell}
               </button>
             </div>
           </div>
@@ -125,9 +135,9 @@ export function ImageOverrideCell({
             onClick={onUpload}
             className="rounded-lg border border-[rgba(124,110,246,0.4)] bg-[rgba(124,110,246,0.1)] px-3 py-1.5 text-xs font-medium text-[#c5befd] transition hover:bg-[rgba(124,110,246,0.2)]"
           >
-            + Upload
+            {tl.upload}
           </button>
-          <span className="text-xs text-amber-400/70">⚠ Missing</span>
+          <span className="text-xs text-amber-400/70">{tl.missingBadge}</span>
         </div>
       )}
     </div>

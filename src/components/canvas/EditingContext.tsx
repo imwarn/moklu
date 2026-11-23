@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on react, react-dom, zustand useShallow, useEditorStore, canvasFormats, locale, scopedEditingIndicator, EditingContextChrome, CreateFormatLayoutModal, ContentSyncModal, ConfirmDialog, and useStudioLocale from @/i18n
- * [OUTPUT]: exports EditingContextBar and EditingContextAlert with localized Format, Base, Locale, Actions, and scoped editing banners
+ * [INPUT]: depends on react, react-dom, zustand useShallow, useEditorStore, canvasFormats, locale, scopedEditingIndicator, EditingContextChrome, CreateFormatLayoutModal, ContentSyncModal, ConfirmDialog, studioTokens from @/components/ui/studioTokens, and useStudioLocale from @/i18n
+ * [OUTPUT]: exports EditingContextBar and EditingContextAlert with WCAG AA contrast and localized Format, Base, Locale, Actions, and scoped editing banners
  * [POS]: persistent top canvas-context bar above StageCanvas inside src/components/canvas
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useShallow } from 'zustand/react/shallow'
 import { useEditorStore } from '@/store'
+import { STUDIO_TEXT_MUTED_CLS, STUDIO_TEXT_SUBTLE_CLS } from '@/components/ui/studioTokens'
 import type { BuiltInFormatId, CanvasFormatId, CustomFormatId } from '@/types'
 import {
   CANVAS_FORMAT_PRESETS,
@@ -232,7 +233,7 @@ export function EditingContextBar() {
   // occupied, so removing it shifts no text.  The sliding bar overlays this strip.
   const tabClass = (active: boolean) =>
     `flex h-full shrink-0 items-center gap-1 whitespace-nowrap border-b-2 border-transparent px-2.5 text-[11px] font-medium transition-colors ${
-      active ? 'text-white' : 'text-[#6b6b7a] hover:text-[#e8e8f0]'
+      active ? 'text-white' : `${STUDIO_TEXT_MUTED_CLS} hover:text-[#e8e8f0]`
     }`
   // Base is deliberately rendered inside EVERY family strip: `selectFormatViewGroups`
   // scopes the base view to that family's groups, so Base is per-family in effect.
@@ -254,8 +255,8 @@ export function EditingContextBar() {
       <button onClick={() => setActiveCanvasFormat(formatId)} data-tab-key={formatId} className={tabClass(isActive)} title={`${label} format · ${count} layout adjustment${count !== 1 ? 's' : ''}`}>
         {label}{count > 0 && <span className="text-[9px] font-bold text-[#fbbf24]">●{count}</span>}
       </button>
-      <div className="pointer-events-none -ml-0.5 flex h-full w-4 shrink-0 items-center justify-center opacity-0 transition-opacity group-hover/tab:pointer-events-auto group-hover/tab:opacity-100">
-        <button onClick={() => setDeleteTarget(formatId)} className="flex h-4 w-4 items-center justify-center rounded text-xs text-[#6b6b7a] transition-colors hover:bg-[rgba(248,113,113,0.1)] hover:text-[#f87171]" title={`Delete ${label} layout`} aria-label={`Delete ${label} layout`}>×</button>
+      <div className="pointer-events-none -ml-0.5 flex h-full w-4 shrink-0 items-center justify-center opacity-0 transition-opacity group-hover/tab:pointer-events-auto group-hover/tab:opacity-100 group-focus-within/tab:pointer-events-auto group-focus-within/tab:opacity-100">
+        <button type="button" onClick={() => setDeleteTarget(formatId)} className={`flex h-4 w-4 items-center justify-center rounded text-xs ${STUDIO_TEXT_MUTED_CLS} transition-colors hover:bg-[rgba(248,113,113,0.1)] hover:text-[#f87171]`} title={`Delete ${label} layout`} aria-label={`Delete ${label} layout`}>×</button>
       </div>
     </div>
   }
@@ -264,17 +265,19 @@ export function EditingContextBar() {
       <button onClick={() => setActiveCanvasFormat(formatId)} data-tab-key={formatId} className={tabClass(activeCanvasFormat === formatId)}>
         {getFormatLabel(formatId, settings.customFormats)}
       </button>
-      <button onClick={() => removeCustomFormat(formatId)} className="-ml-2 pr-1 text-xs text-[#6b6b7a] opacity-0 transition-opacity group-hover/tab:opacity-100 hover:text-[#f87171]" title="Remove format">×</button>
+      <button type="button" onClick={() => removeCustomFormat(formatId)} className={`-ml-2 pr-1 text-xs ${STUDIO_TEXT_MUTED_CLS} opacity-0 transition-opacity group-hover/tab:opacity-100 group-focus-within/tab:opacity-100 focus-visible:opacity-100 hover:text-[#f87171]`} title="Remove format" aria-label="Remove format">×</button>
     </div>
   )
   const renderFormatAddButton = () => (
     <div className="relative ml-1 flex h-full shrink-0 items-center" ref={dropdownRef}>
       <button
+        type="button"
         onClick={openFormatMenu}
-        className="flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-sm text-[#6b6b7a] transition-colors hover:border-[rgba(245,158,11,0.18)] hover:bg-[rgba(245,158,11,0.07)] hover:text-[#fbbf24]"
+        className={`flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-sm ${STUDIO_TEXT_MUTED_CLS} transition-colors hover:border-[rgba(245,158,11,0.18)] hover:bg-[rgba(245,158,11,0.07)] hover:text-[#fbbf24]`}
         title={t.context.addFormatTitle}
+        aria-label={t.context.addFormatTitle}
       >
-        +
+        <span aria-hidden="true">+</span>
       </button>
     </div>
   )
@@ -286,7 +289,7 @@ export function EditingContextBar() {
     if (familyFormats.length === 0) return null
     return (
       <div key={family} className="pb-1.5 last:pb-0">
-        <p className="px-3 pb-1 pt-2 text-[8px] font-semibold uppercase tracking-[0.2em] text-[#575461]">{FORMAT_FAMILY_LABELS[family]}</p>
+        <p className={`px-3 pb-1 pt-2 text-[8px] font-semibold uppercase tracking-[0.2em] ${STUDIO_TEXT_SUBTLE_CLS}`}>{FORMAT_FAMILY_LABELS[family]}</p>
         {familyFormats.map((formatId) => {
           const { width, height } = getCanvasFormat(formatId)
           return (
@@ -458,7 +461,7 @@ export function EditingContextBar() {
             )}
             {showCustomInput && (
               <div className="absolute left-0 top-full z-50 mt-1 min-w-[210px] max-w-[calc(100vw-8px)] rounded-lg border border-[rgba(255,255,255,0.1)] bg-[#1e1e2a] p-3 shadow-xl">
-                <p className="mb-2 text-[10px] text-[#6b6b7a]">{t.context.customCanvasFormat}</p>
+                <p className={`mb-2 text-[10px] ${STUDIO_TEXT_MUTED_CLS}`}>{t.context.customCanvasFormat}</p>
                 <input
                   type="text"
                   placeholder={t.context.labelOptional}
@@ -474,7 +477,7 @@ export function EditingContextBar() {
                     onChange={(event) => setCustomW(event.target.value)}
                     className="w-20 rounded border border-[rgba(255,255,255,0.1)] bg-[#0f0f13] px-2 py-1 text-xs text-[#e8e8f0] [appearance:textfield] focus:outline-none"
                   />
-                  <span className="text-xs text-[#6b6b7a]">×</span>
+                  <span className={`text-xs ${STUDIO_TEXT_MUTED_CLS}`}>×</span>
                   <input
                     type="number"
                     placeholder="H"
@@ -497,7 +500,7 @@ export function EditingContextBar() {
                   >
                     {t.common.apply}
                   </button>
-                  <button onClick={clearCustomForm} className="px-2 py-1 text-xs text-[#6b6b7a] hover:text-[#e8e8f0]">{t.common.cancel}</button>
+                  <button onClick={clearCustomForm} className={`px-2 py-1 text-xs ${STUDIO_TEXT_MUTED_CLS} hover:text-[#e8e8f0]`}>{t.common.cancel}</button>
                 </div>
               </div>
             )}
@@ -560,19 +563,19 @@ export function EditingContextBar() {
                 {isFormatScoped && <>
                   <div className="border-b border-[rgba(255,255,255,0.08)] px-3 py-2">
                     <p className="text-[9px] font-semibold uppercase tracking-[0.15em] text-[#fbbf24]">{formatLabel} {t.context.formatActionsSuffix}</p>
-                    <p className="mt-0.5 text-[10px] text-[#6b6b7a]">{formatCount}</p>
+                    <p className={`mt-0.5 text-[10px] ${STUDIO_TEXT_MUTED_CLS}`}>{formatCount}</p>
                   </div>
                   <button className={actionItemClass} onClick={() => runFormatAction(resetActiveFormatLayout)}>
                     {t.context.resetFormatLayout}
-                    <span className="mt-0.5 block text-[10px] text-[#6b6b7a]">{t.context.resetFormatLayoutDesc}</span>
+                    <span className={`mt-0.5 block text-[10px] ${STUDIO_TEXT_MUTED_CLS}`}>{t.context.resetFormatLayoutDesc}</span>
                   </button>
                   <button className={actionItemClass} onClick={() => runFormatAction(shareActiveFormatOwnedLayers)}>
                     {t.context.makeFormatLayersShared}
-                    <span className="mt-0.5 block text-[10px] text-[#6b6b7a]">{t.context.makeFormatLayersSharedDesc}</span>
+                    <span className={`mt-0.5 block text-[10px] ${STUDIO_TEXT_MUTED_CLS}`}>{t.context.makeFormatLayersSharedDesc}</span>
                   </button>
                   <button className={actionItemClass} onClick={() => runFormatAction(resetActiveFormatVisibility)}>
                     {t.context.resetFormatVisibility}
-                    <span className="mt-0.5 block text-[10px] text-[#6b6b7a]">{t.context.resetFormatVisibilityDesc}</span>
+                    <span className={`mt-0.5 block text-[10px] ${STUDIO_TEXT_MUTED_CLS}`}>{t.context.resetFormatVisibilityDesc}</span>
                   </button>
                   <div className="h-px bg-[rgba(255,255,255,0.08)]" />
                   <button className={actionItemClass} onClick={handlePromoteLayout}>
@@ -584,7 +587,7 @@ export function EditingContextBar() {
                   <section className="mt-1 border-t border-[rgba(255,255,255,0.12)]" aria-label={`${formatLabel} × ${localeLabel}`}>
                     <div className="border-b border-[rgba(255,255,255,0.08)] px-3 py-2">
                       <p className="text-[9px] font-semibold uppercase tracking-[0.15em] text-[#22d3c5]">{isFormatScoped ? `${formatLabel} × ${localeLabel}` : `${localeLabel} · ${t.context.base}`}</p>
-                      <p className="mt-0.5 text-[10px] text-[#6b6b7a]">{localeCount}</p>
+                      <p className={`mt-0.5 text-[10px] ${STUDIO_TEXT_MUTED_CLS}`}>{localeCount}</p>
                     </div>
                     <button className={actionItemClass} onClick={handleLocaleAdjustReset}>
                       {isFormatScoped ? t.context.resetPairingLayout : t.context.resetLocaleBaseLayout}
@@ -601,7 +604,7 @@ export function EditingContextBar() {
                     </div>
                     <button className={actionItemClass} onClick={() => { setContentSyncOpen(true); setActionsOpen(false) }}>
                       {t.context.bringContentFrom}
-                      <span className="mt-0.5 block text-[10px] text-[#6b6b7a]">{t.context.bringContentFromDesc}</span>
+                      <span className={`mt-0.5 block text-[10px] ${STUDIO_TEXT_MUTED_CLS}`}>{t.context.bringContentFromDesc}</span>
                     </button>
                   </section>
                 )}

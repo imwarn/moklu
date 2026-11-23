@@ -1,10 +1,11 @@
 /**
- * [INPUT]: depends on react, canvasUtils from ../canvasUtils, strings from ../i18n, themeTokens from ../themeTokens, UI primitives from ../uiPrimitives, and WorkspaceToolPanelProps from ../types
- * [OUTPUT]: exports CompressPreviewModal and CompressQuickTool for batch offline PNG/JPEG/WebP compression with per-item remove, click-to-preview lightbox, and ZIP export
+ * [INPUT]: depends on react, ModalShell from @/components/ui/ModalShell, canvasUtils from ../canvasUtils, strings from ../i18n, themeTokens from ../themeTokens, UI primitives from ../uiPrimitives, useDebouncedValue from ../useDebouncedValue, and WorkspaceToolPanelProps from ../types
+ * [OUTPUT]: exports CompressPreviewModal and CompressQuickTool for batch offline PNG/JPEG/WebP compression with focus-trapped lightbox preview, debounced quality, per-item remove, and error-handled ZIP export
  * [POS]: local batch image compressor panel inside src/workspace/tools; delegates compression and ZIP packaging to injected engines
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 import { useCallback, useEffect, useState } from 'react'
+import { ModalShell } from '@/components/ui/ModalShell'
 import { createDemoImageInput, formatBytes, readFileAsImageInput, triggerBlobDownload } from '../canvasUtils'
 import { getWorkspaceStrings } from '../i18n'
 import { getWorkspaceThemeTokens } from '../themeTokens'
@@ -16,7 +17,8 @@ import type {
   WorkspaceTheme,
   WorkspaceToolPanelProps,
 } from '../types'
-import { DropZone, SegmentedControl, SliderField } from '../uiPrimitives'
+import { DropZone, PreviewBusyOverlay, SegmentedControl, SliderField } from '../uiPrimitives'
+import { useDebouncedValue } from '../useDebouncedValue'
 
 const MAX_WIDTH_OPTIONS = [
   { value: '0', label: 'Original' },
@@ -44,65 +46,60 @@ export function CompressPreviewModal({
   const tokens = getWorkspaceThemeTokens(theme)
   const pct = Math.round(item.savedRatio * 100)
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [onClose])
-
-  return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={item.filename}
-      data-testid="compress-preview-modal"
-      onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-xs"
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className={`flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border p-4 shadow-2xl ${tokens.card}`}
-      >
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className={`truncate text-sm font-bold ${tokens.text}`}>{item.filename}</p>
-            <p className={`text-xs tabular-nums ${tokens.textSubtle}`}>
-              {item.width} × {item.height} · {formatBytes(item.originalBytes)} → {formatBytes(item.outputBytes)} (
-              {pct >= 0 ? `-${pct}%` : `+${Math.abs(pct)}%`})
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => onDownload(item)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${tokens.buttonPrimary}`}
-            >
-              {s.common.downloadImage}
-            </button>
-            <button
-              type="button"
-              data-testid="compress-preview-close"
-              aria-label={s.common.closePreview}
-              onClick={onClose}
-              className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold ${tokens.buttonSecondary}`}
-            >
-              ×
-            </button>
-          </div>
-        </div>
-
-        <div className={`flex flex-1 items-center justify-center overflow-auto rounded-xl border p-3 ${tokens.cardMuted}`}>
-          <img
-            src={item.dataUrl}
-            alt={item.filename}
-            className="max-h-[68vh] max-w-full rounded-lg object-contain"
-          />
-        </div>
+  const header = (
+    <div className="mb-3 flex items-center justify-between gap-3">
+      <div className="min-w-0">
+        <p className={`truncate text-sm font-bold ${tokens.text}`}>{item.filename}</p>
+        <p className={`text-xs tabular-nums ${tokens.textSubtle}`}>
+          {item.width} × {item.height} · {formatBytes(item.originalBytes)} → {formatBytes(item.outputBytes)} (
+          {pct >= 0 ? `-${pct}%` : `+${Math.abs(pct)}%`})
+        </p>
+      </div>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => onDownload(item)}
+          className={`min-h-8 rounded-lg px-3 py-1.5 text-xs font-semibold ${tokens.focusRing} ${tokens.buttonPrimary}`}
+        >
+          {s.common.downloadImage}
+        </button>
+        <button
+          type="button"
+          data-testid="compress-preview-close"
+          aria-label={s.common.closePreview}
+          onClick={onClose}
+          className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-sm font-semibold ${tokens.focusRing} ${tokens.buttonSecondary}`}
+        >
+          ×
+        </button>
       </div>
     </div>
+  )
+
+  return (
+    <ModalShell
+      open
+      onClose={onClose}
+      title={item.filename}
+      header={header}
+      showCloseButton={false}
+      maxWidth="max-w-3xl"
+      backdropClassName="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/70 p-4 backdrop-blur-xs"
+      backdropStyle={{}}
+      panelClassName={`flex max-h-[90vh] w-full flex-col overflow-hidden rounded-2xl border p-4 shadow-2xl ${tokens.card}`}
+      panelStyle={{}}
+    >
+      <div
+        data-testid="compress-preview-modal"
+        className={`flex flex-1 items-center justify-center overflow-auto rounded-xl border p-3 ${tokens.cardMuted}`}
+      >
+        <img
+          src={item.dataUrl}
+          alt={item.filename}
+          className="max-h-[68vh] max-w-full rounded-lg object-contain"
+        />
+      </div>
+    </ModalShell>
   )
 }
 
@@ -122,7 +119,12 @@ export function CompressQuickTool({
   const [results, setResults] = useState<WorkspaceCompressItem[]>([])
   const [previewId, setPreviewId] = useState<string | null>(null)
   const [processing, setProcessing] = useState(false)
+  const [zipping, setZipping] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const debouncedQualityPercent = useDebouncedValue(qualityPercent)
+  const hasPendingParams = images.length > 0 && debouncedQualityPercent !== qualityPercent
+  const isBusy = processing || hasPendingParams
 
   const handleFiles = useCallback(async (files: File[]) => {
     setError(null)
@@ -130,9 +132,9 @@ export function CompressQuickTool({
       const loaded = await Promise.all(files.map((file) => readFileAsImageInput(file)))
       setImages((prev) => [...prev, ...loaded])
     } catch {
-      setError('Unable to decode one or more images.')
+      setError(s.common.decodeError)
     }
-  }, [])
+  }, [s.common.decodeError])
 
   const handleLoadDemo = () => {
     setError(null)
@@ -158,12 +160,12 @@ export function CompressQuickTool({
         const parsedMaxWidth = Number(maxWidthKey)
         const compressed = await engines.compress(images, {
           format,
-          quality: qualityPercent / 100,
+          quality: debouncedQualityPercent / 100,
           ...(parsedMaxWidth > 0 ? { maxWidth: parsedMaxWidth } : {}),
         })
         if (!cancelled) setResults(compressed)
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Compression failed')
+        if (!cancelled) setError(err instanceof Error && err.message ? err.message : s.compress.compressError)
       } finally {
         if (!cancelled) setProcessing(false)
       }
@@ -172,7 +174,7 @@ export function CompressQuickTool({
     return () => {
       cancelled = true
     }
-  }, [images, format, qualityPercent, maxWidthKey, engines])
+  }, [images, format, debouncedQualityPercent, maxWidthKey, engines, s.compress.compressError])
 
   const activeResults = images.length > 0 ? results : []
   const previewItem = previewId ? activeResults.find((item) => item.id === previewId) ?? null : null
@@ -181,11 +183,19 @@ export function CompressQuickTool({
   const totalSavedPct = totalOriginal > 0 ? Math.round(((totalOriginal - totalOutput) / totalOriginal) * 100) : 0
 
   const handleDownloadAllZip = async () => {
-    if (activeResults.length === 0) return
-    const zipBlob = await engines.packZip(
-      activeResults.map((item) => ({ filename: item.filename, blob: item.blob })),
-    )
-    triggerBlobDownload(zipBlob, `moklu-compressed-${activeResults.length}.zip`)
+    if (activeResults.length === 0 || zipping) return
+    setZipping(true)
+    setError(null)
+    try {
+      const zipBlob = await engines.packZip(
+        activeResults.map((item) => ({ filename: item.filename, blob: item.blob })),
+      )
+      triggerBlobDownload(zipBlob, `moklu-compressed-${activeResults.length}.zip`)
+    } catch (err) {
+      setError(err instanceof Error && err.message ? err.message : s.common.zipError)
+    } finally {
+      setZipping(false)
+    }
   }
 
   return (
@@ -208,7 +218,7 @@ export function CompressQuickTool({
               <button
                 type="button"
                 onClick={handleLoadDemo}
-                className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${tokens.buttonSecondary}`}
+                className={`min-h-8 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${tokens.focusRing} ${tokens.buttonSecondary}`}
               >
                 {s.common.tryDemo}
               </button>
@@ -220,7 +230,7 @@ export function CompressQuickTool({
                     setResults([])
                     setPreviewId(null)
                   }}
-                  className={`rounded-lg px-2.5 py-1 text-xs font-medium ${tokens.textMuted} hover:text-rose-500`}
+                  className={`min-h-8 rounded-lg px-2.5 py-1 text-xs font-medium ${tokens.focusRing} ${tokens.textMuted} hover:text-rose-500`}
                 >
                   {s.common.clearAll}
                 </button>
@@ -228,78 +238,79 @@ export function CompressQuickTool({
             </div>
           </div>
 
-          {activeResults.length > 0 ? (
-            <>
-              <p className={`mb-2 text-[11px] ${tokens.textSubtle}`}>{s.compress.clickToPreview}</p>
-              <ul className="max-h-[320px] space-y-2 overflow-y-auto pr-1">
-                {activeResults.map((item, idx) => {
-                  const pct = Math.round(item.savedRatio * 100)
-                  return (
-                    <li
-                      key={item.id}
-                      data-testid={`compress-item-${idx}`}
-                      className={`flex flex-wrap items-center justify-between gap-3 rounded-xl border p-2.5 ${tokens.card}`}
-                    >
-                      <button
-                        type="button"
-                        data-testid={`compress-preview-btn-${idx}`}
-                        title={s.compress.clickToPreview}
-                        aria-label={`${s.common.inspectPreview}: ${item.filename}`}
-                        onClick={() => setPreviewId(item.id)}
-                        className="group flex min-w-0 flex-1 items-center gap-3 text-left focus:outline-none"
+          <div aria-busy={isBusy} className="relative">
+            {isBusy && <PreviewBusyOverlay theme={theme} label={s.compress.compressing} />}
+            {activeResults.length > 0 ? (
+              <>
+                <p className={`mb-2 text-[11px] ${tokens.textSubtle}`}>{s.compress.clickToPreview}</p>
+                <ul className="max-h-[320px] space-y-2 overflow-y-auto pr-1">
+                  {activeResults.map((item, idx) => {
+                    const pct = Math.round(item.savedRatio * 100)
+                    return (
+                      <li
+                        key={item.id}
+                        data-testid={`compress-item-${idx}`}
+                        className={`flex flex-wrap items-center justify-between gap-3 rounded-xl border p-2.5 ${tokens.card}`}
                       >
-                        <img
-                          src={item.dataUrl}
-                          alt={item.filename}
-                          className="h-12 w-12 shrink-0 rounded-lg object-cover ring-1 ring-black/10 transition-transform group-hover:scale-105"
-                        />
-                        <div className="min-w-0">
-                          <p className={`truncate text-xs font-semibold group-hover:text-indigo-500 ${tokens.text}`}>
-                            {item.filename}
-                          </p>
-                          <p className={`mt-0.5 text-[11px] tabular-nums ${tokens.textSubtle}`}>
-                            {formatBytes(item.originalBytes)} → {formatBytes(item.outputBytes)} · {item.width}×{item.height}
-                          </p>
+                        <button
+                          type="button"
+                          data-testid={`compress-preview-btn-${idx}`}
+                          title={s.compress.clickToPreview}
+                          aria-label={`${s.common.inspectPreview}: ${item.filename}`}
+                          onClick={() => setPreviewId(item.id)}
+                          className={`group flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left ${tokens.focusRing}`}
+                        >
+                          <img
+                            src={item.dataUrl}
+                            alt={item.filename}
+                            className="h-12 w-12 shrink-0 rounded-lg object-cover ring-1 ring-black/10 transition-transform group-hover:scale-105"
+                          />
+                          <div className="min-w-0">
+                            <p className={`truncate text-xs font-semibold group-hover:text-violet-500 ${tokens.text}`}>
+                              {item.filename}
+                            </p>
+                            <p className={`mt-0.5 text-[11px] tabular-nums ${tokens.textSubtle}`}>
+                              {formatBytes(item.originalBytes)} → {formatBytes(item.outputBytes)} · {item.width}×{item.height}
+                            </p>
+                          </div>
+                        </button>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums ${
+                              pct >= 0 ? tokens.badgePositive : tokens.badgeWarning
+                            }`}
+                          >
+                            {pct >= 0 ? `-${pct}%` : `+${Math.abs(pct)}%`}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => triggerBlobDownload(item.blob, item.filename)}
+                            className={`min-h-8 rounded-lg px-2.5 py-1 text-xs font-semibold ${tokens.focusRing} ${tokens.buttonSecondary}`}
+                          >
+                            {s.common.downloadImage}
+                          </button>
+                          <button
+                            type="button"
+                            data-testid={`compress-remove-${idx}`}
+                            title={s.common.remove}
+                            aria-label={`${s.common.remove}: ${item.filename}`}
+                            onClick={() => handleRemoveById(item.id)}
+                            className={`inline-flex h-8 w-8 items-center justify-center rounded-lg border text-xs font-semibold ${tokens.focusRing} ${tokens.dangerGhost}`}
+                          >
+                            ×
+                          </button>
                         </div>
-                      </button>
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums ${
-                            pct >= 0
-                              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-300'
-                              : 'bg-amber-500/15 text-amber-600'
-                          }`}
-                        >
-                          {pct >= 0 ? `-${pct}%` : `+${Math.abs(pct)}%`}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => triggerBlobDownload(item.blob, item.filename)}
-                          className={`rounded-lg px-2.5 py-1 text-xs font-semibold ${tokens.buttonSecondary}`}
-                        >
-                          {s.common.downloadImage}
-                        </button>
-                        <button
-                          type="button"
-                          data-testid={`compress-remove-${idx}`}
-                          title={s.common.remove}
-                          aria-label={`${s.common.remove}: ${item.filename}`}
-                          onClick={() => handleRemoveById(item.id)}
-                          className="rounded-lg border border-rose-300/60 px-2 py-1 text-xs font-semibold text-rose-500 hover:bg-rose-500/10"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    </li>
-                  )
-                })}
-              </ul>
-            </>
-          ) : (
-            <div className={`flex min-h-[200px] items-center justify-center rounded-xl border p-4 ${tokens.cardMuted}`}>
-              <p className={`text-xs ${tokens.textSubtle}`}>{s.common.emptyPreview}</p>
-            </div>
-          )}
+                      </li>
+                    )
+                  })}
+                </ul>
+              </>
+            ) : (
+              <div className={`flex min-h-[200px] items-center justify-center rounded-xl border p-4 ${tokens.cardMuted}`}>
+                <p className={`text-xs ${tokens.textSubtle}`}>{s.common.emptyPreview}</p>
+              </div>
+            )}
+          </div>
 
           <div className="mt-3">
             <DropZone
@@ -309,6 +320,7 @@ export function CompressQuickTool({
               title={s.common.dropMultipleTitle}
               hint={s.common.dropHint}
               buttonLabel={s.compress.addImages}
+              invalidFileMessage={s.common.invalidFileError}
               onFiles={handleFiles}
             />
           </div>
@@ -354,17 +366,17 @@ export function CompressQuickTool({
 
         <div className="space-y-2 border-t pt-4 border-current/10">
           {error && (
-            <p role="alert" className="text-xs font-medium text-rose-500">
+            <p role="alert" className={`text-xs font-medium ${tokens.errorText}`}>
               {error}
             </p>
           )}
           <button
             type="button"
-            disabled={activeResults.length === 0 || processing}
+            disabled={activeResults.length === 0 || isBusy || zipping}
             onClick={handleDownloadAllZip}
-            className={`inline-flex w-full items-center justify-center rounded-xl px-4 py-2.5 text-xs font-semibold transition-colors disabled:opacity-50 ${tokens.buttonPrimary}`}
+            className={`inline-flex min-h-9 w-full items-center justify-center rounded-xl px-4 py-2.5 text-xs font-semibold transition-colors disabled:opacity-50 ${tokens.focusRing} ${tokens.buttonPrimary}`}
           >
-            {processing ? s.compress.compressing : s.common.downloadZip}
+            {zipping ? s.common.downloading : isBusy ? s.compress.compressing : s.common.downloadZip}
           </button>
         </div>
       </div>

@@ -18,9 +18,9 @@
 - `ssg.ts`: pure, Node-agnostic SSG `<head>` injector, dark Studio skeleton renderer, multilingual `sitemap.xml`, and `robots.txt` string generators
 - `ssrEntry.ts`: build-time `react-dom/server` `renderToString` entry rendering `<ToolLandingPage />` for all 72 landing routes and `renderStudioSkeleton` for the 4 Studio routes
 - `useSeoHead.ts`: client-side `<head>` synchronizer (`applySeoHead` + `useSeoHead`) managing title, lang, canonical, OG/Twitter, hreflang, and JSON-LD without node leaks
-- `navHelpers.ts`: shared SPA link-click guard and navigation/footer route grouping constants
-- `SiteHeader.tsx`: dual-theme semantic top bar with category nav, 4-locale anchor switcher, theme toggle, Pro modal trigger, and Studio CTA
-- `SeoLandingSections.tsx`: below-the-fold local-privacy proof banner, 3-step How-To, scenario highlights, Studio CTA, related links, full directory, and FAQ accordion
+- `navHelpers.ts`: shared SPA link-click guard, active-nav state helper (`isToolNavActive`), and navigation/footer route grouping constants
+- `SiteHeader.tsx`: dual-theme semantic top bar with skip-to-content link, localized category nav, accessible mobile drawer, 4-locale anchor switcher, theme toggle, Pro modal trigger, and Studio CTA
+- `SeoLandingSections.tsx`: below-the-fold local-privacy proof banner, 3-step How-To, scenario highlights, Studio + Pro conversion CTA, related links, full directory, and FAQ accordion
 - `SiteFooter.tsx`: categorized internal link footer with 4-locale alternate links and open-source/local-first metadata
 - `index.ts`: public barrel re-exporting all SEO types, route helpers, i18n, schemas, head hook, and chrome components
 - `seo.test.ts`: Vitest suite covering routing, 4-language content uniqueness, JSON-LD validity, DOM head syncing, SSR chrome rendering, and real CLI SSG HTML/sitemap/CSP output

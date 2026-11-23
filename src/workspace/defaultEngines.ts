@@ -1,10 +1,9 @@
 /**
- * [INPUT]: depends on jszip, canvas helpers from ./canvasUtils, and workspace engine types from ./types
- * [OUTPUT]: exports createDefaultWorkspaceEngines providing standalone browser-native merge, split, compress, transform, idCard, and packZip implementations
+ * [INPUT]: depends on dynamic jszip import, canvas helpers from ./canvasUtils, and workspace engine types from ./types
+ * [OUTPUT]: exports createDefaultWorkspaceEngines providing standalone browser-native merge, split, compress, transform, idCard, and on-demand packZip implementations
  * [POS]: default DIP fallback implementation for QuickWorkspace when concrete src/tools engines are not injected
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
-import JSZip from 'jszip'
 import {
   clampDimensions,
   drawFittedImage,
@@ -52,6 +51,7 @@ function aspectRatioValue(aspect: WorkspaceAspectPreset): number | null {
 }
 
 async function packZipFallback(files: Array<{ filename: string; blob: Blob }>): Promise<Blob> {
+  const { default: JSZip } = await import('jszip')
   const zip = new JSZip()
   for (const file of files) {
     const bytes = new Uint8Array(await file.blob.arrayBuffer())
@@ -176,7 +176,7 @@ async function splitFallback(
   const sw = img.naturalWidth || img.width
   const sh = img.naturalHeight || img.height
   const ext = extensionForMime(options.format)
-  const base = stripExtension(image.name)
+  const base = stripExtension(image.name) || 'moklu-slice'
   const slices: WorkspaceSplitSlice[] = []
 
   if (options.mode === 'carousel') {
@@ -275,7 +275,7 @@ async function compressFallback(
       ctx.fillRect(0, 0, canvas.width, canvas.height)
     }
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-    const filename = `${stripExtension(item.name)}-compressed.${ext}`
+    const filename = `${stripExtension(item.name) || 'image'}-compressed.${ext}`
     const out = await finalizeCanvasOutput(canvas, filename, options.format, options.quality)
     const savedRatio = item.sizeBytes > 0 ? (item.sizeBytes - out.sizeBytes) / item.sizeBytes : 0
     results.push({
@@ -324,7 +324,7 @@ async function transformFallback(
       outputs.push(
         await finalizeCanvasOutput(
           canvas,
-          `${stripExtension(item.name)}-${canvas.width}x${canvas.height}.${ext}`,
+          `${stripExtension(item.name) || 'image'}-${canvas.width}x${canvas.height}.${ext}`,
           options.format,
           options.quality,
         ),
@@ -353,7 +353,7 @@ async function transformFallback(
       outputs.push(
         await finalizeCanvasOutput(
           canvas,
-          `${stripExtension(item.name)}-crop.${ext}`,
+          `${stripExtension(item.name) || 'image'}-crop.${ext}`,
           options.format,
           options.quality,
         ),
@@ -406,7 +406,7 @@ async function transformFallback(
     outputs.push(
       await finalizeCanvasOutput(
         canvas,
-        `${stripExtension(item.name)}-framed.${ext}`,
+        `${stripExtension(item.name) || 'image'}-framed.${ext}`,
         options.format,
         options.quality,
       ),

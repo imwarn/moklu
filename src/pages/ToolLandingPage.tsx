@@ -81,14 +81,15 @@ export function ToolLandingPage({ route, onNavigate }: ToolLandingPageProps) {
   const handleOpenInStudio = useCallback(
     (payload: WorkspaceHandoffPayload) => {
       void stageImagesIntoStudioAfterBootstrap({
-        images: payload.images,
-        mode: payload.mode,
+        ...payload,
         mockupModel: toPhoneModel(payload.mockupModel),
-        slideWidth: payload.slideWidth,
-        slideHeight: payload.slideHeight,
-      }).then(() => {
-        onNavigate(buildLocalizedPath(route.locale, 'studio'))
       })
+        .then(() => {
+          onNavigate(buildLocalizedPath(route.locale, 'studio'))
+        })
+        .catch((err) => {
+          console.error('[Moklu] Studio handoff failed:', err)
+        })
     },
     [onNavigate, route.locale],
   )
@@ -112,7 +113,7 @@ export function ToolLandingPage({ route, onNavigate }: ToolLandingPageProps) {
         isPro={isPro}
       />
 
-      <main id="main-content" className="flex-1">
+      <main id="main-content" tabIndex={-1} className="flex-1 focus:outline-none">
         {/* Compact Above-the-Fold Hero + Instant 6-Tool Workspace */}
         <section className="mx-auto max-w-7xl px-4 pt-6 pb-8 sm:px-6 lg:px-8">
           <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -155,6 +156,7 @@ export function ToolLandingPage({ route, onNavigate }: ToolLandingPageProps) {
           theme={resolvedTheme}
           onNavigate={onNavigate}
           onOpenProModal={() => setPricingOpen(true)}
+          isPro={isPro}
         />
       </main>
 
@@ -168,6 +170,7 @@ export function ToolLandingPage({ route, onNavigate }: ToolLandingPageProps) {
         open={pricingOpen}
         onClose={() => setPricingOpen(false)}
         locale={route.locale}
+        theme={resolvedTheme}
       />
     </div>
   )
