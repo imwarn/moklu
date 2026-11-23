@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on useEffect and useState from react; depends on Logo from @/components/toolbar/Logo
+ * [OUTPUT]: exports AppLoadingScreen component rendering the full-screen Studio startup overlay with fade-out unmounting
+ * [POS]: top-level splash overlay in src/components; mounted by StudioPage during initial project hydration and unmounted after EXIT_DURATION_MS
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useEffect, useState } from 'react'
 import { Logo } from '@/components/toolbar/Logo'
 

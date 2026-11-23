@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on react (useEffect, useRef), react-konva (Image), konva type, ImageLayer type from @/types, useAssetStore from @/store/assets, and hooks (useCachedImage, useLayerEffects, useLayerInteraction, useLayerTransform) from @/hooks
+ * [OUTPUT]: exports ImageNode component rendering asset-backed or inline images with rounded corners and baking Konva scale transforms into explicit width/height
+ * [POS]: raster-image Konva renderer in src/components/canvas; dispatched by LayerNode for type 'image' and hydrates asset references reactively from useAssetStore
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useEffect, useRef } from 'react'
 import { Image } from 'react-konva'
 import { useCachedImage } from '@/hooks/useCachedImage'

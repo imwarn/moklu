@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on useEffect, useLayoutEffect, useState, and RefObject from react
- * [OUTPUT]: exports clampMenuPosition, placeContextMenu, useClampedMenuPosition, and useContextMenuKeyboard
+ * [OUTPUT]: exports CONTEXT_MENU_MARGIN, MenuPosition, clampMenuPosition, placeContextMenu, useClampedMenuPosition, and useContextMenuKeyboard
  * [POS]: shared viewport clamping and WAI-ARIA keyboard helper for floating Studio context menus inside src/components/ui
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */

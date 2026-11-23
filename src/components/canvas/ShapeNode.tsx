@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on react (useEffect, useRef), react-konva (Rect, Ellipse, Group, Line), konva type, ShapeLayer type from @/types, resolveBrandColor from @/utils/brandColors, layerFillToKonvaProps from @/utils/konvaFill, and hooks (useBrandColors, useLayerEffects, useLayerInteraction, useLayerTransform) from @/hooks
+ * [OUTPUT]: exports ShapeNode component rendering rectangles, ellipses, arrows, and parametric polygon/star/cross/check shapes with scale-normalized geometry
+ * [POS]: vector-shape Konva renderer in src/components/canvas; dispatched by LayerNode for type 'shape' and recomputes polygon vertices live during transformer drags
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useEffect, useRef } from 'react'
 import { Rect, Ellipse, Group, Line } from 'react-konva'
 import type Konva from 'konva'

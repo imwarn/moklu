@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on useState, CSSProperties, and ReactNode from react
+ * [OUTPUT]: exports InlineEditableLabel component supporting double-click or externally controlled inline text renaming with Enter/Escape/blur commit handling
+ * [POS]: inline-rename UI primitive in src/components/ui; isolates pointer/keyboard event propagation stopping for layer rows, slide cards, and project headers
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useState, type CSSProperties, type ReactNode } from 'react'
 
 function normalizeInlineLabel(value: string): string | null {

@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on react hooks, useEditorStore from @/store, getPanoTotalWidth from @/utils/panoGeometry, and CanvasFormatId/SlideGroup types
- * [OUTPUT]: exports useStageViewport hook plus pure helpers computeViewportTransition and shouldIgnoreSpacePanTarget
+ * [OUTPUT]: exports useStageViewport hook, ViewportSnapshot/ViewportState/ViewportTransitionInput types, and pure helpers computeFitViewport, computeViewportTransition, and shouldIgnoreSpacePanTarget
  * [POS]: viewport zoom, pan, fit, and resize controller for StageCanvas inside src/components/canvas/stage
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */

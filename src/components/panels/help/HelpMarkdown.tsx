@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on react-markdown, remark-gfm, rehype-raw, and Callout/GuideItem/GuideList/Kbd/P/SectionHeader/Strong from ./HelpPrimitives
+ * [OUTPUT]: exports HelpMarkdown component mapping GFM Markdown and raw HTML snippets onto Studio help typography primitives
+ * [POS]: Markdown renderer inside src/components/panels/help; receives chapter bodies loaded by loadHelpChapters and renders them inside HelpModal
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeRaw from 'rehype-raw'

@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on react, FillValue/GradientStop/LinearGradient/RadialGradient from @/types, useEditorStore, useBrandColors, brandColors utils, fillToCss, SegmentedControl, colorUtils, and useStudioLocale from @/i18n
- * [OUTPUT]: exports ColorField, GradientEditor, FillControl, and SliderField with localized Solid/Linear/Radial/Stops/Presets/Brand labels
+ * [OUTPUT]: exports ColorField, GradientEditor, GradientEditorProps, FillControl, and SliderField with localized Solid/Linear/Radial/Stops/Presets/Brand labels
  * [POS]: core reusable property form controls inside src/components/properties
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */

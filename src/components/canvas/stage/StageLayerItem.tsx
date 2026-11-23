@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on memo and useCallback from react, useEditorStore from @/store, updateBackgroundAccentAt from @/utils/backgroundAccents, Layer type from @/types, and LayerNode from ../LayerNode
+ * [OUTPUT]: exports StageLayerItem memoized wrapper binding store selection, multi-select, drag/transform, group-edit, and background-accent mutations to LayerNode
+ * [POS]: per-layer store bridge in src/components/canvas/stage; rendered by StageCanvas to isolate layer callback stability from stage re-renders
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { memo, useCallback } from 'react'
 import { useEditorStore } from '@/store'
 import { updateBackgroundAccentAt } from '@/utils/backgroundAccents'

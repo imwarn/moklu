@@ -1,6 +1,6 @@
 /**
  * [INPUT]: none (pure zero-dependency Studio UI color & typography token definitions)
- * [OUTPUT]: exports STUDIO_COLORS and static Tailwind class tokens meeting WCAG AA contrast on Studio dark surfaces
+ * [OUTPUT]: exports STUDIO_COLORS and static Tailwind class tokens (STUDIO_TEXT_MUTED_CLS, STUDIO_TEXT_SUBTLE_CLS, STUDIO_LABEL_CLS, STUDIO_SECTION_LABEL_CLS, STUDIO_SUBTLE_SECTION_LABEL_CLS) meeting WCAG AA contrast on Studio dark surfaces
  * [POS]: shared dark-theme text contrast source of truth inside src/components/ui, safe for both Studio and landing bundles
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */

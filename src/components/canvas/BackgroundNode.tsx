@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on react (useRef, useEffect), react-konva (Rect, Ellipse, Group, Image), konva, useCachedImage from @/hooks/useCachedImage, useBrandColors from @/hooks/useBrandColors, BackgroundAccent/BackgroundLayer/BrandColor types from @/types, resolveBrandColor from @/utils/brandColors, toTransparentColor from @/utils/gradients, layerFillToKonvaProps from @/utils/konvaFill, background accent helpers from @/utils/backgroundAccents, and useKonvaBlur from ./effects
+ * [OUTPUT]: exports BackgroundNode component rendering the multi-stage canvas background (fill, blurred image, tint overlay, interactive radial accents, and procedural noise texture)
+ * [POS]: background Konva renderer in src/components/canvas; dispatched by LayerNode for type 'background' and supports interactive accent drag/transform when selected
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useRef, useEffect } from 'react'
 import { Rect, Ellipse, Group, Image as KonvaImage } from 'react-konva'
 import Konva from 'konva'

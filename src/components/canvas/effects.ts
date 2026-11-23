@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on useEffect and RefObject from react, Konva from konva, and ShadowConfig type from @/types
+ * [OUTPUT]: exports getShadowProps Konva shadow prop mapper and useKonvaBlur hook applying padded CSS blur filters without white-halo edge artifacts
+ * [POS]: shared Konva visual-effects utility in src/components/canvas; consumed by useLayerEffects, BackgroundNode, and TextNode
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useEffect, type RefObject } from 'react'
 import Konva from 'konva'
 import type { ShadowConfig } from '@/types'
