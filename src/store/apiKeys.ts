@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on zustand, zustand/middleware persist, and AiProvider/getDefaultModel/getProviderConfig from @/ai/providers
+ * [OUTPUT]: exports AiProvider type re-export, ApiKeysState interface, and useApiKeysStore persisted Zustand store
+ * [POS]: client-side AI provider credential and model-selection store in src/store/; persists to localStorage under 'pixeldeck-api-keys' and migrates deprecated provider keys
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { getDefaultModel, getProviderConfig } from '@/ai/providers'

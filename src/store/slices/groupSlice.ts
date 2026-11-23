@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on Layer/GroupLayer from @/types, EditorStore/EditorSet/EditorGet from ../types, helpers (newId, bakeLayerScale, mutateActiveGroup, getActiveGroup, patchLayerForLocale, patchLayerForLocaleAdjust, patchLayerForFormat, updateLayerInTree, seedLocaleContent) from ../helpers, and canvasFormats helpers from @/utils/canvasFormats
+ * [OUTPUT]: exports createGroupSlice slice creator implementing createGroup, dissolveGroup, addToGroup, removeFromGroup, updateChildLayer, reorderGroupChildren, moveLayerIntoGroup, moveChildToTopLevel, and moveChildBetweenGroups
+ * [POS]: layer-group hierarchy and child-mutation slice in src/store/slices/; composed into useEditorStore by src/store/index.ts
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { Layer, GroupLayer } from '@/types'
 import type { EditorStore, EditorSet, EditorGet } from '../types'
 import {

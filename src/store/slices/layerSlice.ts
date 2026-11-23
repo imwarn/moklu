@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on Layer union types from @/types, canvasFormats helpers from @/utils/canvasFormats, computePhoneFitScale/getPhoneSpec from @/assets/mockups/specs, DEFAULT_TEXT_WIDTH from @/utils/textRendering, EditorStore/EditorSet/EditorGet from ../types, and layer helpers from ../helpers
+ * [OUTPUT]: exports createLayerSlice slice creator implementing layer CRUD, ordering, visibility/locking, and typed layer factories (addPhone, addText, addImage, addImageAt, addShape, addEmoji, addBrand)
+ * [POS]: primary layer lifecycle and factory slice in src/store/slices/; composed into useEditorStore by src/store/index.ts
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type {
   Layer, GroupLayer,
   PhoneLayer, TextLayer, ImageLayer, ShapeLayer, EmojiLayer, BrandLayer,

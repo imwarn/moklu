@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on nanoid, Layer/CanvasFormatId from @/types, canvas format utilities from @/utils/canvasFormats, EditorStore/EditorSet/EditorGet from ../types, and layer/project helpers from ../helpers
+ * [OUTPUT]: exports createFormatSlice slice creator managing active canvas format/family switching, custom formats, format overrides, and per-format layer visibility
+ * [POS]: multi-format authoring slice in src/store/slices/; composed into useEditorStore by src/store/index.ts
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { nanoid } from 'nanoid'
 import type { Layer, CanvasFormatId } from '@/types'
 import {

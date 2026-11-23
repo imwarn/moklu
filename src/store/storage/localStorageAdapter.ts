@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on ProjectMeta, ProjectStorageAdapter, and ProjectConflictError from ./types
+ * [OUTPUT]: exports localStorageAdapter implementing ProjectStorageAdapter with per-project ETag optimistic concurrency checks
+ * [POS]: default browser localStorage persistence backend in src/store/storage/; detects cross-tab write conflicts via storage events and ETag validation
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { ProjectMeta, ProjectStorageAdapter } from './types'
 import { ProjectConflictError } from './types'
 

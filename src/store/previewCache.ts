@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on zustand
+ * [OUTPUT]: exports PreviewCacheEntry type and usePreviewCache transient Zustand store
+ * [POS]: ephemeral in-memory slide-group JPEG thumbnail cache in src/store/; keyed by slide group ID and content hash to avoid redundant offscreen renders
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { create } from 'zustand'
 
 export type PreviewCacheEntry = {
