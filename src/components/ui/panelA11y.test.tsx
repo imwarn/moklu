@@ -78,7 +78,7 @@ function makeTextLayer(id: string, name: string, overrides: Partial<TextLayer> =
 }
 
 describe('Studio dark text contrast tokens (WCAG AA >= 4.5:1)', () => {
-  it('meets WCAG AA 4.5:1 contrast for all Studio foreground tokens on #18181f', () => {
+  it('meets WCAG AA 4.5:1 contrast for all Studio foreground tokens on BRAND.panel', () => {
     const bg = STUDIO_COLORS.surfacePanel
     expect(contrastRatio(STUDIO_COLORS.textPrimary, bg)).toBeGreaterThanOrEqual(4.5)
     expect(contrastRatio(STUDIO_COLORS.textMuted, bg)).toBeGreaterThanOrEqual(4.5)
@@ -88,7 +88,7 @@ describe('Studio dark text contrast tokens (WCAG AA >= 4.5:1)', () => {
   })
 
   it('converges shared labelCls, ModalShell, SegmentedControl, and SettingsModal shell onto AA tokens', () => {
-    expect(labelCls).toContain('text-[#9494a8]')
+    expect(labelCls).toContain('text-muted')
     expect(labelCls).not.toContain('#6b6b7a')
 
     const primitivesHtml = renderToStaticMarkup(
@@ -106,7 +106,7 @@ describe('Studio dark text contrast tokens (WCAG AA >= 4.5:1)', () => {
       </StudioLocaleProvider>,
     )
 
-    expect(primitivesHtml).toContain('text-[#9494a8]')
+    expect(primitivesHtml).toContain('text-muted')
     expect(primitivesHtml).not.toContain('#6b6b7a')
     expect(primitivesHtml).not.toContain('#4a4a5a')
 
@@ -117,11 +117,10 @@ describe('Studio dark text contrast tokens (WCAG AA >= 4.5:1)', () => {
     )
 
     // Verify SettingsModal's own chrome (nav sidebar, headings, footer) uses AA contrast tokens.
-    expect(settingsHtml).toContain('text-[#9494a8]')
-    expect(settingsHtml).toContain('text-[#858599]')
+    expect(settingsHtml).toContain('text-muted')
     expect(settingsHtml).toContain('aria-current="page"')
     expect(settingsHtml).toContain('aria-label="Settings"')
-    expect(settingsHtml).toContain('class="text-[11px] text-[#858599] hover:text-[#9b8fff] transition-colors">github.com/imwarn/moklu</a>')
+    expect(settingsHtml).toContain('class="text-[11px] text-muted hover:text-accent-text transition-colors">github.com/imwarn/moklu</a>')
   })
 })
 
@@ -330,7 +329,7 @@ describe('SlideNavigator and PropertiesPanel ARIA labels and pressed states', ()
       expect(html).toContain('aria-label="Hide layer"')
       expect(html).toContain('aria-label="Lock layer"')
       expect(html).toContain('aria-label="Align to slide left"')
-      expect(html).toContain('text-[#9494a8]')
+      expect(html).toContain('text-muted')
       expect(html).not.toContain('#3a3a4a')
       expect(html).not.toContain('#525261')
     } finally {

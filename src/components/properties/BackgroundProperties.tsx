@@ -1,5 +1,5 @@
 /**
- * [INPUT]: depends on react useRef, useEditorStore, useBrandColors, fileToDataUrl, resolveBrandColor, backgroundAccents utils, PropertyControls, panelConstants, UI controls, and useStudioLocale/formatMessage from @/i18n
+ * [INPUT]: depends on react useRef, useEditorStore, useBrandColors, BRAND from @/theme/brand, fileToDataUrl, resolveBrandColor, backgroundAccents utils, PropertyControls, panelConstants, UI controls, and useStudioLocale/formatMessage from @/i18n
  * [OUTPUT]: exports BackgroundProperties inspector panel localized across EN/ZH/JA/KO
  * [POS]: background layer property editor within src/components/properties
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
@@ -7,6 +7,7 @@
 import { useRef } from 'react'
 import { useEditorStore } from '@/store'
 import { useBrandColors } from '@/hooks/useBrandColors'
+import { BRAND } from '@/theme/brand'
 import type { BackgroundAccent, BackgroundLayer, Layer } from '@/types'
 import { fileToDataUrl } from '@/utils/files'
 import { resolveBrandColor } from '@/utils/brandColors'
@@ -69,7 +70,7 @@ export function BackgroundProperties({ layer }: { layer: BackgroundLayer }) {
     upd({
       accents: [
         ...layer.accents,
-        { color: '#7c6ef6', opacity: 0.25, ...preset },
+        { color: BRAND.accent, opacity: 0.25, ...preset },
       ],
     })
     selectAccent(n)
@@ -145,8 +146,8 @@ export function BackgroundProperties({ layer }: { layer: BackgroundLayer }) {
                   onClick={() => upd({ imageFit: fit })}
                   className={`rounded-lg border px-2 py-1.5 text-xs transition-colors ${
                     (layer.imageFit ?? 'cover') === fit
-                      ? 'border-[#7c6ef6] bg-[#7c6ef6] text-white'
-                      : 'border-[rgba(255,255,255,0.1)] text-[#6b6b7a] hover:text-[#e8e8f0]'
+                      ? 'border-accent-strong bg-accent-strong text-accent-fg'
+                      : 'border-[rgba(255,255,255,0.1)] text-muted hover:text-[#e8e8f0]'
                   }`}
                 >
                   {tp.fitOptions[fit]}
@@ -225,8 +226,8 @@ export function BackgroundProperties({ layer }: { layer: BackgroundLayer }) {
                 onClick={() => selectAccent(i)}
                 className={`flex w-full cursor-pointer items-center gap-2 rounded-lg border px-2.5 py-2 text-left text-xs transition-colors ${
                   selectedAccentIndex === i
-                    ? 'border-[#7c6ef6] bg-[rgba(124,110,246,0.14)] text-[#e8e8f0]'
-                    : 'border-[rgba(255,255,255,0.08)] text-[#9a9aaa] hover:border-[rgba(124,110,246,0.5)] hover:bg-[rgba(255,255,255,0.04)]'
+                    ? 'border-accent bg-accent-soft text-[#e8e8f0]'
+                    : 'border-[rgba(255,255,255,0.08)] text-[#9a9aaa] hover:border-accent/50 hover:bg-[rgba(255,255,255,0.04)]'
                 }`}
               >
                 <button

@@ -209,7 +209,7 @@ function SortableGroupItem({
             }}
             onClick={(e) => e.stopPropagation()}
             style={{ width: Math.max(stripWidth, 52), height: 14, fontSize: 9, boxSizing: 'border-box' }}
-            className="px-1 rounded border border-[#7c6ef6] bg-[#0f0f13] text-[#e8e8f0] focus:outline-none"
+            className="px-1 rounded border border-accent bg-surface text-[#e8e8f0] focus:outline-none"
           />
         ) : (
           <span
@@ -246,7 +246,7 @@ function SortableGroupItem({
                       width: thumbW,
                       height: THUMB_H,
                       background: bgCss,
-                      border: `1px solid ${isActive ? '#7c6ef6' : 'rgba(255,255,255,0.12)'}`,
+                      border: `1px solid ${isActive ? 'var(--color-accent)' : 'rgba(255,255,255,0.12)'}`,
                       borderRadius: 4,
                       cursor: isDragging ? 'grabbing' : 'grab',
                       position: 'relative',
@@ -459,7 +459,7 @@ export function SlideNavigator({ thumbnails, staleGroupIds, stageRef, onCaptureT
                 onClick={() => updateSlideGroup(activeGroup.id, { numSlides: value })}
                 className={`text-[11px] px-2 py-1 rounded border transition-colors ${
                   activeGroup.numSlides === value
-                    ? 'bg-[#7c6ef6] border-[#7c6ef6] text-white'
+                    ? 'bg-accent-strong border-accent-strong text-accent-fg'
                     : `border-[rgba(255,255,255,0.08)] ${STUDIO_TEXT_MUTED_CLS} hover:text-[#e8e8f0] hover:border-[rgba(255,255,255,0.15)]`
                 }`}
               >
@@ -478,7 +478,7 @@ export function SlideNavigator({ thumbnails, staleGroupIds, stageRef, onCaptureT
             checked={hasPano && panoSettings.compensate}
             disabled={!hasPano}
             onChange={(e) => updatePanoSettings({ compensate: e.target.checked })}
-            className="h-3 w-3 accent-[#7c6ef6] disabled:opacity-40 disabled:cursor-not-allowed"
+            className="h-3 w-3 accent-accent disabled:opacity-40 disabled:cursor-not-allowed"
             title={t.slides.compensateTitle}
           />
           <span>{t.slides.compensate}</span>
@@ -534,7 +534,7 @@ export function SlideNavigator({ thumbnails, staleGroupIds, stageRef, onCaptureT
           onClick={addSlideGroup}
           aria-label={t.slides.addSlideGroup}
           title={t.slides.addSlideGroup}
-          className={`shrink-0 w-8 h-8 flex items-center justify-center ${STUDIO_TEXT_MUTED_CLS} hover:text-[#e8e8f0] rounded border border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.2)] text-base transition-colors ml-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c6ef6]/70`}
+          className={`shrink-0 w-8 h-8 flex items-center justify-center ${STUDIO_TEXT_MUTED_CLS} hover:text-[#e8e8f0] rounded border border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.2)] text-base transition-colors ml-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70`}
         >
           <span aria-hidden="true">＋</span>
         </button>
@@ -553,7 +553,7 @@ export function SlideNavigator({ thumbnails, staleGroupIds, stageRef, onCaptureT
           type="button"
           onClick={() => setExportOpen(true)}
           disabled={exportableFormats.length === 0}
-          className="text-xs text-white px-3 py-2 rounded bg-[#7c6ef6] hover:bg-[#6c5ed6] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="text-xs text-accent-fg px-3 py-2 rounded bg-accent-strong hover:bg-accent-strong/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           {t.slides.export}
         </button>

@@ -329,7 +329,7 @@ export function EditingContextBar() {
           <div className="flex shrink-0 items-center lg:hidden" ref={mobileFormatRef}>
             <button type="button" onClick={openFormatMenu} title={t.context.addFormatTitle} aria-label={t.context.addFormatTitle}
               aria-expanded={dropdownOpen || showCustomInput}
-              className="ml-2 flex h-8 w-8 items-center justify-center rounded-md border border-white/20 bg-[#222330] text-base text-[#fbbf24] focus-visible:outline-2 focus-visible:outline-[#b9afff]">+</button>
+              className="ml-2 flex h-8 w-8 items-center justify-center rounded-md border border-white/20 bg-[#222330] text-base text-[#fbbf24] focus-visible:outline-2 focus-visible:outline-accent">+</button>
           </div>
           <div className="hidden min-w-0 flex-1 lg:flex">
           {hasMultipleFamilies ? (
@@ -496,7 +496,7 @@ export function EditingContextBar() {
                       }
                       clearCustomForm()
                     }}
-                    className="flex-1 rounded bg-[#7c6ef6] px-2 py-1 text-xs text-white hover:bg-[#6c5ed6]"
+                    className="flex-1 rounded bg-accent-strong px-2 py-1 text-xs text-accent-fg hover:bg-accent-strong/90"
                   >
                     {t.common.apply}
                   </button>
@@ -600,7 +600,7 @@ export function EditingContextBar() {
                 {hasMultipleFamilies && (
                   <section className={`${isFormatScoped || isLocaleScoped ? 'mt-1 border-t border-[rgba(255,255,255,0.12)]' : ''}`} aria-label={t.context.content}>
                     <div className="border-b border-[rgba(255,255,255,0.08)] px-3 py-2">
-                      <p className="text-[9px] font-semibold uppercase tracking-[0.15em] text-[#7c6ef6]">{t.context.content}</p>
+                      <p className="text-[9px] font-semibold uppercase tracking-[0.15em] text-accent-text">{t.context.content}</p>
                     </div>
                     <button className={actionItemClass} onClick={() => { setContentSyncOpen(true); setActionsOpen(false) }}>
                       {t.context.bringContentFrom}

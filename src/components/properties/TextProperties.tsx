@@ -152,7 +152,7 @@ function FontPicker({ value, customFonts, onChange }: FontPickerProps) {
     'text-[10px] text-[#4a4a5a] uppercase tracking-wider px-2 py-1 select-none'
   const itemBaseCls =
     'w-full text-left px-3 py-1.5 text-sm text-[#e8e8f0] hover:bg-[rgba(255,255,255,0.05)] transition-colors rounded'
-  const itemSelectedCls = 'bg-[rgba(124,110,246,0.15)] !text-[#c4b5fd]'
+  const itemSelectedCls = 'bg-accent-soft !text-accent-text'
   const itemActiveCls = 'bg-[rgba(255,255,255,0.08)] outline-none'
 
   const noResults =
@@ -306,7 +306,7 @@ export function TextProperties({ layer }: { layer: TextLayer }) {
     <div className="space-y-4">
 
       {/* ── Text styling toolbar — always visible ── */}
-      <div className={`${panelSectionCls} !border-[rgba(124,110,246,0.35)]`}>
+      <div className={`${panelSectionCls} !border-accent/35`}>
         <label className={labelCls}>{tp.textStylingLabel}</label>
         {editingThis ? (
           // Canvas editor is active: it portals RichTextToolbar into this slot
@@ -413,8 +413,8 @@ export function TextProperties({ layer }: { layer: TextLayer }) {
               onClick={() => upd({ align: item.value })}
               className={`rounded-lg border px-2 py-2 text-xs transition-colors ${
                 layer.align === item.value
-                  ? 'border-[#7c6ef6] bg-[#7c6ef6] text-white'
-                  : 'border-[rgba(255,255,255,0.1)] text-[#6b6b7a] hover:bg-[rgba(255,255,255,0.06)] hover:text-[#e8e8f0]'
+                  ? 'border-accent-strong bg-accent-strong text-accent-fg'
+                  : 'border-[rgba(255,255,255,0.1)] text-muted hover:bg-[rgba(255,255,255,0.06)] hover:text-[#e8e8f0]'
               }`}
             >
               {item.label}
@@ -438,8 +438,8 @@ export function TextProperties({ layer }: { layer: TextLayer }) {
                   onClick={() => upd({ verticalAlign: item.value })}
                   className={`rounded-lg border px-2 py-2 text-xs transition-colors ${
                     (layer.verticalAlign ?? 'top') === item.value
-                      ? 'border-[#7c6ef6] bg-[#7c6ef6] text-white'
-                      : 'border-[rgba(255,255,255,0.1)] text-[#6b6b7a] hover:bg-[rgba(255,255,255,0.06)] hover:text-[#e8e8f0]'
+                      ? 'border-accent-strong bg-accent-strong text-accent-fg'
+                      : 'border-[rgba(255,255,255,0.1)] text-muted hover:bg-[rgba(255,255,255,0.06)] hover:text-[#e8e8f0]'
                   }`}
                 >
                   {item.label}

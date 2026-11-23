@@ -29,7 +29,7 @@ export const resumeTemporal = () => useEditorStore.temporal.getState().resume()
 
 // ─── Panel CSS class constants ─────────────────────────────────────────────
 export const inputCls =
-  'bg-[#0f0f13] border border-[rgba(255,255,255,0.1)] rounded px-2 py-1 text-sm text-[#e8e8f0] w-full focus:outline-none focus:border-[rgba(124,110,246,0.5)]'
+  'bg-surface border border-[rgba(255,255,255,0.1)] rounded px-2 py-1 text-sm text-[#e8e8f0] w-full focus:outline-none focus:border-accent/60'
 export const labelCls = STUDIO_LABEL_CLS
 export const rowCls = 'flex gap-2 mb-3'
 export const fieldCls = 'flex-1 min-w-0'

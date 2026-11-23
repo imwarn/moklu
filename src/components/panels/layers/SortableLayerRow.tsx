@@ -15,7 +15,7 @@ const ROW_ACTION_VISIBILITY_CLS =
   'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity'
 const CHILD_ACTION_VISIBILITY_CLS =
   'opacity-0 group-hover/child:opacity-100 group-focus-within/child:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity'
-const ACTION_FOCUS_CLS = 'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#7c6ef6]'
+const ACTION_FOCUS_CLS = 'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent'
 
 // ─── SortableLayer (regular top-level layers) ────────────────────────────────
 
@@ -51,9 +51,9 @@ export function SortableLayer({
       onContextMenu={(e) => onContextMenu(e, layer.id)}
       className={`group relative flex items-center gap-1 px-2 py-1.5 border-l-2 transition-colors ${
         isSelected
-          ? 'bg-[rgba(124,110,246,0.15)] border-[#7c6ef6]'
+          ? 'bg-accent/15 border-accent'
           : isMultiSelected
-            ? 'bg-[rgba(124,110,246,0.06)] border-[rgba(124,110,246,0.4)]'
+            ? 'bg-accent/10 border-accent/40'
             : 'border-transparent hover:bg-[rgba(255,255,255,0.04)]'
       }`}
       onClick={(e) => { if (e.ctrlKey || e.metaKey) onCtrlSelect(layer.id); else onSelect(layer.id) }}
@@ -127,12 +127,12 @@ export function SortableChild({ child, groupId, isSelected, onSelect, onRename }
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
       className={`group/child relative flex items-center gap-1 py-1.5 pr-2 rounded-md transition-colors ${
-        isSelected ? 'bg-[rgba(124,110,246,0.15)]' : 'hover:bg-[rgba(255,255,255,0.04)]'
+        isSelected ? 'bg-accent/15' : 'hover:bg-[rgba(255,255,255,0.04)]'
       }`}
       onClick={(e) => { e.stopPropagation(); onSelect() }}
     >
       {/* Horizontal connector tick */}
-      <span className="absolute -left-[11px] top-1/2 h-px w-[11px] -translate-y-1/2 bg-[rgba(124,110,246,0.22)]" />
+      <span className="absolute -left-[11px] top-1/2 h-px w-[11px] -translate-y-1/2 bg-accent/25" />
 
       {/* Drag handle */}
       <button
@@ -204,10 +204,10 @@ export function SortableGroup({
       onContextMenu={(e) => onContextMenu(e, layer.id)}
       className={`relative border-l-2 transition-colors ${
         isSelected
-          ? 'bg-[rgba(124,110,246,0.15)] border-[#7c6ef6]'
+          ? 'bg-accent/15 border-accent'
           : isMultiSelected
-            ? 'bg-[rgba(124,110,246,0.06)] border-[rgba(124,110,246,0.4)]'
-            : 'bg-[rgba(124,110,246,0.06)] border-[rgba(124,110,246,0.28)] hover:bg-[rgba(124,110,246,0.1)]'
+            ? 'bg-accent/10 border-accent/40'
+            : 'bg-accent/10 border-accent/30 hover:bg-accent/15'
       }`}
     >
       {/* Group header */}
@@ -239,20 +239,20 @@ export function SortableGroup({
           aria-expanded={!isCollapsed}
           onClick={(e) => { e.stopPropagation(); onToggleCollapse() }}
           title={isCollapsed ? 'Expand group' : 'Collapse group'}
-          className={`w-5 h-5 flex items-center justify-center text-[10px] rounded hover:bg-[rgba(255,255,255,0.08)] shrink-0 text-[#d8d2ff] ${ACTION_FOCUS_CLS}`}
+          className={`w-5 h-5 flex items-center justify-center text-[10px] rounded hover:bg-[rgba(255,255,255,0.08)] shrink-0 text-accent-text ${ACTION_FOCUS_CLS}`}
           style={{ transition: 'transform 0.15s', transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}
         ><span aria-hidden="true">▼</span></button>
 
-        <span className="text-xs shrink-0 text-[#b6adff]" aria-hidden="true">▥</span>
+        <span className="text-xs shrink-0 text-accent-text" aria-hidden="true">▥</span>
 
         <InlineEditableLabel
           value={layer.name}
           onCommit={onRename}
           className="flex-1 text-xs truncate font-semibold"
-          style={{ color: isSelected ? STUDIO_COLORS.textPrimary : '#d8d2ff', cursor: 'text' }}
+          style={{ color: isSelected ? STUDIO_COLORS.textPrimary : STUDIO_COLORS.textAccent, cursor: 'text' }}
         />
 
-        <span className="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] leading-none border border-[rgba(124,110,246,0.28)] bg-[rgba(124,110,246,0.12)] text-[#b6adff]">
+        <span className="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] leading-none border border-accent/30 bg-accent-soft text-accent-text">
           {layer.children.length}
         </span>
 
@@ -278,7 +278,7 @@ export function SortableGroup({
       {!isCollapsed && (
         <div className="relative ml-8 mr-2 mb-2 pl-4">
           {/* Vertical connecting line */}
-          <div className="absolute left-[3px] top-1 bottom-1 w-px bg-[rgba(124,110,246,0.28)]" />
+          <div className="absolute left-[3px] top-1 bottom-1 w-px bg-accent/30" />
           <SortableContext items={reversedChildIds} strategy={verticalListSortingStrategy}>
             <div className="space-y-0.5">
               {reversedChildren.map((child) => (
@@ -307,8 +307,8 @@ export function SortableGroup({
 export function DragPreview({ label, icon }: { label: string; icon: string }) {
   return (
     <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg shadow-2xl border text-xs"
-      style={{ background: '#1e1e2a', borderColor: 'rgba(124,110,246,0.4)', color: STUDIO_COLORS.textPrimary, pointerEvents: 'none', minWidth: 120 }}>
-      <span style={{ color: '#7c6ef6' }} aria-hidden="true">{icon}</span>
+      style={{ background: 'var(--color-panel)', borderColor: 'color-mix(in srgb, var(--color-accent) 45%, transparent)', color: STUDIO_COLORS.textPrimary, pointerEvents: 'none', minWidth: 120 }}>
+      <span style={{ color: 'var(--color-accent)' }} aria-hidden="true">{icon}</span>
       <span className="truncate">{label}</span>
     </div>
   )

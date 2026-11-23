@@ -65,7 +65,7 @@ export function ConfirmDialog({
             type="button"
             onClick={onCancel}
             disabled={busy}
-            className="cursor-pointer rounded-md border border-white/12 bg-transparent px-3.5 py-[5px] text-xs font-semibold text-[#b8b8c8] transition-colors hover:border-white/25 hover:bg-white/5 hover:text-[#e8e8f0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c6ef6] disabled:cursor-not-allowed disabled:opacity-50"
+            className="cursor-pointer rounded-md border border-white/12 bg-transparent px-3.5 py-[5px] text-xs font-semibold text-[#b8b8c8] transition-colors hover:border-white/25 hover:bg-white/5 hover:text-[#e8e8f0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
           >
             {resolvedCancelLabel}
           </button>
@@ -76,7 +76,7 @@ export function ConfirmDialog({
             className={`cursor-pointer rounded-md border-none px-3.5 py-[5px] text-xs font-semibold text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-[#1c1c27] disabled:cursor-not-allowed disabled:opacity-50 ${
               danger
                 ? 'bg-[#dc2626] hover:bg-[#b91c1c] focus-visible:ring-[#ef4444]'
-                : 'bg-[#7c6ef6] hover:bg-[#6c5ed6] focus-visible:ring-[#a599ff]'
+                : 'bg-accent-strong hover:bg-accent-strong/90 focus-visible:ring-accent'
             }`}
           >
             {busy ? resolvedBusyLabel : resolvedConfirmLabel}

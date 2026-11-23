@@ -224,7 +224,7 @@ function CanvasTextEditorBox({
           justifyContent: justify,
           height: boxH,
           minHeight: minH,
-          outline: '2px solid rgba(124,110,246,0.8)',
+          outline: '2px solid color-mix(in srgb, var(--color-accent) 80%, transparent)',
           outlineOffset: 2,
           borderRadius: 2,
           background: 'rgba(0,0,0,0.25)',
@@ -250,7 +250,7 @@ function CanvasTextEditorBox({
                 .filter(Boolean)
                 .join(' ') || undefined,
             color: typeof baseFill === 'string' ? baseFill : '#ffffff',
-            caretColor: '#7c6ef6',
+            caretColor: 'var(--color-accent)',
           }}
         />
       </div>

@@ -60,7 +60,7 @@ export function PromoteLocaleDialog({
           <button
             type="button"
             onClick={onConfirm}
-            className="rounded-full border border-[#7c6ef6]/45 bg-[#7c6ef6]/16 px-4 py-2 text-sm font-medium text-[#f3f1ff] transition hover:border-[#7c6ef6]/70 hover:bg-[#7c6ef6]/24"
+            className="rounded-full border border-accent-strong bg-accent-strong px-4 py-2 text-sm font-medium text-accent-fg transition hover:bg-accent-strong/90"
           >
             {tl.promoteConfirm}
           </button>
@@ -69,7 +69,7 @@ export function PromoteLocaleDialog({
     >
       <div className="space-y-5">
         <div className="space-y-2">
-          <div className="inline-flex items-center rounded-full border border-[#7c6ef6]/25 bg-[#7c6ef6]/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#c4b5fd]">
+          <div className="inline-flex items-center rounded-full border border-accent/30 bg-accent-soft px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-text">
             {targetName} · {locale}
           </div>
           <p className="text-sm leading-relaxed text-[#d6d6e2]">
@@ -104,7 +104,7 @@ export function PromoteLocaleDialog({
               className="h-full rounded-full transition-all"
               style={{
                 width: `${ratio === 0 ? 0 : Math.max(6, Math.round(ratio * 100))}%`,
-                background: isComplete ? '#7c6ef6' : '#f59e0b',
+                background: isComplete ? 'var(--color-accent)' : 'var(--color-warning)',
               }}
             />
           </div>

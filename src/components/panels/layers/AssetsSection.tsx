@@ -218,7 +218,7 @@ export function AssetsSection({ imageInputRef, selectedLayer, addImage, updateLa
         key={asset.filename}
         draggable
         onDragStart={(event) => handleAssetDragStart(event, asset.filename)}
-        className="group overflow-hidden rounded-lg border border-[rgba(255,255,255,0.08)] bg-[#111118] transition-colors hover:border-[rgba(124,110,246,0.45)]"
+        className="group overflow-hidden rounded-lg border border-[rgba(255,255,255,0.08)] bg-surface transition-colors hover:border-accent/45"
         title={`${asset.filename} — drag to canvas or click to use`}
       >
         <button
@@ -249,7 +249,7 @@ export function AssetsSection({ imageInputRef, selectedLayer, addImage, updateLa
             type="button"
             aria-label={`${t.layers.addImageToCanvas}: ${asset.filename}`}
             onClick={() => { void addAssetToCanvas(asset.filename, asset.dataUrl) }}
-            className="rounded px-1 text-[10px] text-[#a89cf6] hover:bg-[rgba(124,110,246,0.16)] hover:text-white"
+            className="rounded px-1 text-[10px] text-accent-text hover:bg-accent/15 hover:text-white"
             title={t.layers.addImageToCanvas}
           >
             +
@@ -306,15 +306,15 @@ export function AssetsSection({ imageInputRef, selectedLayer, addImage, updateLa
               width="11"
               height="11"
               fill="currentColor"
-              className="shrink-0 text-[#7c6ef6]/70"
+              className="shrink-0 text-accent/80"
               aria-hidden="true"
             >
               <path d="M1 3a1 1 0 0 1 1-1h2.382a1 1 0 0 1 .894.553L5.618 3H10a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V3Z" />
             </svg>
-            <span className={`flex-1 truncate font-medium text-[#c4c0e0] ${large ? 'text-xs' : 'text-[10px]'}`}>
+            <span className={`flex-1 truncate font-medium text-[#e4e4e7] ${large ? 'text-xs' : 'text-[10px]'}`}>
               {group.label}
             </span>
-            <span className="shrink-0 rounded-full bg-[rgba(124,110,246,0.14)] px-1.5 py-px text-[9px] tabular-nums text-[#a89cf6]">
+            <span className="shrink-0 rounded-full bg-accent-soft px-1.5 py-px text-[9px] tabular-nums text-accent-text">
               {group.assets.length}
             </span>
           </button>
@@ -348,7 +348,7 @@ export function AssetsSection({ imageInputRef, selectedLayer, addImage, updateLa
             {t.layers.assets}
           </button>
           <div className="flex items-center gap-1">
-            <span className="rounded-full bg-[rgba(124,110,246,0.16)] px-2 py-0.5 text-[10px] text-[#a89cf6]">{assetCount}</span>
+            <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[10px] text-accent-text">{assetCount}</span>
             <button
               type="button"
               aria-label={t.layers.openAssetBrowser}
@@ -368,7 +368,7 @@ export function AssetsSection({ imageInputRef, selectedLayer, addImage, updateLa
                 type="button"
                 aria-label={t.layers.importFiles}
                 onClick={() => screenshotsInputRef.current?.click()}
-                className="rounded-lg border border-[rgba(255,255,255,0.08)] px-2 py-1.5 text-[10px] text-[#b0b0c4] transition-colors hover:border-[rgba(124,110,246,0.35)] hover:bg-[rgba(124,110,246,0.12)] hover:text-[#e8e8f0]"
+                className="rounded-lg border border-[rgba(255,255,255,0.08)] px-2 py-1.5 text-[10px] text-[#b0b0c4] transition-colors hover:border-accent/40 hover:bg-accent/15 hover:text-[#e8e8f0]"
                 title={t.layers.importFilesTitle}
               >
                 {t.layers.importFiles}
@@ -377,7 +377,7 @@ export function AssetsSection({ imageInputRef, selectedLayer, addImage, updateLa
                 type="button"
                 aria-label={t.layers.importFolder}
                 onClick={handleImportScreenshotFolder}
-                className="rounded-lg border border-[rgba(255,255,255,0.08)] px-2 py-1.5 text-[10px] text-[#b0b0c4] transition-colors hover:border-[rgba(124,110,246,0.35)] hover:bg-[rgba(124,110,246,0.12)] hover:text-[#e8e8f0]"
+                className="rounded-lg border border-[rgba(255,255,255,0.08)] px-2 py-1.5 text-[10px] text-[#b0b0c4] transition-colors hover:border-accent/40 hover:bg-accent/15 hover:text-[#e8e8f0]"
                 title={t.layers.importFolderTitle}
               >
                 {t.layers.importFolder}
@@ -407,14 +407,14 @@ export function AssetsSection({ imageInputRef, selectedLayer, addImage, updateLa
           >
             <div className="flex items-start justify-between gap-4 border-b border-white/8 px-4 py-3">
               <div>
-                <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#7c6ef6]">{t.layers.assetBrowserTitle}</div>
+                <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-accent-text">{t.layers.assetBrowserTitle}</div>
                 <div className="mt-1 text-xs leading-5 text-[#9b9bad]">{t.layers.assetBrowserHint}</div>
               </div>
               <button
                 type="button"
                 aria-label={t.layers.closeAssetBrowser}
                 onClick={() => setAssetsModalOpen(false)}
-                className="shrink-0 rounded-full border border-white/10 px-2.5 py-1 text-xs text-[#d7d7e3] hover:border-[#7c6ef6]/50 hover:bg-[#7c6ef6]/10 hover:text-white"
+                className="shrink-0 rounded-full border border-white/10 px-2.5 py-1 text-xs text-[#d7d7e3] hover:border-accent/50 hover:bg-accent/10 hover:text-white"
               >
                 ×
               </button>

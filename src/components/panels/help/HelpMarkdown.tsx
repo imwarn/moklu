@@ -48,12 +48,12 @@ export function HelpMarkdown({ source }: { source: string }) {
         ul: ({ children }) => <GuideList>{children}</GuideList>,
         ol: ({ children }) => <GuideList>{children}</GuideList>,
         li: ({ children }) => <GuideItem>{children}</GuideItem>,
-        blockquote: ({ children }) => <Callout tone="purple">{children}</Callout>,
+        blockquote: ({ children }) => <Callout tone="accent">{children}</Callout>,
         code: ({ children, className }) => {
           const value = String(children).replace(/\n$/, '')
           if (value.includes('\n')) {
             return (
-              <code className={`block whitespace-pre-wrap rounded-lg border border-[rgba(255,255,255,0.08)] bg-[#0f0f13] p-3 font-mono text-[11px] leading-5 text-[#c8c3ef] ${className ?? ''}`}>
+              <code className={`block whitespace-pre-wrap rounded-lg border border-[rgba(255,255,255,0.08)] bg-surface p-3 font-mono text-[11px] leading-5 text-[#e4e4e7] ${className ?? ''}`}>
                 {value}
               </code>
             )

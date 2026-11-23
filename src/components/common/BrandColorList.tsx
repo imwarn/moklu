@@ -9,7 +9,7 @@ import { useEditorStore } from '@/store'
 import { useBrandColors } from '@/hooks/useBrandColors'
 import type { BrandColor } from '@/types'
 
-const inputCls = 'bg-[#0f0f13] border border-[rgba(255,255,255,0.1)] rounded px-2 py-1 text-sm text-[#e8e8f0] w-full focus:outline-none focus:border-[rgba(124,110,246,0.5)]'
+const inputCls = 'bg-surface border border-[rgba(255,255,255,0.1)] rounded px-2 py-1 text-sm text-[#e8e8f0] w-full focus:outline-none focus:border-accent/60'
 
 interface BrandColorListProps {
   /** If true, shows a compact layout suitable for popovers/toolbars */
@@ -47,7 +47,7 @@ export function BrandColorList({ compact = false }: BrandColorListProps) {
         <button
           type="button"
           onClick={() => { setAdding((v) => !v); setEditingId(null) }}
-          className={`text-xs text-[#7c6ef6] hover:text-[#9d90f8] transition-colors ${compact ? '' : 'ml-auto'}`}
+          className={`text-xs text-accent-text hover:text-accent transition-colors ${compact ? '' : 'ml-auto'}`}
         >
           {adding ? '✕' : '＋ Add'}
         </button>
@@ -82,7 +82,7 @@ export function BrandColorList({ compact = false }: BrandColorListProps) {
           <button
             type="button"
             onClick={handleAdd}
-            className="w-full text-xs text-[#7c6ef6] border border-[rgba(124,110,246,0.4)] rounded py-1.5 hover:bg-[rgba(124,110,246,0.15)] transition-colors"
+            className="w-full text-xs text-accent-text border border-accent/40 rounded py-1.5 hover:bg-accent/15 transition-colors"
           >
             Add Color
           </button>

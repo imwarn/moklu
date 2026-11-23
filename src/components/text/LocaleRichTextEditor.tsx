@@ -63,14 +63,14 @@ export function LocaleRichTextEditor({
         type="button"
         onClick={() => setEditing(true)}
         title="Click to edit — select text to apply formatting"
-        className="block w-full cursor-text text-left text-sm leading-6 text-[#f3f2ff] outline-none"
+        className="block w-full cursor-text text-left text-sm leading-6 text-[#f4f4f5] outline-none"
       >
         {text ? (
           <span className="whitespace-pre-wrap break-words">
             <RichTextPreview text={text} marks={marks ?? []} />
           </span>
         ) : (
-          <span className="text-[#9a95c8]">{placeholder ?? 'Enter localized text'}</span>
+          <span className="text-muted">{placeholder ?? 'Enter localized text'}</span>
         )}
       </button>
     )
@@ -215,7 +215,7 @@ function ActiveLocaleEditor({
         ref={editorRef}
         {...api.editableProps}
         tabIndex={0}
-        className="min-h-[24px] w-full whitespace-pre-wrap break-words border-0 bg-transparent text-sm leading-6 text-[#f3f2ff] outline-none"
+        className="min-h-[24px] w-full whitespace-pre-wrap break-words border-0 bg-transparent text-sm leading-6 text-[#f4f4f5] outline-none"
       />
       <div className="mt-1 text-[9px] text-[#6b6b7a]">Select text → style with the toolbar · Enter to confirm</div>
     </div>

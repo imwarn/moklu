@@ -33,11 +33,11 @@ interface OverrideDotProps {
  * COMPOSE instead of one shadowing the other:
  *  - amber:  `formatOverrides[activeCanvasFormat]` — a genuinely different,
  *    absolute-pin concept, unchanged from before.
- *  - violet: `localeAdjust[locale][BASE_CANVAS_FORMAT]` — shows on ANY
+ *  - accent: `localeAdjust[locale][BASE_CANVAS_FORMAT]` — shows on ANY
  *    format tab (not just Base), since it contributes to every format's
  *    resolved value via the format's scale factor.
  *  - cyan:   `localeAdjust[locale][activeCanvasFormat]` — only shown on a
- *    non-base format tab (at Base, this cell IS the violet cell).
+ *    non-base format tab (at Base, this cell IS the accent cell).
  */
 export function OverrideDot({ layerId, propKey }: OverrideDotProps) {
   const {
@@ -82,8 +82,8 @@ export function OverrideDot({ layerId, propKey }: OverrideDotProps) {
     <div className="inline-flex items-center">
       {hasBaseAdjust && (
         <Dot
-          color="#7c6ef6"
-          hoverColor="#9d90f8"
+          color="var(--color-accent)"
+          hoverColor="var(--color-accent-text)"
           title="Locale base layout adjustment — click to manage"
           label="Reset base locale adjustment"
           onReset={() => {

@@ -159,7 +159,7 @@ export function PreviewModal({
       showCloseButton={false}
       header={<div className="flex flex-wrap items-center justify-between gap-3 border-b border-[rgba(255,255,255,0.08)] px-6 py-4">
           <div>
-            <h2 className="text-sm font-semibold text-[#f3f0ff]">{pm.title}</h2>
+            <h2 className="text-sm font-semibold text-[#f4f4f5]">{pm.title}</h2>
             {previewProgress.status === 'capturing' || previewProgress.status === 'preparing' ? (
               <div className="mt-1.5 w-48">
                 <div className="mb-1 flex items-center justify-between text-[10px] text-[#7d7a90]">
@@ -174,7 +174,7 @@ export function PreviewModal({
                   aria-valuenow={previewProgress.completedSlides}
                   aria-valuetext={`${pm.generatingPreviews} ${previewProgress.completedSlides}/${previewProgress.totalSlides}`}
                 >
-                  <div className="h-full bg-[#7c6ef6] transition-[width] duration-300 ease-out motion-reduce:transition-none" style={{ width: `${previewProgress.totalSlides ? (previewProgress.completedSlides / previewProgress.totalSlides) * 100 : 0}%` }} />
+                  <div className="h-full bg-accent transition-[width] duration-300 ease-out motion-reduce:transition-none" style={{ width: `${previewProgress.totalSlides ? (previewProgress.completedSlides / previewProgress.totalSlides) * 100 : 0}%` }} />
                 </div>
                 <p className="mt-1 text-[10px] text-[#7d7a90]">{previewProgress.completedSlides} / {previewProgress.totalSlides}{previewProgress.currentGroupName ? ` · ${previewProgress.currentGroupName}` : ''}</p>
               </div>
@@ -190,12 +190,12 @@ export function PreviewModal({
           <div className="flex flex-wrap items-center gap-2">
             {/* Platform selector */}
             {platformFormats.length > 1 && (
-              <SegmentedControl value={activeCanvasFormat} options={platformFormats.map((format) => ({ value: format, label: getFormatLabel(format, settings.customFormats) }))} onChange={selectFormat} className="flex items-center gap-0.5 rounded-lg border border-[rgba(255,255,255,0.1)] p-1" optionClassName="rounded-md px-2.5 py-1 text-[11px] transition-colors" activeClassName="bg-[rgba(124,110,246,0.26)] text-[#cbbfff] font-bold" inactiveClassName="bg-transparent text-[#7d7a90] font-medium" />
+              <SegmentedControl value={activeCanvasFormat} options={platformFormats.map((format) => ({ value: format, label: getFormatLabel(format, settings.customFormats) }))} onChange={selectFormat} className="flex items-center gap-0.5 rounded-lg border border-[rgba(255,255,255,0.1)] p-1" optionClassName="rounded-md px-2.5 py-1 text-[11px] transition-colors" activeClassName="bg-accent-soft text-accent-text font-bold" inactiveClassName="bg-transparent text-[#7d7a90] font-medium" />
             )}
 
             {/* Locale selector */}
             {locales.length > 1 && (
-              <SegmentedControl value={activeLocale} options={locales.map((locale) => ({ value: locale, label: getLanguageName(locale), title: getLanguageName(locale) }))} onChange={selectLocale} className="flex items-center gap-0.5 rounded-lg border border-[rgba(255,255,255,0.1)] p-1" optionClassName="rounded-md px-2.5 py-1 text-[11px] transition-colors" activeClassName="bg-[rgba(124,110,246,0.26)] text-[#cbbfff] font-bold" inactiveClassName="bg-transparent text-[#7d7a90] font-medium" />
+              <SegmentedControl value={activeLocale} options={locales.map((locale) => ({ value: locale, label: getLanguageName(locale), title: getLanguageName(locale) }))} onChange={selectLocale} className="flex items-center gap-0.5 rounded-lg border border-[rgba(255,255,255,0.1)] p-1" optionClassName="rounded-md px-2.5 py-1 text-[11px] transition-colors" activeClassName="bg-accent-soft text-accent-text font-bold" inactiveClassName="bg-transparent text-[#7d7a90] font-medium" />
             )}
 
             {hasPanoGroups && (
@@ -207,7 +207,7 @@ export function PreviewModal({
                     updatePanoSettings({ compensate: next })
                     captureAllHighRes({ panoCompensationPx: panoSettings.gapPx, panoCompensate: next })
                   }}
-                  checkboxClassName="h-3 w-3 accent-[#7c6ef6]"
+                  checkboxClassName="h-3 w-3 accent-accent"
                 />
                 <span>{t.slides.compensate}</span>
                 <NumberInput
@@ -289,7 +289,7 @@ export function PreviewModal({
                                 fontWeight: 500,
                                 textTransform: 'uppercase',
                                 letterSpacing: '0.18em',
-                                color: isActiveGroup ? '#9b8fff' : '#5a566e',
+                                color: isActiveGroup ? 'var(--color-accent-text)' : 'var(--color-muted)',
                                 whiteSpace: 'nowrap',
                               }}
                             >
@@ -301,8 +301,8 @@ export function PreviewModal({
                                   fontSize: 9,
                                   textTransform: 'uppercase',
                                   letterSpacing: '0.12em',
-                                  color: '#9b8fff',
-                                  border: '1px solid rgba(124,110,246,0.4)',
+                                  color: 'var(--color-accent-text)',
+                                  border: '1px solid color-mix(in srgb, var(--color-accent) 40%, transparent)',
                                   borderRadius: 999,
                                   padding: '1px 6px',
                                 }}
@@ -327,17 +327,17 @@ export function PreviewModal({
                         }}
                       >
                         <div
-                          className="overflow-hidden rounded-2xl border transition-all duration-200 group-hover/slide:scale-[1.02] group-hover/slide:border-[rgba(124,110,246,0.65)]"
+                          className="overflow-hidden rounded-2xl border transition-all duration-200 group-hover/slide:scale-[1.02] group-hover/slide:border-accent/65"
                           style={{
                             width: slideW,
                             height: SLIDE_H,
-                            borderColor: isActiveGroup ? 'rgba(124,110,246,0.65)' : 'rgba(255,255,255,0.1)',
+                            borderColor: isActiveGroup ? 'color-mix(in srgb, var(--color-accent) 65%, transparent)' : 'rgba(255,255,255,0.1)',
                             background:
                               highResThumb || navThumb
-                                ? '#0f0f13'
-                                : `linear-gradient(160deg, rgba(124,110,246,0.15), rgba(15,15,19,0.3)), ${fallbackFill}`,
+                                ? 'var(--color-surface)'
+                                : `linear-gradient(160deg, color-mix(in srgb, var(--color-accent) 12%, transparent), rgba(15,15,19,0.3)), ${fallbackFill}`,
                             boxShadow: isActiveGroup
-                              ? '0 0 0 1px rgba(124,110,246,0.3), 0 12px 48px rgba(0,0,0,0.55)'
+                              ? '0 0 0 1px color-mix(in srgb, var(--color-accent) 30%, transparent), 0 12px 48px rgba(0,0,0,0.55)'
                               : '0 8px 32px rgba(0,0,0,0.4)',
                           }}
                         >
@@ -355,7 +355,7 @@ export function PreviewModal({
                               style={{ filter: previewProgress.currentGroupName === group.name ? 'blur(0.5px)' : 'none' }}
                             />
                           ) : (
-                            <div className="h-full w-full animate-pulse bg-[rgba(124,110,246,0.07)]" />
+                            <div className="h-full w-full animate-pulse bg-accent/10" />
                           )}
                         </div>
 
@@ -363,7 +363,7 @@ export function PreviewModal({
                         <span
                           style={{
                             fontSize: 11,
-                            color: isActiveGroup ? '#9b8fff' : '#5a566e',
+                            color: isActiveGroup ? 'var(--color-accent-text)' : 'var(--color-muted)',
                             marginTop: 6,
                             paddingLeft: 2,
                             lineHeight: 1,

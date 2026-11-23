@@ -13,7 +13,7 @@ import type { AiModel, AiProvider } from '@/ai/providers'
 import { formatMessage, splitMessageTemplate, useStudioLocale } from '@/i18n'
 
 const inputCls =
-  'bg-[#0f0f13] border border-[rgba(255,255,255,0.1)] rounded px-3 py-2 text-sm text-[#e8e8f0] w-full focus:outline-none focus:border-[rgba(124,110,246,0.5)]'
+  'bg-surface border border-[rgba(255,255,255,0.1)] rounded px-3 py-2 text-sm text-[#e8e8f0] w-full focus:outline-none focus:border-accent/60'
 const monoInputCls = `${inputCls} font-mono`
 const labelCls = 'text-[11px] text-[#6b6b7a] mb-1 block uppercase tracking-[0.08em]'
 
@@ -167,8 +167,8 @@ export function AiProviderSettings() {
               }}
               className={`rounded-lg border px-2 py-2 text-xs transition-colors text-left ${
                 provider === item.id
-                  ? 'border-[#7c6ef6] bg-[rgba(124,110,246,0.18)] text-[#c4b5fd]'
-                  : 'border-[rgba(255,255,255,0.1)] text-[#6b6b7a] hover:text-[#e8e8f0] hover:bg-[rgba(255,255,255,0.06)]'
+                  ? 'border-accent bg-accent-soft text-accent-text'
+                  : 'border-[rgba(255,255,255,0.1)] text-muted hover:text-[#e8e8f0] hover:bg-[rgba(255,255,255,0.06)]'
               }`}
             >
               <span className="block font-medium">{providerShortLabel(item)}</span>
@@ -210,7 +210,7 @@ export function AiProviderSettings() {
             {splitMessageTemplate(ta.getKeyFrom).map((part, idx) => (
               <Fragment key={idx}>
                 {part.type === 'token' && part.key === 'link' ? (
-                  <a href={activeProvider.keyUrl} target="_blank" rel="noreferrer" className="text-[#7c6ef6] hover:underline">
+                  <a href={activeProvider.keyUrl} target="_blank" rel="noreferrer" className="text-accent-text hover:underline">
                     {activeProvider.keyUrl.replace(/^https?:\/\//, '')}
                   </a>
                 ) : (
@@ -307,7 +307,7 @@ export function AiProviderSettings() {
                       onClick={() => setModel(provider, model.id)}
                       className={`block w-full text-left px-3 py-2 border-b border-[rgba(255,255,255,0.06)] last:border-b-0 transition-colors ${
                         activeModel === model.id
-                          ? 'bg-[rgba(124,110,246,0.16)] text-[#c4b5fd]'
+                          ? 'bg-accent-soft text-accent-text'
                           : 'text-[#b8b8c8] hover:bg-[rgba(255,255,255,0.05)]'
                       }`}
                     >

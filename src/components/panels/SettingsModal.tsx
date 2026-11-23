@@ -98,7 +98,7 @@ function PanoSettingsContent() {
               onValueChange={(value) =>
                 updatePanoSettings({ gapPx: Math.max(0, Math.min(300, value)) })
               }
-              className="bg-[#0f0f13] border border-[rgba(255,255,255,0.1)] rounded px-3 py-2 text-sm text-[#e8e8f0] w-24 focus:outline-none focus:border-[rgba(124,110,246,0.5)]"
+              className="bg-surface border border-[rgba(255,255,255,0.1)] rounded px-3 py-2 text-sm text-[#e8e8f0] w-24 focus:outline-none focus:border-accent/60"
             />
             <span className={`text-xs ${STUDIO_TEXT_MUTED_CLS}`}>px</span>
             <input
@@ -108,7 +108,7 @@ function PanoSettingsContent() {
               max={300}
               value={panoSettings.gapPx ?? 24}
               onChange={(e) => updatePanoSettings({ gapPx: Number(e.target.value) })}
-              className="flex-1 accent-[#7c6ef6]"
+              className="flex-1 accent-accent"
             />
           </div>
         </div>
@@ -121,7 +121,7 @@ function PanoSettingsContent() {
               id="pano-compensate"
               checked={panoSettings.compensate ?? false}
               onChange={(checked) => updatePanoSettings({ compensate: checked })}
-              checkboxClassName="mt-0.5 accent-[#7c6ef6] w-4 h-4 shrink-0 cursor-pointer"
+              checkboxClassName="mt-0.5 accent-accent w-4 h-4 shrink-0 cursor-pointer"
             />
             <div>
               <label
@@ -140,7 +140,7 @@ function PanoSettingsContent() {
         {/* Status summary */}
         <div className="rounded-lg border border-[rgba(255,255,255,0.05)] bg-[rgba(255,255,255,0.01)] px-4 py-3">
           <p className={`text-[11px] ${STUDIO_TEXT_MUTED_CLS} leading-relaxed`}>
-            <span className="text-[#c4b5fd]">{sm.current}</span>{' '}
+            <span className="text-accent-text">{sm.current}</span>{' '}
             {panoSettings.gapPx ?? 24}px
           </p>
         </div>
@@ -175,7 +175,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
           <span className={STUDIO_TEXT_SUBTLE_CLS} aria-hidden="true">·</span>
           <span className={`text-[11px] ${STUDIO_TEXT_SUBTLE_CLS} font-mono select-all`} title="Git commit hash">{typeof __GIT_HASH__ !== 'undefined' ? __GIT_HASH__ : 'local'}</span>
           <span className="flex-1" />
-          <a href="https://github.com/imwarn/moklu" target="_blank" rel="noopener noreferrer" className={`text-[11px] ${STUDIO_TEXT_SUBTLE_CLS} hover:text-[#9b8fff] transition-colors`}>github.com/imwarn/moklu</a>
+          <a href="https://github.com/imwarn/moklu" target="_blank" rel="noopener noreferrer" className={`text-[11px] ${STUDIO_TEXT_SUBTLE_CLS} hover:text-accent-text transition-colors`}>github.com/imwarn/moklu</a>
         </>
       )}
     >
@@ -200,7 +200,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                     onClick={() => setTab(item.id)}
                     className={`w-full text-left px-2 py-1.5 rounded-md text-xs transition-colors flex items-center gap-2 ${
                       tab === item.id
-                        ? 'bg-[rgba(124,110,246,0.18)] text-[#c4b5fd]'
+                        ? 'bg-accent-soft text-accent-text'
                         : `${STUDIO_TEXT_MUTED_CLS} hover:text-[#e8e8f0] hover:bg-[rgba(255,255,255,0.05)]`
                     }`}
                   >

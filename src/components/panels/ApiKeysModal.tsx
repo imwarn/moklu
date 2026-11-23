@@ -39,7 +39,7 @@ export function ApiKeysModal({ open, onClose }: ApiKeysModalProps) {
         <button
           type="button"
           onClick={onClose}
-          className="mt-1 w-full rounded-lg bg-[#7c6ef6] hover:bg-[#6c5ed6] py-2 text-sm font-medium text-white transition-colors"
+          className="mt-1 w-full rounded-lg bg-accent-strong hover:bg-accent-strong/90 py-2 text-sm font-medium text-accent-fg transition-colors"
         >
           {t.common.save}
         </button>
