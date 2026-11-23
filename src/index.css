@@ -14,12 +14,24 @@
 
 body {
   margin: 0;
+  background: #f8f9fc;
+  color: #18181b;
+  font-family: 'Inter', system-ui, sans-serif;
+  overflow-x: hidden;
+  overflow-y: auto;
+  color-scheme: light;
+}
+
+html[data-theme="dark"] body {
+  background: #0b0b10;
+  color: #e8e8f0;
+  color-scheme: dark;
+}
+
+html[data-surface="studio"] body {
   background: #0f0f13;
   color: #e8e8f0;
-  font-family: 'Inter', system-ui, sans-serif;
   overflow: hidden;
-  /* Hints the OS/browser to theme native controls (select popups, checkboxes,
-     scrollbars) dark instead of defaulting to a light popup on a dark app. */
   color-scheme: dark;
 }
 

@@ -1,4 +1,11 @@
 /**
+ * [INPUT]: depends on AiTransport from @/ai/transport; depends on ProjectStorageAdapter from @/store/storage/types; reads import.meta.env.VITE_SITE_URL and window.__PIXELDECK_CONFIG__
+ * [OUTPUT]: exports SITE_URL, BRAND_NAME, PixelDeckConfig, and getPixelDeckConfig()
+ * [POS]: Root runtime configuration and open-core extensibility seam for Moklu (and preserved PixelDeck runtime overrides)
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
+
+/**
  * PixelDeck open-core extensibility seam.
  *
  * The core app is fully local-first and has zero dependency on any SaaS
@@ -15,6 +22,11 @@
 
 import type { AiTransport } from '@/ai/transport'
 import type { ProjectStorageAdapter } from '@/store/storage/types'
+
+export const SITE_URL =
+  (import.meta.env?.VITE_SITE_URL as string | undefined)?.replace(/\/+$/, '') || 'https://moklu.tech'
+
+export const BRAND_NAME = 'Moklu'
 
 export interface PixelDeckConfig {
   /** Override the AI transport (default: direct fetch via src/ai/client.ts). */

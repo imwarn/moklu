@@ -101,4 +101,4 @@ Browser mockups can now display an editable window title, address label, light/d
 
 The **maintained roadmap** is in [docs/development-plan.md](./docs/development-plan.md). Historical milestones v0.1–v0.8 are merged; current priorities are framing fidelity, data import safety, end-to-end export verification and GA release engineering.
 
-Website: [moklu.app](https://moklu.app) (planned).
+Website: [moklu.tech](https://moklu.tech).

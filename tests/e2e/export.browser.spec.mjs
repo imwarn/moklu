@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on @playwright/test and node:fs/promises
+ * [OUTPUT]: Playwright E2E regression suite for Konva RGBA golden export, Studio Quick Design, keyboard accessibility, and mobile responsive Studio panels on /studio
+ * [POS]: Studio browser verification spec in tests/e2e alongside seo-and-tools.spec.mjs
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { expect, test } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 
@@ -78,7 +84,7 @@ for (const mode of ['throw', 'mismatch']) {
 
 test('Quick Design screenshot upload produces a real downloadable PNG at the requested resolution', async ({ page, browserName }) => {
   page.on('dialog', (dialog) => dialog.accept())
-  await page.goto('/')
+  await page.goto('/studio')
   await page.getByRole('button', { name: /Quick Design/ }).click()
   const dialog = page.getByRole('dialog', { name: 'Quick Design' })
   await expect(dialog).toBeVisible()
@@ -118,7 +124,7 @@ test('Quick Design screenshot upload produces a real downloadable PNG at the req
 test('9:16 Story exports exact portrait pixels through the real application', async ({ page, browserName }) => {
   test.skip(browserName !== 'chromium', 'Portrait UI smoke runs on Chromium; all engines execute the real-canvas RGBA golden')
   page.on('dialog', (dialog) => dialog.accept())
-  await page.goto('/')
+  await page.goto('/studio')
   await page.getByRole('button', { name: /Quick Design/ }).click()
   const dialog = page.getByRole('dialog', { name: 'Quick Design' })
   await dialog.getByRole('combobox').nth(0).selectOption('story')
@@ -131,7 +137,7 @@ test('9:16 Story exports exact portrait pixels through the real application', as
 })
 
 test('Quick Design is keyboard dismissible and restores focus to its launcher', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/studio')
   const launch = page.getByRole('button', { name: /Quick Design/ })
   await launch.focus()
   await launch.press('Enter')
@@ -150,7 +156,7 @@ test('Quick Design is keyboard dismissible and restores focus to its launcher', 
 })
 
 test('Quick Design form keyboard actions cannot trigger destructive editor shortcuts', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/studio')
   await page.getByRole('button', { name: /Quick Design/ }).click()
   const dialog = page.getByRole('dialog', { name: 'Quick Design' })
   await expect(dialog).toBeVisible()
@@ -165,7 +171,7 @@ test('Quick Design form keyboard actions cannot trigger destructive editor short
 
 test('compact toolbar retains keyboard-reachable Quick Design and PNG actions', async ({ page }) => {
   await page.setViewportSize({ width: 720, height: 760 })
-  await page.goto('/')
+  await page.goto('/studio')
   const quick = page.getByRole('button', { name: /Quick Design/ }).first()
   const png = page.locator('button[title="Export the active canvas at its original size"]')
   await expect(quick).toBeAttached()
@@ -176,7 +182,7 @@ test('compact toolbar retains keyboard-reachable Quick Design and PNG actions', 
 
 test('mobile viewport reserves usable canvas and allows sidebars to open and close', async ({ page }) => {
   await page.setViewportSize({ width: 393, height: 852 })
-  await page.goto('/')
+  await page.goto('/studio')
   const layersToggle = page.getByRole('button', { name: 'Toggle layers panel' })
   const propertiesToggle = page.getByRole('button', { name: 'Toggle properties panel' })
   await expect(layersToggle).toBeVisible()
@@ -197,7 +203,7 @@ test('mobile viewport reserves usable canvas and allows sidebars to open and clo
 
 test('Quick Design preserves visible canvas after portrait-sized mobile apply', async ({ page }) => {
   await page.setViewportSize({ width: 393, height: 852 })
-  await page.goto('/')
+  await page.goto('/studio')
   await page.getByRole('button', { name: /Quick Design/ }).click()
   const dialog = page.getByRole('dialog', { name: 'Quick Design' })
   await dialog.getByRole('combobox').first().selectOption('story')
@@ -217,7 +223,7 @@ test('Quick Design preserves visible canvas after portrait-sized mobile apply', 
 
 test('mobile format selector is unobstructed and switches formats', async ({ page }) => {
   await page.setViewportSize({ width: 393, height: 852 })
-  await page.goto('/')
+  await page.goto('/studio')
   const format = page.getByRole('combobox', { name: 'Canvas format' })
   await expect(format).toBeVisible()
   const controls = page.getByRole('navigation', { name: 'Editor panels' })
@@ -240,7 +246,7 @@ test('mobile format selector is unobstructed and switches formats', async ({ pag
 
 test('mobile add-format action opens the existing creation menu', async ({ page }) => {
   await page.setViewportSize({ width: 393, height: 852 })
-  await page.goto('/')
+  await page.goto('/studio')
   const add = page.getByRole('button', { name: 'Add a canvas format' })
   await expect(add).toBeVisible()
   await add.click()
