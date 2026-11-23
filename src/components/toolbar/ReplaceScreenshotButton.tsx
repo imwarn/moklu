@@ -57,9 +57,13 @@ export function ReplaceScreenshotButton() {
         onClick={() => inputRef.current?.click()}
         disabled={!target || working}
         title={target ? t.toolbar.replaceScreenshotTitle : t.toolbar.replaceScreenshotDisabledTitle}
-        className="rounded-lg border border-white/15 px-3 py-1.5 text-xs text-[#d6d6e4] hover:border-white/30 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
+        aria-label={working ? t.toolbar.replaceScreenshotWorking : t.toolbar.replaceScreenshot}
+        className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-lg border border-white/15 px-2 py-1.5 text-xs text-[#d6d6e4] hover:border-white/30 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40 min-[1536px]:px-3"
       >
-        {working ? t.toolbar.replaceScreenshotWorking : `↺ ${t.toolbar.replaceScreenshot}`}
+        <span aria-hidden="true">↺</span>
+        <span className="max-[1535px]:hidden">
+          {working ? t.toolbar.replaceScreenshotWorking : t.toolbar.replaceScreenshot}
+        </span>
       </button>
       {error && (
         <span role="alert" title={error} className="max-w-28 truncate text-[10px] text-red-400">
