@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on @playwright/test, node:fs/promises, and ./projectComparison.mjs
+ * [OUTPUT]: Playwright live reliability verification suite targeting https://moklu.app
+ * [POS]: live production reliability E2E spec inside tests/live
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { expect, test } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { normalizedProject } from './projectComparison.mjs'
@@ -74,7 +80,7 @@ async function comparePngPixels(page, originalBytes, importedBytes) {
 // and client-side project storage. No actual user account or server data is touched.
 test('live project survives refresh, backs up with assets, restores in a fresh profile, and exports exact PNG', async ({ browser, baseURL }) => {
   test.skip(test.info().project.name !== 'chromium-desktop', 'Stateful reliability scenario runs in isolated Chromium')
-  const origin = baseURL || 'https://moklu.tech'
+  const origin = baseURL || 'https://moklu.app'
   const context = await browser.newContext({ acceptDownloads: true })
   const page = await context.newPage()
   page.on('dialog', (dialog) => dialog.accept())

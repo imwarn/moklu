@@ -61,7 +61,7 @@ export function MockupQuickTool({
   const [fit, setFit] = useState<QuickScreenshotFit>('cover')
   const [scalePercent, setScalePercent] = useState<number>(100)
   const [browserTitle, setBrowserTitle] = useState<string>(DEFAULT_BROWSER_CHROME.title)
-  const [browserAddress, setBrowserAddress] = useState<string>('https://moklu.tech')
+  const [browserAddress, setBrowserAddress] = useState<string>('https://moklu.app')
   const [screenshot, setScreenshot] = useState<WorkspaceImageInput | null>(() =>
     createDemoImageInput(initialMockup.startsWith('browser-') ? 'saas' : 'mobile', 'moklu-demo-screenshot.svg'),
   )

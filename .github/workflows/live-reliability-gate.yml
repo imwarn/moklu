@@ -36,7 +36,7 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Verify backup and pixel identity against deployed staging site
         env:
-          MOKLU_DEPLOY_URL: https://moklu.tech
+          MOKLU_DEPLOY_URL: https://moklu.app
         run: npx playwright test tests/live/reliability.spec.mjs --config=tests/live/playwright.config.mjs --project=chromium-desktop
       - name: Upload browser trace if failed
         if: failure()

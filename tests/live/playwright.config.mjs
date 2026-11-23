@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on @playwright/test and MOKLU_DEPLOY_URL (default https://moklu.app)
+ * [OUTPUT]: Playwright configuration for live production reliability, acceptance, and CSP suites
+ * [POS]: live test runner configuration in tests/live
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
@@ -14,7 +20,7 @@ export default defineConfig({
   workers: 1,
   reporter: 'list',
   use: {
-    baseURL: process.env.MOKLU_DEPLOY_URL || 'https://moklu.tech',
+    baseURL: process.env.MOKLU_DEPLOY_URL || 'https://moklu.app',
     trace: 'retain-on-failure',
     ignoreHTTPSErrors: false,
   },

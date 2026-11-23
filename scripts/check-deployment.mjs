@@ -1,6 +1,12 @@
+/**
+ * [INPUT]: depends on node:fs/promises and MOKLU_DEPLOY_URL (default https://moklu.app)
+ * [OUTPUT]: verifies live HTTPS deployment HTML shell, asset reachability, and response headers
+ * [POS]: deployment smoke script inside scripts/
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { writeFile, mkdir } from 'node:fs/promises'
 
-const target = new URL(process.env.MOKLU_DEPLOY_URL || 'https://moklu.tech')
+const target = new URL(process.env.MOKLU_DEPLOY_URL || 'https://moklu.app')
 if (target.protocol !== 'https:') throw new Error('Only HTTPS deployment verification is supported')
 const report = { url: target.href, timestamp: new Date().toISOString(), checks: [], warnings: [] }
 

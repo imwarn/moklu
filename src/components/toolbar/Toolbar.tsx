@@ -364,7 +364,7 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
 
         {/* Save indicator */}
         {saveLabel && (
-          <span style={{ fontSize: 11, color: '#6ee7b7', opacity: 0.8 }}>
+          <span style={{ fontSize: 11, color: '#6ee7b7', opacity: 0.8, whiteSpace: 'nowrap', flexShrink: 0 }}>
             {saveLabel === 'saving' ? t.toolbar.saving : t.toolbar.saved}
           </span>
         )}

@@ -185,19 +185,19 @@ test('4-locale SEO routes sync lang, canonical, hreflang, JSON-LD, and tool pres
       path: '/zh/id-card-watermark',
       lang: 'zh',
       tool: 'id-card',
-      canonical: 'https://moklu.tech/zh/id-card-watermark',
+      canonical: 'https://moklu.app/zh/id-card-watermark',
     },
     {
       path: '/ja/merge-images',
       lang: 'ja',
       tool: 'merge',
-      canonical: 'https://moklu.tech/ja/merge-images',
+      canonical: 'https://moklu.app/ja/merge-images',
     },
     {
       path: '/ko/browser-mockup',
       lang: 'ko',
       tool: 'mockup',
-      canonical: 'https://moklu.tech/ko/browser-mockup',
+      canonical: 'https://moklu.app/ko/browser-mockup',
     },
   ]
 
@@ -226,12 +226,12 @@ test('Pre-rendered SSG HTML and sitemap.xml contain all 76 routes with full Reac
   const sitemap = await readFile(path.join(distDir, 'sitemap.xml'), 'utf8')
   const urlMatches = sitemap.match(/<url>/g) ?? []
   expect(urlMatches.length).toBe(76)
-  expect(sitemap).toContain('https://moklu.tech/zh/id-card-watermark')
-  expect(sitemap).toContain('https://moklu.tech/ja/merge-images')
-  expect(sitemap).toContain('https://moklu.tech/ko/browser-mockup')
+  expect(sitemap).toContain('https://moklu.app/zh/id-card-watermark')
+  expect(sitemap).toContain('https://moklu.app/ja/merge-images')
+  expect(sitemap).toContain('https://moklu.app/ko/browser-mockup')
 
   const robots = await readFile(path.join(distDir, 'robots.txt'), 'utf8')
-  expect(robots).toContain('Sitemap: https://moklu.tech/sitemap.xml')
+  expect(robots).toContain('Sitemap: https://moklu.app/sitemap.xml')
 
   const landingPages = [
     path.join(distDir, 'index.html'),
@@ -378,7 +378,37 @@ test('ResizeQuickTool multi-image upload renders thumbnail filmstrip, switches p
   const secondSrc = await mainPreview.getAttribute('src')
   expect(secondSrc).not.toBe(firstSrc)
 
-  // Remove first item and verify count updates to 1/1
+  // Remove first item and verify only 1 thumbnail remains and multi-index prefix clears
   await workspace.getByTestId('resize-thumb-remove-0').click()
-  await expect(meta).toContainText('1/1')
+  await expect(workspace.getByTestId('resize-thumb-1')).toHaveCount(0)
+  await expect(workspace.getByTestId('resize-thumb-0')).toBeVisible()
+  await expect(meta).not.toContainText('/2')
+})
+
+test('Localized /zh/studio renders Simplified Chinese Studio UI and switches UI language without losing canvas', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Localized Studio UI regression runs once on Chromium')
+  await page.goto('/zh/studio')
+  await expect(page.locator('.konvajs-content').first()).toBeVisible()
+  await expect(page.locator('html')).toHaveAttribute('lang', 'zh')
+
+  // Verify Chinese toolbar, layers panel, properties panel, and slide navigator labels
+  await expect(page.locator('header')).toContainText('工具箱')
+  await expect(page.locator('header')).toContainText('快速设计')
+  await expect(page.locator('header')).toContainText('设置')
+  await expect(page.getByLabel('图层侧边栏')).toContainText('插入')
+  await expect(page.getByLabel('图层侧边栏')).toContainText('图层')
+  await expect(page.getByLabel('属性侧边栏')).toContainText('属性')
+
+  // Switch Studio UI language to Japanese via Toolbar language switcher
+  await page.locator('header button[aria-haspopup="menu"]').click()
+  await page.getByRole('menuitem', { name: /日本語/ }).click()
+  await expect(page).toHaveURL(/\/ja\/studio$/)
+  await expect(page.locator('html')).toHaveAttribute('lang', 'ja')
+  await expect(page.locator('header')).toContainText('ツール')
+
+  // Switch back to English /studio
+  await page.locator('header button[aria-haspopup="menu"]').click()
+  await page.getByRole('menuitem', { name: /English/ }).click()
+  await expect(page).toHaveURL(/\/studio$/)
+  await expect(page.locator('header')).toContainText('Quick Design')
 })

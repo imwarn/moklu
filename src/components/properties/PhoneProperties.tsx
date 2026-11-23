@@ -173,7 +173,7 @@ export function PhoneProperties({ layer }: { layer: PhoneLayer }) {
               <input type="text" maxLength={240} className={inputCls + ' mt-1'}
                 value={chrome.address ?? 'https://example.com'}
                 onChange={(event) => updChrome({ address: event.target.value })}
-                placeholder="https://moklu.tech" />
+                placeholder="https://moklu.app" />
             </label>
             <div>
               <label className={labelCls}>{t.properties.appearance}</label>

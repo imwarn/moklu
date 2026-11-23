@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# One-shot post-deploy verification for https://moklu.tech/
+# One-shot post-deploy verification for https://moklu.app/
 #
 # Answers three questions a bare "tests passed" cannot:
 #   1. Is the deployment actually the build we think it is?  (bundle identity)
@@ -18,8 +18,8 @@
 
 set -uo pipefail
 
-TARGET="${1:-https://moklu.tech}"
-if [[ "$TARGET" == --* ]]; then TARGET="https://moklu.tech"; fi
+TARGET="${1:-https://moklu.app}"
+if [[ "$TARGET" == --* ]]; then TARGET="https://moklu.app"; fi
 SKIP_BROWSER=0
 for arg in "$@"; do [[ "$arg" == "--no-browser" ]] && SKIP_BROWSER=1; done
 

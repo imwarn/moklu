@@ -1,5 +1,5 @@
 /**
- * [INPUT]: depends on react, konva, zustand useShallow, Toolbar, LayersPanel, PreviewModal, PropertiesPanel, SlideNavigator, StageCanvas, EditingContext, AppLoadingScreen, ConfirmDialog, useThumbnails, useImageCacheWarmer, useEditorStore/useUndoRedo, useProjectsStore, applyCanvasFormat/resolveGroupView, registerStage, getScopedEditingIndicator, applyDocumentTheme from @/theme/themeStore, buildLocalizedPath/LocaleCode from @/seo, and StudioLocaleProvider/getStudioDictionary from @/i18n
+ * [INPUT]: depends on react, konva, zustand useShallow, Toolbar, LayersPanel, PreviewModal, PropertiesPanel, SlideNavigator, StageCanvas, EditingContext, AppLoadingScreen, ConfirmDialog, useThumbnails, useImageCacheWarmer, useEditorStore/useUndoRedo, ensureProjectsBootstrapped/useProjectsStore, applyCanvasFormat/resolveGroupView, registerStage, getScopedEditingIndicator, applyDocumentTheme from @/theme/themeStore, buildLocalizedPath/LocaleCode from @/seo, and StudioLocaleProvider/getStudioDictionary from @/i18n
  * [OUTPUT]: exports StudioPage component containing the full Konva multi-layer editor wrapped in StudioLocaleProvider, localization mode, keyboard shortcuts, and Home/Tools navigation link
  * [POS]: lazy-loaded full Studio editor page mounted by src/App.tsx on /studio and /<locale>/studio routes
  * [PROTOCOL]: Update this header on change, then check GEMINI.md

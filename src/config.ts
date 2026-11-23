@@ -24,7 +24,7 @@ import type { AiTransport } from '@/ai/transport'
 import type { ProjectStorageAdapter } from '@/store/storage/types'
 
 export const SITE_URL =
-  (import.meta.env?.VITE_SITE_URL as string | undefined)?.replace(/\/+$/, '') || 'https://moklu.tech'
+  (import.meta.env?.VITE_SITE_URL as string | undefined)?.replace(/\/+$/, '') || 'https://moklu.app'
 
 export const BRAND_NAME = 'Moklu'
 
