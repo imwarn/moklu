@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on Layer/GroupLayer from @/types, EditorStore/EditorSet/EditorGet from ../types, and cloneWithNewIds/mutateActiveGroup/getActiveGroup/STYLE_KEYS from ../helpers
+ * [OUTPUT]: exports createClipboardSlice slice creator implementing copyLayers, cutLayers, pasteLayers, copyLayerStyle, and pasteLayerStyle
+ * [POS]: layer and style clipboard slice in src/store/slices/; composed into useEditorStore by src/store/index.ts
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { Layer, GroupLayer } from '@/types'
 import type { EditorStore, EditorSet, EditorGet } from '../types'
 import {

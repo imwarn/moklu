@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on zustand, zundo temporal middleware, canvasFormats selectors from @/utils/canvasFormats, EditorStore from ./types, newProject/touchProject from ./helpers, and all 9 slices from ./slices/*
+ * [OUTPUT]: exports EditorStore type re-export, useEditorStore (temporal-wrapped Zustand store), and useUndoRedo hook
+ * [POS]: central editor state composition root in src/store/; assembles all 9 editor slices, tracks project-only undo/redo history via zundo, and reconciles transient navigation on history restore
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { create, type StateCreator } from 'zustand'
 import { useStore } from 'zustand'
 import { temporal } from 'zundo'

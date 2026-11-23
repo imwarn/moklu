@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on zustand, zustand/middleware persist/createJSONStorage, and idbStorage from ./idb-storage
+ * [OUTPUT]: exports FontAssetEntry interface and useFontStore persisted Zustand store
+ * [POS]: custom uploaded font asset registry in src/store/; persists base64 font files in IndexedDB under 'pixeldeck-fonts' for canvas and export rendering
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { idbStorage } from './idb-storage'

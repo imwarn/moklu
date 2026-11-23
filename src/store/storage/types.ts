@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on no internal modules (pure TypeScript contract and Error subclass)
+ * [OUTPUT]: exports ProjectMeta interface, ProjectStorageAdapter async persistence interface, and ProjectConflictError class
+ * [POS]: dependency-inversion storage contract in src/store/storage/; implemented by localStorageAdapter and optional commercial/cloud host adapters
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 export interface ProjectMeta {
   id: string
   name: string

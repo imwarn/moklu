@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on Layer/LocaleContent/LocaleLayerPatch/LocaleContentBatchEntry/TextLayer/TextMark from @/types, EditorStore/EditorSet/EditorGet from ../types, mapLayerTree/patchLayerForLocale/touchProject/touchSettings/updateLayerInTree from ../helpers, and isLocaleContentComplete from @/utils/locale
+ * [OUTPUT]: exports createLocaleSlice slice creator managing active locale switching, locale add/remove/relabel/promote, and single or batched localeContent mutations
+ * [POS]: symmetric localization state slice in src/store/slices/; composed into useEditorStore by src/store/index.ts
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type {
   Layer,
   LocaleContent,
