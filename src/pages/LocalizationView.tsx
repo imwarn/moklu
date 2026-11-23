@@ -497,7 +497,7 @@ export function LocalizationView({ onBack, embedded = false, onPreview }: Locali
   const gridTemplateColumns = `300px ${locales.map(() => '260px').join(' ')}`
 
   return (
-    <div className={`relative overflow-hidden bg-[#0f0f13] text-[#e8e8f0] ${embedded ? 'h-full w-full' : 'h-screen w-screen'}`}>
+    <div className={`relative overflow-hidden bg-surface text-zinc-100 ${embedded ? 'h-full w-full' : 'h-screen w-screen'}`}>
       {/* AI Settings modal — reachable from no-key states without leaving the view */}
       <ApiKeysModal open={aiSettingsOpen} onClose={() => setAiSettingsOpen(false)} />
       <PromoteLocaleDialog
@@ -511,12 +511,6 @@ export function LocalizationView({ onBack, embedded = false, onPreview }: Locali
         onCancel={() => setPromoteTarget(null)}
         onConfirm={handleConfirmPromoteLocale}
       />
-
-      {/* Background glows */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute left-[-10%] top-[-18%] h-[28rem] w-[28rem] rounded-full bg-[#7c6ef6]/16 blur-3xl" />
-        <div className="absolute bottom-[-18%] right-[-8%] h-[24rem] w-[24rem] rounded-full bg-[#ec4899]/10 blur-3xl" />
-      </div>
 
       <div className="relative flex h-full flex-col">
         {/* ── Locale bar ── */}
@@ -589,10 +583,10 @@ export function LocalizationView({ onBack, embedded = false, onPreview }: Locali
               ))}
 
               {groups.every((g) => g.rows.length === 0) && (
-                <div className="rounded-2xl border border-white/8 bg-[#18181f]/78 px-8 py-16 text-center">
+                <div className="rounded-2xl border border-border bg-panel px-8 py-16 text-center">
                   <div className="text-4xl mb-4">🌐</div>
-                  <div className="text-lg text-[#d5d5df] mb-2">{lm.noContentTitle}</div>
-                  <div className="text-sm text-[#6b6b7a]">{lm.noContentDesc}</div>
+                  <div className="text-lg text-zinc-200 mb-2">{lm.noContentTitle}</div>
+                  <div className="text-sm text-muted">{lm.noContentDesc}</div>
                 </div>
               )}
             </div>
@@ -604,17 +598,17 @@ export function LocalizationView({ onBack, embedded = false, onPreview }: Locali
           {editingTextCell && (
             <aside
               data-locale-toolbar-panel
-              className="w-72 shrink-0 overflow-y-auto border-l border-[rgba(255,255,255,0.06)] bg-[#18181f] px-4 py-4"
+              className="w-72 shrink-0 overflow-y-auto border-l border-border bg-panel px-4 py-4"
             >
-              <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-[#6b6b7a]">
+              <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted">
                 {lm.textStyling}
               </div>
-              <div className="mb-3 truncate text-xs text-[#c4b5fd]" title={editingTextCell.layerName}>
+              <div className="mb-3 truncate text-xs text-accent-text" title={editingTextCell.layerName}>
                 ✏️ {editingTextCell.layerName}
-                <span className="ml-1.5 text-[#8f90a3]">· {getLanguageName(editingTextCell.locale)}</span>
+                <span className="ml-1.5 text-muted">· {getLanguageName(editingTextCell.locale)}</span>
               </div>
               <div ref={setToolbarSlotEl} />
-              <p className="mt-3 text-[10px] leading-relaxed text-[#6b6b7a]">
+              <p className="mt-3 text-[10px] leading-relaxed text-muted">
                 {lm.textStylingHint1}
                 <br />{lm.textStylingHint2}
               </p>

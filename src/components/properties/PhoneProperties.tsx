@@ -50,7 +50,7 @@ function LocaleScreenshotRow({
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
-            className="flex-1 text-left text-[10px] text-[#7c6ef6] hover:text-[#9d90f8] transition-colors"
+            className="flex-1 text-left text-[10px] text-accent-text hover:text-accent transition-colors"
           >
             {t.properties.change}
           </button>
@@ -66,7 +66,7 @@ function LocaleScreenshotRow({
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          className="flex-1 text-left text-[10px] text-[#6b6b7a] hover:text-[#e8e8f0] border border-dashed border-[rgba(255,255,255,0.1)] rounded px-2 py-1 transition-colors hover:border-[rgba(124,110,246,0.4)]"
+          className="flex-1 text-left text-[10px] text-[#6b6b7a] hover:text-[#e8e8f0] border border-dashed border-[rgba(255,255,255,0.1)] rounded px-2 py-1 transition-colors hover:border-accent/40"
         >
           {t.properties.uploadFor} {locale}
         </button>
@@ -224,7 +224,7 @@ export function PhoneProperties({ layer }: { layer: PhoneLayer }) {
                   key={preset.label}
                   type="button"
                   onClick={() => upd(preset.patch as Partial<PhoneLayer>)}
-                  className="rounded border border-[rgba(255,255,255,0.1)] px-1 py-1.5 text-[10px] text-[#8f90a3] hover:border-[rgba(124,110,246,0.5)] hover:text-[#e8e8f0] hover:bg-[rgba(255,255,255,0.04)] transition-colors leading-tight text-center"
+                  className="rounded border border-[rgba(255,255,255,0.1)] px-1 py-1.5 text-[10px] text-[#8f90a3] hover:border-accent/50 hover:text-[#e8e8f0] hover:bg-[rgba(255,255,255,0.04)] transition-colors leading-tight text-center"
                 >
                   {preset.label}
                 </button>
@@ -300,7 +300,7 @@ export function PhoneProperties({ layer }: { layer: PhoneLayer }) {
           <label className={labelCls + ' !mb-0'}>{t.properties.scale}</label>
           <span className="text-xs text-[#e8e8f0]">{layer.scale.toFixed(2)}×</span>
         </div>
-        <input type="range" min={0.5} max={4} step={0.05} value={layer.scale} onChange={(e) => upd({ scale: Number(e.target.value) })} onMouseDown={pauseTemporal} onMouseUp={resumeTemporal} className="w-full accent-[#7c6ef6]" />
+        <input type="range" min={0.5} max={4} step={0.05} value={layer.scale} onChange={(e) => upd({ scale: Number(e.target.value) })} onMouseDown={pauseTemporal} onMouseUp={resumeTemporal} className="w-full accent-accent" />
       </div>
 
       <div className={panelSectionCls}>
@@ -310,7 +310,7 @@ export function PhoneProperties({ layer }: { layer: PhoneLayer }) {
           variant="dropzone"
           accept="image/*"
           ariaLabel={t.properties.screenshot}
-          className="rounded-xl border border-dashed border-[rgba(255,255,255,0.14)] bg-[#0f0f13] p-4 text-center transition-colors hover:border-[rgba(124,110,246,0.55)] cursor-pointer"
+          className="rounded-xl border border-dashed border-[rgba(255,255,255,0.14)] bg-surface p-4 text-center transition-colors hover:border-accent/55 cursor-pointer"
           onFiles={async (files) => {
             const file = files[0]
             if (!file) return

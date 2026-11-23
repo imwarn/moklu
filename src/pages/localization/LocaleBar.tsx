@@ -68,17 +68,17 @@ export function LocaleBar({
                   onClick={() => setActiveLocale(locale)}
                   className="rounded-full border px-4 py-2 text-sm transition"
                   style={{
-                    borderColor: selected ? 'rgba(124,110,246,0.7)' : 'rgba(255,255,255,0.08)',
-                    background: selected ? 'rgba(124,110,246,0.14)' : 'rgba(255,255,255,0.03)',
-                    color: selected ? '#f3f1ff' : '#c6c6d2',
+                    borderColor: selected ? 'color-mix(in srgb, var(--color-accent) 70%, transparent)' : 'rgba(255,255,255,0.08)',
+                    background: selected ? 'var(--color-accent-soft)' : 'rgba(255,255,255,0.03)',
+                    color: selected ? '#f4f4f5' : '#c6c6d2',
                   }}
                 >
                   <span className="font-semibold">{getLanguageName(locale)}</span>
                   <span className="ml-1.5 text-xs font-mono opacity-60">{locale}</span>
                   {isDefault ? (
-                    <span className="ml-2 text-xs text-[#9f98dc]">{tl.defaultBadge}</span>
+                    <span className="ml-2 text-xs text-accent-text">{tl.defaultBadge}</span>
                   ) : (
-                    <span className="ml-2 text-xs" style={{ color: ratio >= 0.5 ? '#7c6ef6' : '#f59e0b' }}>
+                    <span className="ml-2 text-xs" style={{ color: ratio >= 0.5 ? 'var(--color-accent-text)' : 'var(--color-warning)' }}>
                       {progress.complete}/{progress.total}
                     </span>
                   )}
@@ -90,7 +90,7 @@ export function LocaleBar({
                       setShowAddLocale(false)
                       setShowDefaultLocalePicker((open) => !open)
                     }}
-                    className="rounded-full border border-[#7c6ef6]/30 bg-[#7c6ef6]/10 px-3 py-2 text-xs font-medium text-[#d8d2ff] transition hover:border-[#7c6ef6]/60 hover:bg-[#7c6ef6]/18 hover:text-white"
+                    className="rounded-full border border-accent/35 bg-accent-soft px-3 py-2 text-xs font-medium text-accent-text transition hover:border-accent/60 hover:bg-accent/20 hover:text-white"
                     title={tl.changeDefaultTitle}
                   >
                     {tl.changeDefault}
@@ -117,7 +117,7 @@ export function LocaleBar({
                 setShowDefaultLocalePicker(false)
                 setShowAddLocale((open) => !open)
               }}
-              className="rounded-full border border-dashed border-white/12 bg-white/2 px-4 py-2 text-sm font-medium text-[#b7b7c7] transition hover:border-[#7c6ef6]/50 hover:bg-[#7c6ef6]/10 hover:text-white"
+              className="rounded-full border border-dashed border-white/12 bg-white/2 px-4 py-2 text-sm font-medium text-[#b7b7c7] transition hover:border-accent/50 hover:bg-accent/10 hover:text-white"
             >
               {tl.addLanguage}
             </button>
@@ -130,7 +130,7 @@ export function LocaleBar({
                 type="button"
                 onClick={() => onPreview(activeLocale)}
                 title={formatMessage(tl.previewLanguageTitle, { language: getLanguageName(activeLocale) })}
-                className="rounded-full border border-[#7c6ef6]/40 bg-[#7c6ef6]/10 px-4 py-2 text-sm font-medium text-[#cbbfff] transition hover:border-[#7c6ef6]/70 hover:bg-[#7c6ef6]/20 hover:text-white"
+                className="rounded-full border border-accent/40 bg-accent-soft px-4 py-2 text-sm font-medium text-accent-text transition hover:border-accent/70 hover:bg-accent/20 hover:text-white"
               >
                 {tl.previewButton}
               </button>
@@ -138,7 +138,7 @@ export function LocaleBar({
             <button
               type="button"
               onClick={onBack}
-              className="rounded-full border border-white/10 bg-white/4 px-5 py-2 text-sm font-medium text-[#d7d7e3] transition hover:border-[#7c6ef6]/50 hover:bg-[#7c6ef6]/10 hover:text-white"
+              className="rounded-full border border-white/10 bg-white/4 px-5 py-2 text-sm font-medium text-[#d7d7e3] transition hover:border-accent/50 hover:bg-accent/10 hover:text-white"
             >
               {tl.backToEditor}
             </button>

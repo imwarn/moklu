@@ -230,7 +230,7 @@ export function CompressQuickTool({
                     setResults([])
                     setPreviewId(null)
                   }}
-                  className={`min-h-8 rounded-lg px-2.5 py-1 text-xs font-medium ${tokens.focusRing} ${tokens.textMuted} hover:text-rose-500`}
+                  className={`min-h-8 rounded-lg px-2.5 py-1 text-xs font-medium ${tokens.focusRing} ${tokens.textMuted} hover:text-danger`}
                 >
                   {s.common.clearAll}
                 </button>
@@ -266,7 +266,7 @@ export function CompressQuickTool({
                             className="h-12 w-12 shrink-0 rounded-lg object-cover ring-1 ring-black/10 transition-transform group-hover:scale-105"
                           />
                           <div className="min-w-0">
-                            <p className={`truncate text-xs font-semibold group-hover:text-violet-500 ${tokens.text}`}>
+                            <p className={`truncate text-xs font-semibold group-hover:text-accent-text ${tokens.text}`}>
                               {item.filename}
                             </p>
                             <p className={`mt-0.5 text-[11px] tabular-nums ${tokens.textSubtle}`}>

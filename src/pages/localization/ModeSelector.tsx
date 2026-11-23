@@ -45,7 +45,7 @@ export function ModeSelector({ layer, onUpdate }: ModeSelectorProps) {
                     ? 'bg-[rgba(239,68,68,0.18)] border border-[rgba(239,68,68,0.4)] text-[#fca5a5]'
                     : opt.value === 'manual'
                       ? 'bg-[rgba(245,158,11,0.18)] border border-[rgba(245,158,11,0.4)] text-[#fbbf24]'
-                      : 'bg-[rgba(124,110,246,0.2)] border border-[rgba(124,110,246,0.5)] text-[#c4b5fd]'
+                      : 'bg-accent-soft border border-accent/50 text-accent-text'
                   : 'border border-[rgba(255,255,255,0.08)] text-[#555665] hover:text-[#9a9ab0] hover:border-[rgba(255,255,255,0.14)]'
             }`}
           >

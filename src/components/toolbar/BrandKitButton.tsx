@@ -40,12 +40,13 @@ export function BrandKitButton() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         title={t.toolbar.brandKitTitle}
-        className="max-[1099px]:!px-2"
+        aria-label={t.toolbar.brandKit}
+        className="max-[1535px]:!px-2"
         style={{
-          background: open ? 'rgba(124,110,246,0.15)' : 'none',
-          border: open ? '1px solid rgba(124,110,246,0.5)' : '1px solid rgba(255,255,255,0.1)',
+          background: open ? 'var(--color-accent-soft)' : 'none',
+          border: open ? '1px solid color-mix(in srgb, var(--color-accent) 50%, transparent)' : '1px solid rgba(255,255,255,0.1)',
           borderRadius: 6,
-          color: open ? '#c4b5fd' : '#a0a0b0',
+          color: open ? 'var(--color-accent-text)' : 'var(--color-muted)',
           cursor: 'pointer',
           fontSize: 12,
           padding: '3px 10px',
@@ -80,7 +81,7 @@ export function BrandKitButton() {
         ) : (
           <span>🎨</span>
         )}
-        <span className="max-[1099px]:hidden">{t.toolbar.brandKit}</span>
+        <span className="max-[1535px]:hidden">{t.toolbar.brandKit}</span>
       </button>
 
       {open && (

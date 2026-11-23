@@ -222,8 +222,8 @@ export function ProjectsModal({ open, onClose }: ProjectsModalProps) {
               <button
                 onClick={handleNew}
                 style={{
-                  background: '#7c6ef6',
-                  color: '#fff',
+                  background: 'var(--color-accent-strong)',
+                  color: 'var(--color-accent-fg)',
                   border: 'none',
                   borderRadius: 6,
                   padding: '5px 14px',
@@ -299,8 +299,8 @@ export function ProjectsModal({ open, onClose }: ProjectsModalProps) {
                   onClick={handleCreateConfirm}
                   disabled={!newName.trim() || creatingBusy}
                   style={{
-                    background: newName.trim() && !creatingBusy ? '#7c6ef6' : 'rgba(124,110,246,0.4)',
-                    color: '#fff',
+                    background: newName.trim() && !creatingBusy ? 'var(--color-accent-strong)' : 'color-mix(in srgb, var(--color-accent-strong) 40%, transparent)',
+                    color: 'var(--color-accent-fg)',
                     border: 'none',
                     borderRadius: 6,
                     padding: '6px 14px',
@@ -360,9 +360,9 @@ export function ProjectsModal({ open, onClose }: ProjectsModalProps) {
                     padding: '10px 12px',
                     borderRadius: 8,
                     cursor: 'pointer',
-                    background: isActive ? 'rgba(124,110,246,0.15)' : 'transparent',
+                    background: isActive ? 'var(--color-accent-soft)' : 'transparent',
                     border: isActive
-                      ? '1px solid rgba(124,110,246,0.4)'
+                      ? '1px solid color-mix(in srgb, var(--color-accent) 45%, transparent)'
                       : '1px solid transparent',
                     marginBottom: 4,
                     transition: 'background 0.15s',
@@ -384,7 +384,7 @@ export function ProjectsModal({ open, onClose }: ProjectsModalProps) {
                       height: 36,
                       borderRadius: 8,
                       background: isActive
-                        ? 'rgba(124,110,246,0.25)'
+                        ? 'color-mix(in srgb, var(--color-accent) 25%, transparent)'
                         : 'rgba(255,255,255,0.07)',
                       display: 'flex',
                       alignItems: 'center',
@@ -412,7 +412,7 @@ export function ProjectsModal({ open, onClose }: ProjectsModalProps) {
                         }}
                         inputStyle={{
                           background: 'rgba(255,255,255,0.08)',
-                          border: '1px solid rgba(124,110,246,0.6)',
+                          border: '1px solid color-mix(in srgb, var(--color-accent) 60%, transparent)',
                           borderRadius: 4,
                           color: '#e8e8f0',
                           fontSize: 13,
@@ -424,7 +424,7 @@ export function ProjectsModal({ open, onClose }: ProjectsModalProps) {
                         style={{
                           fontSize: 13,
                           fontWeight: 500,
-                          color: isActive ? '#c4b9fc' : '#e8e8f0',
+                          color: isActive ? 'var(--color-accent-text)' : '#e8e8f0',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
@@ -436,8 +436,8 @@ export function ProjectsModal({ open, onClose }: ProjectsModalProps) {
                             style={{
                               marginLeft: 8,
                               fontSize: 10,
-                              background: 'rgba(124,110,246,0.35)',
-                              color: '#a89cf6',
+                              background: 'color-mix(in srgb, var(--color-accent) 25%, transparent)',
+                              color: 'var(--color-accent-text)',
                               borderRadius: 4,
                               padding: '1px 6px',
                               fontWeight: 600,

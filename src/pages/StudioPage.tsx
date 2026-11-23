@@ -324,7 +324,7 @@ export function StudioPage({ locale = 'en', onNavigate }: StudioPageProps) {
       locale={locale}
       onChangeLocale={(next) => onNavigate?.(buildLocalizedPath(next, 'studio'))}
     >
-      <div className="w-screen h-screen flex flex-col overflow-hidden bg-[#0f0f13]">
+      <div className="w-screen h-screen flex flex-col overflow-hidden bg-surface">
         <ConfirmDialog
           open={conflictNotice !== null}
           title={t.studio.conflictTitle}
@@ -342,7 +342,7 @@ export function StudioPage({ locale = 'en', onNavigate }: StudioPageProps) {
         <div className="relative flex flex-1 overflow-hidden">
           {/* Localization view — absolutely covers the editor when active */}
           {view === 'localization' && (
-            <main className="absolute inset-0 z-10 overflow-hidden bg-[#111118]">
+            <main className="absolute inset-0 z-10 overflow-hidden bg-surface">
               <ChunkErrorBoundary
                 locale={locale}
                 variant="inline"
@@ -354,21 +354,21 @@ export function StudioPage({ locale = 'en', onNavigate }: StudioPageProps) {
                       role="status"
                       aria-live="polite"
                       aria-busy="true"
-                      className="flex h-full w-full flex-col gap-4 bg-[#111118] p-6 text-[#a0a0b0]"
+                      className="flex h-full w-full flex-col gap-4 bg-surface p-6 text-muted"
                     >
-                      <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                      <div className="flex items-center justify-between border-b border-border pb-4">
                         <div className="flex items-center gap-3">
                           <span
                             aria-hidden="true"
-                            className="h-4 w-4 animate-spin rounded-full border-2 border-[#7c6ef6] border-t-transparent"
+                            className="h-4 w-4 animate-spin rounded-full border-2 border-accent border-t-transparent"
                           />
-                          <span className="text-sm font-medium text-[#e8e8f0]">{t.toolbar.localization}</span>
+                          <span className="text-sm font-medium text-zinc-100">{t.toolbar.localization}</span>
                         </div>
                         <div aria-hidden="true" className="h-7 w-40 animate-pulse rounded-md bg-white/[0.06]" />
                       </div>
                       <div aria-hidden="true" className="grid flex-1 grid-cols-1 gap-3 md:grid-cols-3">
-                        <div className="animate-pulse rounded-xl border border-white/5 bg-white/[0.03]" />
-                        <div className="animate-pulse rounded-xl border border-white/5 bg-white/[0.03] md:col-span-2" />
+                        <div className="animate-pulse rounded-xl border border-border bg-panel" />
+                        <div className="animate-pulse rounded-xl border border-border bg-panel md:col-span-2" />
                       </div>
                     </div>
                   }
@@ -404,10 +404,10 @@ export function StudioPage({ locale = 'en', onNavigate }: StudioPageProps) {
 
             {/* Canvas area — fills remaining space */}
             <main
-              className="flex-1 overflow-hidden bg-[#111118] flex flex-col"
+              className="flex-1 overflow-hidden bg-surface flex flex-col"
               style={{ minWidth: 0 }}
             >
-              <nav aria-label={t.studio.editorPanelsAria} className="relative z-30 flex shrink-0 justify-end gap-2 border-b border-white/10 bg-[#18181f] px-3 py-2 lg:hidden">
+              <nav aria-label={t.studio.editorPanelsAria} className="relative z-30 flex shrink-0 justify-end gap-2 border-b border-border bg-panel px-3 py-2 lg:hidden">
                 <button
                   type="button"
                   aria-label={t.studio.toggleLayersAria}
@@ -416,8 +416,8 @@ export function StudioPage({ locale = 'en', onNavigate }: StudioPageProps) {
                   onClick={() => setMobilePanel((panel) => panel === 'layers' ? null : 'layers')}
                   className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
                     mobilePanel === 'layers'
-                      ? 'border-[#7c6ef6] bg-[#7c6ef6]/25 text-[#e4e0ff]'
-                      : 'border-white/20 bg-[#222330] text-white hover:border-white/35 hover:bg-[#2a2b3b]'
+                      ? 'border-accent bg-accent-soft text-accent-text'
+                      : 'border-border bg-zinc-800 text-zinc-100 hover:border-zinc-600 hover:bg-zinc-700'
                   }`}
                 >
                   {t.studio.layersButton}
@@ -430,8 +430,8 @@ export function StudioPage({ locale = 'en', onNavigate }: StudioPageProps) {
                   onClick={() => setMobilePanel((panel) => panel === 'properties' ? null : 'properties')}
                   className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
                     mobilePanel === 'properties'
-                      ? 'border-[#7c6ef6] bg-[#7c6ef6]/25 text-[#e4e0ff]'
-                      : 'border-white/20 bg-[#222330] text-white hover:border-white/35 hover:bg-[#2a2b3b]'
+                      ? 'border-accent bg-accent-soft text-accent-text'
+                      : 'border-border bg-zinc-800 text-zinc-100 hover:border-zinc-600 hover:bg-zinc-700'
                   }`}
                 >
                   {t.studio.propertiesButton}

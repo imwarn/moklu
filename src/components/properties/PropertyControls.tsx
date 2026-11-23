@@ -28,7 +28,7 @@ import {
 } from './colorUtils'
 
 const inputCls =
-  'bg-[#0f0f13] border border-[rgba(255,255,255,0.1)] rounded px-2 py-1 text-sm text-[#e8e8f0] w-full focus:outline-none focus:border-[rgba(124,110,246,0.5)]'
+  'bg-surface border border-[rgba(255,255,255,0.1)] rounded px-2 py-1 text-sm text-[#e8e8f0] w-full focus:outline-none focus:border-accent/60'
 const labelCls = 'text-[11px] text-[#6b6b7a] mb-1 block uppercase tracking-[0.08em]'
 const rowCls = 'flex gap-2 mb-3'
 const fieldCls = 'flex-1 min-w-0'
@@ -86,7 +86,7 @@ export function ColorField({
             onClick={() => onChange(toBrandToken(bc.id))}
             className={`w-5 h-5 rounded-full border-2 transition-all ${
               activeBrand?.id === bc.id
-                ? 'border-[#7c6ef6] scale-110'
+                ? 'border-accent scale-110'
                 : 'border-[rgba(255,255,255,0.2)] hover:border-[rgba(255,255,255,0.5)]'
             }`}
             style={{ background: bc.value }}
@@ -97,7 +97,7 @@ export function ColorField({
             type="button"
             title={t.properties.clearBrandBinding}
             onClick={() => onChange(safeValue)}
-            className="text-[10px] px-1.5 py-0.5 rounded border border-[rgba(124,110,246,0.4)] text-[#9d90f8] hover:text-white hover:border-[#7c6ef6] transition-colors"
+            className="text-[10px] px-1.5 py-0.5 rounded border border-accent/40 text-accent-text hover:text-white hover:border-accent transition-colors"
           >
             ✕ {activeBrand.name}
           </button>
@@ -176,13 +176,13 @@ function AddBrandColorButton({ currentColor }: { currentColor: string }) {
           e.stopPropagation()
         }}
         placeholder={t.properties.namePlaceholder}
-        className="w-20 rounded border border-[rgba(124,110,246,0.5)] bg-[#0f0f13] px-1.5 py-0.5 text-[10px] text-[#e8e8f0] outline-none"
+        className="w-20 rounded border border-accent/50 bg-surface px-1.5 py-0.5 text-[10px] text-[#e8e8f0] outline-none"
       />
       <button
         type="button"
         onClick={() => { if (name.trim()) { addBrandColor(name.trim(), currentColor); setAdding(false) } }}
         disabled={!name.trim()}
-        className="text-[10px] px-1.5 py-0.5 rounded bg-[#7c6ef6] text-white disabled:opacity-40"
+        className="text-[10px] px-1.5 py-0.5 rounded bg-accent-strong text-accent-fg disabled:opacity-40"
       >
         ✓
       </button>
@@ -309,8 +309,8 @@ export function GradientEditor({ fill, onChange, onInteractionStart = () => {}, 
         onChange={switchMode}
         className="grid grid-cols-3 gap-1 rounded-lg border border-[rgba(255,255,255,0.08)] bg-[#121219] p-1"
         optionClassName="rounded-md px-2 py-1.5 text-[11px] font-medium transition-colors"
-        activeClassName="bg-[#7c6ef6] text-white shadow-[0_8px_24px_rgba(124,110,246,0.35)]"
-        inactiveClassName="text-[#6b6b7a] hover:bg-[rgba(255,255,255,0.06)] hover:text-[#e8e8f0]"
+        activeClassName="bg-accent-strong text-accent-fg shadow-sm"
+        inactiveClassName="text-muted hover:bg-[rgba(255,255,255,0.06)] hover:text-[#e8e8f0]"
       />
 
       {/* ── Swatches tray (all modes) ── */}
@@ -334,7 +334,7 @@ export function GradientEditor({ fill, onChange, onInteractionStart = () => {}, 
                         title={bc.name}
                         onClick={() => onChange(toBrandToken(bc.id))}
                         className={`w-5 h-5 rounded-full border-2 transition-all ${
-                          isActive ? 'border-[#7c6ef6] scale-110' : 'border-[rgba(255,255,255,0.2)] hover:border-[rgba(255,255,255,0.5)]'
+                          isActive ? 'border-accent scale-110' : 'border-[rgba(255,255,255,0.2)] hover:border-[rgba(255,255,255,0.5)]'
                         }`}
                         style={{ background: resolveBrandColor(bc.value, brandColors) }}
                       />
@@ -353,7 +353,7 @@ export function GradientEditor({ fill, onChange, onInteractionStart = () => {}, 
                         type="button"
                         title={color}
                         onClick={() => onChange(color)}
-                        className="h-5 w-5 rounded border border-[rgba(255,255,255,0.12)] hover:border-[rgba(124,110,246,0.6)] transition-all hover:scale-105"
+                        className="h-5 w-5 rounded border border-[rgba(255,255,255,0.12)] hover:border-accent/60 transition-all hover:scale-105"
                         style={{ background: color }}
                       />
                       <button
@@ -384,7 +384,7 @@ export function GradientEditor({ fill, onChange, onInteractionStart = () => {}, 
                 if (typeof fill === 'string') return
                 updateProject({ savedGradients: [...savedGradients, fill] })
               }}
-              className="text-[10px] text-[#7c6ef6] hover:text-[#9d90f8] transition-colors px-1.5 py-0.5 rounded border border-[rgba(124,110,246,0.3)] hover:border-[rgba(124,110,246,0.6)]"
+              className="text-[10px] text-accent-text hover:text-accent transition-colors px-1.5 py-0.5 rounded border border-accent/30 hover:border-accent/60"
             >
               {t.properties.saveGradient}
             </button>
@@ -397,7 +397,7 @@ export function GradientEditor({ fill, onChange, onInteractionStart = () => {}, 
                 type="button"
                 title={p.label}
                 onClick={() => onChange(p.fill)}
-                className="h-5 w-9 rounded border border-[rgba(255,255,255,0.12)] hover:border-[rgba(124,110,246,0.6)] transition-all hover:scale-105"
+                className="h-5 w-9 rounded border border-[rgba(255,255,255,0.12)] hover:border-accent/60 transition-all hover:scale-105"
                 style={{ background: fillToCss(p.fill) }}
               />
             ))}
@@ -416,7 +416,7 @@ export function GradientEditor({ fill, onChange, onInteractionStart = () => {}, 
                     type="button"
                     title={t.properties.saved}
                     onClick={() => onChange(g)}
-                    className="h-5 w-9 rounded border border-[rgba(255,255,255,0.12)] hover:border-[rgba(124,110,246,0.6)] transition-all hover:scale-105"
+                    className="h-5 w-9 rounded border border-[rgba(255,255,255,0.12)] hover:border-accent/60 transition-all hover:scale-105"
                     style={{ background: fillToCss(g) }}
                   />
                   <button
@@ -444,7 +444,7 @@ export function GradientEditor({ fill, onChange, onInteractionStart = () => {}, 
                 type="button"
                 title={p.label}
                 onClick={() => onChange(p.color)}
-                className="h-5 w-5 rounded border border-[rgba(255,255,255,0.12)] hover:border-[rgba(124,110,246,0.6)] transition-all hover:scale-105"
+                className="h-5 w-5 rounded border border-[rgba(255,255,255,0.12)] hover:border-accent/60 transition-all hover:scale-105"
                 style={{ background: p.color }}
               />
             ))}
@@ -467,7 +467,7 @@ export function GradientEditor({ fill, onChange, onInteractionStart = () => {}, 
                 if (savedGradients.includes(fill)) return
                 updateProject({ savedGradients: [...savedGradients, fill] })
               }}
-              className="text-[10px] text-[#7c6ef6] hover:text-[#9d90f8] transition-colors px-1.5 py-0.5 rounded border border-[rgba(124,110,246,0.3)] hover:border-[rgba(124,110,246,0.6)]"
+              className="text-[10px] text-accent-text hover:text-accent transition-colors px-1.5 py-0.5 rounded border border-accent/30 hover:border-accent/60"
             >
               {t.properties.saveColor}
             </button>
@@ -480,7 +480,7 @@ export function GradientEditor({ fill, onChange, onInteractionStart = () => {}, 
             <button
               type="button"
               onClick={addStop}
-              className="text-[11px] text-[#7c6ef6] hover:text-[#9d90f8] transition-colors px-1.5 py-0.5 rounded border border-[rgba(124,110,246,0.3)] hover:border-[rgba(124,110,246,0.6)]"
+              className="text-[11px] text-accent-text hover:text-accent transition-colors px-1.5 py-0.5 rounded border border-accent/30 hover:border-accent/60"
             >
               {t.properties.addStop}
             </button>
@@ -515,9 +515,9 @@ export function GradientEditor({ fill, onChange, onInteractionStart = () => {}, 
                     background: normalizeHexColor(resolveBrandColor(stop.color, brandColors)),
                     // drop-shadow follows clip-path shape, so it acts as a border.
                     // Unselected: dark outline so the triangle is visible on any bg.
-                    // Selected:   white ring + purple glow without touching the fill.
+                    // Selected:   white ring + accent glow without touching the fill.
                     filter: isSelected
-                      ? 'drop-shadow(0 0 1.5px #fff) drop-shadow(0 0 5px rgba(124,110,246,1))'
+                      ? 'drop-shadow(0 0 1.5px #fff) drop-shadow(0 0 5px var(--color-accent))'
                       : 'drop-shadow(0 0 1.5px rgba(0,0,0,0.95)) drop-shadow(0 1px 3px rgba(0,0,0,0.6))',
                     cursor: fixed ? 'pointer' : isDragging ? 'grabbing' : 'grab',
                     touchAction: 'none',
@@ -570,7 +570,7 @@ export function GradientEditor({ fill, onChange, onInteractionStart = () => {}, 
                   }}
                   onMouseDown={onInteractionStart}
                   onMouseUp={onInteractionEnd}
-                  className="w-full accent-[#7c6ef6]"
+                  className="w-full accent-accent"
                 />
               </div>
             )}
@@ -600,7 +600,7 @@ export function GradientEditor({ fill, onChange, onInteractionStart = () => {}, 
                 type="range" min={0} max={360} value={gradient.angle}
                 onChange={(e) => commitGradient({ ...gradient, angle: Number(e.target.value) })}
                 onMouseDown={onInteractionStart} onMouseUp={onInteractionEnd}
-                className="w-full accent-[#7c6ef6]"
+                className="w-full accent-accent"
               />
             </div>
           )}
@@ -616,7 +616,7 @@ export function GradientEditor({ fill, onChange, onInteractionStart = () => {}, 
                   <input type="range" min={0} max={100} value={Math.round(gradient.cx * 100)}
                     onChange={(e) => commitGradient({ ...gradient, cx: Number(e.target.value) / 100 })}
                     onMouseDown={onInteractionStart} onMouseUp={onInteractionEnd}
-                    className="w-full accent-[#7c6ef6]" />
+                    className="w-full accent-accent" />
                 </div>
                 <div className={fieldCls}>
                   <div className="mb-1 flex items-center justify-between">
@@ -626,7 +626,7 @@ export function GradientEditor({ fill, onChange, onInteractionStart = () => {}, 
                   <input type="range" min={0} max={100} value={Math.round(gradient.cy * 100)}
                     onChange={(e) => commitGradient({ ...gradient, cy: Number(e.target.value) / 100 })}
                     onMouseDown={onInteractionStart} onMouseUp={onInteractionEnd}
-                    className="w-full accent-[#7c6ef6]" />
+                    className="w-full accent-accent" />
                 </div>
               </div>
               <div>
@@ -637,7 +637,7 @@ export function GradientEditor({ fill, onChange, onInteractionStart = () => {}, 
                 <input type="range" min={0} max={200} value={Math.round(gradient.radius * 100)}
                   onChange={(e) => commitGradient({ ...gradient, radius: Number(e.target.value) / 100 })}
                   onMouseDown={onInteractionStart} onMouseUp={onInteractionEnd}
-                  className="w-full accent-[#7c6ef6]" />
+                  className="w-full accent-accent" />
               </div>
             </div>
           )}
@@ -703,7 +703,7 @@ export function SliderField({
           onChange={(e) => onChange(Number(e.target.value))}
           onMouseDown={onInteractionStart}
           onMouseUp={onInteractionEnd}
-          className="flex-1 min-w-0 accent-[#7c6ef6]"
+          className="flex-1 min-w-0 accent-accent"
         />
         <input
           type="number"
@@ -713,7 +713,7 @@ export function SliderField({
             const v = Number(e.target.value)
             if (!isNaN(v)) onChange(v)
           }}
-          className="w-14 shrink-0 bg-[#0f0f13] border border-[rgba(255,255,255,0.1)] rounded px-1.5 py-1 text-xs text-[#e8e8f0] text-right focus:outline-none focus:border-[rgba(124,110,246,0.5)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          className="w-14 shrink-0 bg-surface border border-[rgba(255,255,255,0.1)] rounded px-1.5 py-1 text-xs text-[#e8e8f0] text-right focus:outline-none focus:border-accent/60 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
         />
       </div>
     </div>

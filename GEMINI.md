@@ -1,11 +1,12 @@
 # Moklu — Local-First Browser Mockup & Image Toolkit
 
-React 19.2 + TypeScript 6.0 + Vite 8.3 + Tailwind CSS 4.3 + Konva 10.3 + Zustand 5.0 + JSZip 3.10 + Vitest 4.1 + Playwright 1.61
+React 19.2 + TypeScript 6.0 + Vite 8.3 + Tailwind CSS 4.3 + Geist 5.3 (self-hosted `@fontsource-variable/geist` & `geist-mono`) + Konva 10.3 + Zustand 5.0 + JSZip 3.10 + Vitest 4.1 + Playwright 1.61
 
 <directory>
-src/ - Application source code (17 subdirectories with full GEB L2/L3 coverage: seo, i18n, workspace, tools, theme, bridge, commercial, pages, components, store, utils, assets, ai, hooks, types, benchmarks, test)
+src/ - Application source code (17 subdirectories with full GEB L2/L3 coverage: seo, i18n, workspace, tools, theme, bridge, commercial, pages, components, store, utils, assets, ai, hooks, types, benchmarks, test); Signal Orange + Neutral Zinc brand tokens live in `src/index.css` (`@theme static`) and `src/theme/brand.ts` (`BRAND`, `BRAND_LIGHT`, `BRAND_DARK`, `getBrandPalette`)
+designs/ - Brand design system artifacts (`designs/moklu-brand/`: self-contained `preview.html`, specimens, CSS tokens, self-hosted fonts, and `logo/` concepts + final Nested Mockup Frame spec)
 scripts/ - Build-time SSG prerenderer, CSP header verifier, release verification, and deployment tooling
-public/ - Static assets, templates, favicon, logo, and Cloudflare/Netlify `_headers` CSP contract
+public/ - Static assets, templates, Nested Mockup Frame brand assets (`favicon.svg`, `logo*.svg`, `apple-touch-icon.png`, `og-image.png`), and Cloudflare/Netlify `_headers` CSP contract
 tests/ - Playwright browser E2E suites (`tests/e2e/`) and deterministic export fixtures
 cli/ - Headless Node CLI (`moklu` / `pixeldeck`) for scripted project export and locale manifests
 docs/ - Operational guides and release documentation

@@ -34,8 +34,8 @@ export function SegmentedControl<T extends string>({
   options,
   onChange,
   className = 'grid grid-cols-3 gap-2',
-  optionClassName = 'rounded-lg border px-2 py-2 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c6ef6]/70',
-  activeClassName = 'border-[#7c6ef6] bg-[#7c6ef6] text-white',
+  optionClassName = 'rounded-lg border px-2 py-2 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70',
+  activeClassName = 'border-accent-strong bg-accent-strong text-accent-fg',
   inactiveClassName = `border-[rgba(255,255,255,0.1)] ${STUDIO_TEXT_MUTED_CLS} hover:bg-[rgba(255,255,255,0.06)] hover:text-[#e8e8f0]`,
   renderOption,
 }: SegmentedControlProps<T>) {

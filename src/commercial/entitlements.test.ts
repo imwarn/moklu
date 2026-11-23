@@ -146,10 +146,10 @@ describe('commercial entitlements', () => {
       }),
     )
     expect(lightHtml).toContain('data-theme="light"')
-    expect(lightHtml).toContain('background:#ffffff')
+    expect(lightHtml).toContain('background:#FFFFFF')
     expect(lightHtml).toContain('text-zinc-900')
-    expect(lightHtml).toContain('bg-violet-100/90')
-    expect(lightHtml).not.toContain('#16171f')
+    expect(lightHtml).toContain('bg-accent-soft')
+    expect(lightHtml).not.toContain('#141417')
 
     const darkHtml = renderToStaticMarkup(
       createElement(PricingModal, {
@@ -160,8 +160,9 @@ describe('commercial entitlements', () => {
       }),
     )
     expect(darkHtml).toContain('data-theme="dark"')
-    expect(darkHtml).toContain('background:#16171f')
-    expect(darkHtml).toContain('text-[#f5f5f8]')
-    expect(darkHtml).toContain('bg-[#7c6ef6]/25')
+    expect(darkHtml).toContain('background:#141417')
+    expect(darkHtml).toContain('text-zinc-100')
+    expect(darkHtml).toContain('bg-accent-soft')
+    expect(darkHtml).toContain('bg-accent-strong')
   })
 })

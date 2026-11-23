@@ -120,7 +120,7 @@ function AlignmentSection({
     }
   }
 
-  const btnCls = `flex items-center justify-center rounded border border-[rgba(255,255,255,0.1)] p-1.5 ${STUDIO_TEXT_MUTED_CLS} hover:border-[rgba(124,110,246,0.5)] hover:text-[#e8e8f0] hover:bg-[rgba(255,255,255,0.04)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c6ef6]/70 transition-colors`
+  const btnCls = `flex items-center justify-center rounded border border-[rgba(255,255,255,0.1)] p-1.5 ${STUDIO_TEXT_MUTED_CLS} hover:border-accent/50 hover:text-[#e8e8f0] hover:bg-[rgba(255,255,255,0.04)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 transition-colors`
 
   // SVG icons for alignment axes
   const icons: Record<AlignAxis, React.ReactNode> = {
@@ -245,7 +245,7 @@ function LayoutTab({ layer }: { layer: Layer }) {
                 aria-pressed={layer.visible}
                 title={layer.visible ? t.properties.hideLayer : t.properties.showLayer}
                 onClick={() => upd({ visible: !layer.visible })}
-                className={`h-[30px] w-[30px] flex items-center justify-center rounded border text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c6ef6]/70 ${
+                className={`h-[30px] w-[30px] flex items-center justify-center rounded border text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 ${
                   layer.visible
                     ? 'border-[rgba(255,255,255,0.12)] text-[#e8e8f0]'
                     : `border-[rgba(255,255,255,0.06)] ${STUDIO_TEXT_SUBTLE_CLS}`
@@ -259,9 +259,9 @@ function LayoutTab({ layer }: { layer: Layer }) {
                 aria-pressed={layer.locked}
                 title={layer.locked ? t.properties.unlockLayer : t.properties.lockLayer}
                 onClick={() => upd({ locked: !layer.locked })}
-                className={`h-[30px] w-[30px] flex items-center justify-center rounded border text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c6ef6]/70 ${
+                className={`h-[30px] w-[30px] flex items-center justify-center rounded border text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 ${
                   layer.locked
-                    ? 'border-[#7c6ef6] text-[#9b8fff] bg-[rgba(124,110,246,0.1)]'
+                    ? 'border-accent text-accent-text bg-accent-soft'
                     : `border-[rgba(255,255,255,0.1)] ${STUDIO_TEXT_MUTED_CLS}`
                 } hover:border-[rgba(255,255,255,0.22)]`}
               >
@@ -327,7 +327,7 @@ function LayoutTab({ layer }: { layer: Layer }) {
                       onClick={() => upd({ height: undefined } as Partial<Layer>)}
                       className={`text-[10px] px-2 py-0.5 rounded border transition-colors ${
                         (layer as TextLayer).height == null
-                          ? 'border-[#7c6ef6] text-[#9d90f8] bg-[rgba(124,110,246,0.12)] cursor-default'
+                          ? 'border-accent text-accent-text bg-accent-soft cursor-default'
                           : `border-[rgba(255,255,255,0.1)] ${STUDIO_TEXT_MUTED_CLS} hover:text-[#e8e8f0]`
                       }`}
                     >
@@ -585,7 +585,7 @@ export function PropertiesPanel() {
                   disabled={styleClipboard.layerType !== selectedLayer.type}
                   className={`text-[10px] px-2 py-1 rounded border transition-colors ${
                     styleClipboard.layerType === selectedLayer.type
-                      ? 'border-[rgba(124,110,246,0.4)] text-[#9d90f8] hover:text-white hover:border-[#7c6ef6] hover:bg-[rgba(124,110,246,0.15)]'
+                      ? 'border-accent/40 text-accent-text hover:text-white hover:border-accent hover:bg-accent/15'
                       : `border-[rgba(255,255,255,0.06)] ${STUDIO_TEXT_SUBTLE_CLS} opacity-60 cursor-not-allowed`
                   }`}
                 >
@@ -609,7 +609,7 @@ export function PropertiesPanel() {
                 role="tab"
                 aria-selected={activeTab === value}
                 onClick={() => setActiveTab(value)}
-                className={`h-7 border-b-2 text-[11px] font-medium transition-colors ${activeTab === value ? 'border-[#7c6ef6] text-white' : `border-transparent ${STUDIO_TEXT_MUTED_CLS} hover:text-[#e8e8f0]`}`}
+                className={`h-7 border-b-2 text-[11px] font-medium transition-colors ${activeTab === value ? 'border-accent text-white' : `border-transparent ${STUDIO_TEXT_MUTED_CLS} hover:text-[#e8e8f0]`}`}
               >
                 {label}
               </button>
@@ -626,20 +626,20 @@ export function PropertiesPanel() {
         ) : (
           <>
             {editingGroupId && selection?.layerId && (
-              <div className="mb-4 rounded-xl border border-[rgba(124,110,246,0.3)] bg-[rgba(124,110,246,0.14)] px-3 py-2 text-xs text-[#c4b5fd]">
+              <div className="mb-4 rounded-xl border border-accent/30 bg-accent-soft px-3 py-2 text-xs text-accent-text">
                 {t.properties.editingInsideGroup}
               </div>
             )}
 
             {rawSelectedLayer && !isBaseFormat && rawSelectedLayer.ownerFormat === activeCanvasFormat && (
-              <div className="mb-3 rounded-lg border border-[rgba(124,110,246,0.3)] bg-[rgba(124,110,246,0.08)] px-3 py-2">
+              <div className="mb-3 rounded-lg border border-accent/30 bg-accent-soft px-3 py-2">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[10px] text-[#c4b5fd]">
+                  <span className="text-[10px] text-accent-text">
                     {activeFormatInfo.label}
                   </span>
                   <button
                     onClick={() => makeLayerShared(rawSelectedLayer!.id)}
-                    className="text-[10px] text-[#c4b5fd] hover:text-white underline shrink-0"
+                    className="text-[10px] text-accent-text hover:text-white underline shrink-0"
                   >
                     {t.properties.makeShared}
                   </button>
@@ -665,18 +665,18 @@ export function PropertiesPanel() {
               <div
                 className="mb-3 rounded-lg border px-3 py-2"
                 style={{
-                  borderColor: isBaseFormat ? 'rgba(124,110,246,0.3)' : 'rgba(34,211,238,0.25)',
-                  background: isBaseFormat ? 'rgba(124,110,246,0.08)' : 'rgba(34,211,238,0.08)',
+                  borderColor: isBaseFormat ? 'color-mix(in srgb, var(--color-accent) 30%, transparent)' : 'rgba(34,211,238,0.25)',
+                  background: isBaseFormat ? 'var(--color-accent-soft)' : 'rgba(34,211,238,0.08)',
                 }}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[10px]" style={{ color: isBaseFormat ? '#9d90f8' : '#22d3ee' }}>
+                  <span className="text-[10px]" style={{ color: isBaseFormat ? 'var(--color-accent-text)' : '#22d3ee' }}>
                     {activeLocaleLabel} · {isBaseFormat ? t.context.base : activeFormatInfo.label} ({localeAdjustCount})
                   </span>
                   <button
                     onClick={() => clearLayerLocaleAdjust(rawSelectedLayer!.id, activeLocale, activeCanvasFormat)}
                     className="shrink-0 text-[10px] underline hover:text-white"
-                    style={{ color: isBaseFormat ? '#9d90f8' : '#22d3ee' }}
+                    style={{ color: isBaseFormat ? 'var(--color-accent-text)' : '#22d3ee' }}
                   >
                     {t.common.reset}
                   </button>

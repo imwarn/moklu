@@ -38,7 +38,7 @@ export function getRouteRelativeHtmlPath(route: ResolvedRoute): readonly string[
 }
 
 /**
- * Styled dark `#0f0f13` Studio topbar and canvas skeleton for the 4 `/studio`
+ * Styled dark Neutral Zinc Studio topbar and canvas skeleton for the 4 `/studio`
  * routes so Konva never executes in Node while initial paint matches StudioPage.
  */
 export function renderStudioSkeleton(route: ResolvedRoute): string {
@@ -47,21 +47,21 @@ export function renderStudioSkeleton(route: ResolvedRoute): string {
   const homeHref = buildLocalizedPath(route.locale, '')
 
   return [
-    '<div data-testid="studio-ssg-skeleton" class="w-screen h-screen flex flex-col overflow-hidden bg-[#0f0f13] text-[#e8e8f0]">',
-    '  <header class="flex h-12 shrink-0 items-center justify-between gap-2 border-b border-white/10 bg-[#18181f] px-3">',
+    '<div data-testid="studio-ssg-skeleton" class="w-screen h-screen flex flex-col overflow-hidden bg-surface text-zinc-100">',
+    '  <header class="flex h-12 shrink-0 items-center justify-between gap-2 border-b border-border bg-panel px-3">',
     '    <div class="flex items-center gap-3">',
-    `      <a href="${escapeHtml(homeHref)}" class="inline-flex shrink-0 items-center gap-1 rounded-md border border-white/10 px-2 py-1 text-xs font-medium text-[#b8b8c8]">← Tools</a>`,
-    `      <span class="text-sm font-semibold tracking-tight text-white">${escapeHtml(ui.brandName)} <span class="ml-1 text-[10px] font-medium uppercase tracking-widest text-[#8f8fa3]">Studio</span></span>`,
+    `      <a href="${escapeHtml(homeHref)}" class="inline-flex shrink-0 items-center gap-1 rounded-md border border-border px-2 py-1 text-xs font-medium text-zinc-300">← Tools</a>`,
+    `      <span class="text-sm font-semibold tracking-tight text-white">${escapeHtml(ui.brandName)} <span class="ml-1 text-[10px] font-medium uppercase tracking-widest text-muted">Studio</span></span>`,
     '    </div>',
-    '    <span class="text-xs text-[#8f8fa3]">Loading Moklu Studio…</span>',
+    '    <span class="text-xs text-muted">Loading Moklu Studio…</span>',
     '  </header>',
     '  <div class="flex min-w-0 flex-1 overflow-hidden">',
-    '    <aside aria-hidden="true" class="hidden w-56 shrink-0 border-r border-white/10 bg-[#14141b] lg:block"></aside>',
-    '    <main class="flex flex-1 flex-col items-center justify-center bg-[#111118] px-6 text-center">',
+    '    <aside aria-hidden="true" class="hidden w-56 shrink-0 border-r border-border bg-panel lg:block"></aside>',
+    '    <main class="flex flex-1 flex-col items-center justify-center bg-surface px-6 text-center">',
     `      <h1 class="text-lg font-semibold tracking-tight text-zinc-100">${escapeHtml(copy.h1)}</h1>`,
-    `      <p class="mt-2 max-w-md text-xs text-zinc-400">${escapeHtml(copy.subtitle)}</p>`,
+    `      <p class="mt-2 max-w-md text-xs text-muted">${escapeHtml(copy.subtitle)}</p>`,
     '    </main>',
-    '    <aside aria-hidden="true" class="hidden w-72 shrink-0 border-l border-white/10 bg-[#14141b] lg:block"></aside>',
+    '    <aside aria-hidden="true" class="hidden w-72 shrink-0 border-l border-border bg-panel lg:block"></aside>',
     '  </div>',
     '</div>',
   ].join('\n')
@@ -81,7 +81,7 @@ function buildHeadTags(route: ResolvedRoute, siteUrl?: string): string {
   const base = getSiteUrl(siteUrl)
   const copy = getRouteCopy(route.locale, route.slug)
   const canonicalUrl = buildCanonicalUrl(route.locale, route.slug, base)
-  const ogImage = `${base}/logo.svg`
+  const ogImage = `${base}/og-image.png`
   const ogLocale = getOgLocale(route.locale)
   const hreflangs = getHreflangLinks(route.slug, base)
   const schemas = buildRouteSchemaList(route, base)

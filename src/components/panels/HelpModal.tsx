@@ -48,16 +48,15 @@ export function HelpModal({ open, onClose }: HelpModalProps) {
       backdropStyle={{ background: 'rgba(4,4,7,0.72)', backdropFilter: 'blur(6px)' }}
       panelClassName="relative w-full h-[92vh] sm:h-[88vh] flex flex-col overflow-hidden rounded-2xl border shadow-2xl"
       panelStyle={{
-        background: '#18181f',
-        borderColor: 'rgba(255,255,255,0.09)',
-        boxShadow: '0 32px 100px rgba(0,0,0,0.65), 0 0 0 1px rgba(124,110,246,0.04)',
+        background: 'var(--color-panel)',
+        borderColor: 'var(--color-border)',
+        boxShadow: '0 32px 100px rgba(0,0,0,0.65)',
       }}
-      closeButtonClassName="absolute top-4 right-4 z-10 text-[#6b6b7a] hover:text-[#e8e8f0] transition-all text-base w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[rgba(255,255,255,0.07)]"
+      closeButtonClassName="absolute top-4 right-4 z-10 text-muted hover:text-[#e8e8f0] transition-all text-base w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[rgba(255,255,255,0.07)]"
       header={(
         <header className="relative shrink-0 overflow-hidden border-b border-[rgba(255,255,255,0.07)] px-5 py-4 sm:px-6">
-          <div className="pointer-events-none absolute -top-16 left-12 h-32 w-64 rounded-full bg-[#7c6ef6] opacity-[0.08] blur-3xl" />
           <div className="relative flex items-center gap-3 pr-10">
-            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-[rgba(155,143,255,0.28)] bg-[rgba(124,110,246,0.12)] text-[#b8afff] shadow-[0_8px_24px_rgba(124,110,246,0.12)]">
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-accent/30 bg-accent-soft text-accent-text">
               <span aria-hidden="true" className="text-base">?</span>
             </div>
             <div>
@@ -86,7 +85,7 @@ export function HelpModal({ open, onClose }: HelpModalProps) {
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder={hm.findSectionPlaceholder}
                 aria-label={hm.findSectionPlaceholder}
-                className="h-9 w-full rounded-lg border border-[rgba(255,255,255,0.075)] bg-[#0f0f13] pl-8 pr-3 text-[11px] text-[#d8d8e2] outline-none transition placeholder:text-[#4a4a57] focus:border-[rgba(124,110,246,0.52)] focus:ring-2 focus:ring-[rgba(124,110,246,0.08)]"
+                className="h-9 w-full rounded-lg border border-[rgba(255,255,255,0.075)] bg-surface pl-8 pr-3 text-[11px] text-[#d8d8e2] outline-none transition placeholder:text-muted/60 focus:border-accent/60 focus:ring-2 focus:ring-accent/15"
               />
             </label>
           </div>
@@ -111,12 +110,12 @@ export function HelpModal({ open, onClose }: HelpModalProps) {
                           aria-current={isActive ? 'page' : undefined}
                           className={`group relative flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left text-[11px] transition-all ${
                             isActive
-                              ? 'bg-[rgba(124,110,246,0.14)] text-[#d4ceff]'
-                              : 'text-[#777786] hover:bg-[rgba(255,255,255,0.04)] hover:text-[#d1d1dc]'
+                              ? 'bg-accent-soft text-accent-text'
+                              : 'text-muted hover:bg-[rgba(255,255,255,0.04)] hover:text-[#d1d1dc]'
                           }`}
                         >
-                          {isActive && <span className="absolute inset-y-2 left-0 w-0.5 rounded-full bg-[#8f82ff]" />}
-                          <span className={`w-5 shrink-0 text-right font-mono text-[9px] ${isActive ? 'text-[#8f82ff]' : 'text-[#444451] group-hover:text-[#666675]'}`}>
+                          {isActive && <span className="absolute inset-y-2 left-0 w-0.5 rounded-full bg-accent" />}
+                          <span className={`w-5 shrink-0 text-right font-mono text-[9px] ${isActive ? 'text-accent-text' : 'text-[#444451] group-hover:text-[#666675]'}`}>
                             {String(section.number).padStart(2, '0')}
                           </span>
                           <span className="truncate">{section.title}</span>
@@ -145,7 +144,7 @@ export function HelpModal({ open, onClose }: HelpModalProps) {
               <select
                 value={activeId}
                 onChange={(event) => selectSection(event.target.value as HelpSectionId)}
-                className="min-w-0 flex-1 rounded-lg border border-[rgba(255,255,255,0.08)] bg-[#0f0f13] px-3 py-2 text-[11px] text-[#d8d8e2] outline-none focus:border-[rgba(124,110,246,0.5)]"
+                className="min-w-0 flex-1 rounded-lg border border-[rgba(255,255,255,0.08)] bg-surface px-3 py-2 text-[11px] text-[#d8d8e2] outline-none focus:border-accent/60"
                 aria-label={hm.chooseSection}
               >
                 {HELP_CHAPTERS.map((section) => (
@@ -160,7 +159,7 @@ export function HelpModal({ open, onClose }: HelpModalProps) {
           <div ref={contentRef} className="min-h-0 flex-1 overflow-y-auto scroll-smooth">
             <article className="mx-auto max-w-[760px] px-5 py-7 sm:px-8 sm:py-9 lg:px-10 lg:py-10">
               <div className="mb-7 flex items-start gap-4 border-b border-[rgba(255,255,255,0.065)] pb-6">
-                <span className="mt-0.5 font-mono text-[11px] font-medium tracking-[0.12em] text-[#8f82ff]">
+                <span className="mt-0.5 font-mono text-[11px] font-medium tracking-[0.12em] text-accent-text">
                   {String(activeSection.number).padStart(2, '0')}
                 </span>
                 <div>
@@ -191,7 +190,7 @@ export function HelpModal({ open, onClose }: HelpModalProps) {
                   type="button"
                   disabled={activeIndex === HELP_CHAPTERS.length - 1}
                   onClick={() => selectSection(HELP_CHAPTERS[activeIndex + 1].id)}
-                  className="rounded-lg border border-[rgba(124,110,246,0.22)] bg-[rgba(124,110,246,0.07)] px-3 py-2 text-[11px] text-[#aaa1f5] transition hover:border-[rgba(124,110,246,0.42)] hover:bg-[rgba(124,110,246,0.12)] disabled:pointer-events-none disabled:opacity-0"
+                  className="rounded-lg border border-accent/30 bg-accent-soft px-3 py-2 text-[11px] text-accent-text transition hover:border-accent/50 hover:bg-accent/15 disabled:pointer-events-none disabled:opacity-0"
                 >
                   {t.common.next} →
                 </button>

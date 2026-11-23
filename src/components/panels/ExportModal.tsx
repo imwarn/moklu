@@ -267,14 +267,14 @@ export function ExportModal({ open, onClose, stageRef }: ExportModalProps) {
               className="h-1 overflow-hidden rounded bg-[rgba(255,255,255,0.08)]"
             >
               <div
-                className={`h-full bg-[#7c6ef6] transition-[width] duration-300 ease-out motion-reduce:transition-none ${isIndeterminate ? 'w-full animate-pulse' : ''}`}
+                className={`h-full bg-accent transition-[width] duration-300 ease-out motion-reduce:transition-none ${isIndeterminate ? 'w-full animate-pulse' : ''}`}
                 style={isIndeterminate ? undefined : { width: `${(exportProgress.completed / Math.max(exportProgress.total, 1)) * 100}%` }}
               />
             </div>
           </div>
         })()}
         {isExporting ? <div className="flex gap-2">
-          <button disabled className="flex-1 rounded-lg bg-[#7c6ef6] px-3 py-2.5 text-sm font-medium text-white disabled:opacity-40 disabled:cursor-not-allowed">
+          <button disabled className="flex-1 rounded-lg bg-accent-strong px-3 py-2.5 text-sm font-medium text-accent-fg disabled:opacity-40 disabled:cursor-not-allowed">
             {exportProgress?.phase === 'rendering'
               ? `${exportProgress.completed}/${exportProgress.total} (${Math.round((exportProgress.completed / Math.max(exportProgress.total, 1)) * 100)}%)…`
               : exportProgress?.phase === 'zipping' ? em.preparingZip
@@ -289,7 +289,7 @@ export function ExportModal({ open, onClose, stageRef }: ExportModalProps) {
           >
             {isCancelling ? em.cancelling : t.common.cancel}
           </button>
-        </div> : <button disabled={!canRunExport} onClick={handleRunExport} className="w-full rounded-lg bg-[#7c6ef6] px-3 py-2.5 text-sm font-medium text-white hover:bg-[#6c5ed6] disabled:opacity-40 disabled:cursor-not-allowed transition-colors">{em.exportPngs}</button>}
+        </div> : <button disabled={!canRunExport} onClick={handleRunExport} className="w-full rounded-lg bg-accent-strong px-3 py-2.5 text-sm font-medium text-accent-fg hover:bg-accent-strong/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">{em.exportPngs}</button>}
         {exportError ? (
           <p role="alert" className="mt-2 rounded border border-[rgba(248,113,113,0.35)] bg-[rgba(248,113,113,0.08)] px-2 py-1.5 text-[10px] leading-snug text-[#fca5a5]">{exportError}</p>
         ) : !isExporting && selectedExportFormats.length === 0 ? (
@@ -316,7 +316,7 @@ export function ExportModal({ open, onClose, stageRef }: ExportModalProps) {
                   type="button"
                   onClick={() => setExportScope(item.value)}
                   className={`text-left rounded border px-2.5 py-2 transition-colors ${exportScope === item.value
-                    ? 'border-[#7c6ef6] bg-[rgba(124,110,246,0.14)] text-white'
+                    ? 'border-accent bg-accent-soft text-white'
                     : 'border-[rgba(255,255,255,0.08)] text-[#a6a7b8] hover:border-[rgba(255,255,255,0.18)]'}`}
                 >
                   <span className="block text-[11px] font-medium">{item.label}</span>
@@ -356,7 +356,7 @@ export function ExportModal({ open, onClose, stageRef }: ExportModalProps) {
                         type="checkbox"
                         checked={isChecked}
                         onChange={() => toggleExportFormat(formatId)}
-                        className="accent-[#7c6ef6] w-3 h-3 shrink-0"
+                        className="accent-accent w-3 h-3 shrink-0"
                       />
                       <span className="text-[11px] text-[#e8e8f0] flex-1 truncate">
                         {getFormatLabel(formatId, project.settings.customFormats)}
@@ -394,7 +394,7 @@ export function ExportModal({ open, onClose, stageRef }: ExportModalProps) {
                     disabled={singleLocale}
                     onClick={() => { if (!singleLocale) toggleExportLocale(locale) }}
                     className={`text-[11px] rounded-full border px-2 py-1 transition-colors ${checked
-                      ? 'border-[#7c6ef6] bg-[rgba(124,110,246,0.16)] text-white'
+                      ? 'border-accent bg-accent-soft text-white'
                       : 'border-[rgba(255,255,255,0.08)] text-[#8f90a3] hover:text-white'} ${singleLocale ? 'cursor-default opacity-80' : ''}`}
                   >
                     {locale}
@@ -414,7 +414,7 @@ export function ExportModal({ open, onClose, stageRef }: ExportModalProps) {
                     variant="checkbox"
                     checked={compensatePanoExport}
                     onChange={setCompensatePanoExport}
-                    checkboxClassName="h-3 w-3 accent-[#7c6ef6]"
+                    checkboxClassName="h-3 w-3 accent-accent"
                   />
                   <span className="flex-1">{em.compensateStoreGap}</span>
                   <NumberInput
@@ -455,7 +455,7 @@ export function ExportModal({ open, onClose, stageRef }: ExportModalProps) {
                     disabled={disabled}
                     onClick={() => setExportOutput(item.value)}
                     className={`text-left rounded border px-2 py-1.5 transition-colors ${exportOutput === item.value
-                      ? 'border-[#7c6ef6] bg-[rgba(124,110,246,0.14)] text-white'
+                      ? 'border-accent bg-accent-soft text-white'
                       : 'border-[rgba(255,255,255,0.08)] text-[#8f90a3] hover:text-white'} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
                   >
                     <span className="block text-[11px] font-medium">{item.label}</span>

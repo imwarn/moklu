@@ -27,7 +27,7 @@ export function InlineEditableLabel({
   value,
   onCommit,
   className,
-  inputClassName = 'flex-1 text-xs px-1 rounded border border-[#7c6ef6] bg-[#0f0f13] text-[#e8e8f0] focus:outline-none min-w-0',
+  inputClassName = 'flex-1 text-xs px-1 rounded border border-accent bg-surface text-[#e8e8f0] focus:outline-none min-w-0',
   style,
   inputStyle,
   editing: controlledEditing,

@@ -38,7 +38,25 @@
   Cache-Control: public, max-age=3600
   X-Content-Type-Options: nosniff
 
+/logo-light.svg
+  Cache-Control: public, max-age=3600
+  X-Content-Type-Options: nosniff
+
+/logo-dark.svg
+  Cache-Control: public, max-age=3600
+  X-Content-Type-Options: nosniff
+
+/logo-mono.svg
+  Cache-Control: public, max-age=3600
+  X-Content-Type-Options: nosniff
+
 /favicon.svg
+  Cache-Control: public, max-age=3600
+
+/apple-touch-icon.png
+  Cache-Control: public, max-age=3600
+
+/og-image.png
   Cache-Control: public, max-age=3600
 
 /icons.svg

@@ -309,9 +309,9 @@ export function LayersPanel() {
         </div>
 
         {selectedLayerIds.length > 0 && (
-          <div className="mb-2 flex items-center justify-between rounded-md bg-[rgba(124,110,246,0.12)] border border-[rgba(124,110,246,0.3)] px-2 py-1">
-            <span className="text-[10px] text-[#a89cf6]">{selectedLayerIds.length} {t.layers.selectedSuffix}</span>
-            <button onClick={() => clearMultiSelection()} className="text-[10px] text-[#a89cf6] hover:text-[#e8e8f0] transition-colors">{t.common.clear}</button>
+          <div className="mb-2 flex items-center justify-between rounded-md bg-accent-soft border border-accent/30 px-2 py-1">
+            <span className="text-[10px] text-accent-text">{selectedLayerIds.length} {t.layers.selectedSuffix}</span>
+            <button onClick={() => clearMultiSelection()} className="text-[10px] text-accent-text hover:text-[#e8e8f0] transition-colors">{t.common.clear}</button>
           </div>
         )}
 
@@ -320,7 +320,7 @@ export function LayersPanel() {
             <button
               key={tool.key}
               onClick={() => handleInsertToolClick(tool.key)}
-              className="flex flex-col items-center gap-1.5 rounded-xl border px-1 py-2 text-center transition-colors hover:border-[rgba(124,110,246,0.35)] hover:bg-[rgba(124,110,246,0.15)]"
+              className="flex flex-col items-center gap-1.5 rounded-xl border px-1 py-2 text-center transition-colors hover:border-accent/40 hover:bg-accent/15"
               style={{ borderColor: 'rgba(255,255,255,0.08)' }}
               title={`${t.layers.addPrefix} ${tool.label}`}
             >
@@ -413,7 +413,7 @@ export function LayersPanel() {
           <div
             className={`relative flex items-center gap-1 px-2 py-1.5 border-l-2 transition-colors ${
               selection?.layerId === backgroundLayer.id
-                ? 'bg-[rgba(124,110,246,0.15)] border-[#7c6ef6]'
+                ? 'bg-accent/15 border-accent'
                 : 'border-transparent hover:bg-[rgba(255,255,255,0.04)]'
             }`}
             onClick={() => select(backgroundLayer.id)}

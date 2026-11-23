@@ -5,13 +5,13 @@
 - `main.tsx`: Tick-0 browser mount entry point, `vite:preloadError` auto-recovery (`installChunkRecoveryListener`), Google Fonts loader, non-blocking background project bootstrap (`ensureProjectsBootstrapped`), and headless ExportApp switch.
 - `App.tsx`: Lightweight History API SPA router routing `/` and 18 localized SEO tool slugs to `ToolLandingPage` and `/studio` to lazy-loaded `StudioPage` wrapped in `ChunkErrorBoundary`.
 - `config.ts`: Canonical site config exporting `SITE_URL` (`https://moklu.app`), `BRAND_NAME` (`Moklu`), and `getPixelDeckConfig()`.
-- `index.css`: Tailwind v4 theme tokens, `@custom-variant dark` selector bound to `[data-theme="dark"]`, and adaptive Light/Dark vs Studio body/scrollbar rules.
+- `index.css`: Self-hosted Geist & Geist Mono font imports, Tailwind v4 `@theme static` Signal Orange + Neutral Zinc semantic tokens (`surface`/`panel`/`border`/`muted`/`accent*`/`success`/`warning`/`danger`), `@custom-variant dark` bound to `[data-theme="dark"]`, and adaptive Light/Dark vs Studio body/scrollbar rules.
 - `globals.d.ts`: Build-time Vite constant declarations (`__APP_VERSION__`, `__GIT_HASH__`).
 - `seo/`: 4-language (`en | zh | ja | ko`) 19-slug (76-URL) route registry, JSON-LD schemas, runtime `<head>` sync, SSG HTML/sitemap generators, `ssrEntry.ts`, and site chrome.
 - `i18n/`: Decoupled 4-language (`en | zh | ja | ko`) Studio UI localization context (`StudioLocaleProvider`, `useStudioLocale`), message/relative-time formatters (`format.ts`), and complete dictionaries for Studio toolbar, panels, properties, modals, and localization view.
 - `workspace/`: Above-the-fold 6-tool Quick Workspace UI (`QuickWorkspace`), DIP `WorkspaceEngines` contract, `engineAdapter.ts`, `useDebouncedValue.ts`, and split 4-locale UI strings (`locales/`).
 - `tools/`: Pure client-side HTML5 Canvas / Blob / JSZip engines for Merge, Split, Compress, Transform (Resize/Crop/Pad), and ID Card A4 Watermark.
-- `theme/`: Persistent Light/Dark/System UI theme Zustand store (`useThemeStore`) and document theme applier.
+- `theme/`: Signal Orange + Neutral Zinc JS/Konva palette registry (`brand.ts`: `BRAND`, `BRAND_LIGHT`, `BRAND_DARK`, `getBrandPalette`), persistent Light/Dark/System UI theme Zustand store (`useThemeStore`), and document theme applier.
 - `bridge/`: Quick-Workspace-to-Studio handoff bridge (`stageImagesIntoStudio`) staging assets and editable `SlideGroup`s.
 - `commercial/`: Free vs Moklu Studio Pro entitlement store (`useEntitlementStore`) and accessible `PricingModal`.
 - `pages/`: Top-level route views (`ToolLandingPage`, `StudioPage`, `LocalizationView`, `ExportApp`).
