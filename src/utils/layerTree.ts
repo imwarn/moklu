@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on Layer from @/types
+ * [OUTPUT]: exports LayerMapper, LayerVisitor, forEachLayerTree, mapLayerTree, findLayerInTree, and updateLayerInTree
+ * [POS]: foundational recursive Layer tree traversal and immutable update primitives in src/utils; shared across canvasFormats, locale, templates, and store actions
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { Layer } from '@/types'
 
 export type LayerMapper = (layer: Layer) => Layer

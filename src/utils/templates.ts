@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on nanoid from nanoid, Layer, SlideGroup, GroupLayer, Template, Project, ProjectSettings, CanvasBackground, and BackgroundLayer from @/types, migrateLayerSpans from @/store/helpers, and mapLayerTree from @/utils/layerTree
+ * [OUTPUT]: exports cloneLayersWithNewIds, deterministicIds, stripLayerImages, ExtractedScreenshotsResult, extractInlineScreenshots, ExportTemplateOpts, projectToTemplate, AppliedTemplate, applyTemplate, isTemplate, and looksLikeTemplate
+ * [POS]: template serialization, image stripping, ID regeneration, and template-to-project instantiation engine in src/utils; consumed by templateSlots, templateAppearance, and template gallery UI
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { nanoid } from 'nanoid'
 import type {
   Layer, SlideGroup, GroupLayer,

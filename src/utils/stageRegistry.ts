@@ -1,4 +1,10 @@
 /**
+ * [INPUT]: depends on Konva from konva
+ * [OUTPUT]: exports registerStage and getStage
+ * [POS]: singleton Konva Stage registry in src/utils; bridges StageCanvas to non-canvas panels such as alignLayers and export triggers
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
+/**
  * Singleton registry for the Konva Stage instance.
  *
  * PropertiesPanel and other non-canvas components need access to the stage

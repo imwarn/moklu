@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on BrandColor and FillValue from @/types
+ * [OUTPUT]: exports isBrandToken, toBrandToken, parseBrandToken, resolveBrandColor, and resolveFill
+ * [POS]: brand color token parser and fill resolver in src/utils; consumed by konvaFill and color picker components
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { BrandColor, FillValue } from '@/types'
 
 const TOKEN_RE = /^\{brand:([^}]+)\}$/

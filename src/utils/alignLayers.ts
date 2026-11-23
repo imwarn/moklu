@@ -1,4 +1,10 @@
 /**
+ * [INPUT]: depends on getStage from @/utils/stageRegistry and Layer from @/types
+ * [OUTPUT]: exports AlignAxis, BBox, getLayerBBox, getUnionBBox, and computeAlignPatch
+ * [POS]: Konva bounding-box alignment delta calculator in src/utils; consumed by PropertiesPanel and canvas alignment actions
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
+/**
  * Layer alignment utilities.
  *
  * All alignment is done by computing deltas from the layer's current bounding

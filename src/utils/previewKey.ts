@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on SlideGroup, PanoSettings, and CanvasFormatId from @/types
+ * [OUTPUT]: exports getGroupPreviewKey
+ * [POS]: fast FNV-1a cache key generator in src/utils; invalidates slide thumbnail caches when group geometry, locale, or format state changes
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { SlideGroup, PanoSettings } from '@/types'
 import type { CanvasFormatId } from '@/types'
 

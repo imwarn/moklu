@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on browser atob global
+ * [OUTPUT]: exports readPngDataUrlDimensions and assertPngExportDimensions
+ * [POS]: fast PNG signature and IHDR dimension validator in src/utils; verifies exported data URLs in export.ts without full image decoding
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 /** Validate the PNG signature and its IHDR dimensions without image decoding. */
 export function readPngDataUrlDimensions(dataUrl: string): { width: number; height: number } {
   const match = /^data:image\/png;base64,([A-Za-z0-9+/=]+)$/i.exec(dataUrl)

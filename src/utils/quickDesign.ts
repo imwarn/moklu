@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on nanoid from nanoid, BackgroundLayer, Layer, PhoneLayer, and PhoneModel from @/types, and getPhoneSpec from @/assets/mockups/specs
+ * [OUTPUT]: exports QuickSize, QuickScreenshotFit, QuickTheme, QuickMockup, QUICK_SIZES, QUICK_THEMES, QUICK_MOCKUPS, getQuickMockupPlacement, and makeQuickLayers
+ * [POS]: Quick Workspace mockup size/theme/device preset registry and layer builder in src/utils; consumed by quickPreview, MockupQuickTool, and Studio handoff
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { nanoid } from 'nanoid'
 import type { BackgroundLayer, Layer, PhoneLayer, PhoneModel } from '@/types'
 import { getPhoneSpec } from '@/assets/mockups/specs'

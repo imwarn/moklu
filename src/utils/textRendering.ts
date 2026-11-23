@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on TextLayer, TextMark, and FillValue from @/types, createCanvasGradient from @/utils/gradients, and segmentMarks from @/utils/richText
+ * [OUTPUT]: exports DEFAULT_TEXT_WIDTH, makeMeasureCache, layerToLines, wrapFragmentLines, renderSpansToCanvas, spansRenderKey, and spansToMarks
+ * [POS]: rich-text line wrapper and offscreen HTML5 Canvas span renderer in src/utils; powers Konva TextNode rich-text rendering with gradient/highlight support
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { TextLayer, TextMark, FillValue } from '@/types'
 import { createCanvasGradient } from '@/utils/gradients'
 import { segmentMarks } from '@/utils/richText'

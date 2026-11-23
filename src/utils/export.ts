@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on Konva from konva, SlideGroup from @/types, withHiddenEditorOverlays and withIdentityTransform from ./stageCapture, getPanoSlideX and getPanoTotalWidth from ./panoGeometry, and assertPngExportDimensions from ./pngIntegrity
+ * [OUTPUT]: exports PanoExportMode, ExportedImage, exportSlide, exportAllSlides, exportWholeGroup, exportGroupImages, and downloadDataUrl
+ * [POS]: Konva stage-to-PNG rasterizer and browser download helper in src/utils; called by multiFormatExport and single-slide export actions
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type Konva from 'konva'
 import type { SlideGroup } from '@/types'
 import { withHiddenEditorOverlays, withIdentityTransform } from './stageCapture'
