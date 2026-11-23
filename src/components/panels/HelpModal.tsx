@@ -1,7 +1,14 @@
+/**
+ * [INPUT]: depends on ModalShell, HELP_CHAPTERS, HelpMarkdown; useStudioLocale from @/i18n
+ * [OUTPUT]: exports HelpModal component rendering the interactive Moklu user guide
+ * [POS]: documentation modal within src/components/panels, mounted by StudioPage
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useMemo, useRef, useState } from 'react'
 import { ModalShell } from '@/components/ui/ModalShell'
 import { HELP_CHAPTERS, type HelpSectionId } from '@/components/panels/help/loadHelpChapters'
 import { HelpMarkdown } from '@/components/panels/help/HelpMarkdown'
+import { useStudioLocale } from '@/i18n'
 
 interface HelpModalProps {
   open: boolean
@@ -11,6 +18,8 @@ interface HelpModalProps {
 const GROUP_LABELS = ['GETTING STARTED', 'DESIGN', 'ADAPT', 'DELIVER'] as const
 
 export function HelpModal({ open, onClose }: HelpModalProps) {
+  const { t } = useStudioLocale()
+  const hm = t.modals.help
   const [activeId, setActiveId] = useState<HelpSectionId>('introduction')
   const [query, setQuery] = useState('')
   const contentRef = useRef<HTMLDivElement>(null)
@@ -32,8 +41,8 @@ export function HelpModal({ open, onClose }: HelpModalProps) {
     <ModalShell
       open={open}
       onClose={onClose}
-      title="Moklu user guide"
-      closeLabel="Close help"
+      title={hm.title}
+      closeLabel={hm.closeAria}
       maxWidth="max-w-[1120px]"
       backdropClassName="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-5"
       backdropStyle={{ background: 'rgba(4,4,7,0.72)', backdropFilter: 'blur(6px)' }}
@@ -53,14 +62,14 @@ export function HelpModal({ open, onClose }: HelpModalProps) {
             </div>
             <div>
               <h2 className="text-[15px] font-semibold tracking-[-0.01em] text-[#f0eff8]">
-                Moklu user guide
+                {hm.title}
               </h2>
               <p className="mt-0.5 text-[11px] text-[#6b6b7a]">
-                Everything you need to design, adapt, and export screenshot sets.
+                {hm.subtitle}
               </p>
             </div>
             <span className="ml-auto hidden rounded-full border border-[rgba(255,255,255,0.07)] bg-[rgba(255,255,255,0.025)] px-2.5 py-1 text-[10px] font-medium tracking-wide text-[#6b6b7a] sm:block">
-              {HELP_CHAPTERS.length} SECTIONS
+              {HELP_CHAPTERS.length} {hm.sectionsLabel}
             </span>
           </div>
         </header>
@@ -75,14 +84,14 @@ export function HelpModal({ open, onClose }: HelpModalProps) {
                 type="search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Find a section…"
-                aria-label="Find a help section"
+                placeholder={hm.findSectionPlaceholder}
+                aria-label={hm.findSectionPlaceholder}
                 className="h-9 w-full rounded-lg border border-[rgba(255,255,255,0.075)] bg-[#0f0f13] pl-8 pr-3 text-[11px] text-[#d8d8e2] outline-none transition placeholder:text-[#4a4a57] focus:border-[rgba(124,110,246,0.52)] focus:ring-2 focus:ring-[rgba(124,110,246,0.08)]"
               />
             </label>
           </div>
 
-          <nav aria-label="Help sections" className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
+          <nav aria-label={hm.sectionsLabel} className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
             {GROUP_LABELS.map((group) => {
               const sections = filteredSections.filter((section) => section.group === group)
               if (sections.length === 0) return null
@@ -120,24 +129,24 @@ export function HelpModal({ open, onClose }: HelpModalProps) {
             })}
             {filteredSections.length === 0 && (
               <div className="px-2 py-8 text-center text-[11px] leading-relaxed text-[#555562]">
-                No section titles match<br />“{query}”
+                “{query}”
               </div>
             )}
           </nav>
           <div className="border-t border-[rgba(255,255,255,0.055)] px-5 py-3 text-[10px] text-[#454552]">
-            Select a section to jump directly to it.
+            {hm.selectSectionHint}
           </div>
         </aside>
 
         <main className="flex min-w-0 flex-1 flex-col bg-[#18181f]">
           <div className="shrink-0 border-b border-[rgba(255,255,255,0.06)] bg-[#15151b] px-4 py-2.5 md:hidden">
             <label className="flex items-center gap-3">
-              <span className="text-[10px] font-semibold tracking-[0.12em] text-[#575765]">SECTION</span>
+              <span className="text-[10px] font-semibold tracking-[0.12em] text-[#575765]">{hm.sectionsLabel}</span>
               <select
                 value={activeId}
                 onChange={(event) => selectSection(event.target.value as HelpSectionId)}
                 className="min-w-0 flex-1 rounded-lg border border-[rgba(255,255,255,0.08)] bg-[#0f0f13] px-3 py-2 text-[11px] text-[#d8d8e2] outline-none focus:border-[rgba(124,110,246,0.5)]"
-                aria-label="Choose help section"
+                aria-label={hm.chooseSection}
               >
                 {HELP_CHAPTERS.map((section) => (
                   <option key={section.id} value={section.id}>
@@ -175,7 +184,7 @@ export function HelpModal({ open, onClose }: HelpModalProps) {
                   onClick={() => selectSection(HELP_CHAPTERS[activeIndex - 1].id)}
                   className="rounded-lg border border-[rgba(255,255,255,0.08)] px-3 py-2 text-[11px] text-[#858594] transition hover:border-[rgba(255,255,255,0.15)] hover:text-[#e0e0e9] disabled:pointer-events-none disabled:opacity-0"
                 >
-                  ← Previous
+                  ← {t.common.previous}
                 </button>
                 <span className="font-mono text-[9px] text-[#484855]">{activeIndex + 1} / {HELP_CHAPTERS.length}</span>
                 <button
@@ -184,7 +193,7 @@ export function HelpModal({ open, onClose }: HelpModalProps) {
                   onClick={() => selectSection(HELP_CHAPTERS[activeIndex + 1].id)}
                   className="rounded-lg border border-[rgba(124,110,246,0.22)] bg-[rgba(124,110,246,0.07)] px-3 py-2 text-[11px] text-[#aaa1f5] transition hover:border-[rgba(124,110,246,0.42)] hover:bg-[rgba(124,110,246,0.12)] disabled:pointer-events-none disabled:opacity-0"
                 >
-                  Next →
+                  {t.common.next} →
                 </button>
               </div>
             </article>

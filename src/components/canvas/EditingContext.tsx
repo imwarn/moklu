@@ -1,4 +1,10 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+/**
+ * [INPUT]: depends on react, react-dom, zustand useShallow, useEditorStore, canvasFormats, locale, scopedEditingIndicator, EditingContextChrome, CreateFormatLayoutModal, ContentSyncModal, ConfirmDialog, and useStudioLocale from @/i18n
+ * [OUTPUT]: exports EditingContextBar and EditingContextAlert with localized Format, Base, Locale, Actions, and scoped editing banners
+ * [POS]: persistent top canvas-context bar above StageCanvas inside src/components/canvas
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useShallow } from 'zustand/react/shallow'
 import { useEditorStore } from '@/store'
@@ -28,6 +34,8 @@ import { getScopedEditingIndicator } from '@/utils/scopedEditingIndicator'
 import { CreateFormatLayoutModal } from '@/components/panels/CreateFormatLayoutModal'
 import { ContentSyncModal } from '@/components/panels/ContentSyncModal'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { HorizontalScrollAffordance, SlidingUnderline } from './EditingContextChrome'
+import { useStudioLocale } from '@/i18n'
 
 function useDismissOnOutsideClick(
   open: boolean,
@@ -45,132 +53,11 @@ function useDismissOnOutsideClick(
   }, [open, refs, close])
 }
 
-/**
- * Sliding active-tab underline.
- *
- * - One instance per tab row.
- * - Must be a DIRECT CHILD (last element) of a `relative` row container.
- * - Every tab button in that row carries `data-tab-key`, including the
- *   "Default"/"Base" button.
- * - Measures with `offsetLeft`/`offsetWidth` — NOT `getBoundingClientRect()`.
- *   The family accordion translates the tab strip (`translate-x-*`) while
- *   opening; layout offsets are transform-immune, so measurements stay stable.
- *   The bar inherits the strip's translate for free because it lives inside it.
- */
-function SlidingUnderline({
-  accentClass,
-  activeKey,
-  enabled = true,
-}: {
-  /** Tailwind bg- class, e.g. `bg-[#f59e0b]` or `bg-[#22d3c5]`. */
-  accentClass: string
-  /** Matches `data-tab-key` on the currently active tab button. */
-  activeKey: string
-  /** Set `false` to fade out (e.g. collapsed accordion panel). */
-  enabled?: boolean
-}) {
-  const barRef = useRef<HTMLSpanElement>(null)
-
-  useLayoutEffect(() => {
-    const bar = barRef.current
-    const row = bar?.parentElement
-    if (!bar || !row) return
-
-    // Find the active tab.  CSS.escape guards locale codes and `custom:…` ids.
-    const target = enabled
-      ? row.querySelector<HTMLElement>(`[data-tab-key="${CSS.escape(activeKey)}"]`)
-      : null
-
-    if (!target) {
-      // Fade out in place — retain the last transform/width so re-showing the
-      // same tab is a fade-in, not a slide from the row origin.
-      bar.style.opacity = '0'
-      return
-    }
-
-    const measure = () => {
-      // offsetLeft is relative to the row (the offsetParent), and is
-      // *unaffected* by CSS transforms on ancestor accordion strips.
-      bar.style.transform = `translateX(${target.offsetLeft}px)`
-      bar.style.width = `${target.offsetWidth}px`
-      bar.style.opacity = '1'
-    }
-    measure()
-
-    // Observe the row (catches a sibling tab growing, shifting offsetLeft) and
-    // the active tab itself (catches its label / ●N badge changing width).
-    // Both fire from pure DOM mutations (e.g. the ●N badge appearing) with no
-    // React re-render of SlidingUnderline needed.
-    const observer = new ResizeObserver(measure)
-    observer.observe(row)
-    observer.observe(target)
-    return () => observer.disconnect()
-  }, [activeKey, enabled])
-
-  return (
-    <span
-      ref={barRef}
-      aria-hidden="true"
-      className={`pointer-events-none absolute bottom-0 left-0 h-0.5 w-0 rounded-full opacity-0 transition-[transform,width,opacity] duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${accentClass}`}
-    />
-  )
-}
-
-/** Keeps compact tab rows legible when their contents outgrow the editor chrome. */
-function HorizontalScrollAffordance({
-  children,
-  className = '',
-  containerClassName = '',
-}: {
-  children: React.ReactNode
-  className?: string
-  containerClassName?: string
-}) {
-  const scrollRef = useRef<HTMLDivElement>(null)
-  const [edges, setEdges] = useState({ start: false, end: false })
-
-  useLayoutEffect(() => {
-    const element = scrollRef.current
-    if (!element) return
-    const updateEdges = () => {
-      const overflow = element.scrollWidth > element.clientWidth + 1
-      setEdges({
-        start: overflow && element.scrollLeft > 1,
-        end: overflow && element.scrollLeft + element.clientWidth < element.scrollWidth - 1,
-      })
-    }
-    const frame = requestAnimationFrame(updateEdges)
-    const observer = new ResizeObserver(updateEdges)
-    observer.observe(element)
-    if (element.firstElementChild) observer.observe(element.firstElementChild)
-    element.addEventListener('scroll', updateEdges, { passive: true })
-    element.addEventListener('transitionend', updateEdges)
-    window.addEventListener('resize', updateEdges)
-    return () => {
-      cancelAnimationFrame(frame)
-      observer.disconnect()
-      element.removeEventListener('scroll', updateEdges)
-      element.removeEventListener('transitionend', updateEdges)
-      window.removeEventListener('resize', updateEdges)
-    }
-  }, [])
-
-  return (
-    <div className={`relative min-w-0 flex-1 ${containerClassName}`}>
-      <div ref={scrollRef} className={`h-full min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${className}`}>
-        {children}
-      </div>
-      {edges.start && <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-0 z-10 w-7 bg-gradient-to-r from-[#18181f] via-[#18181f]/90 to-transparent" />}
-      {edges.end && <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 z-10 flex w-9 items-center justify-end bg-gradient-to-l from-[#18181f] via-[#18181f]/90 to-transparent pr-1 text-xs text-[#8d8997]">›</span>}
-    </div>
-  )
-}
-
-/** The two editing axes share one piece of persistent editor chrome. */
 /** Width of the format popover; also used to clamp it inside the viewport. */
 const FORMAT_MENU_WIDTH = 250
 
 export function EditingContextBar() {
+  const { t } = useStudioLocale()
   const {
     project,
     settings,
@@ -303,12 +190,12 @@ export function EditingContextBar() {
   const deleteTargetExclusiveGroups = deleteTargetFamilyStillActive ? [] : deleteTargetGroups
   const deleteTargetLabel = deleteTarget ? getFormatLabel(deleteTarget, settings.customFormats) : ''
   const deleteTargetMessage = deleteTargetOwnsAllGroups
-    ? 'This is the only slide group in the project. Add another slide group before deleting this layout.'
+    ? t.context.deleteLastGroupMsg
     : deleteTargetGroups.length === 0
-      ? 'This format has no dedicated layouts. It will just stop exporting.'
+      ? t.context.deleteNoLayoutsMsg
     : deleteTargetExclusiveGroups.length > 0
-      ? `This removes ${deleteTargetExclusiveGroups.length === 1 ? 'its slides' : 'these slides'} permanently.`
-      : 'This removes the format from its shared slides. The slides remain for their other formats.'
+      ? t.context.deleteExclusiveMsg
+      : t.context.deleteSharedMsg
 
   const clearCustomForm = () => {
     setShowCustomInput(false)
@@ -354,9 +241,9 @@ export function EditingContextBar() {
       onClick={() => selectFormat(baseFormat)}
       data-tab-key={baseFormat}
       className={tabClass(activeCanvasFormat === baseFormat)}
-      title="Base — shared authoring canvas. Not exported directly."
+      title={t.context.baseTitle}
     >
-      Base
+      {t.context.base}
     </button>
   )
   const renderPresetTab = (formatId: BuiltInFormatId) => {
@@ -385,7 +272,7 @@ export function EditingContextBar() {
       <button
         onClick={openFormatMenu}
         className="flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-sm text-[#6b6b7a] transition-colors hover:border-[rgba(245,158,11,0.18)] hover:bg-[rgba(245,158,11,0.07)] hover:text-[#fbbf24]"
-        title="Add a canvas format"
+        title={t.context.addFormatTitle}
       >
         +
       </button>
@@ -416,26 +303,28 @@ export function EditingContextBar() {
   return (
     <div className={`relative ${actionsOpen ? 'z-40' : 'z-20'} h-11 shrink-0 border-b border-[rgba(255,255,255,0.07)] bg-[#18181f] px-3`}>
       <div className="flex h-full min-w-0 items-stretch">
-        <section className="flex min-w-0 flex-1 items-stretch" aria-label="Canvas format">
+        <section className="flex min-w-0 flex-1 items-stretch" aria-label={t.context.canvasFormatAria}>
           <div className="mr-1.5 hidden shrink-0 items-center gap-1.5 lg:flex">
             <span className="h-1.5 w-1.5 rounded-full bg-[#f59e0b] shadow-[0_0_7px_rgba(245,158,11,0.35)]" />
-            <span className="text-[9px] font-semibold uppercase tracking-[0.16em] text-[#6b6254]">Format</span>
+            <span className="text-[9px] font-semibold uppercase tracking-[0.16em] text-[#6b6254]">{t.context.format}</span>
           </div>
           <label className="flex min-w-0 flex-1 items-center gap-2 lg:hidden">
-            <span className="sr-only">Canvas format</span>
+            <span className="sr-only">{t.context.canvasFormatAria}</span>
             <select
-              aria-label="Canvas format"
+              aria-label={t.context.canvasFormatAria}
               value={activeCanvasFormat}
               onChange={(event) => selectFormat(event.target.value as CanvasFormatId)}
               className="w-full min-w-0 rounded-md border border-white/20 bg-[#222330] px-2 py-1.5 text-xs text-white"
             >
               {Array.from(new Set([baseFormat, ...familyEntries.flatMap(({ presetFormats, customFormats }) => [...presetFormats, ...customFormats])])).map((formatId) => (
-                <option key={formatId} value={formatId}>{getFormatLabel(formatId, settings.customFormats)}</option>
+                <option key={formatId} value={formatId}>
+                  {formatId === baseFormat ? t.context.base : getFormatLabel(formatId, settings.customFormats)}
+                </option>
               ))}
             </select>
           </label>
           <div className="flex shrink-0 items-center lg:hidden" ref={mobileFormatRef}>
-            <button type="button" onClick={openFormatMenu} title="Add a canvas format" aria-label="Add a canvas format"
+            <button type="button" onClick={openFormatMenu} title={t.context.addFormatTitle} aria-label={t.context.addFormatTitle}
               aria-expanded={dropdownOpen || showCustomInput}
               className="ml-2 flex h-8 w-8 items-center justify-center rounded-md border border-white/20 bg-[#222330] text-base text-[#fbbf24] focus-visible:outline-2 focus-visible:outline-[#b9afff]">+</button>
           </div>
@@ -542,8 +431,8 @@ export function EditingContextBar() {
             >
             {dropdownOpen && (
               <div className="absolute left-0 top-full z-50 mt-1 min-w-[250px] max-w-[calc(100vw-8px)] max-h-[min(30rem,calc(100vh-5rem))] overflow-y-auto rounded-lg border border-[rgba(255,255,255,0.1)] bg-[#1e1e2a] py-1 shadow-xl">
-                {uncreatedFormats.length > 0 && <section aria-label="Create new layout">
-                  <p className="px-3 pb-1 pt-1 text-[9px] font-semibold uppercase tracking-[0.15em] text-[#fbbf24]">Create new layout</p>
+                {uncreatedFormats.length > 0 && <section aria-label={t.context.createNewLayout}>
+                  <p className="px-3 pb-1 pt-1 text-[9px] font-semibold uppercase tracking-[0.15em] text-[#fbbf24]">{t.context.createNewLayout}</p>
                   {renderFormatMenuFamilies(uncreatedFormats, (formatId) => {
                     const family = getFormatFamilyKey(formatId) ?? 'phone'
                     if (selectFamilyGroups(project, family).length > 0) {
@@ -556,23 +445,23 @@ export function EditingContextBar() {
                   })}
                 </section>}
                 {uncreatedFormats.length > 0 && <div className="mx-2 my-1 h-px bg-[rgba(255,255,255,0.08)]" />}
-                <section aria-label="Add a custom canvas size">
-                  <p className="px-3 pb-1 pt-1 text-[9px] font-semibold uppercase tracking-[0.15em] text-[#b7b7c5]">Add a custom canvas size</p>
+                <section aria-label={t.context.addCustomCanvasSize}>
+                  <p className="px-3 pb-1 pt-1 text-[9px] font-semibold uppercase tracking-[0.15em] text-[#b7b7c5]">{t.context.addCustomCanvasSize}</p>
                   <button
                     onClick={() => { setShowCustomInput(true); setDropdownOpen(false) }}
                     className="w-full px-3 py-1.5 text-left text-xs text-[#a0a0b0] transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-[#e8e8f0]"
                   >
-                    Custom size…
+                    {t.context.customSize}
                   </button>
                 </section>
               </div>
             )}
             {showCustomInput && (
               <div className="absolute left-0 top-full z-50 mt-1 min-w-[210px] max-w-[calc(100vw-8px)] rounded-lg border border-[rgba(255,255,255,0.1)] bg-[#1e1e2a] p-3 shadow-xl">
-                <p className="mb-2 text-[10px] text-[#6b6b7a]">Custom canvas format</p>
+                <p className="mb-2 text-[10px] text-[#6b6b7a]">{t.context.customCanvasFormat}</p>
                 <input
                   type="text"
-                  placeholder="Label (optional)"
+                  placeholder={t.context.labelOptional}
                   value={customLabel}
                   onChange={(event) => setCustomLabel(event.target.value)}
                   className="mb-2 w-full rounded border border-[rgba(255,255,255,0.1)] bg-[#0f0f13] px-2 py-1 text-xs text-[#e8e8f0] focus:outline-none"
@@ -600,15 +489,15 @@ export function EditingContextBar() {
                       const width = parseInt(customW)
                       const height = parseInt(customH)
                       if (width >= 100 && width <= 9999 && height >= 100 && height <= 9999) {
-                        addCustomFormat(customLabel.trim() || `Custom ${width}×${height}`, width, height)
+                        addCustomFormat(customLabel.trim() || `${t.common.custom} ${width}×${height}`, width, height)
                       }
                       clearCustomForm()
                     }}
                     className="flex-1 rounded bg-[#7c6ef6] px-2 py-1 text-xs text-white hover:bg-[#6c5ed6]"
                   >
-                    Apply
+                    {t.common.apply}
                   </button>
-                  <button onClick={clearCustomForm} className="px-2 py-1 text-xs text-[#6b6b7a] hover:text-[#e8e8f0]">Cancel</button>
+                  <button onClick={clearCustomForm} className="px-2 py-1 text-xs text-[#6b6b7a] hover:text-[#e8e8f0]">{t.common.cancel}</button>
                 </div>
               </div>
             )}
@@ -618,10 +507,10 @@ export function EditingContextBar() {
         </section>
 
         {hasMultipleLocales && (
-          <section className="ml-3 flex w-fit min-w-0 max-w-[38%] shrink items-stretch border-l border-[rgba(255,255,255,0.08)] pl-3" aria-label="Editing locale">
+          <section className="ml-3 flex w-fit min-w-0 max-w-[38%] shrink items-stretch border-l border-[rgba(255,255,255,0.08)] pl-3" aria-label={t.context.editingLocaleAria}>
             <div className="mr-1.5 flex shrink-0 items-center gap-1.5">
               <span className="h-1.5 w-1.5 rounded-full bg-[#22d3c5] shadow-[0_0_7px_rgba(34,211,197,0.35)]" />
-              <span className="text-[9px] font-semibold uppercase tracking-[0.16em] text-[#526d69]">Locale</span>
+              <span className="text-[9px] font-semibold uppercase tracking-[0.16em] text-[#526d69]">{t.context.locale}</span>
             </div>
             <HorizontalScrollAffordance containerClassName="w-fit max-w-full flex-none">
               <div className="relative flex h-full min-w-max items-stretch">
@@ -629,9 +518,9 @@ export function EditingContextBar() {
                 onClick={() => setActiveLocale(defaultLocale)}
                 data-tab-key={defaultLocale}
                 className={tabClass(activeLocale === defaultLocale)}
-                title={`Default locale · ${getLanguageName(defaultLocale)}`}
+                title={`${t.context.default} · ${getLanguageName(defaultLocale)}`}
               >
-                Default
+                {t.context.default}
               </button>
                 {locales.filter((locale) => locale !== defaultLocale).map((locale) => {
                 const isActive = activeLocale === locale
@@ -664,57 +553,55 @@ export function EditingContextBar() {
               onClick={() => setActionsOpen((open) => !open)}
               className="rounded-md border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.035)] px-2 py-1 text-[10px] text-[#c9c9d4] transition-colors hover:border-[rgba(255,255,255,0.2)] hover:bg-[rgba(255,255,255,0.07)] hover:text-white"
             >
-              Actions ▾
+              {t.context.actions} ▾
             </button>
             {actionsOpen && (
               <div className="absolute right-0 top-full z-50 mt-1.5 w-72 overflow-hidden rounded-lg border border-[rgba(255,255,255,0.12)] bg-[#1c1c26] shadow-2xl">
                 {isFormatScoped && <>
                   <div className="border-b border-[rgba(255,255,255,0.08)] px-3 py-2">
-                    <p className="text-[9px] font-semibold uppercase tracking-[0.15em] text-[#fbbf24]">{formatLabel} format actions</p>
-                    <p className="mt-0.5 text-[10px] text-[#6b6b7a]">{formatCount} format adjustment{formatCount !== 1 ? 's' : ''} on this slide</p>
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.15em] text-[#fbbf24]">{formatLabel} {t.context.formatActionsSuffix}</p>
+                    <p className="mt-0.5 text-[10px] text-[#6b6b7a]">{formatCount}</p>
                   </div>
                   <button className={actionItemClass} onClick={() => runFormatAction(resetActiveFormatLayout)}>
-                    Reset format layout
-                    <span className="mt-0.5 block text-[10px] text-[#6b6b7a]">Remove all layout/model overrides for this format.</span>
+                    {t.context.resetFormatLayout}
+                    <span className="mt-0.5 block text-[10px] text-[#6b6b7a]">{t.context.resetFormatLayoutDesc}</span>
                   </button>
                   <button className={actionItemClass} onClick={() => runFormatAction(shareActiveFormatOwnedLayers)}>
-                    Make format layers shared
-                    <span className="mt-0.5 block text-[10px] text-[#6b6b7a]">Convert layers created only in this format into shared layers.</span>
+                    {t.context.makeFormatLayersShared}
+                    <span className="mt-0.5 block text-[10px] text-[#6b6b7a]">{t.context.makeFormatLayersSharedDesc}</span>
                   </button>
                   <button className={actionItemClass} onClick={() => runFormatAction(resetActiveFormatVisibility)}>
-                    Reset format visibility
-                    <span className="mt-0.5 block text-[10px] text-[#6b6b7a]">Clear hide/show decisions for this format.</span>
+                    {t.context.resetFormatVisibility}
+                    <span className="mt-0.5 block text-[10px] text-[#6b6b7a]">{t.context.resetFormatVisibilityDesc}</span>
                   </button>
                   <div className="h-px bg-[rgba(255,255,255,0.08)]" />
                   <button className={actionItemClass} onClick={handlePromoteLayout}>
-                    Use format layout as shared…
-                    <span className="mt-0.5 block text-[10px] text-[#f59e0b]">Promotes this format layout into Base. Affects other formats.</span>
+                    {t.context.useFormatLayoutAsShared}
+                    <span className="mt-0.5 block text-[10px] text-[#f59e0b]">{t.context.useFormatLayoutAsSharedDesc}</span>
                   </button>
                 </>}
                 {isLocaleScoped && (
-                  <section className="mt-1 border-t border-[rgba(255,255,255,0.12)]" aria-label={`${formatLabel} and ${localeLabel} actions`}>
+                  <section className="mt-1 border-t border-[rgba(255,255,255,0.12)]" aria-label={`${formatLabel} × ${localeLabel}`}>
                     <div className="border-b border-[rgba(255,255,255,0.08)] px-3 py-2">
-                      <p className="text-[9px] font-semibold uppercase tracking-[0.15em] text-[#22d3c5]">{isFormatScoped ? `${formatLabel} × ${localeLabel}` : `${localeLabel} base layout`}</p>
-                      <p className="mt-0.5 text-[10px] text-[#6b6b7a]">
-                        {localeCount} position and size adjustment{localeCount !== 1 ? 's' : ''} for {isFormatScoped ? 'this pairing' : 'this locale'}
-                      </p>
+                      <p className="text-[9px] font-semibold uppercase tracking-[0.15em] text-[#22d3c5]">{isFormatScoped ? `${formatLabel} × ${localeLabel}` : `${localeLabel} · ${t.context.base}`}</p>
+                      <p className="mt-0.5 text-[10px] text-[#6b6b7a]">{localeCount}</p>
                     </div>
                     <button className={actionItemClass} onClick={handleLocaleAdjustReset}>
-                      {isFormatScoped ? 'Reset pairing layout' : 'Reset locale base layout'}
+                      {isFormatScoped ? t.context.resetPairingLayout : t.context.resetLocaleBaseLayout}
                       <span className="mt-0.5 block text-[10px] text-[#22d3c5]">
-                        {isFormatScoped ? 'Remove all position and size adjustments for this pairing.' : 'Remove all base-layout adjustments for this locale.'}
+                        {isFormatScoped ? t.context.resetPairingLayoutDesc : t.context.resetLocaleBaseLayoutDesc}
                       </span>
                     </button>
                   </section>
                 )}
                 {hasMultipleFamilies && (
-                  <section className={`${isFormatScoped || isLocaleScoped ? 'mt-1 border-t border-[rgba(255,255,255,0.12)]' : ''}`} aria-label="Content actions">
+                  <section className={`${isFormatScoped || isLocaleScoped ? 'mt-1 border-t border-[rgba(255,255,255,0.12)]' : ''}`} aria-label={t.context.content}>
                     <div className="border-b border-[rgba(255,255,255,0.08)] px-3 py-2">
-                      <p className="text-[9px] font-semibold uppercase tracking-[0.15em] text-[#7c6ef6]">Content</p>
+                      <p className="text-[9px] font-semibold uppercase tracking-[0.15em] text-[#7c6ef6]">{t.context.content}</p>
                     </div>
                     <button className={actionItemClass} onClick={() => { setContentSyncOpen(true); setActionsOpen(false) }}>
-                      Bring content from…
-                      <span className="mt-0.5 block text-[10px] text-[#6b6b7a]">Copy text and images from another layout family into this screen. Layout is never changed.</span>
+                      {t.context.bringContentFrom}
+                      <span className="mt-0.5 block text-[10px] text-[#6b6b7a]">{t.context.bringContentFromDesc}</span>
                     </button>
                   </section>
                 )}
@@ -727,9 +614,9 @@ export function EditingContextBar() {
       <ContentSyncModal open={contentSyncOpen} onClose={() => setContentSyncOpen(false)} />
       <ConfirmDialog
         open={deleteTarget !== null}
-        title={deleteTargetOwnsAllGroups ? `Can't delete ${deleteTargetLabel} layout` : `Delete the ${deleteTargetLabel} layout?`}
+        title={`${t.context.deleteLayoutConfirm}: ${deleteTargetLabel}`}
         message={deleteTargetMessage}
-        confirmLabel={deleteTargetOwnsAllGroups ? 'Close' : 'Delete layout'}
+        confirmLabel={deleteTargetOwnsAllGroups ? t.common.close : t.context.deleteLayoutConfirm}
         danger={!deleteTargetOwnsAllGroups}
         onConfirm={() => {
           if (deleteTarget && !deleteTargetOwnsAllGroups) deleteFormatLayout(deleteTarget)
@@ -743,6 +630,7 @@ export function EditingContextBar() {
 
 /** A transient-feeling but persistent warning over the canvas when edits are scoped. */
 export function EditingContextAlert() {
+  const { t } = useStudioLocale()
   const {
     project,
     activeLocale,
@@ -784,10 +672,10 @@ export function EditingContextAlert() {
           </strong>
           <span className="mx-1.5 text-[#565664]">—</span>
           {isFormatScoped && isLocaleScoped
-            ? 'Position & size scoped to this pairing · New layers stay format-only · Content & style shared'
+            ? t.context.scopedBoth
             : isFormatScoped
-              ? 'Layout and new layers scoped to this format · Text & colors shared'
-              : `Layout changes apply only to ${localeLabel} · Content & style remain shared`}
+              ? t.context.scopedFormat
+              : `${t.context.scopedLocalePrefix}${localeLabel}${t.context.scopedLocaleSuffix}`}
         </p>
         <button
           onClick={() => {
@@ -795,9 +683,9 @@ export function EditingContextAlert() {
             setActiveLocale(defaultLocale)
           }}
           className="shrink-0 rounded-md border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.035)] px-2 py-1 text-[10px] text-[#c9c9d4] transition-colors hover:border-[rgba(255,255,255,0.2)] hover:bg-[rgba(255,255,255,0.07)] hover:text-white"
-          title="Return to the shared base format and default locale"
+          title={t.context.returnBaseDefaultTitle}
         >
-          ↩ Base + Default
+          {t.context.returnBaseDefault}
         </button>
       </div>
     </div>

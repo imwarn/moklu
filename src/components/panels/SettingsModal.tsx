@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on useEditorStore from @/store; useBrandColors; AiProviderSettings, BrandColorList, ModalShell, NumberInput, ToggleSwitch; useStudioLocale from @/i18n
+ * [OUTPUT]: exports SettingsModal component for global AI provider config and per-project Brand/Pano preferences
+ * [POS]: settings dialog within src/components/panels, mounted by StudioPage
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useState } from 'react'
 import { useEditorStore } from '@/store'
 import { useBrandColors } from '@/hooks/useBrandColors'
@@ -6,6 +12,7 @@ import { BrandColorList } from '@/components/common/BrandColorList'
 import { ModalShell } from '@/components/ui/ModalShell'
 import { NumberInput } from '@/components/ui/NumberInput'
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch'
+import { useStudioLocale } from '@/i18n'
 
 interface SettingsModalProps {
   open: boolean
@@ -28,26 +35,27 @@ interface TabMeta {
 }
 
 const TABS: TabMeta[] = [
-  { id: 'ai', label: 'AI', icon: '🤖', section: 'GLOBAL' },
-  { id: 'brand', label: 'Brand', icon: '🎨', section: 'PROJECT' },
-  { id: 'pano', label: 'Pano', icon: '🖼', section: 'PROJECT' },
+  { id: 'ai', label: 'ai', icon: '🤖', section: 'GLOBAL' },
+  { id: 'brand', label: 'brand', icon: '🎨', section: 'PROJECT' },
+  { id: 'pano', label: 'pano', icon: '🖼', section: 'PROJECT' },
 ]
 
 // ─── Brand tab content ────────────────────────────────────────────────────────
 
 function BrandSettingsContent() {
+  const { t } = useStudioLocale()
+  const sm = t.modals.settings
   const brandColors = useBrandColors()
 
   return (
     <div>
-      <h3 className="text-sm font-semibold text-[#e8e8f0] mb-1">Brand Colors</h3>
+      <h3 className="text-sm font-semibold text-[#e8e8f0] mb-1">{sm.brandTitle}</h3>
       <p className="text-[12px] text-[#6b6b7a] mb-5 leading-relaxed">
-        Reusable colors for this project. Apply them in any color field — edit one here and every
-        layer updates automatically.
+        {sm.brandDesc}
       </p>
       <div className="flex items-center justify-between mb-3">
         <span className="text-[11px] text-[#4a4a5a] uppercase tracking-[0.1em]">
-          {brandColors.length} {brandColors.length === 1 ? 'color' : 'colors'}
+          {brandColors.length}
         </span>
       </div>
       <BrandColorList />
@@ -58,6 +66,8 @@ function BrandSettingsContent() {
 // ─── Pano tab content ─────────────────────────────────────────────────────────
 
 function PanoSettingsContent() {
+  const { t } = useStudioLocale()
+  const sm = t.modals.settings
   const panoSettings = useEditorStore(
     (s) => s.project.settings.pano ?? { gapPx: 24, compensate: false },
   )
@@ -65,17 +75,17 @@ function PanoSettingsContent() {
 
   return (
     <div>
-      <h3 className="text-sm font-semibold text-[#e8e8f0] mb-1">Panorama Settings</h3>
+      <h3 className="text-sm font-semibold text-[#e8e8f0] mb-1">{sm.panoTitle}</h3>
       <p className="text-[12px] text-[#6b6b7a] mb-5 leading-relaxed">
-        Configure how multi-slide panoramic groups are displayed and exported.
+        {sm.panoDesc}
       </p>
 
       <div className="space-y-5">
         {/* Gap input */}
         <div className="rounded-xl border border-[rgba(255,255,255,0.08)] p-4 bg-[rgba(255,255,255,0.02)]">
-          <label className={labelCls}>Store Preview Gap</label>
+          <label className={labelCls}>{sm.storePreviewGap}</label>
           <p className="text-[11px] text-[#4a4a5a] mb-3 leading-relaxed">
-            Gap used when compensation is enabled. Simulates the bezel gap shown in app stores.
+            {sm.storePreviewGapDesc}
           </p>
           <div className="flex items-center gap-3">
             <NumberInput
@@ -114,11 +124,10 @@ function PanoSettingsContent() {
                 htmlFor="pano-compensate"
                 className="text-xs font-medium text-[#e8e8f0] cursor-pointer"
               >
-                Compensate on Export
+                {sm.compensateOnExport}
               </label>
               <p className="text-[11px] text-[#4a4a5a] mt-1 leading-relaxed">
-                When enabled, the gap becomes visible in the canvas/preview and is skipped during export.
-                When disabled, pano slides remain continuous with no gap compensation.
+                {sm.compensateOnExportDesc}
               </p>
             </div>
           </div>
@@ -127,11 +136,8 @@ function PanoSettingsContent() {
         {/* Status summary */}
         <div className="rounded-lg border border-[rgba(255,255,255,0.05)] bg-[rgba(255,255,255,0.01)] px-4 py-3">
           <p className="text-[11px] text-[#6b6b7a] leading-relaxed">
-            <span className="text-[#c4b5fd]">Current:</span>{' '}
-            {panoSettings.gapPx ?? 24}px gap{' '}
-            {panoSettings.compensate
-              ? '— compensation active, gap visible and skipped on export'
-              : '— compensation inactive, continuous pano with no visual gap'}
+            <span className="text-[#c4b5fd]">{sm.current}</span>{' '}
+            {panoSettings.gapPx ?? 24}px
           </p>
         </div>
       </div>
@@ -142,18 +148,20 @@ function PanoSettingsContent() {
 // ─── Main modal ───────────────────────────────────────────────────────────────
 
 export function SettingsModal({ open, onClose }: SettingsModalProps) {
+  const { t } = useStudioLocale()
+  const sm = t.modals.settings
   const [tab, setTab] = useState<Tab>('ai')
 
   const sections = ['GLOBAL', 'PROJECT'] as const
   const tabsBySection = (section: (typeof sections)[number]) =>
-    TABS.filter((t) => t.section === section)
+    TABS.filter((item) => item.section === section)
 
   return (
     <ModalShell
       open={open}
       onClose={onClose}
-      title="Settings"
-      closeLabel="Close settings"
+      title={sm.title}
+      closeLabel={sm.closeAria}
       maxWidth="max-w-5xl"
       panelClassName="relative rounded-2xl border shadow-2xl w-full mx-4 h-[85vh] flex flex-col overflow-hidden"
       footerClassName="shrink-0 px-5 py-2.5 border-t border-[rgba(255,255,255,0.06)] flex items-center gap-3"
@@ -177,21 +185,21 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
             {sections.map((section) => (
               <div key={section}>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#4a4a5a] mb-1 mt-3 first:mt-0 px-2">
-                  {section}
+                  {sm.sections[section]}
                 </p>
-                {tabsBySection(section).map((t) => (
+                {tabsBySection(section).map((item) => (
                   <button
-                    key={t.id}
+                    key={item.id}
                     type="button"
-                    onClick={() => setTab(t.id)}
+                    onClick={() => setTab(item.id)}
                     className={`w-full text-left px-2 py-1.5 rounded-md text-xs transition-colors flex items-center gap-2 ${
-                      tab === t.id
+                      tab === item.id
                         ? 'bg-[rgba(124,110,246,0.18)] text-[#c4b5fd]'
                         : 'text-[#6b6b7a] hover:text-[#e8e8f0] hover:bg-[rgba(255,255,255,0.05)]'
                     }`}
                   >
-                    <span>{t.icon}</span>
-                    <span>{t.label}</span>
+                    <span>{item.icon}</span>
+                    <span>{sm.tabs[item.id]}</span>
                   </button>
                 ))}
               </div>
@@ -202,10 +210,9 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
           <div className="flex-1 overflow-y-auto p-6">
             {tab === 'ai' && (
               <div>
-                <h3 className="text-sm font-semibold text-[#e8e8f0] mb-1">AI Settings</h3>
+                <h3 className="text-sm font-semibold text-[#e8e8f0] mb-1">{sm.aiTitle}</h3>
                 <p className="text-[12px] text-[#6b6b7a] mb-5 leading-relaxed">
-                  API keys are stored locally in this browser and sent only to the selected provider.
-                  Consumer subscriptions like ChatGPT Plus or Claude Pro cannot be used as API access.
+                  {sm.aiDesc}
                 </p>
                 <AiProviderSettings />
               </div>

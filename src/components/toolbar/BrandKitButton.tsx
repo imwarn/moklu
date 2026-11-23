@@ -1,9 +1,17 @@
+/**
+ * [INPUT]: depends on react, useBrandColors from @/hooks/useBrandColors, BrandColorList, BrandColor type, and useStudioLocale from @/i18n
+ * [OUTPUT]: exports BrandKitButton toolbar popover trigger with localized labels and description
+ * [POS]: reusable brand-color popover button inside src/components/toolbar
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useState, useRef, useEffect } from 'react'
 import { useBrandColors } from '@/hooks/useBrandColors'
 import { BrandColorList } from '@/components/common/BrandColorList'
 import type { BrandColor } from '@/types'
+import { useStudioLocale } from '@/i18n'
 
 export function BrandKitButton() {
+  const { t } = useStudioLocale()
   const [open, setOpen] = useState(false)
   const popoverRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
@@ -31,7 +39,7 @@ export function BrandKitButton() {
         ref={buttonRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
-        title="Brand Kit — manage project colors"
+        title={t.toolbar.brandKitTitle}
         className="max-[1099px]:!px-2"
         style={{
           background: open ? 'rgba(124,110,246,0.15)' : 'none',
@@ -72,7 +80,7 @@ export function BrandKitButton() {
         ) : (
           <span>🎨</span>
         )}
-        <span className="max-[1099px]:hidden">Brand Kit</span>
+        <span className="max-[1099px]:hidden">{t.toolbar.brandKit}</span>
       </button>
 
       {open && (
@@ -82,8 +90,8 @@ export function BrandKitButton() {
           style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }}
         >
           <div className="mb-2">
-            <p className="text-[11px] text-[#4a4a5a] leading-relaxed">
-              Reusable colors for this project. Apply them in any color field — edit one here and every layer updates automatically.
+            <p className="text-[11px] text-[#6b6b7a] leading-relaxed">
+              {t.toolbar.brandKitDesc}
             </p>
           </div>
           <BrandColorList compact />

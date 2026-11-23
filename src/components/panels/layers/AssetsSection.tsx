@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on react, react-dom, zustand useShallow, useAssetStore, fileToDataUrl, Layer type, and useStudioLocale from @/i18n
+ * [OUTPUT]: exports AssetsSection component with localized asset import controls, empty hint, and asset browser modal
+ * [POS]: screenshot asset library subsection inside src/components/panels/layers
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useRef, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import type { RefObject } from 'react'
@@ -6,6 +12,7 @@ import { useAssetStore } from '@/store/assets'
 import { fileToDataUrl } from '@/utils/files'
 import type { AssetEntry } from '@/store/assets'
 import type { Layer } from '@/types'
+import { useStudioLocale } from '@/i18n'
 
 interface AssetsSectionProps {
   /** Forwarded ref so the parent's insert toolbar can trigger image import */
@@ -83,6 +90,7 @@ function Chevron({ open }: { open: boolean }) {
 // ─── Main component ──────────────────────────────────────────────────────────
 
 export function AssetsSection({ imageInputRef, selectedLayer, addImage, updateLayer }: AssetsSectionProps) {
+  const { t } = useStudioLocale()
   const { addAsset, removeAsset, loadFolder, loadFiles, assets } = useAssetStore(
     useShallow((s) => ({
       addAsset: s.addAsset,
@@ -189,10 +197,10 @@ export function AssetsSection({ imageInputRef, selectedLayer, addImage, updateLa
 
   const getAssetPrimaryAction = () => (
     selectedLayer?.type === 'phone'
-      ? 'Use as phone screenshot'
+      ? t.layers.useAsPhoneScreenshot
       : selectedLayer?.type === 'image'
-        ? 'Replace selected image'
-        : 'Add image to canvas'
+        ? t.layers.replaceSelectedImage
+        : t.layers.addImageToCanvas
   )
 
   const handleAssetDragStart = (event: React.DragEvent, filename: string) => {
@@ -230,7 +238,7 @@ export function AssetsSection({ imageInputRef, selectedLayer, addImage, updateLa
               loading="lazy"
             />
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent px-1.5 pb-1 pt-5 text-left text-[9px] text-white opacity-0 transition-opacity group-hover:opacity-100">
-              Drag to canvas · {primaryAction}
+              {t.layers.dragToCanvas} · {primaryAction}
             </div>
           </div>
         </button>
@@ -238,19 +246,19 @@ export function AssetsSection({ imageInputRef, selectedLayer, addImage, updateLa
           <span className={`min-w-0 flex-1 truncate text-[#9b9bad] ${large ? 'text-xs' : 'text-[9px]'}`}>{displayName}</span>
           <button
             type="button"
-            aria-label={`Add ${asset.filename} to canvas`}
+            aria-label={`${t.layers.addImageToCanvas}: ${asset.filename}`}
             onClick={() => { void addAssetToCanvas(asset.filename, asset.dataUrl) }}
             className="rounded px-1 text-[10px] text-[#a89cf6] hover:bg-[rgba(124,110,246,0.16)] hover:text-white"
-            title="Add image to canvas"
+            title={t.layers.addImageToCanvas}
           >
             +
           </button>
           <button
             type="button"
-            aria-label={`Remove ${asset.filename}`}
+            aria-label={`${t.layers.removeAsset}: ${asset.filename}`}
             onClick={() => removeAsset(asset.filename)}
             className="rounded px-1 text-[10px] text-[#7f8094] hover:bg-[rgba(248,113,113,0.16)] hover:text-[#f87171]"
-            title="Remove asset"
+            title={t.layers.removeAsset}
           >
             ×
           </button>
@@ -329,23 +337,23 @@ export function AssetsSection({ imageInputRef, selectedLayer, addImage, updateLa
         <div className="mb-2 flex items-center justify-between gap-2">
           <button
             type="button"
-            aria-label={assetsCollapsed ? 'Show assets' : 'Minimize assets'}
+            aria-label={assetsCollapsed ? t.layers.showAssets : t.layers.minimizeAssets}
             onClick={() => setAssetsCollapsed((value) => !value)}
             className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#6b6b7a] hover:text-[#e8e8f0]"
-            title={assetsCollapsed ? 'Show assets' : 'Minimize assets'}
+            title={assetsCollapsed ? t.layers.showAssets : t.layers.minimizeAssets}
           >
             <span className="tracking-normal">{assetsCollapsed ? '▸' : '▾'}</span>
-            Assets
+            {t.layers.assets}
           </button>
           <div className="flex items-center gap-1">
             <span className="rounded-full bg-[rgba(124,110,246,0.16)] px-2 py-0.5 text-[10px] text-[#a89cf6]">{assetCount}</span>
             <button
               type="button"
-              aria-label="Open large asset browser"
+              aria-label={t.layers.openAssetBrowser}
               onClick={() => setAssetsModalOpen(true)}
               disabled={assetEntries.length === 0}
               className="rounded px-1.5 py-0.5 text-[10px] text-[#8f90a3] hover:bg-[rgba(255,255,255,0.06)] hover:text-white disabled:opacity-35 disabled:cursor-not-allowed"
-              title="Open large asset browser"
+              title={t.layers.openAssetBrowser}
             >
               ⛶
             </button>
@@ -356,21 +364,21 @@ export function AssetsSection({ imageInputRef, selectedLayer, addImage, updateLa
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
-                aria-label="Import screenshot files"
+                aria-label={t.layers.importFiles}
                 onClick={() => screenshotsInputRef.current?.click()}
                 className="rounded-lg border border-[rgba(255,255,255,0.08)] px-2 py-1.5 text-[10px] text-[#b0b0c4] transition-colors hover:border-[rgba(124,110,246,0.35)] hover:bg-[rgba(124,110,246,0.12)] hover:text-[#e8e8f0]"
-                title="Import screenshot files into the asset library"
+                title={t.layers.importFilesTitle}
               >
-                Import Files
+                {t.layers.importFiles}
               </button>
               <button
                 type="button"
-                aria-label="Import screenshot folder"
+                aria-label={t.layers.importFolder}
                 onClick={handleImportScreenshotFolder}
                 className="rounded-lg border border-[rgba(255,255,255,0.08)] px-2 py-1.5 text-[10px] text-[#b0b0c4] transition-colors hover:border-[rgba(124,110,246,0.35)] hover:bg-[rgba(124,110,246,0.12)] hover:text-[#e8e8f0]"
-                title="Import a screenshots folder when the browser supports it; falls back to file import"
+                title={t.layers.importFolderTitle}
               >
-                Import Folder
+                {t.layers.importFolder}
               </button>
             </div>
             <input ref={screenshotsInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleScreenshotFiles} />
@@ -383,7 +391,7 @@ export function AssetsSection({ imageInputRef, selectedLayer, addImage, updateLa
               </div>
             ) : (
               <p className="mt-3 rounded-lg border border-dashed border-[rgba(255,255,255,0.08)] px-2 py-3 text-center text-[10px] leading-4 text-[#6b6b7a]">
-                Imported screenshots will appear here.
+                {t.layers.emptyAssetsHint}
               </p>
             )}
           </>
@@ -397,12 +405,12 @@ export function AssetsSection({ imageInputRef, selectedLayer, addImage, updateLa
           >
             <div className="flex items-start justify-between gap-4 border-b border-white/8 px-4 py-3">
               <div>
-                <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#7c6ef6]">Asset Browser</div>
-                <div className="mt-1 text-xs leading-5 text-[#9b9bad]">Drag to the visible canvas, or click to use with the current selection.</div>
+                <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#7c6ef6]">{t.layers.assetBrowserTitle}</div>
+                <div className="mt-1 text-xs leading-5 text-[#9b9bad]">{t.layers.assetBrowserHint}</div>
               </div>
               <button
                 type="button"
-                aria-label="Close asset browser"
+                aria-label={t.layers.closeAssetBrowser}
                 onClick={() => setAssetsModalOpen(false)}
                 className="shrink-0 rounded-full border border-white/10 px-2.5 py-1 text-xs text-[#d7d7e3] hover:border-[#7c6ef6]/50 hover:bg-[#7c6ef6]/10 hover:text-white"
               >

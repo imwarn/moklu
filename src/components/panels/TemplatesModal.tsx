@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on react, zustand useShallow, useTemplatesStore, useEditorStore, importValidation, export, templateAppearance, ModalShell, FileUploadButton, and useStudioLocale from @/i18n
+ * [OUTPUT]: exports TemplatesModal gallery, import/export, and appearance restyling dialog localized across EN/ZH/JA/KO
+ * [POS]: template discovery and application modal inside src/components/panels
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useState, useEffect, useRef } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useTemplatesStore, toAbsolute } from '@/store/templates'
@@ -7,6 +13,7 @@ import { downloadDataUrl } from '@/utils/export'
 import type { TemplateApplyMode, TemplateAppearanceParts } from '@/utils/templateAppearance'
 import { ModalShell } from '@/components/ui/ModalShell'
 import { FileUploadButton } from '@/components/ui/FileUploadButton'
+import { useStudioLocale } from '@/i18n'
 
 interface TemplatesModalProps {
   open: boolean
@@ -14,6 +21,8 @@ interface TemplatesModalProps {
 }
 
 export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
+  const { t } = useStudioLocale()
+  const tm = t.modals.templates
   const { manifest, loading, error, loadManifest, fetchTemplate } = useTemplatesStore()
   const { project, exportActiveAsTemplate, addTemplateSlideGroups, applyTemplateToActiveCanvas } =
     useEditorStore(useShallow((s) => ({
@@ -166,7 +175,7 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
               letterSpacing: '-0.01em',
             }}
           >
-            Templates
+            {tm.title}
           </span>
 
           {/* Action buttons */}
@@ -174,7 +183,7 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
             {/* Import */}
             <button
               onClick={() => importRef.current?.click()}
-              title="Import a .template.json file"
+              title={tm.importTitle}
               style={{
                 background: 'rgba(255,255,255,0.04)',
                 border: '1px solid rgba(255,255,255,0.1)',
@@ -199,13 +208,13 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
               }}
             >
               <span style={{ fontSize: 11 }}>↑</span>
-              Import
+              {t.common.import}
             </button>
 
             {/* Export */}
             <button
               onClick={() => setExportOpen((v) => !v)}
-              title="Export current project as a template"
+              title={tm.exportTitle}
               style={{
                 background: exportOpen ? 'rgba(124,110,246,0.18)' : 'rgba(255,255,255,0.04)',
                 border: exportOpen
@@ -236,7 +245,7 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
               }}
             >
               <span style={{ fontSize: 11 }}>⬇</span>
-              Export
+              {t.common.export}
             </button>
 
             {/* Divider */}
@@ -318,7 +327,7 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
                   color: '#8a8a9a',
                 }}
               >
-                Name *
+                {tm.nameRequired}
                 <input
                   value={exportName}
                   onChange={(e) => setExportName(e.target.value)}
@@ -334,7 +343,7 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
                   color: '#8a8a9a',
                 }}
               >
-                Category
+                {tm.category}
                 <input
                   value={exportCategory}
                   onChange={(e) => setExportCategory(e.target.value)}
@@ -354,11 +363,11 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
                 marginBottom: 12,
               }}
             >
-              Description
+              {tm.description}
               <textarea
                 value={exportDescription}
                 onChange={(e) => setExportDescription(e.target.value)}
-                placeholder="Brief description of this template…"
+                placeholder={tm.description}
                 rows={2}
                 style={{
                   ...inputStyle,
@@ -387,7 +396,7 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
                 }}
               >
                 <span>⬇</span>
-                Download .template.json
+                {tm.downloadTemplate}
               </button>
             </div>
           </div>
@@ -442,12 +451,12 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
 
           {loading && (
             <p style={{ textAlign: 'center', color: '#6b6b7a', fontSize: 13, marginTop: 32 }}>
-              Loading templates…
+              {tm.loading}
             </p>
           )}
           {error && (
             <p style={{ textAlign: 'center', color: '#f87171', fontSize: 13, marginTop: 32 }}>
-              Failed to load templates
+              {tm.loadFailed}
             </p>
           )}
 
@@ -462,10 +471,9 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
             >
               <div style={{ fontSize: 36, marginBottom: 12 }}>🗂</div>
               <p style={{ margin: '0 0 6px', color: '#a0a0b0', fontWeight: 500 }}>
-                No bundled templates yet
+                {tm.emptyTitle}
               </p>
               <p style={{ margin: 0, fontSize: 11 }}>
-                Add templates to{' '}
                 <code
                   style={{
                     background: 'rgba(255,255,255,0.05)',
@@ -474,33 +482,32 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
                   }}
                 >
                   public/templates/
-                </code>{' '}
-                and they'll appear here.
+                </code>
               </p>
             </div>
           )}
 
           <fieldset className="mb-4 rounded-xl border border-white/10 bg-white/[0.025] p-3">
-            <legend className="px-1 text-xs font-semibold text-[#dedee8]">Apply template to current canvas</legend>
+            <legend className="px-1 text-xs font-semibold text-[#dedee8]">{tm.applyModeLegend}</legend>
             <div className="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-2">
               <label className={`flex cursor-pointer items-start gap-2 rounded-lg border p-3 text-xs ${canvasApplyMode === 'layout' ? 'border-[#9489f6] bg-[#8276e8]/10' : 'border-white/10'}`}>
                 <input type="radio" name="template-apply-mode" checked={canvasApplyMode === 'layout'} onChange={() => setCanvasApplyMode('layout')} />
-                <span><strong className="block text-white">Use template layout</strong><span className="mt-1 block text-[#aeb0c3]">New frame and composition. Keeps your main screenshot; replaces existing text and decorations.</span></span>
+                <span><strong className="block text-white">{tm.layoutModeTitle}</strong><span className="mt-1 block text-[#aeb0c3]">{tm.layoutModeDesc}</span></span>
               </label>
               <label className={`flex cursor-pointer items-start gap-2 rounded-lg border p-3 text-xs ${canvasApplyMode === 'appearance' ? 'border-[#9489f6] bg-[#8276e8]/10' : 'border-white/10'}`}>
                 <input type="radio" name="template-apply-mode" checked={canvasApplyMode === 'appearance'} onChange={() => setCanvasApplyMode('appearance')} />
-                <span><strong className="block text-white">Style only · keep content</strong><span className="mt-1 block text-[#aeb0c3]">New colors, typography and frame effects. Keeps every layer, screenshot and its position.</span></span>
+                <span><strong className="block text-white">{tm.styleOnlyTitle}</strong><span className="mt-1 block text-[#aeb0c3]">{tm.styleOnlyDesc}</span></span>
               </label>
             </div>
           </fieldset>
           {canvasApplyMode === 'appearance' && (
             <fieldset className="mb-4 rounded-xl border border-white/10 bg-white/[0.025] p-3">
-              <legend className="px-1 text-xs font-semibold text-[#dedee8]">Choose what to restyle</legend>
+              <legend className="px-1 text-xs font-semibold text-[#dedee8]">{tm.restyleLegend}</legend>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                 {([
-                  ['background', 'Background', 'Gradient, accents and texture'],
-                  ['frame', 'Frame effects', 'Shadow and screen border; keeps device model'],
-                  ['typography', 'Text style', 'Font, weight and base color; keeps wording'],
+                  ['background', tm.restyleBg, tm.restyleBgDesc],
+                  ['frame', tm.restyleFrame, tm.restyleFrameDesc],
+                  ['typography', tm.restyleText, tm.restyleTextDesc],
                 ] as const).map(([key, label, description]) => (
                   <label key={key} className="flex cursor-pointer items-start gap-2 rounded-lg border border-white/10 p-2.5 text-xs text-[#dedee8]">
                     <input type="checkbox" checked={appearanceParts[key]}
@@ -510,26 +517,23 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
                 ))}
               </div>
               {selectedAppearancePartCount === 0 && (
-                <p role="alert" className="mt-2 text-xs text-amber-300">Select at least one style option to continue.</p>
+                <p role="alert" className="mt-2 text-xs text-amber-300">{tm.selectOneWarning}</p>
               )}
-              <p className="mt-2 text-[11px] text-[#9da0b5]">
-                Custom images, layer positions, screenshot content and group structure remain unchanged. Existing background photos and rich-text color overrides take precedence.
-              </p>
             </fieldset>
           )}
           {galleryError && (
             <p role="alert" className="mb-3 rounded-lg border border-red-400/25 bg-red-400/10 p-3 text-xs text-red-300">{galleryError}</p>
           )}
           {manifest.length > 0 && (
-            <div className="mb-4 flex flex-col gap-3 sm:flex-row" role="search" aria-label="Find templates">
-              <label className="flex-1 text-xs text-[#aeb0c3]">Search templates
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row" role="search" aria-label={tm.searchLabel}>
+              <label className="flex-1 text-xs text-[#aeb0c3]">{tm.searchLabel}
                 <input type="search" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)}
-                  placeholder="Name, description or category" className="mt-1 w-full rounded-lg border border-white/20 bg-[#222330] p-2 text-sm text-white focus-visible:outline-2 focus-visible:outline-[#b9afff]" />
+                  placeholder={tm.searchPlaceholder} className="mt-1 w-full rounded-lg border border-white/20 bg-[#222330] p-2 text-sm text-white focus-visible:outline-2 focus-visible:outline-[#b9afff]" />
               </label>
-              <label className="text-xs text-[#aeb0c3]">Category
+              <label className="text-xs text-[#aeb0c3]">{tm.category}
                 <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}
                   className="mt-1 w-full rounded-lg border border-white/20 bg-[#222330] p-2 text-sm text-white sm:min-w-40">
-                  <option value="all">All categories</option>
+                  <option value="all">{tm.allCategories}</option>
                   {categories.map((category) => <option key={category} value={category}>{category}</option>)}
                 </select>
               </label>
@@ -537,7 +541,7 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
           )}
           {manifest.length > 0 && filteredManifest.length === 0 && (
             <p role="status" className="mb-4 rounded-lg border border-white/10 p-4 text-sm text-[#aeb0c3]">
-              No matching templates. Try another search or category.
+              {tm.noMatches}
             </p>
           )}
           {filteredManifest.length > 0 && (
@@ -670,14 +674,14 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
                         className="rounded-md bg-[#7c6ef6] px-3 py-2 text-xs font-semibold text-white hover:bg-[#9689ff] disabled:opacity-50"
                         title={canvasApplyMode === 'appearance' ? 'Change appearance without replacing any content or geometry' : 'Use template composition, preserving the main screenshot'}
                       >
-                        {applying === entry.slug ? 'Applying…' : canvasApplyMode === 'appearance' ? 'Apply style · keep layers' : 'Use on current canvas'}
+                        {applying === entry.slug ? tm.applying : canvasApplyMode === 'appearance' ? tm.applyStyleKeepLayers : tm.useOnCurrentCanvas}
                       </button>
                       <button
                         disabled={applying === entry.slug}
                         onClick={() => { void handleGalleryApply(entry, 'append') }}
                         className="rounded-md border border-white/15 px-3 py-2 text-xs text-[#aeb0c3] hover:border-white/30 hover:text-white disabled:opacity-50"
                       >
-                        + Add slides to project
+                        {tm.addSlidesToProject}
                       </button>
                     </div>
                   </div>

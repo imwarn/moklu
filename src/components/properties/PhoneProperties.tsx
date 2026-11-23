@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on react, zustand useShallow, useEditorStore, useAssetStore, PhoneLayer/Layer types, screenshotAssets, PropertyControls, OverrideDot, ToggleSwitch, SegmentedControl, FileUploadButton, mockup specs/browser, panelConstants, and useStudioLocale from @/i18n
+ * [OUTPUT]: exports PhoneProperties inspector with localized device/browser, chrome, composition, status bar, screenshot fit, and border controls
+ * [POS]: Content-tab inspector for phone and browser mockup layers inside src/components/properties
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useEditorStore } from '@/store'
@@ -18,6 +24,7 @@ import {
   pauseTemporal,
   resumeTemporal,
 } from '@/components/properties/panelConstants'
+import { useStudioLocale } from '@/i18n'
 
 // ─── Locale Screenshot Row ────────────────────────────────────────────────────
 
@@ -32,6 +39,7 @@ function LocaleScreenshotRow({
   onUpload: (file: File) => Promise<void>
   onClear: () => void
 }) {
+  const { t } = useStudioLocale()
   const inputRef = useRef<HTMLInputElement>(null)
   return (
     <div className="flex items-center gap-2">
@@ -44,7 +52,7 @@ function LocaleScreenshotRow({
             onClick={() => inputRef.current?.click()}
             className="flex-1 text-left text-[10px] text-[#7c6ef6] hover:text-[#9d90f8] transition-colors"
           >
-            Change
+            {t.properties.change}
           </button>
           <button
             type="button"
@@ -60,7 +68,7 @@ function LocaleScreenshotRow({
           onClick={() => inputRef.current?.click()}
           className="flex-1 text-left text-[10px] text-[#6b6b7a] hover:text-[#e8e8f0] border border-dashed border-[rgba(255,255,255,0.1)] rounded px-2 py-1 transition-colors hover:border-[rgba(124,110,246,0.4)]"
         >
-          + Upload for {locale}
+          {t.properties.uploadFor} {locale}
         </button>
       )}
       <input
@@ -82,6 +90,7 @@ function LocaleScreenshotRow({
 // ─── PhoneProperties ──────────────────────────────────────────────────────────
 
 export function PhoneProperties({ layer }: { layer: PhoneLayer }) {
+  const { t } = useStudioLocale()
   const { updateLayer, project, activeSlideGroupId, setLocaleContent, clearLocaleContent } = useEditorStore(
     useShallow((s) => ({
       updateLayer: s.updateLayer,
@@ -124,7 +133,7 @@ export function PhoneProperties({ layer }: { layer: PhoneLayer }) {
     <div className="space-y-4">
       <div className={panelSectionCls}>
         <div className="flex items-center mb-1">
-          <label className={labelCls + ' !mb-0'}>Device / Browser Model</label>
+          <label className={labelCls + ' !mb-0'}>{t.properties.deviceBrowserModel}</label>
           <OverrideDot layerId={layer.id} propKey="model" />
         </div>
         <select
@@ -152,38 +161,37 @@ export function PhoneProperties({ layer }: { layer: PhoneLayer }) {
 
       {isBrowser && (
         <div className={panelSectionCls}>
-          <label className={labelCls}>Browser Window</label>
+          <label className={labelCls}>{t.properties.browserWindow}</label>
           <div className="space-y-3">
-            <label className="block text-xs text-[#a0a0b0]">Window title
+            <label className="block text-xs text-[#a0a0b0]">{t.properties.windowTitle}
               <input type="text" maxLength={120} className={inputCls + ' mt-1'}
                 value={chrome.title ?? 'Your website'}
                 onChange={(event) => updChrome({ title: event.target.value })}
                 placeholder="My product" />
             </label>
-            <label className="block text-xs text-[#a0a0b0]">Address bar text
+            <label className="block text-xs text-[#a0a0b0]">{t.properties.addressBarText}
               <input type="text" maxLength={240} className={inputCls + ' mt-1'}
                 value={chrome.address ?? 'https://example.com'}
                 onChange={(event) => updChrome({ address: event.target.value })}
-                placeholder="https://moklu.app" />
+                placeholder="https://moklu.tech" />
             </label>
             <div>
-              <label className={labelCls}>Appearance</label>
+              <label className={labelCls}>{t.properties.appearance}</label>
               <SegmentedControl
                 value={chrome.theme ?? (layer.model === 'browser-chrome' ? 'dark' : 'light')}
-                options={[{ value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }]}
+                options={[{ value: 'light', label: t.common.light }, { value: 'dark', label: t.common.dark }]}
                 onChange={(theme) => updChrome({ theme })}
                 className="grid grid-cols-2 gap-2"
               />
             </div>
             <div className="flex items-center justify-between">
-              <label className={labelCls + ' !mb-0'}>Show address</label>
+              <label className={labelCls + ' !mb-0'}>{t.properties.showAddress}</label>
               <ToggleSwitch checked={chrome.showAddressBar ?? true}
                 onChange={(showAddressBar) => updChrome({ showAddressBar })}
-                ariaLabel="Toggle browser address bar" />
+                ariaLabel={t.properties.showAddress} />
             </div>
             <p className="text-[10px] leading-4 text-[#7f849a]">
-              Window chrome is editable artwork; the address is a label, not a live website.
-              The screenshot and canvas dimensions stay unchanged.
+              {t.properties.browserChromeNote}
             </p>
           </div>
         </div>
@@ -200,16 +208,16 @@ export function PhoneProperties({ layer }: { layer: PhoneLayer }) {
         const cx = (slideWidth - fw) / 2
 
         const presets = [
-          { label: 'Center',   patch: { x: cx, y: (slideHeight - fh) / 2, rotation: 0 } },
-          { label: 'Hero',     patch: { x: cx, y: Math.round(slideHeight * 0.05), rotation: 0 } },
-          { label: 'Bleed',    patch: { x: cx, y: Math.round(slideHeight * 0.38), rotation: 0 } },
-          { label: '↺ Tilt',  patch: { x: cx, y: Math.round(slideHeight * 0.18), rotation: -10 } },
-          { label: 'Tilt ↻',  patch: { x: cx, y: Math.round(slideHeight * 0.18), rotation: 10 } },
+          { label: t.properties.compositionPresets.center,   patch: { x: cx, y: (slideHeight - fh) / 2, rotation: 0 } },
+          { label: t.properties.compositionPresets.hero,     patch: { x: cx, y: Math.round(slideHeight * 0.05), rotation: 0 } },
+          { label: t.properties.compositionPresets.bleed,    patch: { x: cx, y: Math.round(slideHeight * 0.38), rotation: 0 } },
+          { label: t.properties.compositionPresets.tiltLeft, patch: { x: cx, y: Math.round(slideHeight * 0.18), rotation: -10 } },
+          { label: t.properties.compositionPresets.tiltRight, patch: { x: cx, y: Math.round(slideHeight * 0.18), rotation: 10 } },
         ]
 
         return (
           <div className={panelSectionCls}>
-            <label className={labelCls}>Composition</label>
+            <label className={labelCls}>{t.properties.composition}</label>
             <div className="grid grid-cols-5 gap-1">
               {presets.map((preset) => (
                 <button
@@ -230,11 +238,11 @@ export function PhoneProperties({ layer }: { layer: PhoneLayer }) {
         <div className={panelSectionCls}>
           {/* Status bar toggle */}
           <div className="mb-3 flex items-center justify-between">
-            <label className={labelCls + ' !mb-0'}>Status Bar</label>
+            <label className={labelCls + ' !mb-0'}>{t.properties.statusBar}</label>
             <ToggleSwitch
               checked={layer.showStatusBar ?? true}
               onChange={(checked) => upd({ showStatusBar: checked })}
-              ariaLabel="Toggle status bar"
+              ariaLabel={t.properties.statusBar}
             />
           </div>
           {/* Controls — only shown when status bar is on */}
@@ -242,12 +250,12 @@ export function PhoneProperties({ layer }: { layer: PhoneLayer }) {
             <div className="space-y-3">
               {/* Background type */}
               <div>
-                <label className={labelCls}>Background</label>
+                <label className={labelCls}>{t.properties.background}</label>
                 <SegmentedControl
                   value={layer.statusBarBg ?? 'transparent'}
                   options={[
-                    { value: 'transparent', label: 'Transparent' },
-                    { value: 'solid', label: 'Solid' },
+                    { value: 'transparent', label: t.properties.transparent },
+                    { value: 'solid', label: t.properties.solid },
                   ]}
                   onChange={(b) => upd({ statusBarBg: b })}
                   className="grid grid-cols-2 gap-2"
@@ -258,7 +266,7 @@ export function PhoneProperties({ layer }: { layer: PhoneLayer }) {
               {/* Colour picker — only for solid */}
               {(layer.statusBarBg ?? 'transparent') === 'solid' && (
                 <div>
-                  <label className={labelCls}>Color</label>
+                  <label className={labelCls}>{t.properties.color}</label>
                   <ColorField
                     value={layer.statusBarColor ?? '#000000'}
                     onChange={(v) => upd({ statusBarColor: v })}
@@ -270,14 +278,14 @@ export function PhoneProperties({ layer }: { layer: PhoneLayer }) {
 
               {/* Icon theme */}
               <div>
-                <label className={labelCls}>Icons</label>
+                <label className={labelCls}>{t.properties.icons}</label>
                 <SegmentedControl
                   value={layer.statusBarTheme ?? 'dark'}
                   options={[
-                    { value: 'dark', label: '🌙 Dark' },
-                    { value: 'light', label: '☀️ Light' },
+                    { value: 'dark', label: `🌙 ${t.common.dark}` },
+                    { value: 'light', label: `☀️ ${t.common.light}` },
                   ]}
-                  onChange={(t) => upd({ statusBarTheme: t })}
+                  onChange={(themeVal) => upd({ statusBarTheme: themeVal })}
                   className="grid grid-cols-2 gap-2"
                   optionClassName="rounded-lg border px-3 py-2 text-xs transition-colors"
                 />
@@ -289,19 +297,19 @@ export function PhoneProperties({ layer }: { layer: PhoneLayer }) {
 
       <div className={panelSectionCls}>
         <div className="mb-1 flex items-center justify-between">
-          <label className={labelCls + ' !mb-0'}>Scale</label>
+          <label className={labelCls + ' !mb-0'}>{t.properties.scale}</label>
           <span className="text-xs text-[#e8e8f0]">{layer.scale.toFixed(2)}×</span>
         </div>
         <input type="range" min={0.5} max={4} step={0.05} value={layer.scale} onChange={(e) => upd({ scale: Number(e.target.value) })} onMouseDown={pauseTemporal} onMouseUp={resumeTemporal} className="w-full accent-[#7c6ef6]" />
       </div>
 
       <div className={panelSectionCls}>
-        <label className={labelCls}>Screenshot</label>
+        <label className={labelCls}>{t.properties.screenshot}</label>
         <FileUploadButton
           ref={screenshotInputRef}
           variant="dropzone"
           accept="image/*"
-          ariaLabel="Upload screenshot"
+          ariaLabel={t.properties.screenshot}
           className="rounded-xl border border-dashed border-[rgba(255,255,255,0.14)] bg-[#0f0f13] p-4 text-center transition-colors hover:border-[rgba(124,110,246,0.55)] cursor-pointer"
           onFiles={async (files) => {
             const file = files[0]
@@ -309,37 +317,37 @@ export function PhoneProperties({ layer }: { layer: PhoneLayer }) {
             await handleScreenshotFile(file)
           }}
         >
-          {previewSrc ? <img src={previewSrc} alt="Screenshot" className="mx-auto max-h-24 rounded-lg object-contain" /> : <span className="text-xs text-[#6b6b7a]">Click or drag to upload screenshot</span>}
+          {previewSrc ? <img src={previewSrc} alt={t.properties.screenshot} className="mx-auto max-h-24 rounded-lg object-contain" /> : <span className="text-xs text-[#6b6b7a]">{t.properties.uploadScreenshotHint}</span>}
         </FileUploadButton>
         {screenshotLabel && <p className="mt-2 truncate text-[10px] text-[#6b6b7a]">{screenshotLabel}</p>}
         {screenshotError && <p role="alert" className="mt-2 text-[10px] text-red-400">{screenshotError}</p>}
       </div>
 
       <div className={panelSectionCls}>
-        <label className={labelCls}>Fit</label>
+        <label className={labelCls}>{t.properties.fit}</label>
         <SegmentedControl
           value={layer.screenshotFit}
           options={(['cover', 'contain', 'fill'] as const).map((fit) => ({
             value: fit,
-            label: fit.charAt(0).toUpperCase() + fit.slice(1),
+            label: t.properties.fitOptions[fit],
           }))}
           onChange={(fit) => upd({ screenshotFit: fit })}
         />
       </div>
 
       <div className={panelSectionCls}>
-        <SliderField label="Offset X" value={layer.screenshotOffsetX} min={-500} max={500} unit="px" onChange={(v) => upd({ screenshotOffsetX: v })} onInteractionStart={pauseTemporal} onInteractionEnd={resumeTemporal} />
-        <SliderField label="Offset Y" value={layer.screenshotOffsetY} min={-500} max={500} unit="px" onChange={(v) => upd({ screenshotOffsetY: v })} onInteractionStart={pauseTemporal} onInteractionEnd={resumeTemporal} className="!mb-0" />
+        <SliderField label={t.properties.offsetX} value={layer.screenshotOffsetX} min={-500} max={500} unit="px" onChange={(v) => upd({ screenshotOffsetX: v })} onInteractionStart={pauseTemporal} onInteractionEnd={resumeTemporal} />
+        <SliderField label={t.properties.offsetY} value={layer.screenshotOffsetY} min={-500} max={500} unit="px" onChange={(v) => upd({ screenshotOffsetY: v })} onInteractionStart={pauseTemporal} onInteractionEnd={resumeTemporal} className="!mb-0" />
       </div>
 
       {/* Screenshot border */}
       <div className={panelSectionCls}>
         <div className="mb-3 flex items-center justify-between">
-          <label className={labelCls + ' !mb-0'}>Border</label>
+          <label className={labelCls + ' !mb-0'}>{t.properties.border}</label>
           <ToggleSwitch
             checked={Boolean(layer.border)}
             onChange={(checked) => upd({ border: checked ? { color: '#FFFFFF', width: 2, opacity: 0.5 } : undefined })}
-            ariaLabel="Toggle screenshot border"
+            ariaLabel={t.properties.border}
           />
         </div>
         {layer.border && (
@@ -350,10 +358,10 @@ export function PhoneProperties({ layer }: { layer: PhoneLayer }) {
               onInteractionStart={pauseTemporal}
               onInteractionEnd={resumeTemporal}
             />
-            <SliderField label="Width" value={layer.border.width} min={1} max={30} unit="px"
+            <SliderField label={t.properties.width} value={layer.border.width} min={1} max={30} unit="px"
               onChange={(v) => upd({ border: { ...layer.border!, width: v } })}
               onInteractionStart={pauseTemporal} onInteractionEnd={resumeTemporal} />
-            <SliderField label="Opacity" value={Math.round(layer.border.opacity * 100)} min={0} max={100} unit="%"
+            <SliderField label={t.properties.opacity} value={Math.round(layer.border.opacity * 100)} min={0} max={100} unit="%"
               onChange={(v) => upd({ border: { ...layer.border!, opacity: v / 100 } })}
               onInteractionStart={pauseTemporal} onInteractionEnd={resumeTemporal} className="!mb-0" />
           </div>
@@ -367,7 +375,7 @@ export function PhoneProperties({ layer }: { layer: PhoneLayer }) {
         if (nonDefaultLocales.length === 0) return null
         return (
           <div className={panelSectionCls}>
-            <label className={labelCls}>Localized Screenshots</label>
+            <label className={labelCls}>{t.properties.localizedScreenshots}</label>
             <div className="space-y-2">
               {nonDefaultLocales.map((locale) => {
                 const override = layer.localeContent?.[locale]

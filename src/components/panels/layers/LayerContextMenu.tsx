@@ -1,5 +1,12 @@
+/**
+ * [INPUT]: depends on Layer type from @/types, ContextMenu from ./constants, and useStudioLocale from @/i18n
+ * [OUTPUT]: exports LayerContextMenu component with localized layer actions
+ * [POS]: floating right-click layer menu inside src/components/panels/layers
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { Layer } from '@/types'
 import type { ContextMenu } from './constants'
+import { useStudioLocale } from '@/i18n'
 
 interface LayerContextMenuProps {
   contextMenu: ContextMenu
@@ -9,16 +16,17 @@ interface LayerContextMenuProps {
 }
 
 export function LayerContextMenu({ contextMenu, layers, clipboard, onMenuAction }: LayerContextMenuProps) {
+  const { t } = useStudioLocale()
   const ctxLayer = layers.find((l) => l.id === contextMenu.layerId)
   const menuItems = [
-    { action: 'copy', label: 'Copy' },
-    { action: 'cut', label: 'Cut' },
-    ...(clipboard ? [{ action: 'paste', label: 'Paste' }] : []),
-    { action: 'duplicate', label: 'Duplicate' },
-    { action: 'up', label: 'Move Up' },
-    { action: 'down', label: 'Move Down' },
-    ...(ctxLayer?.type === 'group' ? [{ action: 'dissolve', label: 'Dissolve Group' }] : []),
-    { action: 'delete', label: 'Delete' },
+    { action: 'copy', label: t.layers.contextMenu.copy },
+    { action: 'cut', label: t.layers.contextMenu.cut },
+    ...(clipboard ? [{ action: 'paste', label: t.layers.contextMenu.paste }] : []),
+    { action: 'duplicate', label: t.layers.contextMenu.duplicate },
+    { action: 'up', label: t.layers.contextMenu.moveUp },
+    { action: 'down', label: t.layers.contextMenu.moveDown },
+    ...(ctxLayer?.type === 'group' ? [{ action: 'dissolve', label: t.layers.contextMenu.dissolveGroup }] : []),
+    { action: 'delete', label: t.layers.contextMenu.delete },
   ]
 
   return (

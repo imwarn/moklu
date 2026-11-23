@@ -1,11 +1,19 @@
+/**
+ * [INPUT]: depends on react, useEditorStore from @/store, useAssetStore from @/store/assets, prepareScreenshotUpload, findScreenshotTarget, and useStudioLocale from @/i18n
+ * [OUTPUT]: exports ReplaceScreenshotButton toolbar action with localized labels and titles
+ * [POS]: primary screenshot swap button inside src/components/toolbar
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useRef, useState } from 'react'
 import { useEditorStore } from '@/store'
 import { useAssetStore } from '@/store/assets'
 import { prepareScreenshotUpload } from '@/utils/screenshotAssets'
 import { findScreenshotTarget } from '@/utils/templateSlots'
+import { useStudioLocale } from '@/i18n'
 
 /** Replace the primary screenshot without disturbing its frame, artwork or canvas size. */
 export function ReplaceScreenshotButton() {
+  const { t } = useStudioLocale()
   const project = useEditorStore((s) => s.project)
   const activeSlideGroupId = useEditorStore((s) => s.activeSlideGroupId)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -25,7 +33,7 @@ export function ReplaceScreenshotButton() {
         screenshotPath: key, screenshotDataUrl: dataUrl,
       })
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Unable to replace screenshot.')
+      setError(reason instanceof Error ? reason.message : t.toolbar.uploadFailed)
     } finally {
       setWorking(false)
     }
@@ -38,20 +46,26 @@ export function ReplaceScreenshotButton() {
         type="file"
         accept="image/png,image/jpeg,image/webp"
         className="hidden"
-        aria-label="Choose replacement screenshot"
+        aria-label={t.toolbar.replaceScreenshotInputAria}
         onChange={(e) => {
           void onUpload(e.target.files?.[0])
           e.currentTarget.value = ''
         }}
       />
-      <button type="button" onClick={() => inputRef.current?.click()}
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
         disabled={!target || working}
-        title={target ? 'Replace the primary screenshot, keeping the current frame and layout' : 'Add a device or browser frame first'}
+        title={target ? t.toolbar.replaceScreenshotTitle : t.toolbar.replaceScreenshotDisabledTitle}
         className="rounded-lg border border-white/15 px-3 py-1.5 text-xs text-[#d6d6e4] hover:border-white/30 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
       >
-        {working ? 'Uploading…' : '↺ Replace Screenshot'}
+        {working ? t.toolbar.replaceScreenshotWorking : `↺ ${t.toolbar.replaceScreenshot}`}
       </button>
-      {error && <span role="alert" title={error} className="max-w-28 truncate text-[10px] text-red-400">Upload failed</span>}
+      {error && (
+        <span role="alert" title={error} className="max-w-28 truncate text-[10px] text-red-400">
+          {t.toolbar.uploadFailed}
+        </span>
+      )}
     </span>
   )
 }
