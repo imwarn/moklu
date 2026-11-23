@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on @playwright/test and node:fs/promises
+ * [OUTPUT]: Playwright enforced-CSP verification suite for Studio at /studio and AI connect-src allowlist
+ * [POS]: live CSP E2E spec inside tests/live
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { expect, test } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 
@@ -44,7 +50,7 @@ test.describe('production CSP', () => {
     const consoleViolations = collectViolations(page)
     await installListener(page)
     try {
-      const response = await page.goto('/', { waitUntil: 'domcontentloaded' })
+      const response = await page.goto('/studio', { waitUntil: 'domcontentloaded' })
       expect(response.status()).toBe(200)
 
       // The response must actually carry the policy, otherwise this test proves nothing.
@@ -103,7 +109,7 @@ test.describe('production CSP', () => {
   })
 
   test('provider endpoints are permitted by connect-src', async ({ page }) => {
-    const response = await page.goto('/', { waitUntil: 'domcontentloaded' })
+    const response = await page.goto('/studio', { waitUntil: 'domcontentloaded' })
     const csp = response.headers()['content-security-policy'] ?? ''
     const connectSrc = (csp.split(';').map((p) => p.trim()).find((p) => p.startsWith('connect-src')) ?? '')
 

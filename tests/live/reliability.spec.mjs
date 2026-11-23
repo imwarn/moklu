@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on @playwright/test, node:fs/promises, and ./projectComparison.mjs
- * [OUTPUT]: Playwright live reliability verification suite targeting https://moklu.app
+ * [OUTPUT]: Playwright live reliability verification suite targeting /studio on https://moklu.app
  * [POS]: live production reliability E2E spec inside tests/live
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -81,11 +81,12 @@ async function comparePngPixels(page, originalBytes, importedBytes) {
 test('live project survives refresh, backs up with assets, restores in a fresh profile, and exports exact PNG', async ({ browser, baseURL }) => {
   test.skip(test.info().project.name !== 'chromium-desktop', 'Stateful reliability scenario runs in isolated Chromium')
   const origin = baseURL || 'https://moklu.app'
+  const studioUrl = new URL('/studio', origin).toString()
   const context = await browser.newContext({ acceptDownloads: true })
   const page = await context.newPage()
   page.on('dialog', (dialog) => dialog.accept())
   try {
-    await page.goto(origin)
+    await page.goto(studioUrl)
     await expect(page.getByRole('button', { name: /Quick Design/ }).first()).toBeVisible()
     await page.getByRole('button', { name: /Quick Design/ }).first().click()
     const design = page.getByRole('dialog', { name: 'Quick Design' })
@@ -138,7 +139,7 @@ test('live project survives refresh, backs up with assets, restores in a fresh p
     const alerts = []
     restoredPage.on('dialog', async (dialog) => { alerts.push(dialog.message()); await dialog.accept() })
     try {
-      await restoredPage.goto(origin)
+      await restoredPage.goto(studioUrl)
       await restoredPage.locator('button[title="Manage projects"]').click()
       await restoredPage.locator('input[type=file][accept=".json"]').setInputFiles({
         name: 'moklu-test-backup.json', mimeType: 'application/json', buffer: savedJson,
