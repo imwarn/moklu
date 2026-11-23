@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on useCallback and useState from react, konva type, fileToDataUrl from @/utils/files, and Layer/Selection/SlideGroup types from @/types
+ * [OUTPUT]: exports AssetDropHighlight interface and useAssetDropTarget hook handling drag-over targeting and drop replacement or image-layer creation on the stage
+ * [POS]: drag-and-drop interaction hook in src/components/canvas/stage; consumed by StageCanvas and rendered as a drop highlight box by StageOverlays
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useCallback, useState } from 'react'
 import type Konva from 'konva'
 import { fileToDataUrl } from '@/utils/files'

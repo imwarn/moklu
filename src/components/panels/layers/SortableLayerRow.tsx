@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on @dnd-kit/sortable, @dnd-kit/utilities, Layer/GroupLayer types, InlineEditableLabel, studioTokens from @/components/ui/studioTokens, and LAYER_ICON/ItemData from ./constants
- * [OUTPUT]: exports SortableLayer, SortableChild, SortableGroup, and DragPreview with keyboard focus-within, touch visibility, ARIA state, and AA contrast
+ * [OUTPUT]: exports SortableLayer, SortableChild, SortableGroup, DragPreview, and prop interfaces (SortableLayerProps, SortableChildProps, SortableGroupProps) with keyboard focus-within, touch visibility, ARIA state, and AA contrast
  * [POS]: sortable layer tree row components inside src/components/panels/layers rendered by LayersPanel
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */

@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on useEditorStore from @/store, TextLayer/Layer types from @/types, spansToMarks from @/utils/textRendering, applyMarkStyle/normalizeMarks/getRangeStyle/StylePatch from @/utils/richText, RichTextEditorApi from ./useRichTextEditor, and RichTextToolbar from ./RichTextToolbar
+ * [OUTPUT]: exports LayerTextToolbar component applying whole-layer rich-text styling patches when the inline canvas editor is inactive
+ * [POS]: non-interactive fallback adapter in src/components/text; supplies a RichTextEditorApi shim to RichTextToolbar inside TextProperties
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useEditorStore } from '@/store'
 import type { TextLayer, Layer } from '@/types'
 import { spansToMarks } from '@/utils/textRendering'

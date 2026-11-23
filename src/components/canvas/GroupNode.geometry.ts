@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on GroupLayer and Layer types from @/types, getPhoneSpec from @/assets/mockups/specs, and DEFAULT_TEXT_WIDTH from @/utils/textRendering
+ * [OUTPUT]: exports estimateLayerBox and estimateGroupBox pure bounding-box estimators for layers and nested groups
+ * [POS]: pure geometry helper paired with GroupNode.tsx in src/components/canvas; computes unscaled local pivots for group rotation/scaling and is unit-tested by GroupNode.geometry.test.ts
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { GroupLayer, Layer } from '@/types'
 import { getPhoneSpec } from '@/assets/mockups/specs'
 import { DEFAULT_TEXT_WIDTH } from '@/utils/textRendering'

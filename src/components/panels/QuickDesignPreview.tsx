@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on react, getMockupSvg from @/assets/mockups/registry, getPhoneSpec from @/assets/mockups/specs, BrowserChromeOptions from @/types, QUICK_THEMES and quick types from @/utils/quickDesign, and preview geometry helpers from @/utils/quickPreview
- * [OUTPUT]: exports QuickDesignPreview component rendering a live SVG mockup preview with optional scaleFactor support
+ * [OUTPUT]: exports QuickDesignPreview and QuickDesignPreviewProps rendering a live SVG mockup preview with optional scaleFactor support
  * [POS]: shared lightweight mockup preview component in src/components/panels; used by Studio QuickDesignModal and Quick Workspace MockupQuickTool
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */

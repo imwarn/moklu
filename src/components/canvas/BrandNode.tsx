@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on react (useRef), react-konva (Group, Image, Text), konva type, BrandLayer type from @/types, resolveBrandColor from @/utils/brandColors, and hooks (useCachedImage, useBrandColors, useLayerEffects, useLayerInteraction, useLayerTransform) from @/hooks
+ * [OUTPUT]: exports BrandNode component rendering a combined app logo + title brand lockup in row or column layout
+ * [POS]: brand-lockup Konva renderer in src/components/canvas; dispatched by LayerNode for type 'brand' using shared center-pivot interaction and effect hooks
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useRef } from 'react'
 import { Group, Image, Text } from 'react-konva'
 import { useCachedImage } from '@/hooks/useCachedImage'

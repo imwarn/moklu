@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on ReactNode type from react
+ * [OUTPUT]: exports Kbd, SectionHeader, ShortcutTable, GuideText, P, GuideList, GuideItem, Li, Strong, and Callout styling primitives
+ * [POS]: visual design-system building blocks for src/components/panels/help; consumed by HelpMarkdown to style parsed help chapters
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { ReactNode } from 'react'
 
 type ShortcutRow = { keys: ReactNode; desc: string }

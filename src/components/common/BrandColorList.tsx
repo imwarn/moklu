@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on useState from react, useEditorStore from @/store, useBrandColors from @/hooks/useBrandColors, and BrandColor type from @/types
+ * [OUTPUT]: exports BrandColorList component for creating, editing, and removing project brand color tokens
+ * [POS]: shared brand-palette editor in src/components/common; embedded in both the toolbar BrandKitButton popover (compact mode) and SettingsModal
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useState } from 'react'
 import { useEditorStore } from '@/store'
 import { useBrandColors } from '@/hooks/useBrandColors'

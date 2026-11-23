@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on layer union types from @/types and concrete node renderers (BackgroundNode, PhoneNode, TextNode, ImageNode, ShapeNode, EmojiNode, BrandNode, GroupNode) from ./
+ * [OUTPUT]: exports LayerNode polymorphic dispatcher component routing any Layer variant to its Konva node renderer
+ * [POS]: central rendering hub of src/components/canvas; invoked by StageLayerItem, ThumbnailStage, GroupNode (for children), and ExportApp
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { Layer, BackgroundLayer, PhoneLayer, TextLayer, ImageLayer, ShapeLayer, EmojiLayer, BrandLayer, GroupLayer } from '@/types'
 import { BackgroundNode } from './BackgroundNode'
 import { PhoneNode } from './PhoneNode'

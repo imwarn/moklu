@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on useRef and useState from react, konva type, and SlideGroup type from @/types
+ * [OUTPUT]: exports useRubberBandSelection hook tracking marquee drag bounds on empty stage space and resolving fully-contained non-background layers into single or multi-selection
+ * [POS]: marquee-selection interaction hook in src/components/canvas/stage; wired into StageCanvas mouse handlers and drawn on the stage overlay layer
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useRef, useState } from 'react'
 import type Konva from 'konva'
 import type { SlideGroup } from '@/types'

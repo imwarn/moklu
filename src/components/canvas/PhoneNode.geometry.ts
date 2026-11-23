@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on none (pure numeric geometry math)
+ * [OUTPUT]: exports calcScreenshotLayout computing cover/contain/fill placement and offsets for a screenshot inside a device screen rect
+ * [POS]: pure geometry helper paired with PhoneNode.tsx in src/components/canvas; isolates aspect-ratio math and is unit-tested by PhoneNode.geometry.test.ts
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 export function calcScreenshotLayout(
   imgW: number,
   imgH: number,

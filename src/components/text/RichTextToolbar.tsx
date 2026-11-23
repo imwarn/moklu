@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on react (useState), useEditorStore from @/store, getFontWeights from @/utils/fonts, fillToCss from @/utils/gradients, FillControl from @/components/properties/PropertyControls, and toggleBoolPatch/RichTextEditorApi from ./useRichTextEditor
+ * [OUTPUT]: exports RichTextToolbar component rendering B/I/U/S toggles, weight selector, gradient/solid fill popover, and clear-formatting action
+ * [POS]: shared formatting toolbar in src/components/text; driven by RichTextEditorApi across LayerTextToolbar, CanvasTextEditor, and LocaleRichTextEditor
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useState } from 'react'
 import type React from 'react'
 import { useEditorStore } from '@/store'

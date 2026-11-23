@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on react (useEffect, useLayoutEffect, useRef, useState), createPortal from react-dom, konva type, useEditorStore from @/store, useBrandColors from @/hooks/useBrandColors, GroupLayer/Layer/TextLayer types from @/types, useRichTextEditor and RichTextToolbar from @/components/text, resolveFill from @/utils/brandColors, canvas format/locale helpers from @/utils/canvasFormats, and DEFAULT_TEXT_WIDTH from @/utils/textRendering
+ * [OUTPUT]: exports CanvasTextEditor component projecting a transform-aligned contentEditable overlay over the active Konva TextNode and portaling RichTextToolbar into the properties panel
+ * [POS]: sole in-canvas WYSIWYG text editor in src/components/canvas; mounted by StageCanvas when editingTextId is set, hiding the underlying TextNode during edits
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type Konva from 'konva'

@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on react (useEffect, useRef, useState), createPortal from react-dom, useRichTextEditor from ./useRichTextEditor, RichTextToolbar from ./RichTextToolbar, isEmptyStyle/normalizeMarks/segmentMarks/MarkStyle from @/utils/richText, fillToCss from @/utils/gradients, and FillValue/TextLayer/TextMark types from @/types
+ * [OUTPUT]: exports LocaleRichTextEditorProps interface and LocaleRichTextEditor component with click-to-edit WYSIWYG rich-text editing and optional portaled toolbar
+ * [POS]: localization-table rich-text cell editor in src/components/text; mounted by LocalizationView to edit locale-scoped text and marks via a virtual TextLayer
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type React from 'react'

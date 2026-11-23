@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on React JSX runtime only (zero external runtime dependencies)
+ * [OUTPUT]: exports Logo component rendering the Moklu Studio vector emblem and wordmark
+ * [POS]: brand identity mark in src/components/toolbar; rendered by Toolbar and reused at enlarged scale inside AppLoadingScreen
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 /** Moklu brand — a lightweight frame and a rising visual highlight. */
 export function Logo() {
   return (

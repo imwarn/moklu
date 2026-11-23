@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on ModalShell from @/components/ui/ModalShell and useStudioLocale from @/i18n
- * [OUTPUT]: exports ConfirmDialog accessible confirmation modal with focus trapping, AA danger styling, disabled states, and localized defaults
+ * [OUTPUT]: exports ConfirmDialog and ConfirmDialogProps accessible confirmation modal with focus trapping, AA danger styling, disabled states, and localized defaults
  * [POS]: reusable confirmation modal within src/components/common, invoked by StudioPage, ProjectsModal, and EditingContext
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */

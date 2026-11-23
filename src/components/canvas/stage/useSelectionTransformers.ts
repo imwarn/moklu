@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on useEffect and useRef from react, konva type, and BackgroundLayer/Selection/SlideGroup types from @/types
+ * [OUTPUT]: exports useSelectionTransformers hook managing attachment of primary layer, background-accent, and group-edit outline Konva Transformers
+ * [POS]: transformer-sync hook in src/components/canvas/stage; keeps StageCanvas Konva.Transformer nodes bound to active selection while detaching during inline text edits
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useEffect, useRef } from 'react'
 import type Konva from 'konva'
 import type { BackgroundLayer, Selection, SlideGroup } from '@/types'

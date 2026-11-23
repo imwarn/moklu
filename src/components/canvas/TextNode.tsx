@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on react (useEffect, useRef, useMemo), react-konva (Text, Image), konva type, TextLayer type from @/types, resolveFill from @/utils/brandColors, layerFillToKonvaProps from @/utils/konvaFill, DEFAULT_TEXT_WIDTH/renderSpansToCanvas/spansRenderKey from @/utils/textRendering, useEditorStore from @/store, hooks (useBrandColors, useLayerEffects, useLayerInteraction, useLayerTransform) from @/hooks, and useKonvaBlur from ./effects
+ * [OUTPUT]: exports TextNode component rendering plain Konva Text or offscreen-rasterized rich-text canvases with box-only resizing and double-click edit entry
+ * [POS]: text Konva renderer in src/components/canvas; dispatched by LayerNode for type 'text' and hides itself when CanvasTextEditor takes over editing
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useEffect, useRef, useMemo } from 'react'
 import { Text, Image as KonvaImage } from 'react-konva'
 import type Konva from 'konva'

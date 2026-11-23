@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on GradientStop, LinearGradient, RadialGradient from @/types and isBrandToken from @/utils/brandColors
- * [OUTPUT]: exports color normalization, gradient stop math helpers, GRADIENT_PRESETS, and SOLID_PRESETS
+ * [OUTPUT]: exports clamp, rgbToHex, normalizeHexColor, sortStops, colorAtOffset, createLinearGradient, createRadialGradient, setStopOffset, updateStopColor, isEndStop, ensureEndStops, GRADIENT_PRESETS, and SOLID_PRESETS
  * [POS]: pure color and gradient utility module extracted from PropertyControls.tsx inside src/components/properties
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */

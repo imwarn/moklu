@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on getPanoGapPx and getPanoTotalWidth from @/utils/panoGeometry, and SlideGroup type from @/types
+ * [OUTPUT]: exports useStageGeometry helper computing panoramic compensation, gap width, total logical canvas dimensions, and zoom-scaled display dimensions
+ * [POS]: stage-sizing calculation helper in src/components/canvas/stage; consumed by StageCanvas to synchronize viewport fit, canvas clipping, and slide divider overlays
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { getPanoGapPx, getPanoTotalWidth } from '@/utils/panoGeometry'
 import type { SlideGroup } from '@/types'
 
