@@ -20,7 +20,7 @@
     "type": "git",
     "url": "https://github.com/imwarn/moklu.git"
   },
-  "homepage": "https://moklu.app",
+  "homepage": "https://moklu.tech",
   "bugs": {
     "url": "https://github.com/imwarn/moklu/issues"
   },
@@ -31,7 +31,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && node scripts/prerender-seo.mjs",
     "typecheck": "tsc -b --noEmit",
     "lint": "eslint .",
     "preview": "vite preview",

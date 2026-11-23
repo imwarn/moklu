@@ -11,6 +11,7 @@ Above-the-fold instant Quick Workspace UI for all 6 Moklu image tools, built wit
 - `demoAssets.ts`: Deterministic SVG demo screenshot and sample ID card generators (`createDemoScreenshotDataUrl`, `createDemoImageInput`).
 - `canvasUtils.ts`: Memory-safe file decoding (`URL.revokeObjectURL`), blob downloads, byte formatting, and full-res offscreen HTML5 Canvas mockup PNG exporter.
 - `defaultEngines.ts`: Browser-native fallback `WorkspaceEngines` (`merge`, `split`, `compress`, `transform`, `idCard`, `packZip`) for standalone execution when `src/tools` is not injected.
+- `engineAdapter.ts`: Concrete DIP adapter (`createToolsWorkspaceEngines`, `parseBackgroundFill`) wiring `src/tools` pure canvas engines and guaranteed `LoadedImageItem` disposal into `QuickWorkspace`.
 - `QuickWorkspace.tsx`: Root workspace shell with accessible 6-tool tablist, route preset syncing, theme resolution, and engine merging.
 - `index.ts`: Barrel exporting `QuickWorkspace`, contracts, i18n helper, demo utilities, and fallback engines.
 - `workspace.test.tsx`: Vitest suite verifying SSR rendering across all 6 tools, 4 locales, light/dark themes, preset propagation, demo generators, and ZIP packing.

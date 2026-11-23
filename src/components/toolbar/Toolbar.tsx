@@ -1,4 +1,10 @@
-import { useState, useRef, useEffect, lazy, Suspense } from 'react'
+/**
+ * [INPUT]: depends on react, zustand useShallow, useEditorStore/useUndoRedo from @/store, useProjectsStore from @/store/projects, toolbar buttons, lazy-loaded modals, stageRegistry, and export helpers
+ * [OUTPUT]: exports Toolbar component providing project controls, Quick Design, Canvas Size, undo/redo, PNG export, localization toggle, and Home/Tools navigation back link
+ * [POS]: top chrome bar of StudioPage inside src/components/toolbar
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
+import { useState, useRef, useEffect, lazy, Suspense, type MouseEvent } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useEditorStore, useUndoRedo } from '@/store'
 import { notifyProjectConflict, useProjectsStore } from '@/store/projects'
@@ -29,9 +35,11 @@ const HelpModal = lazy(() =>
 interface ToolbarProps {
   mode: 'editor' | 'localization'
   onSetMode: (mode: 'editor' | 'localization') => void
+  homeHref?: string
+  onNavigateHome?: () => void
 }
 
-export function Toolbar({ mode, onSetMode }: ToolbarProps) {
+export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: ToolbarProps) {
   const {
     project,
     selectedLayerIds,
@@ -144,6 +152,29 @@ export function Toolbar({ mode, onSetMode }: ToolbarProps) {
         data-testid="toolbar-left"
         className="flex min-w-0 flex-1 items-center gap-3 overflow-x-auto max-[1099px]:gap-2"
       >
+      {/* Back to Quick Tools hub */}
+      <a
+        href={homeHref}
+        onClick={(e: MouseEvent<HTMLAnchorElement>) => {
+          if (
+            onNavigateHome &&
+            e.button === 0 &&
+            !e.metaKey &&
+            !e.ctrlKey &&
+            !e.shiftKey &&
+            !e.altKey
+          ) {
+            e.preventDefault()
+            onNavigateHome()
+          }
+        }}
+        title="Back to Home & Quick Tools"
+        className="inline-flex shrink-0 items-center gap-1 rounded-md border border-white/10 px-2 py-1 text-xs font-medium text-[#b8b8c8] transition-colors hover:border-white/25 hover:bg-white/5 hover:text-white"
+      >
+        <span aria-hidden="true">←</span>
+        <span className="max-[1099px]:hidden">Tools</span>
+      </a>
+
       {/* Logo */}
       <Logo />
 
