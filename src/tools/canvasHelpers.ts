@@ -385,11 +385,15 @@ export async function canvasToBlob(
 // ============================================================================
 
 function assertOfflineSafeImageUrl(url: string): void {
-  if (/^(data:|blob:)/i.test(url)) return
-  if (url.startsWith('/')) return
-  if (/^https?:\/\//i.test(url)) {
+  const trimmed = url.trim()
+  if (/^(data:|blob:)/i.test(trimmed)) return
+  if (trimmed.startsWith('//') || trimmed.startsWith('/\\')) {
+    throw new Error('Remote cross-origin image URLs are blocked to guarantee 100% offline local processing.')
+  }
+  if (trimmed.startsWith('/')) return
+  if (/^https?:\/\//i.test(trimmed)) {
     if (typeof location !== 'undefined') {
-      const parsed = new URL(url)
+      const parsed = new URL(trimmed)
       if (parsed.origin === location.origin) return
     }
     throw new Error('Remote cross-origin image URLs are blocked to guarantee 100% offline local processing.')

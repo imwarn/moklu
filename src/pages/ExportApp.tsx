@@ -1,13 +1,8 @@
 /**
- * ExportApp — headless render mode for the CLI pipeline.
- *
- * Flow:
- *  1. CLI injects window.__EXPORT_CONFIG__ via Playwright addInitScript
- *  2. main.tsx detects it and mounts ExportApp instead of App
- *  3. ExportApp loads project + assets into stores, renders each SlideGroup
- *  4. After images settle, captures every slide via stage.toDataURL
- *  5. Writes results to window.__EXPORT_RESULTS__ and sets window.__EXPORT_DONE__ = true
- *  6. CLI reads results, saves PNGs, exits
+ * [INPUT]: depends on react, react-konva, editor/asset/font stores, buildExportPlan, stageCapture, fonts, LayerNode, and assertPngExportDimensions
+ * [OUTPUT]: exports ExportApp component and ExportConfig/ExportResult window contract types
+ * [POS]: headless Playwright CLI export renderer in src/pages/; mounted by src/main.tsx when window.__EXPORT_CONFIG__ is injected and reports results or errors via window.__EXPORT_* globals
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Stage, Layer } from 'react-konva'
@@ -155,67 +150,82 @@ export function ExportApp() {
       return
     }
 
-    // Load project — surface malformed project files to the CLI instead of hanging
+    // Load project and initial store state — surface setup errors to the CLI instead of hanging
     try {
       importProject(JSON.stringify(config.project))
+
+      // Apply locale if specified
+      const locale = config.locale ?? config.project.settings?.defaultLocale ?? 'en'
+      useEditorStore.getState().setActiveLocale(locale)
+
+      // Start with first group
+      const firstId = config.project.slideGroups?.[0]?.id
+      if (firstId) setActiveSlideGroup(firstId)
+
+      // Populate font store with custom fonts from config
+      for (const [filename, dataUrl] of Object.entries(config.fonts ?? {})) {
+        addFont(filename, dataUrl)
+      }
     } catch (err) {
       window.__EXPORT_ERROR__ = err instanceof Error ? err.message : String(err)
       window.__EXPORT_DONE__ = true
       return
     }
 
-    // Apply locale if specified
-    const locale = config.locale ?? config.project.settings?.defaultLocale ?? 'en'
-    useEditorStore.getState().setActiveLocale(locale)
-
-    // Start with first group
-    const firstId = config.project.slideGroups?.[0]?.id
-    if (firstId) setActiveSlideGroup(firstId)
-
-    // Populate font store with custom fonts from config
-    for (const [filename, dataUrl] of Object.entries(config.fonts ?? {})) {
-      addFont(filename, dataUrl)
-    }
-
     // Pre-decode all asset images so use-image resolves from cache during render.
+    let cancelled = false
     const preload = async () => {
-      // Headless mode still uses an explicit project scope. Wait for hydration
-      // before adding CLI-provided assets so an async scope load cannot replace them.
-      await useAssetStore.getState().setActiveProject(config.project.id)
-      for (const [filename, dataUrl] of Object.entries(config.assets ?? {})) {
-        addAsset(filename, dataUrl)
-      }
-
-      await Promise.all(
-        Object.values(config.assets ?? {}).map(
-          (dataUrl) =>
-            new Promise<void>((resolve) => {
-              const img = new Image()
-              img.onload = () => resolve()
-              img.onerror = () => resolve()
-              img.src = dataUrl
-            }),
-        ),
-      )
-
-      // Load Google Fonts stylesheet
-      loadGoogleFonts()
-
-      // Load custom fonts from project registry
-      if (config.project.customFonts?.length) {
-        await registerCustomFonts(config.project.customFonts, getFont)
-      }
-
-      // Wait for all fonts (Google + custom) to be parsed and available
       try {
-        await document.fonts.ready
-      } catch {
-        // FontFaceSet unavailable in this environment — continue
-      }
+        // Headless mode still uses an explicit project scope. Wait for hydration
+        // before adding CLI-provided assets so an async scope load cannot replace them.
+        await useAssetStore.getState().setActiveProject(config.project.id)
+        if (cancelled) return
+        for (const [filename, dataUrl] of Object.entries(config.assets ?? {})) {
+          addAsset(filename, dataUrl)
+        }
 
-      setPhase('rendering')
+        await Promise.all(
+          Object.values(config.assets ?? {}).map(
+            (dataUrl) =>
+              new Promise<void>((resolve) => {
+                const img = new Image()
+                img.onload = () => resolve()
+                img.onerror = () => resolve()
+                img.src = dataUrl
+              }),
+          ),
+        )
+        if (cancelled) return
+
+        // Load Google Fonts stylesheet
+        loadGoogleFonts()
+
+        // Load custom fonts from project registry
+        if (config.project.customFonts?.length) {
+          await registerCustomFonts(config.project.customFonts, getFont)
+        }
+        if (cancelled) return
+
+        // Wait for all fonts (Google + custom) to be parsed and available
+        try {
+          await document.fonts.ready
+        } catch {
+          // FontFaceSet unavailable in this environment — continue
+        }
+        if (cancelled) return
+
+        setPhase('rendering')
+      } catch (err) {
+        if (cancelled) return
+        console.error('[ExportApp] preload failed:', err)
+        window.__EXPORT_ERROR__ = err instanceof Error ? err.message : String(err)
+        window.__EXPORT_DONE__ = true
+        setPhase('done')
+      }
     }
     void preload()
+
+    return () => { cancelled = true }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Phase 2: Iterate groups, render + capture ────────────────────────────────

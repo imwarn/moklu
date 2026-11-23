@@ -1,11 +1,15 @@
+/**
+ * [INPUT]: depends on @playwright/test, js-yaml, node fs/http/path/url, and decodeValidatedPng from ./png-output.mjs
+ * [OUTPUT]: exports runExport, collectAssetRefsFromProject, resolveAssetAliases, startServer, and closeServer
+ * [POS]: headless Playwright export runner in cli/; serves dist/, injects window.__EXPORT_CONFIG__, validates PNG outputs, and cleans up browser/server lifecycles
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { chromium } from '@playwright/test'
 import { readFileSync, readdirSync, mkdirSync, writeFileSync, existsSync, statSync } from 'fs'
-import { join, resolve, basename } from 'path'
-import { fileURLToPath } from 'url'
-import { dirname } from 'path'
-import { createServer } from 'http'
 import { readFile } from 'fs/promises'
-import { extname } from 'path'
+import { createServer } from 'http'
+import { dirname, extname, join, resolve } from 'path'
+import { fileURLToPath } from 'url'
 import yaml from 'js-yaml'
 import { decodeValidatedPng } from './png-output.mjs'
 
@@ -87,20 +91,20 @@ const MIME_TYPES = {
   '.ttf': 'font/ttf',
 }
 
-async function startServer(port = DEFAULTS.port) {
-  if (!existsSync(distPath)) {
+export async function startServer(port = DEFAULTS.port, rootDir = distPath) {
+  if (!existsSync(rootDir)) {
     throw new Error(
-      `Build not found at ${distPath}. Run "npm run build" first.`
+      `Build not found at ${rootDir}. Run "npm run build" first.`
     )
   }
 
   const server = createServer(async (req, res) => {
-    let urlPath = req.url?.split('?')[0] ?? '/'
-    let filePath = join(distPath, urlPath === '/' ? 'index.html' : urlPath)
+    const urlPath = req.url?.split('?')[0] ?? '/'
+    let filePath = join(rootDir, urlPath === '/' ? 'index.html' : urlPath)
 
     // SPA fallback
     if (!existsSync(filePath)) {
-      filePath = join(distPath, 'index.html')
+      filePath = join(rootDir, 'index.html')
     }
 
     try {
@@ -117,8 +121,43 @@ async function startServer(port = DEFAULTS.port) {
     }
   })
 
-  await new Promise((resolve) => server.listen(port, resolve))
+  await new Promise((resolveListen, rejectListen) => {
+    const onError = (error) => {
+      server.off('listening', onListening)
+      rejectListen(error)
+    }
+    const onListening = () => {
+      server.off('error', onError)
+      resolveListen()
+    }
+    server.once('error', onError)
+    server.once('listening', onListening)
+    server.listen(port)
+  })
+
+  server.on('error', (error) => {
+    console.error(`[CLI] Static server error: ${error instanceof Error ? error.message : String(error)}`)
+  })
+
   return server
+}
+
+export function closeServer(server) {
+  if (!server) return Promise.resolve()
+  return new Promise((resolveClose, rejectClose) => {
+    if (!server.listening) {
+      resolveClose()
+      return
+    }
+    server.close((error) => {
+      if (error && error.code !== 'ERR_SERVER_NOT_RUNNING') {
+        rejectClose(error)
+      } else {
+        resolveClose()
+      }
+    })
+    server.closeIdleConnections?.()
+  })
 }
 
 // ─── Load screenshots folder ─────────────────────────────────────────────────
@@ -207,7 +246,9 @@ async function runSingle({ project, screenshotsDir, outputDir, locale, port = DE
 
   // Start static server
   const server = await startServer(port)
-  console.log(`[CLI] Serving app at http://localhost:${port}`)
+  const address = server.address()
+  const boundPort = typeof address === 'object' && address ? address.port : port
+  console.log(`[CLI] Serving app at http://localhost:${boundPort}`)
 
   let browser
   try {
@@ -223,7 +264,7 @@ async function runSingle({ project, screenshotsDir, outputDir, locale, port = DE
     }, { project: projectJson, assets, locale: locale ?? null })
 
     // Navigate to the app
-    await page.goto(`http://localhost:${port}/`, { waitUntil: 'networkidle' })
+    await page.goto(`http://localhost:${boundPort}/`, { waitUntil: 'networkidle' })
 
     // Wait for ExportApp to finish
     console.log('[CLI] Waiting for export to complete...')
@@ -262,8 +303,11 @@ async function runSingle({ project, screenshotsDir, outputDir, locale, port = DE
     return { saved, outputDir: localeOutput }
 
   } finally {
-    await browser?.close()
-    server.close()
+    try {
+      await browser?.close()
+    } finally {
+      await closeServer(server)
+    }
   }
 }
 
@@ -349,14 +393,14 @@ export async function runExport(opts) {
     const projectJson = JSON.parse(readFileSync(resolve(opts.project), 'utf8'))
     const locales = projectJson.settings?.locales ?? [projectJson.settings?.defaultLocale ?? 'en']
     let totalSaved = 0
-    for (const locale of locales) {
+    for (const [i, locale] of locales.entries()) {
       console.log(`\n[CLI] Exporting locale: ${locale}`)
       const result = await runSingle({
         project: opts.project,
         screenshotsDir: opts.screenshots,
         outputDir: opts.output,
         locale,
-        port,
+        port: opts.port ? port : DEFAULTS.port + i,
         timeout,
       })
       totalSaved += result.saved

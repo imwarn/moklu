@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on buildOpenAiCompatibleHeaders from @/ai/headers and provider config/types from @/ai/providers
+ * [OUTPUT]: exports chat, editImage, supportsImageEditing, AiClientError, timeout/retry defaults, and message/option types
+ * [POS]: direct browser AI transport and response parser of src/ai/; owns retry, timeout, CSP diagnostics, and multimodal image extraction
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { buildOpenAiCompatibleHeaders } from '@/ai/headers'
 import { getDefaultModel, getProviderConfig } from '@/ai/providers'
 import type { AiProvider } from '@/ai/providers'
@@ -19,13 +25,13 @@ function splitDataUrl(dataUrl: string): { mediaType: string; data: string } {
   return { mediaType: match[1], data: match[2] }
 }
 
-function asDataUrl(value: unknown, fallbackMediaType = 'image/png'): string | null {
+function asDataUrl(value: unknown, fallbackMediaType = 'image/png', allowRawBase64 = false): string | null {
   if (typeof value !== 'string' || !value) return null
   if (value.startsWith('data:image/')) return value
-  // Accept raw base64 only when it comes from a known structured field
-  // (inline_data.data, b64_json) — callers pass fallbackMediaType in that case.
-  // Never treat arbitrary strings as images.
-  if (fallbackMediaType !== 'image/png' && /^[A-Za-z0-9+/=\r\n]+$/.test(value) && value.length > 100) {
+  // Accept raw base64 only when explicitly opted in for known structured image
+  // fields (b64_json, data, inlineData/inline_data). Never treat arbitrary
+  // strings as images.
+  if (allowRawBase64 && /^[A-Za-z0-9+/=\r\n]+$/.test(value) && value.length > 100) {
     return `data:${fallbackMediaType};base64,${value.replace(/\s/g, '')}`
   }
   return null
@@ -96,7 +102,13 @@ function findImageDataUrl(value: unknown): string | null {
   }
 
   const record = value as Record<string, unknown>
-  const url = asDataUrl(record.url) ?? asDataUrl(record.b64_json, 'image/png') ?? asDataUrl(record.data, 'image/png')
+  const recordMediaType = typeof record.mimeType === 'string'
+    ? record.mimeType
+    : typeof record.mime_type === 'string' ? record.mime_type : 'image/png'
+  const url =
+    asDataUrl(record.url)
+    ?? asDataUrl(record.b64_json, recordMediaType, true)
+    ?? asDataUrl(record.data, recordMediaType, true)
   if (url) return url
 
   const inlineData = record.inlineData ?? record.inline_data
@@ -105,7 +117,7 @@ function findImageDataUrl(value: unknown): string | null {
     const mediaType = typeof inline.mimeType === 'string'
       ? inline.mimeType
       : typeof inline.mime_type === 'string' ? inline.mime_type : 'image/png'
-    const dataUrl = asDataUrl(inline.data, mediaType)
+    const dataUrl = asDataUrl(inline.data, mediaType, true)
     if (dataUrl) return dataUrl
   }
 
