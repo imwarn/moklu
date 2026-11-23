@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on react, useProjectsStore, useEditorStore, ConfirmDialog, ModalShell, InlineEditableLabel, FileUploadButton, ProjectConflictError, checkImportFileSize, and useStudioLocale from @/i18n
+ * [OUTPUT]: exports ProjectsModal local project manager dialog localized across EN/ZH/JA/KO
+ * [POS]: project switcher/backup dialog launched from Studio Toolbar inside src/components/panels
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useState, useEffect, useRef } from 'react'
 import { notifyProjectConflict, useProjectsStore } from '@/store/projects'
 import { useEditorStore } from '@/store'
@@ -7,6 +13,7 @@ import { InlineEditableLabel } from '@/components/ui/InlineEditableLabel'
 import { FileUploadButton } from '@/components/ui/FileUploadButton'
 import { ProjectConflictError } from '@/store/storage/types'
 import { checkImportFileSize } from '@/utils/importValidation'
+import { useStudioLocale } from '@/i18n'
 
 
 interface ProjectsModalProps {
@@ -27,6 +34,8 @@ function relativeTime(iso: string): string {
 }
 
 export function ProjectsModal({ open, onClose }: ProjectsModalProps) {
+  const { t } = useStudioLocale()
+  const pm = t.modals.projects
   const { projects, createProject, openProject, deleteProject, renameProject } =
     useProjectsStore()
   const activeProjectId = useEditorStore((s) => s.project.id)
@@ -78,7 +87,7 @@ export function ProjectsModal({ open, onClose }: ProjectsModalProps) {
   const handleCreateConfirm = async () => {
     const trimmed = newName.trim()
     if (!trimmed) {
-      setNewNameError('Name is required')
+      setNewNameError(pm.nameRequired)
       return
     }
     setCreatingBusy(true)
@@ -165,9 +174,9 @@ export function ProjectsModal({ open, onClose }: ProjectsModalProps) {
     <>
       <ConfirmDialog
         open={deleteId !== null}
-        title={`Delete project "${projects.find((p) => p.id === deleteId)?.name ?? 'this project'}"?`}
-        message="This cannot be undone."
-        confirmLabel="Delete Project"
+        title={`${pm.deleteTitle}: "${projects.find((p) => p.id === deleteId)?.name ?? ''}"`}
+        message={pm.deleteConfirmMsg}
+        confirmLabel={pm.deleteConfirmBtn}
         danger
         busy={deletingBusy}
         onConfirm={confirmDelete}
@@ -196,7 +205,7 @@ export function ProjectsModal({ open, onClose }: ProjectsModalProps) {
             }}
           >
             <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: '#e8e8f0' }}>
-              Projects
+              {pm.title}
             </h2>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <button
@@ -220,7 +229,7 @@ export function ProjectsModal({ open, onClose }: ProjectsModalProps) {
                   ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.1)'
                 }}
               >
-                Import
+                {t.common.import}
               </button>
               <button
                 onClick={handleNew}
@@ -235,14 +244,14 @@ export function ProjectsModal({ open, onClose }: ProjectsModalProps) {
                   cursor: 'pointer',
                 }}
               >
-                + New
+                {pm.newProject}
               </button>
               <FileUploadButton
                 ref={importInputRef}
                 accept=".json"
                 onFiles={handleImportFile}
                 className="hidden"
-              >Import file</FileUploadButton>
+              >{t.common.import}</FileUploadButton>
               <button
                 onClick={onClose}
                 style={{
@@ -260,7 +269,7 @@ export function ProjectsModal({ open, onClose }: ProjectsModalProps) {
             </div>
           </div>}
         footerClassName=""
-        footer={<div style={{ padding: '10px 20px', borderTop: '1px solid rgba(255,255,255,0.07)', fontSize: 11, color: '#6b6b7a', textAlign: 'center' }}>Auto-saved · Double-click a name to rename</div>}
+        footer={<div style={{ padding: '10px 20px', borderTop: '1px solid rgba(255,255,255,0.07)', fontSize: 11, color: '#6b6b7a', textAlign: 'center' }}>{pm.footerHint}</div>}
       >
 
           {/* New project form */}
@@ -285,7 +294,7 @@ export function ProjectsModal({ open, onClose }: ProjectsModalProps) {
                     if (e.key === 'Escape') setCreatingNew(false)
                     e.stopPropagation()
                   }}
-                  placeholder="Project name..."
+                  placeholder={pm.namePlaceholder}
                   style={{
                     flex: 1,
                     background: 'rgba(255,255,255,0.08)',
@@ -313,7 +322,7 @@ export function ProjectsModal({ open, onClose }: ProjectsModalProps) {
                     flexShrink: 0,
                   }}
                 >
-                  {creatingBusy ? 'Creating…' : 'Create'}
+                  {creatingBusy ? pm.creating : pm.create}
                 </button>
                 <button
                   onClick={() => setCreatingNew(false)}
@@ -329,7 +338,7 @@ export function ProjectsModal({ open, onClose }: ProjectsModalProps) {
                     flexShrink: 0,
                   }}
                 >
-                  Cancel
+                  {t.common.cancel}
                 </button>
               </div>
               {newNameError && (
@@ -344,7 +353,7 @@ export function ProjectsModal({ open, onClose }: ProjectsModalProps) {
           <div style={{ overflowY: 'auto', flex: 1, padding: '8px 8px' }}>
             {sorted.length === 0 && (
               <p style={{ textAlign: 'center', color: '#6b6b7a', fontSize: 13, padding: '24px 0' }}>
-                No projects yet
+                {pm.noProjects}
               </p>
             )}
 
@@ -446,7 +455,7 @@ export function ProjectsModal({ open, onClose }: ProjectsModalProps) {
                               fontWeight: 600,
                             }}
                           >
-                            current
+                            {pm.current}
                           </span>
                         )}
                       </InlineEditableLabel>
@@ -461,7 +470,7 @@ export function ProjectsModal({ open, onClose }: ProjectsModalProps) {
                     onClick={(e) => e.stopPropagation()}
                   >
                     <button
-                      title="Export project as JSON"
+                      title={pm.exportJsonTitle}
                       onClick={(e) => { e.stopPropagation(); void handleExportProject(p.id, p.name) }}
                       style={{
                         background: 'none',
@@ -479,10 +488,10 @@ export function ProjectsModal({ open, onClose }: ProjectsModalProps) {
                         ((e.currentTarget as HTMLButtonElement).style.color = '#6b6b7a')
                       }
                     >
-                      Export
+                      {t.common.export}
                     </button>
                     <button
-                      title="Rename (double-click name)"
+                      title={pm.renameTitle}
                       onClick={(e) => {
                         e.stopPropagation()
                         startRename(p.id)
@@ -506,7 +515,7 @@ export function ProjectsModal({ open, onClose }: ProjectsModalProps) {
                       ✎
                     </button>
                     <button
-                      title="Delete project"
+                      title={pm.deleteTitle}
                       onClick={(e) => handleDelete(e, p.id)}
                       style={{
                         background: 'none',

@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on react, zustand useShallow, @dnd-kit/core, @dnd-kit/sortable, useEditorStore from @/store, layer row/asset/context subcomponents, and useStudioLocale from @/i18n
+ * [OUTPUT]: exports LayersPanel component with localized Insert tools, Assets section, and sortable Layers tree
+ * [POS]: left sidebar panel of StudioPage inside src/components/panels
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useState, useEffect, useRef } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useEditorStore } from '@/store'
@@ -15,10 +21,12 @@ import { LAYER_ICON, type ContextMenu } from './layers/constants'
 import { SortableLayer, SortableGroup, DragPreview } from './layers/SortableLayerRow'
 import { AssetsSection } from './layers/AssetsSection'
 import { LayerContextMenu } from './layers/LayerContextMenu'
+import { useStudioLocale } from '@/i18n'
 
 // ─── LayersPanel ──────────────────────────────────────────────────────────────
 
 export function LayersPanel() {
+  const { t } = useStudioLocale()
   const {
     project, activeSlideGroupId, selection, select,
     addPhone, addText, addShape, addEmoji, addChipGroup, addBrand, addImage,
@@ -280,13 +288,13 @@ export function LayersPanel() {
     else if (key === 'image') imageInputRef.current?.click()
   }
   const insertTools = [
-    { key: 'phone', icon: '▣', label: 'Mockups' },
-    { key: 'text', icon: 'T', label: 'Text' },
-    { key: 'shape', icon: '▭', label: 'Shape' },
-    { key: 'emoji', icon: '😀', label: 'Emoji' },
-    { key: 'chip', icon: '◉', label: 'Chip' },
-    { key: 'brand', icon: '🏷', label: 'Brand' },
-    { key: 'image', icon: '🖼', label: 'Image' },
+    { key: 'phone', icon: '▣', label: t.layers.tools.phone },
+    { key: 'text', icon: 'T', label: t.layers.tools.text },
+    { key: 'shape', icon: '▭', label: t.layers.tools.shape },
+    { key: 'emoji', icon: '😀', label: t.layers.tools.emoji },
+    { key: 'chip', icon: '◉', label: t.layers.tools.chip },
+    { key: 'brand', icon: '🏷', label: t.layers.tools.brand },
+    { key: 'image', icon: '🖼', label: t.layers.tools.image },
   ]
 
   return (
@@ -297,13 +305,13 @@ export function LayersPanel() {
       {/* Insert toolbar */}
       <div className="px-3 pt-3 pb-2 shrink-0 border-b" style={{ borderColor }}>
         <div className="mb-3 flex items-center justify-between">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#6b6b7a]">Insert</span>
+          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#6b6b7a]">{t.layers.insert}</span>
         </div>
 
         {selectedLayerIds.length > 0 && (
           <div className="mb-2 flex items-center justify-between rounded-md bg-[rgba(124,110,246,0.12)] border border-[rgba(124,110,246,0.3)] px-2 py-1">
-            <span className="text-[10px] text-[#a89cf6]">{selectedLayerIds.length} selected</span>
-            <button onClick={() => clearMultiSelection()} className="text-[10px] text-[#a89cf6] hover:text-[#e8e8f0] transition-colors">Clear</button>
+            <span className="text-[10px] text-[#a89cf6]">{selectedLayerIds.length} {t.layers.selectedSuffix}</span>
+            <button onClick={() => clearMultiSelection()} className="text-[10px] text-[#a89cf6] hover:text-[#e8e8f0] transition-colors">{t.common.clear}</button>
           </div>
         )}
 
@@ -314,7 +322,7 @@ export function LayersPanel() {
               onClick={() => handleInsertToolClick(tool.key)}
               className="flex flex-col items-center gap-1.5 rounded-xl border px-1 py-2 text-center transition-colors hover:border-[rgba(124,110,246,0.35)] hover:bg-[rgba(124,110,246,0.15)]"
               style={{ borderColor: 'rgba(255,255,255,0.08)' }}
-              title={`Add ${tool.label}`}
+              title={`${t.layers.addPrefix} ${tool.label}`}
             >
               <span className="flex h-6 items-center justify-center text-base text-[#e8e8f0]">{tool.icon}</span>
               <span className="text-[10px] leading-none text-[#b0b0c4]">{tool.label}</span>
@@ -333,14 +341,14 @@ export function LayersPanel() {
 
         <div className="mt-3 h-px w-full bg-[rgba(255,255,255,0.06)]" />
         <div className="pt-2">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#6b6b7a]">Layers</span>
+          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#6b6b7a]">{t.layers.layers}</span>
         </div>
       </div>
 
       {/* Layer list */}
       <div className="flex-1 overflow-y-auto">
         {layers.length === 0 && (
-          <p className="text-xs text-[#6b6b7a] px-3 py-4 text-center">No layers yet</p>
+          <p className="text-xs text-[#6b6b7a] px-3 py-4 text-center">{t.layers.noLayersYet}</p>
         )}
 
         <DndContext
@@ -412,7 +420,7 @@ export function LayersPanel() {
           >
             <div className="w-4 h-5 shrink-0" />
             <button
-              aria-label={backgroundLayer.visible ? 'Hide Background' : 'Show Background'}
+              aria-label={backgroundLayer.visible ? t.layers.hideBackground : t.layers.showBackground}
               onClick={(e) => { e.stopPropagation(); setLayerVisibility(backgroundLayer.id, !backgroundLayer.visible) }}
               className="w-5 h-5 flex items-center justify-center text-xs rounded hover:bg-[rgba(255,255,255,0.08)] shrink-0"
               style={{ color: backgroundLayer.visible ? '#e8e8f0' : '#3a3a4a' }}
@@ -421,7 +429,7 @@ export function LayersPanel() {
             <span className="flex-1 text-xs truncate" style={{ color: selection?.layerId === backgroundLayer.id ? '#e8e8f0' : '#b0b0c4' }}>
               {backgroundLayer.name}
             </span>
-            <span className="shrink-0 text-xs" style={{ color: '#3a3a4a' }} title="Background cannot be moved">🔒</span>
+            <span className="shrink-0 text-xs" style={{ color: '#3a3a4a' }} title={t.layers.backgroundLockedTitle}>🔒</span>
           </div>
         )}
       </div>

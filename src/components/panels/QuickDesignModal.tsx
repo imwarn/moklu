@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on react, SlideGroup type, useEditorStore, useAssetStore, QuickDesignPreview, screenshotAssets, quickDesign presets, and useStudioLocale from @/i18n
+ * [OUTPUT]: exports QuickDesignModal guided single-canvas mockup dialog localized across EN/ZH/JA/KO
+ * [POS]: guided mockup launcher modal invoked from Studio Toolbar inside src/components/panels
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useEffect, useRef, useState } from 'react'
 import type { SlideGroup } from '@/types'
 import { useEditorStore } from '@/store'
@@ -8,6 +14,7 @@ import {
   getQuickMockupPlacement, makeQuickLayers, QUICK_MOCKUPS, QUICK_SIZES, QUICK_THEMES,
   type QuickMockup, type QuickSize, type QuickTheme, type QuickScreenshotFit,
 } from '@/utils/quickDesign'
+import { useStudioLocale } from '@/i18n'
 
 interface QuickDesignModalProps {
   open: boolean
@@ -27,6 +34,8 @@ export function QuickDesignModal({ open, onClose }: QuickDesignModalProps) {
 }
 
 function QuickDesignDialog({ activeGroup, onClose }: { activeGroup: SlideGroup | undefined; onClose: () => void }) {
+  const { t } = useStudioLocale()
+  const q = t.modals.quickDesign
   // Reopening Quick Design starts from the actual canvas rather than silently
   // reverting an existing Moklu design to the original 16:9 default.
   const hasQuickCanvas = activeGroup?.name === 'Moklu Canvas'
@@ -192,14 +201,14 @@ function QuickDesignDialog({ activeGroup, onClose }: { activeGroup: SlideGroup |
       <section ref={dialogRef} tabIndex={-1} onKeyDown={handleDialogKeyDown} role="dialog" aria-modal="true" aria-labelledby="quick-design-title" aria-describedby="quick-design-description" className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-white/10 bg-[#18181f] p-6 text-[#f5f5f8] shadow-2xl">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
-            <h2 id="quick-design-title" className="text-xl font-semibold">Quick Design</h2>
-            <p id="quick-design-description" className="mt-1 text-sm text-[#aaaabc]">New here? Choose a screenshot (optional), pick a mockup and style, then apply. Use the PNG button in the top toolbar to export.</p>
+            <h2 id="quick-design-title" className="text-xl font-semibold">{q.title}</h2>
+            <p id="quick-design-description" className="mt-1 text-sm text-[#aaaabc]">{q.description}</p>
           </div>
-          <button type="button" onClick={onClose} className="text-xl text-[#aaaabc] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b9afff]" aria-label="Close quick design">×</button>
+          <button type="button" onClick={onClose} className="text-xl text-[#aaaabc] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b9afff]" aria-label={q.closeAria}>×</button>
         </div>
         <div
           role="group"
-          aria-label="Add screenshot"
+          aria-label={q.step1}
           onDragOver={(event) => { event.preventDefault(); setDragActive(true) }}
           onDragLeave={() => setDragActive(false)}
           onDrop={(event) => {
@@ -212,13 +221,13 @@ function QuickDesignDialog({ activeGroup, onClose }: { activeGroup: SlideGroup |
             ? 'border-[#b9afff] bg-[#8276e8]/15'
             : 'border-white/20 bg-white/[0.035]'}`}
         >
-          <div className="mb-2 font-semibold">1. Start with a screenshot <span className="font-normal text-white/50">(optional)</span></div>
+          <div className="mb-2 font-semibold">{q.step1} <span className="font-normal text-white/50">{q.optional}</span></div>
           <div className="flex items-center gap-3">
-            {previewUrl && <img src={previewUrl} alt="Screenshot selected for your design" className="h-16 w-24 shrink-0 rounded border border-white/10 bg-black/20 object-contain" />}
+            {previewUrl && <img src={previewUrl} alt={q.chooseScreenshot} className="h-16 w-24 shrink-0 rounded border border-white/10 bg-black/20 object-contain" />}
             <div className="min-w-0 flex-1">
               <label className="block cursor-pointer">
                 <span className="inline-block rounded-md bg-[#8276e8] px-3 py-2 text-xs font-semibold text-white hover:bg-[#9388ee]">
-                  {imageFile ? 'Change screenshot' : 'Choose screenshot'}
+                  {imageFile ? q.changeScreenshot : q.chooseScreenshot}
                 </span>
                 <input type="file" accept="image/png,image/jpeg,image/webp" className="sr-only focus-visible:not-sr-only"
                   onChange={(event) => {
@@ -226,34 +235,34 @@ function QuickDesignDialog({ activeGroup, onClose }: { activeGroup: SlideGroup |
                     event.currentTarget.value = ''
                   }} />
               </label>
-              <p className="mt-2 text-xs text-[#a5a8bc]">Or drop a PNG, JPEG or WebP image here · 25 MB maximum</p>
+              <p className="mt-2 text-xs text-[#a5a8bc]">{q.dropHint}</p>
               {imageFile && <p role="status" className="mt-1 truncate text-xs text-[#aee6d2]">{imageFile.name} · {(imageFile.size / (1024 * 1024)).toFixed(2)} MB</p>}
-              {!imageFile && existingShot && <p className="mt-1 text-xs text-[#aee6d2]">Your current screenshot will be reused.</p>}
+              {!imageFile && existingShot && <p className="mt-1 text-xs text-[#aee6d2]">{q.reuseCurrent}</p>}
             </div>
           </div>
           {uploadError && <p role="alert" className="mt-2 text-xs text-red-400">{uploadError}</p>}
         </div>
-        <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#aeb0c3]">2. Choose canvas and mockup</div>
+        <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#aeb0c3]">{q.step2}</div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <label className="block text-xs text-[#aeb0c3]">Canvas
+          <label className="block text-xs text-[#aeb0c3]">{q.canvas}
             <select className={controlClass + ' mt-2'} value={size} onChange={(e) => { setSize(e.target.value as QuickSize); setCustom(false) }}>
               {Object.entries(QUICK_SIZES).map(([key, value]) => <option key={key} value={key}>{value.label} ({value.width}×{value.height})</option>)}
             </select>
           </label>
-          <label className="block text-xs text-[#aeb0c3]">Mockup
+          <label className="block text-xs text-[#aeb0c3]">{q.mockup}
             <select className={controlClass + ' mt-2'} value={mockup} onChange={(e) => setMockup(e.target.value as QuickMockup)}>
               {QUICK_MOCKUPS.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
             </select>
           </label>
         </div>
         <label className="mt-4 flex items-center gap-2 text-xs text-[#aeb0c3]">
-          <input type="checkbox" checked={custom} onChange={(e) => setCustom(e.target.checked)} /> Use custom canvas dimensions
+          <input type="checkbox" checked={custom} onChange={(e) => setCustom(e.target.checked)} /> {q.useCustomDimensions}
         </label>
         {custom && <div className="mt-2 grid grid-cols-2 gap-2">
-          <label className="text-xs text-[#aeb0c3]">Width<input className={controlClass + ' mt-1'} type="number" min={240} max={4096} value={customWidth} onChange={(e) => setCustomWidth(e.target.value)} /></label>
-          <label className="text-xs text-[#aeb0c3]">Height<input className={controlClass + ' mt-1'} type="number" min={240} max={4096} value={customHeight} onChange={(e) => setCustomHeight(e.target.value)} /></label>
+          <label className="text-xs text-[#aeb0c3]">{q.width}<input className={controlClass + ' mt-1'} type="number" min={240} max={4096} value={customWidth} onChange={(e) => setCustomWidth(e.target.value)} /></label>
+          <label className="text-xs text-[#aeb0c3]">{q.height}<input className={controlClass + ' mt-1'} type="number" min={240} max={4096} value={customHeight} onChange={(e) => setCustomHeight(e.target.value)} /></label>
         </div>}
-        <div className="mt-5 text-xs font-semibold uppercase tracking-widest text-[#aeb0c3]">3. Choose a style</div>
+        <div className="mt-5 text-xs font-semibold uppercase tracking-widest text-[#aeb0c3]">{q.step3}</div>
         <div className="mt-3 grid grid-cols-3 gap-3">
           {(Object.entries(QUICK_THEMES) as [QuickTheme, (typeof QUICK_THEMES)[QuickTheme]][]).map(([id, value]) =>
             <button type="button" key={id} aria-pressed={theme === id} onClick={() => setTheme(id)}
@@ -264,12 +273,12 @@ function QuickDesignDialog({ activeGroup, onClose }: { activeGroup: SlideGroup |
           )}
         </div>
         <fieldset className="mt-5">
-          <legend className="text-xs font-semibold uppercase tracking-widest text-[#aeb0c3]">Screenshot framing</legend>
+          <legend className="text-xs font-semibold uppercase tracking-widest text-[#aeb0c3]">{q.screenshotFraming}</legend>
           <div className="mt-2 grid grid-cols-3 gap-2">
             {([
-              ['cover', 'Cover', 'Fill screen; crop edges'],
-              ['contain', 'Contain', 'Keep full screenshot'],
-              ['fill', 'Stretch', 'Fill without cropping'],
+              ['cover', q.coverLabel, q.coverHint],
+              ['contain', q.containLabel, q.containHint],
+              ['fill', q.stretchLabel, q.stretchHint],
             ] as const).map(([value, label, hint]) => (
               <label key={value} className={`cursor-pointer rounded-lg border px-2 py-2.5 text-center text-xs ${screenshotFit === value
                 ? 'border-[#b49eff] bg-[#b49eff]/10 text-white'
@@ -289,12 +298,12 @@ function QuickDesignDialog({ activeGroup, onClose }: { activeGroup: SlideGroup |
           browserChrome={currentMockup?.type === 'phone' ? currentMockup.browserChrome : undefined}
         />
         <div role="note" className="mt-5 rounded-lg border border-[#8276e8]/25 bg-[#8276e8]/10 p-3 text-xs leading-5 text-[#bdbbd7]">
-          <strong className="text-white">Want to edit individual elements?</strong> After applying, use the Layers and Properties panels (Advanced editor). For a different ratio, use Canvas Size in the toolbar. Canvas Size resizes without replacing your screenshot, text or layers.
-          <span className="mt-1 block text-[#9395aa]">Quick Design reapplies a style and replaces the current slide layout. Existing screenshots remain attached; other slides are untouched.</span>
+          <strong className="text-white">{q.noteHeading}</strong> {q.noteBody}
+          <span className="mt-1 block text-[#9395aa]">{q.noteSub}</span>
         </div>
         <div className="mt-4 flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="rounded-lg border border-white/15 px-4 py-2 text-sm">Cancel</button>
-          <button type="button" onClick={() => { void apply() }} disabled={!activeGroup || applying} className="rounded-lg bg-[#8276e8] px-5 py-2 text-sm font-semibold text-white hover:bg-[#9388ee] disabled:opacity-50">{applying ? 'Preparing…' : imageFile || existingShot ? 'Apply & Edit Design' : 'Start with Empty Mockup'}</button>
+          <button type="button" onClick={onClose} className="rounded-lg border border-white/15 px-4 py-2 text-sm">{t.common.cancel}</button>
+          <button type="button" onClick={() => { void apply() }} disabled={!activeGroup || applying} className="rounded-lg bg-[#8276e8] px-5 py-2 text-sm font-semibold text-white hover:bg-[#9388ee] disabled:opacity-50">{applying ? q.preparing : imageFile || existingShot ? q.applyEdit : q.startEmpty}</button>
         </div>
       </section>
     </div>

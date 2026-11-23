@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on react, konva, zustand useShallow, @dnd-kit/core, @dnd-kit/sortable, useEditorStore, canvasFormats, panoGeometry, ExportModal, and useStudioLocale from @/i18n
+ * [OUTPUT]: exports SlideNavigator bottom filmstrip component with localized Slides controls, Compensate/Gap inputs, Preview Slides, and Export buttons
+ * [POS]: bottom slide navigation footer of StudioPage inside src/components/panels
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { Fragment, useState, useEffect, useRef } from 'react'
 import type Konva from 'konva'
 import { useShallow } from 'zustand/react/shallow'
@@ -12,6 +18,7 @@ import { MAX_PANO_COMPENSATION_PX } from '@/utils/panoGeometry'
 import type { BackgroundLayer, SlideGroup } from '@/types'
 import type { ThumbnailMap } from '@/hooks/useThumbnails'
 import { ExportModal } from './ExportModal'
+import { useStudioLocale } from '@/i18n'
 
 interface ContextMenu {
   groupId: string
@@ -26,12 +33,6 @@ interface SlideNavigatorProps {
   onCaptureThumbnail: (groupId: string) => void
   onOpenPreview: () => void
 }
-
-const NUM_SLIDES_OPTIONS: { value: number; label: string }[] = [
-  { value: 1, label: 'Single' },
-  { value: 2, label: 'Pano (×2)' },
-  { value: 3, label: 'Strip (×3)' },
-]
 
 type FlatSlide = {
   group: SlideGroup
@@ -214,6 +215,7 @@ function SortableGroupItem({
 }
 
 export function SlideNavigator({ thumbnails, staleGroupIds, stageRef, onCaptureThumbnail, onOpenPreview }: SlideNavigatorProps) {
+  const { t } = useStudioLocale()
   const {
     project,
     activeSlideGroupId,
@@ -363,10 +365,14 @@ export function SlideNavigator({ thumbnails, staleGroupIds, stageRef, onCaptureT
     >
       {/* Width follows the responsive LayersPanel width, less this footer's 12px inset. */}
       <div className="flex w-[196px] shrink-0 flex-col gap-1.5 border-r border-[rgba(255,255,255,0.06)] pr-3 min-[1440px]:w-[212px]">
-        <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#6b6b7a]">Slides</div>
+        <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#6b6b7a]">{t.slides.title}</div>
         {activeGroup && (
           <div className="flex items-center gap-1.5">
-            {NUM_SLIDES_OPTIONS.map(({ value, label }) => (
+            {([
+              { value: 1, label: t.slides.single },
+              { value: 2, label: t.slides.pano },
+              { value: 3, label: t.slides.strip },
+            ]).map(({ value, label }) => (
               <button
                 key={value}
                 onClick={() => updateSlideGroup(activeGroup.id, { numSlides: value })}
@@ -376,7 +382,7 @@ export function SlideNavigator({ thumbnails, staleGroupIds, stageRef, onCaptureT
                     : 'border-[rgba(255,255,255,0.08)] text-[#8f90a3] hover:text-[#e8e8f0] hover:border-[rgba(255,255,255,0.15)]'
                 }`}
               >
-                {label.replace('Pano ', '').replace('Strip ', '')}
+                {label}
               </button>
             ))}
           </div>
@@ -392,10 +398,10 @@ export function SlideNavigator({ thumbnails, staleGroupIds, stageRef, onCaptureT
             disabled={!hasPano}
             onChange={(e) => updatePanoSettings({ compensate: e.target.checked })}
             className="h-3 w-3 accent-[#7c6ef6] disabled:opacity-40 disabled:cursor-not-allowed"
-            title="When enabled, export/preview skip this gap between slides"
+            title={t.slides.compensateTitle}
           />
-          <span>Compensate</span>
-          <span className="ml-1">Gap</span>
+          <span>{t.slides.compensate}</span>
+          <span className="ml-1">{t.slides.gap}</span>
           <input
             type="number"
             min={0}
@@ -404,7 +410,7 @@ export function SlideNavigator({ thumbnails, staleGroupIds, stageRef, onCaptureT
             disabled={!hasPano}
             onChange={(e) => updatePanoSettings({ gapPx: parseInt(e.target.value, 10) || 0 })}
             className="w-12 rounded border border-[rgba(255,255,255,0.1)] bg-[#0f0f13] px-1 py-0.5 text-right text-[#e8e8f0] focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
-            title="Store preview gap shown in editor and preview"
+            title={t.slides.gapTitle}
           />
           <span>px</span>
         </label>
@@ -444,7 +450,7 @@ export function SlideNavigator({ thumbnails, staleGroupIds, stageRef, onCaptureT
         {/* Add slide group button — kept outside SortableContext so it's not draggable */}
         <button
           onClick={addSlideGroup}
-          title="Add slide group"
+          title={t.slides.addSlideGroup}
           className="shrink-0 w-8 h-8 flex items-center justify-center text-[#6b6b7a] hover:text-[#e8e8f0] rounded border border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.2)] text-base transition-colors ml-1"
         >
           ＋
@@ -456,7 +462,7 @@ export function SlideNavigator({ thumbnails, staleGroupIds, stageRef, onCaptureT
           onClick={onOpenPreview}
           className="text-xs text-[#e8e8f0] px-3 py-2 rounded border border-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] hover:bg-[rgba(255,255,255,0.05)] transition-colors"
         >
-          Preview Slides
+          {t.slides.previewSlides}
         </button>
 
         <button
@@ -464,7 +470,7 @@ export function SlideNavigator({ thumbnails, staleGroupIds, stageRef, onCaptureT
           disabled={exportableFormats.length === 0}
           className="text-xs text-white px-3 py-2 rounded bg-[#7c6ef6] hover:bg-[#6c5ed6] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
-          Export
+          {t.slides.export}
         </button>
       </div>
 
@@ -484,8 +490,8 @@ export function SlideNavigator({ thumbnails, staleGroupIds, stageRef, onCaptureT
           onClick={(e) => e.stopPropagation()}
         >
           {[
-            { action: 'rename', label: 'Rename' },
-            { action: 'duplicate', label: 'Duplicate' },
+            { action: 'rename', label: t.common.rename },
+            { action: 'duplicate', label: t.common.duplicate },
           ].map(({ action, label }) => (
             <button
               key={action}
@@ -497,7 +503,7 @@ export function SlideNavigator({ thumbnails, staleGroupIds, stageRef, onCaptureT
             </button>
           ))}
           <div className="my-1 border-t border-[rgba(255,255,255,0.08)]" />
-          <button className="w-full text-left px-3 py-2 text-xs text-[#f87171] hover:bg-[rgba(255,255,255,0.06)] transition-colors" onClick={() => handleMenuAction('delete', contextMenu.groupId)}>Delete</button>
+          <button className="w-full text-left px-3 py-2 text-xs text-[#f87171] hover:bg-[rgba(255,255,255,0.06)] transition-colors" onClick={() => handleMenuAction('delete', contextMenu.groupId)}>{t.common.delete}</button>
         </div>
       )}
     </footer>

@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on useEditorStore, useAssetStore, useApiKeysStore; translateText AI helpers; ./localization subcomponents; useStudioLocale from @/i18n
+ * [OUTPUT]: exports LocalizationView component managing per-project slide content locales without coupling to Studio UI language
+ * [POS]: localization matrix view within src/pages, embedded in StudioPage when switching to the Localizations tab
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useEditorStore } from '@/store'
@@ -14,6 +20,7 @@ import { LocaleBar } from './localization/LocaleBar'
 import { BulkTranslateBar } from './localization/BulkTranslateBar'
 import { SlideGroupSection } from './localization/SlideGroupSection'
 import { PromoteLocaleDialog } from './localization/PromoteLocaleDialog'
+import { useStudioLocale } from '@/i18n'
 
 const ApiKeysModal = lazy(() =>
   import('@/components/panels/ApiKeysModal').then((m) => ({ default: m.ApiKeysModal })),
@@ -35,6 +42,8 @@ function getErrorMessage(error: unknown): string {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function LocalizationView({ onBack, embedded = false, onPreview }: LocalizationViewProps) {
+  const { t } = useStudioLocale()
+  const lm = t.modals.localization
   const {
     project,
     activeLocale,
@@ -586,8 +595,8 @@ export function LocalizationView({ onBack, embedded = false, onPreview }: Locali
               {groups.every((g) => g.rows.length === 0) && (
                 <div className="rounded-2xl border border-white/8 bg-[#18181f]/78 px-8 py-16 text-center">
                   <div className="text-4xl mb-4">🌐</div>
-                  <div className="text-lg text-[#d5d5df] mb-2">No localizable content</div>
-                  <div className="text-sm text-[#6b6b7a]">Add text, phone, or image layers to your slides to start localizing.</div>
+                  <div className="text-lg text-[#d5d5df] mb-2">{lm.noContentTitle}</div>
+                  <div className="text-sm text-[#6b6b7a]">{lm.noContentDesc}</div>
                 </div>
               )}
             </div>
@@ -602,7 +611,7 @@ export function LocalizationView({ onBack, embedded = false, onPreview }: Locali
               className="w-72 shrink-0 overflow-y-auto border-l border-[rgba(255,255,255,0.06)] bg-[#18181f] px-4 py-4"
             >
               <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-[#6b6b7a]">
-                Text Styling
+                {lm.textStyling}
               </div>
               <div className="mb-3 truncate text-xs text-[#c4b5fd]" title={editingTextCell.layerName}>
                 ✏️ {editingTextCell.layerName}
@@ -610,8 +619,8 @@ export function LocalizationView({ onBack, embedded = false, onPreview }: Locali
               </div>
               <div ref={setToolbarSlotEl} />
               <p className="mt-3 text-[10px] leading-relaxed text-[#6b6b7a]">
-                Select text in the cell, then apply styles here.
-                <br />Enter confirms · the panel closes when you finish.
+                {lm.textStylingHint1}
+                <br />{lm.textStylingHint2}
               </p>
             </aside>
           )}
