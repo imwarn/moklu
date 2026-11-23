@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on react, getMockupSvg from @/assets/mockups/registry, getPhoneSpec from @/assets/mockups/specs, BrowserChromeOptions from @/types, QUICK_THEMES and quick types from @/utils/quickDesign, and preview geometry helpers from @/utils/quickPreview
+ * [OUTPUT]: exports QuickDesignPreview component rendering a live SVG mockup preview with optional scaleFactor support
+ * [POS]: shared lightweight mockup preview component in src/components/panels; used by Studio QuickDesignModal and Quick Workspace MockupQuickTool
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useId, useMemo } from 'react'
 import { getMockupSvg } from '@/assets/mockups/registry'
 import { getPhoneSpec } from '@/assets/mockups/specs'
@@ -5,18 +11,26 @@ import type { BrowserChromeOptions } from '@/types'
 import { QUICK_THEMES, type QuickMockup, type QuickTheme, type QuickScreenshotFit } from '@/utils/quickDesign'
 import { getQuickPreviewGeometry, makeSvgImageDataUrl, screenshotPreserveAspectRatio } from '@/utils/quickPreview'
 
-interface QuickDesignPreviewProps {
+export interface QuickDesignPreviewProps {
   width: number
   height: number
   theme: QuickTheme
   mockup: QuickMockup
   screenshotSrc?: string
   screenshotFit?: QuickScreenshotFit
+  scaleFactor?: number
   browserChrome?: BrowserChromeOptions
 }
 
 export function QuickDesignPreview({
-  width, height, theme, mockup, screenshotSrc, screenshotFit = 'cover', browserChrome,
+  width,
+  height,
+  theme,
+  mockup,
+  screenshotSrc,
+  screenshotFit = 'cover',
+  scaleFactor = 1,
+  browserChrome,
 }: QuickDesignPreviewProps) {
   const uid = useId().replace(/:/g, '')
   const bgId = `moklu-quick-bg-${uid}`
@@ -31,6 +45,17 @@ export function QuickDesignPreview({
   const safeHeight = dimsValid ? height : 900
   const geometry = getQuickPreviewGeometry(mockup, safeWidth, safeHeight)
   const spec = getPhoneSpec(mockup)
+  const clampedFactor = Number.isFinite(scaleFactor)
+    ? Math.max(0.65, Math.min(1.15, scaleFactor))
+    : 1
+  const effectiveScale = geometry.scale * clampedFactor
+  const effectiveFrameX = clampedFactor === 1
+    ? geometry.frameX
+    : Math.round((safeWidth - spec.frameWidth * effectiveScale) / 2)
+  const effectiveFrameY = clampedFactor === 1
+    ? geometry.frameY
+    : Math.round((safeHeight - spec.frameHeight * effectiveScale) / 2)
+
   const svgImageSrc = useMemo(
     () => makeSvgImageDataUrl(getMockupSvg(mockup, browserChrome)),
     [mockup, browserChrome],
@@ -80,7 +105,7 @@ export function QuickDesignPreview({
           <ellipse cx={safeWidth * 0.6} cy={safeHeight * 0.38}
             rx={safeWidth * 0.46} ry={safeHeight * 0.48} fill={`url(#${glowId})`} />
           <g
-            transform={`translate(${geometry.frameX} ${geometry.frameY}) scale(${geometry.scale})`}
+            transform={`translate(${effectiveFrameX} ${effectiveFrameY}) scale(${effectiveScale})`}
             filter={`url(#${shadowId})`}
           >
             <rect x={screen.x} y={screen.y} width={screen.width} height={screen.height}

@@ -1,10 +1,10 @@
 /**
  * [INPUT]: depends on react, QuickDesignPreview from @/components/panels/QuickDesignPreview, QUICK_MOCKUPS/QUICK_SIZES/QUICK_THEMES from @/utils/quickDesign, browser chrome defaults from @/assets/mockups/browser, canvas utilities from ../canvasUtils, UI primitives from ../uiPrimitives, theme tokens from ../themeTokens, and strings from ../i18n
- * [OUTPUT]: exports MockupQuickTool component for instant above-the-fold screenshot beautification and Studio handoff
- * [POS]: primary mockup tool panel inside src/workspace/tools; reuses read-only QuickDesignPreview and quickDesign constants
+ * [OUTPUT]: exports MockupQuickTool component for instant above-the-fold screenshot beautification and full-style Studio handoff
+ * [POS]: primary mockup tool panel inside src/workspace/tools; reuses QuickDesignPreview and quickDesign constants
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useId, useMemo, useState } from 'react'
 import { DEFAULT_BROWSER_CHROME, isBrowserModel } from '@/assets/mockups/browser'
 import { QuickDesignPreview } from '@/components/panels/QuickDesignPreview'
 import type { BrowserChromeOptions } from '@/types'
@@ -26,7 +26,16 @@ import {
 import { getWorkspaceStrings } from '../i18n'
 import { getWorkspaceThemeTokens } from '../themeTokens'
 import type { WorkspaceImageInput, WorkspaceToolPanelProps } from '../types'
-import { DropZone, SegmentedControl, SliderField, StudioHandoffButton } from '../uiPrimitives'
+import {
+  DropZone,
+  PreviewBusyOverlay,
+  SegmentedControl,
+  SliderField,
+  StudioHandoffButton,
+} from '../uiPrimitives'
+
+const MIN_CANVAS_PX = 240
+const MAX_CANVAS_PX = 4096
 
 function resolveInitialMockup(model?: string): QuickMockup {
   const found = QUICK_MOCKUPS.find((item) => item.id === model)
@@ -40,6 +49,11 @@ function resolveInitialSize(sizeKey?: string): QuickSize {
   return 'wide'
 }
 
+function clampCanvasPx(value: number, fallback: number): number {
+  if (!Number.isFinite(value)) return fallback
+  return Math.max(MIN_CANVAS_PX, Math.min(MAX_CANVAS_PX, Math.round(value)))
+}
+
 export function MockupQuickTool({
   preset,
   locale,
@@ -50,6 +64,11 @@ export function MockupQuickTool({
   const s = getWorkspaceStrings(locale)
   const tokens = getWorkspaceThemeTokens(theme)
 
+  const widthInputId = useId()
+  const heightInputId = useId()
+  const browserTitleId = useId()
+  const browserUrlId = useId()
+
   const initialMockup = resolveInitialMockup(preset.mockupModel)
   const initialSize = resolveInitialSize(preset.canvasSize)
 
@@ -57,6 +76,8 @@ export function MockupQuickTool({
   const [sizeKey, setSizeKey] = useState<QuickSize>(initialSize)
   const [customWidth, setCustomWidth] = useState<number>(QUICK_SIZES[initialSize].width)
   const [customHeight, setCustomHeight] = useState<number>(QUICK_SIZES[initialSize].height)
+  const [widthDraft, setWidthDraft] = useState<string>(String(QUICK_SIZES[initialSize].width))
+  const [heightDraft, setHeightDraft] = useState<string>(String(QUICK_SIZES[initialSize].height))
   const [quickTheme, setQuickTheme] = useState<QuickTheme>('aurora')
   const [fit, setFit] = useState<QuickScreenshotFit>('cover')
   const [scalePercent, setScalePercent] = useState<number>(100)
@@ -79,9 +100,45 @@ export function MockupQuickTool({
   }, [mockup, browserTitle, browserAddress, quickTheme])
 
   const handleSizeSelect = (next: QuickSize) => {
+    const nextW = QUICK_SIZES[next].width
+    const nextH = QUICK_SIZES[next].height
     setSizeKey(next)
-    setCustomWidth(QUICK_SIZES[next].width)
-    setCustomHeight(QUICK_SIZES[next].height)
+    setCustomWidth(nextW)
+    setCustomHeight(nextH)
+    setWidthDraft(String(nextW))
+    setHeightDraft(String(nextH))
+  }
+
+  const handleWidthInputChange = (raw: string) => {
+    setWidthDraft(raw)
+    if (raw.trim() === '') return
+    const parsed = Number(raw)
+    if (Number.isFinite(parsed) && parsed >= MIN_CANVAS_PX && parsed <= MAX_CANVAS_PX) {
+      setCustomWidth(Math.round(parsed))
+    }
+  }
+
+  const handleWidthBlur = () => {
+    const parsed = widthDraft.trim() === '' ? Number.NaN : Number(widthDraft)
+    const committed = clampCanvasPx(parsed, customWidth)
+    setCustomWidth(committed)
+    setWidthDraft(String(committed))
+  }
+
+  const handleHeightInputChange = (raw: string) => {
+    setHeightDraft(raw)
+    if (raw.trim() === '') return
+    const parsed = Number(raw)
+    if (Number.isFinite(parsed) && parsed >= MIN_CANVAS_PX && parsed <= MAX_CANVAS_PX) {
+      setCustomHeight(Math.round(parsed))
+    }
+  }
+
+  const handleHeightBlur = () => {
+    const parsed = heightDraft.trim() === '' ? Number.NaN : Number(heightDraft)
+    const committed = clampCanvasPx(parsed, customHeight)
+    setCustomHeight(committed)
+    setHeightDraft(String(committed))
   }
 
   const handleFiles = useCallback(async (files: File[]) => {
@@ -92,9 +149,9 @@ export function MockupQuickTool({
       const loaded = await readFileAsImageInput(file)
       setScreenshot(loaded)
     } catch {
-      setExportError('Unable to read image file.')
+      setExportError(s.common.decodeError)
     }
-  }, [])
+  }, [s.common.decodeError])
 
   const handleLoadDemo = () => {
     setExportError(null)
@@ -118,7 +175,7 @@ export function MockupQuickTool({
       })
       triggerBlobDownload(output.blob, output.filename)
     } catch (err) {
-      setExportError(err instanceof Error ? err.message : 'Export failed')
+      setExportError(err instanceof Error && err.message ? err.message : s.common.exportError)
     } finally {
       setIsExporting(false)
     }
@@ -139,6 +196,10 @@ export function MockupQuickTool({
       mockupModel: mockup,
       slideWidth: customWidth,
       slideHeight: customHeight,
+      theme: quickTheme,
+      screenshotFit: fit,
+      scaleFactor: scalePercent / 100,
+      browserChrome,
     })
   }
 
@@ -159,13 +220,14 @@ export function MockupQuickTool({
             <button
               type="button"
               onClick={handleLoadDemo}
-              className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${tokens.buttonSecondary}`}
+              className={`min-h-8 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${tokens.focusRing} ${tokens.buttonSecondary}`}
             >
               {s.common.tryDemo}
             </button>
           </div>
 
-          <div className="rounded-xl bg-[#111119] p-1">
+          <div aria-busy={isExporting} className="relative rounded-xl bg-[#111119] p-1">
+            {isExporting && <PreviewBusyOverlay theme="dark" label={s.common.downloading} />}
             <QuickDesignPreview
               width={customWidth}
               height={customHeight}
@@ -173,6 +235,7 @@ export function MockupQuickTool({
               mockup={mockup}
               screenshotSrc={screenshot?.dataUrl}
               screenshotFit={fit}
+              scaleFactor={scalePercent / 100}
               browserChrome={browserChrome}
             />
           </div>
@@ -184,6 +247,7 @@ export function MockupQuickTool({
               title={s.common.dropTitle}
               hint={screenshot ? `${screenshot.name} (${screenshot.width}×${screenshot.height})` : s.common.dropHint}
               buttonLabel={s.mockup.replaceScreenshot}
+              invalidFileMessage={s.common.invalidFileError}
               onFiles={handleFiles}
             />
           </div>
@@ -215,24 +279,36 @@ export function MockupQuickTool({
           <div>
             <span className={`mb-1.5 block text-xs font-semibold ${tokens.textMuted}`}>{s.mockup.customSize}</span>
             <div className="grid grid-cols-2 gap-2">
-              <input
-                type="number"
-                aria-label="Canvas width"
-                min={240}
-                max={4096}
-                value={customWidth}
-                onChange={(e) => setCustomWidth(Math.max(240, Math.min(4096, Number(e.target.value) || 240)))}
-                className={`w-full rounded-lg border px-2.5 py-1.5 text-xs tabular-nums outline-none ${tokens.input}`}
-              />
-              <input
-                type="number"
-                aria-label="Canvas height"
-                min={240}
-                max={4096}
-                value={customHeight}
-                onChange={(e) => setCustomHeight(Math.max(240, Math.min(4096, Number(e.target.value) || 240)))}
-                className={`w-full rounded-lg border px-2.5 py-1.5 text-xs tabular-nums outline-none ${tokens.input}`}
-              />
+              <div>
+                <label htmlFor={widthInputId} className="sr-only">
+                  {s.mockup.canvasWidthLabel}
+                </label>
+                <input
+                  id={widthInputId}
+                  type="number"
+                  min={MIN_CANVAS_PX}
+                  max={MAX_CANVAS_PX}
+                  value={widthDraft}
+                  onChange={(e) => handleWidthInputChange(e.target.value)}
+                  onBlur={handleWidthBlur}
+                  className={`min-h-8 w-full rounded-lg border px-2.5 py-1.5 text-xs tabular-nums outline-none ${tokens.input}`}
+                />
+              </div>
+              <div>
+                <label htmlFor={heightInputId} className="sr-only">
+                  {s.mockup.canvasHeightLabel}
+                </label>
+                <input
+                  id={heightInputId}
+                  type="number"
+                  min={MIN_CANVAS_PX}
+                  max={MAX_CANVAS_PX}
+                  value={heightDraft}
+                  onChange={(e) => handleHeightInputChange(e.target.value)}
+                  onBlur={handleHeightBlur}
+                  className={`min-h-8 w-full rounded-lg border px-2.5 py-1.5 text-xs tabular-nums outline-none ${tokens.input}`}
+                />
+              </div>
             </div>
           </div>
 
@@ -248,7 +324,7 @@ export function MockupQuickTool({
                     type="button"
                     aria-pressed={active}
                     onClick={() => setQuickTheme(key)}
-                    className={`flex items-center gap-2 rounded-xl border px-2.5 py-2 text-left text-xs font-medium transition-all ${
+                    className={`flex min-h-9 items-center gap-2 rounded-xl border px-2.5 py-2 text-left text-xs font-medium transition-all ${tokens.focusRing} ${
                       active ? tokens.pillActive : tokens.pillIdle
                     }`}
                   >
@@ -257,7 +333,7 @@ export function MockupQuickTool({
                       style={{ background: `linear-gradient(135deg, ${palette.top}, ${palette.bottom})` }}
                       aria-hidden="true"
                     />
-                    <span className="truncate">{palette.label}</span>
+                    <span className="truncate">{s.mockup.themes[key]}</span>
                   </button>
                 )
               })}
@@ -289,25 +365,27 @@ export function MockupQuickTool({
           {isBrowserModel(mockup) && (
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <div>
-                <label className={`mb-1 block text-[11px] font-semibold ${tokens.textMuted}`}>
+                <label htmlFor={browserTitleId} className={`mb-1 block text-[11px] font-semibold ${tokens.textMuted}`}>
                   {s.mockup.browserTitle}
                 </label>
                 <input
+                  id={browserTitleId}
                   type="text"
                   value={browserTitle}
                   onChange={(e) => setBrowserTitle(e.target.value)}
-                  className={`w-full rounded-lg border px-2.5 py-1.5 text-xs outline-none ${tokens.input}`}
+                  className={`min-h-8 w-full rounded-lg border px-2.5 py-1.5 text-xs outline-none ${tokens.input}`}
                 />
               </div>
               <div>
-                <label className={`mb-1 block text-[11px] font-semibold ${tokens.textMuted}`}>
+                <label htmlFor={browserUrlId} className={`mb-1 block text-[11px] font-semibold ${tokens.textMuted}`}>
                   {s.mockup.browserUrl}
                 </label>
                 <input
+                  id={browserUrlId}
                   type="text"
                   value={browserAddress}
                   onChange={(e) => setBrowserAddress(e.target.value)}
-                  className={`w-full rounded-lg border px-2.5 py-1.5 text-xs outline-none ${tokens.input}`}
+                  className={`min-h-8 w-full rounded-lg border px-2.5 py-1.5 text-xs outline-none ${tokens.input}`}
                 />
               </div>
             </div>
@@ -316,7 +394,7 @@ export function MockupQuickTool({
 
         <div className="space-y-2.5 border-t pt-4 border-current/10">
           {exportError && (
-            <p role="alert" className="text-xs font-medium text-rose-500">
+            <p role="alert" className={`text-xs font-medium ${tokens.errorText}`}>
               {exportError}
             </p>
           )}
@@ -325,7 +403,7 @@ export function MockupQuickTool({
               type="button"
               disabled={isExporting}
               onClick={handleDownloadPng}
-              className={`inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-xs font-semibold transition-colors disabled:opacity-50 ${tokens.buttonPrimary}`}
+              className={`inline-flex min-h-9 items-center justify-center rounded-xl px-4 py-2.5 text-xs font-semibold transition-colors disabled:opacity-50 ${tokens.focusRing} ${tokens.buttonPrimary}`}
             >
               {isExporting ? s.common.downloading : s.common.downloadPng}
             </button>
@@ -335,9 +413,9 @@ export function MockupQuickTool({
             <button
               type="button"
               onClick={onOpenProModal}
-              className={`flex w-full items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${tokens.buttonPro}`}
+              className={`flex min-h-9 w-full items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${tokens.focusRing} ${tokens.buttonPro}`}
             >
-              <span>✦</span>
+              <span aria-hidden="true">✦</span>
               <span>{s.common.proBatchCta}</span>
             </button>
           )}

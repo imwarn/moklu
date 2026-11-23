@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on ResolvedTheme from @/theme/themeStore
- * [OUTPUT]: exports dependency-inverted workspace contracts (WorkspaceToolId, WorkspacePreset, WorkspaceLocale, WorkspaceEngines, StudioHandoffPayload, QuickWorkspaceProps)
+ * [OUTPUT]: exports dependency-inverted workspace contracts (WorkspaceToolId, WorkspacePreset, WorkspaceLocale, WorkspaceEngines, WorkspaceQuickTheme, WorkspaceScreenshotFit, WorkspaceBrowserChromeOptions, StudioHandoffPayload, QuickWorkspaceProps)
  * [POS]: contract layer of src/workspace; isolates all UI panels from concrete image processing engines in src/tools and routing in src/seo
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -31,12 +31,27 @@ export interface StudioHandoffImage {
   height: number
 }
 
+export type WorkspaceQuickTheme = 'aurora' | 'midnight' | 'warm'
+
+export type WorkspaceScreenshotFit = 'cover' | 'contain' | 'fill'
+
+export interface WorkspaceBrowserChromeOptions {
+  title?: string
+  address?: string
+  theme?: 'light' | 'dark'
+  showAddressBar?: boolean
+}
+
 export interface StudioHandoffPayload {
   images: StudioHandoffImage[]
   mode?: 'mockup' | 'canvas' | 'carousel'
   mockupModel?: string
   slideWidth?: number
   slideHeight?: number
+  theme?: WorkspaceQuickTheme
+  screenshotFit?: WorkspaceScreenshotFit
+  scaleFactor?: number
+  browserChrome?: WorkspaceBrowserChromeOptions
 }
 
 export interface WorkspaceImageInput {

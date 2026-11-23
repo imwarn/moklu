@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on react, canvasUtils from ../canvasUtils, strings from ../i18n, themeTokens from ../themeTokens, UI primitives from ../uiPrimitives, and WorkspaceToolPanelProps from ../types
- * [OUTPUT]: exports SplitQuickTool component for carousel panorama splitting and grid matrix slicing with interactive cut-line overlays
+ * [INPUT]: depends on react, canvasUtils from ../canvasUtils, strings from ../i18n, themeTokens from ../themeTokens, UI primitives from ../uiPrimitives, useDebouncedValue from ../useDebouncedValue, and WorkspaceToolPanelProps from ../types
+ * [OUTPUT]: exports SplitQuickTool component for carousel panorama splitting and grid matrix slicing with interactive cut-line overlays, debounced slicing, and error-handled ZIP export
  * [POS]: carousel and grid splitter panel inside src/workspace/tools; delegates slice rendering and ZIP export to injected engines.split
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -14,7 +14,14 @@ import type {
   WorkspaceSplitResult,
   WorkspaceToolPanelProps,
 } from '../types'
-import { DropZone, SegmentedControl, SliderField, StudioHandoffButton } from '../uiPrimitives'
+import {
+  DropZone,
+  PreviewBusyOverlay,
+  SegmentedControl,
+  SliderField,
+  StudioHandoffButton,
+} from '../uiPrimitives'
+import { useDebouncedValue } from '../useDebouncedValue'
 
 export function SplitQuickTool({
   preset,
@@ -34,7 +41,17 @@ export function SplitQuickTool({
   const [cols, setCols] = useState<number>(3)
   const [result, setResult] = useState<WorkspaceSplitResult | null>(null)
   const [processing, setProcessing] = useState(false)
+  const [zipping, setZipping] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const debouncedCarouselCount = useDebouncedValue(carouselCount)
+  const debouncedRows = useDebouncedValue(rows)
+  const debouncedCols = useDebouncedValue(cols)
+
+  const hasPendingParams =
+    Boolean(source) &&
+    (debouncedCarouselCount !== carouselCount || debouncedRows !== rows || debouncedCols !== cols)
+  const isBusy = processing || hasPendingParams
 
   const handleFiles = useCallback(async (files: File[]) => {
     const file = files[0]
@@ -44,9 +61,9 @@ export function SplitQuickTool({
       const loaded = await readFileAsImageInput(file)
       setSource(loaded)
     } catch {
-      setError('Unable to decode image.')
+      setError(s.common.decodeError)
     }
-  }, [])
+  }, [s.common.decodeError])
 
   const handleLoadDemo = () => {
     setError(null)
@@ -62,16 +79,16 @@ export function SplitQuickTool({
       try {
         const splitRes = await engines.split(source, {
           mode,
-          carouselCount,
+          carouselCount: debouncedCarouselCount,
           carouselAspect,
-          rows,
-          cols,
+          rows: debouncedRows,
+          cols: debouncedCols,
           format: 'image/png',
           quality: 0.94,
         })
         if (!cancelled) setResult(splitRes)
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Split failed')
+        if (!cancelled) setError(err instanceof Error && err.message ? err.message : s.split.splitError)
       } finally {
         if (!cancelled) setProcessing(false)
       }
@@ -80,17 +97,25 @@ export function SplitQuickTool({
     return () => {
       cancelled = true
     }
-  }, [source, mode, carouselCount, carouselAspect, rows, cols, engines])
+  }, [source, mode, debouncedCarouselCount, carouselAspect, debouncedRows, debouncedCols, engines, s.split.splitError])
 
   const activeResult = source ? result : null
   const guideCols = mode === 'carousel' ? carouselCount : cols
   const guideRows = mode === 'carousel' ? 1 : rows
 
   const handleDownloadZip = async () => {
-    if (!activeResult) return
-    const zipBlob = activeResult.zipBlob
-      ?? (await engines.packZip(activeResult.slices.map((sl) => ({ filename: sl.filename, blob: sl.blob }))))
-    triggerBlobDownload(zipBlob, `moklu-split-${mode}-${activeResult.slices.length}.zip`)
+    if (!activeResult || zipping) return
+    setZipping(true)
+    setError(null)
+    try {
+      const zipBlob = activeResult.zipBlob
+        ?? (await engines.packZip(activeResult.slices.map((sl) => ({ filename: sl.filename, blob: sl.blob }))))
+      triggerBlobDownload(zipBlob, `moklu-split-${mode}-${activeResult.slices.length}.zip`)
+    } catch (err) {
+      setError(err instanceof Error && err.message ? err.message : s.common.zipError)
+    } finally {
+      setZipping(false)
+    }
   }
 
   const handleOpenInStudio = () => {
@@ -121,18 +146,22 @@ export function SplitQuickTool({
             <button
               type="button"
               onClick={handleLoadDemo}
-              className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${tokens.buttonSecondary}`}
+              className={`min-h-8 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${tokens.focusRing} ${tokens.buttonSecondary}`}
             >
               {s.common.tryDemo}
             </button>
           </div>
 
-          <div className={`flex min-h-[220px] flex-col items-center justify-center overflow-hidden rounded-xl border p-3 ${tokens.cardMuted}`}>
+          <div
+            aria-busy={isBusy}
+            className={`relative flex min-h-[220px] flex-col items-center justify-center overflow-hidden rounded-xl border p-3 ${tokens.cardMuted}`}
+          >
+            {isBusy && <PreviewBusyOverlay theme={theme} label={s.common.processing} />}
             {source ? (
               <div className="relative inline-block max-w-full overflow-hidden rounded-lg shadow-sm">
                 <img
                   src={source.dataUrl}
-                  alt="Split cut-line preview"
+                  alt={s.split.previewAlt}
                   className="block max-h-[260px] max-w-full object-contain"
                 />
                 {/* Interactive cut-line overlay */}
@@ -147,9 +176,9 @@ export function SplitQuickTool({
                   {Array.from({ length: guideCols * guideRows }).map((_, idx) => (
                     <div
                       key={idx}
-                      className="flex items-start justify-start border border-dashed border-white/85 bg-indigo-500/5 p-1"
+                      className="flex items-start justify-start border border-dashed border-white/85 bg-violet-500/5 p-1"
                     >
-                      <span className="rounded bg-slate-900/75 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-white">
+                      <span className="rounded bg-zinc-900/80 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-white">
                         {idx + 1}
                       </span>
                     </div>
@@ -188,8 +217,9 @@ export function SplitQuickTool({
                       </span>
                       <button
                         type="button"
+                        aria-label={`${s.split.downloadSlice}: ${slice.filename}`}
                         onClick={() => triggerBlobDownload(slice.blob, slice.filename)}
-                        className="rounded bg-indigo-600/10 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-600 hover:bg-indigo-600/20"
+                        className={`inline-flex min-h-7 items-center justify-center rounded-md px-2 py-1 text-[11px] font-semibold transition-colors ${tokens.focusRing} ${tokens.accentChip}`}
                       >
                         {s.split.downloadSlice}
                       </button>
@@ -207,6 +237,7 @@ export function SplitQuickTool({
               title={s.common.dropTitle}
               hint={s.common.dropHint}
               buttonLabel={s.common.chooseFiles}
+              invalidFileMessage={s.common.invalidFileError}
               onFiles={handleFiles}
             />
           </div>
@@ -245,7 +276,7 @@ export function SplitQuickTool({
                   { value: '4:5', label: '4:5' },
                   { value: '3:4', label: '3:4' },
                   { value: '1:1', label: '1:1' },
-                  { value: 'auto', label: 'Auto' },
+                  { value: 'auto', label: s.common.auto },
                 ]}
                 onChange={setCarouselAspect}
               />
@@ -255,11 +286,12 @@ export function SplitQuickTool({
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
+                  aria-pressed={rows === 3 && cols === 3}
                   onClick={() => {
                     setRows(3)
                     setCols(3)
                   }}
-                  className={`rounded-lg border px-2.5 py-1.5 text-xs font-medium ${
+                  className={`min-h-8 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors ${tokens.focusRing} ${
                     rows === 3 && cols === 3 ? tokens.pillActive : tokens.pillIdle
                   }`}
                 >
@@ -267,11 +299,12 @@ export function SplitQuickTool({
                 </button>
                 <button
                   type="button"
+                  aria-pressed={rows === 2 && cols === 2}
                   onClick={() => {
                     setRows(2)
                     setCols(2)
                   }}
-                  className={`rounded-lg border px-2.5 py-1.5 text-xs font-medium ${
+                  className={`min-h-8 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors ${tokens.focusRing} ${
                     rows === 2 && cols === 2 ? tokens.pillActive : tokens.pillIdle
                   }`}
                 >
@@ -286,18 +319,18 @@ export function SplitQuickTool({
 
         <div className="space-y-2 border-t pt-4 border-current/10">
           {error && (
-            <p role="alert" className="text-xs font-medium text-rose-500">
+            <p role="alert" className={`text-xs font-medium ${tokens.errorText}`}>
               {error}
             </p>
           )}
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <button
               type="button"
-              disabled={!activeResult || processing}
+              disabled={!activeResult || isBusy || zipping}
               onClick={handleDownloadZip}
-              className={`inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-xs font-semibold transition-colors disabled:opacity-50 ${tokens.buttonPrimary}`}
+              className={`inline-flex min-h-9 items-center justify-center rounded-xl px-4 py-2.5 text-xs font-semibold transition-colors disabled:opacity-50 ${tokens.focusRing} ${tokens.buttonPrimary}`}
             >
-              {processing ? s.common.processing : s.common.downloadZip}
+              {zipping ? s.common.downloading : isBusy ? s.common.processing : s.common.downloadZip}
             </button>
             <StudioHandoffButton
               theme={theme}

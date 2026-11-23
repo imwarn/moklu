@@ -1,10 +1,10 @@
 /**
- * [INPUT]: depends on react, canvasUtils from ../canvasUtils, strings from ../i18n, themeTokens from ../themeTokens, UI primitives from ../uiPrimitives, and WorkspaceToolPanelProps from ../types
- * [OUTPUT]: exports IdCardQuickTool component for offline A4 front+back ID card sheet layout and anti-fraud watermarking
+ * [INPUT]: depends on react, canvasUtils from ../canvasUtils, strings from ../i18n, themeTokens from ../themeTokens, UI primitives from ../uiPrimitives, useDebouncedValue from ../useDebouncedValue, and WorkspaceToolPanelProps from ../types
+ * [OUTPUT]: exports IdCardQuickTool component for offline A4 front+back ID card sheet layout and debounced anti-fraud watermarking
  * [POS]: privacy-first ID card watermark tool panel inside src/workspace/tools; delegates A4 rendering to injected engines.idCard
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import { createDemoImageInput, formatBytes, readFileAsImageInput, triggerBlobDownload } from '../canvasUtils'
 import { getWorkspaceStrings } from '../i18n'
 import { getWorkspaceThemeTokens } from '../themeTokens'
@@ -14,14 +14,8 @@ import type {
   WorkspaceImageInput,
   WorkspaceToolPanelProps,
 } from '../types'
-import { ColorSwatchRow, DropZone, SegmentedControl, SliderField } from '../uiPrimitives'
-
-const INK_SWATCHES = [
-  { label: 'Slate Gray', value: '#334155' },
-  { label: 'Security Red', value: '#b91c1c' },
-  { label: 'Navy Blue', value: '#1d4ed8' },
-  { label: 'Charcoal', value: '#0f172a' },
-]
+import { ColorSwatchRow, DropZone, PreviewBusyOverlay, SegmentedControl, SliderField } from '../uiPrimitives'
+import { useDebouncedValue } from '../useDebouncedValue'
 
 export function IdCardQuickTool({
   locale,
@@ -30,10 +24,22 @@ export function IdCardQuickTool({
 }: WorkspaceToolPanelProps) {
   const s = getWorkspaceStrings(locale)
   const tokens = getWorkspaceThemeTokens(theme)
+  const watermarkInputId = useId()
+
+  const inkSwatches = useMemo(
+    () => [
+      { label: s.swatches.slateGray, value: '#334155' },
+      { label: s.swatches.securityRed, value: '#b91c1c' },
+      { label: s.swatches.navyBlue, value: '#1d4ed8' },
+      { label: s.swatches.charcoal, value: '#0f172a' },
+    ],
+    [s.swatches],
+  )
 
   const [front, setFront] = useState<WorkspaceImageInput | null>(null)
   const [back, setBack] = useState<WorkspaceImageInput | null>(null)
-  const [watermarkText, setWatermarkText] = useState<string>(s.idCard.defaultWatermark)
+  // Keep null until manually edited so switching UI locale updates the default watermark without remounting.
+  const [customWatermark, setCustomWatermark] = useState<string | null>(null)
   const [watermarkMode, setWatermarkMode] = useState<WorkspaceIdCardOptions['watermarkMode']>('tiled')
   const [opacityPercent, setOpacityPercent] = useState<number>(28)
   const [angle, setAngle] = useState<number>(-30)
@@ -45,6 +51,22 @@ export function IdCardQuickTool({
   const [rendering, setRendering] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const watermarkText = customWatermark ?? s.idCard.defaultWatermark
+
+  const debouncedWatermarkText = useDebouncedValue(watermarkText)
+  const debouncedOpacityPercent = useDebouncedValue(opacityPercent)
+  const debouncedAngle = useDebouncedValue(angle)
+  const debouncedFontSize = useDebouncedValue(fontSize)
+
+  const hasCards = Boolean(front || back)
+  const hasPendingParams =
+    hasCards &&
+    (debouncedWatermarkText !== watermarkText ||
+      debouncedOpacityPercent !== opacityPercent ||
+      debouncedAngle !== angle ||
+      debouncedFontSize !== fontSize)
+  const isBusy = rendering || hasPendingParams
+
   const handleFrontFiles = useCallback(async (files: File[]) => {
     const file = files[0]
     if (!file) return
@@ -52,9 +74,9 @@ export function IdCardQuickTool({
     try {
       setFront(await readFileAsImageInput(file))
     } catch {
-      setError('Unable to decode front ID image.')
+      setError(s.idCard.frontDecodeError)
     }
-  }, [])
+  }, [s.idCard.frontDecodeError])
 
   const handleBackFiles = useCallback(async (files: File[]) => {
     const file = files[0]
@@ -63,17 +85,15 @@ export function IdCardQuickTool({
     try {
       setBack(await readFileAsImageInput(file))
     } catch {
-      setError('Unable to decode back ID image.')
+      setError(s.idCard.backDecodeError)
     }
-  }, [])
+  }, [s.idCard.backDecodeError])
 
   const handleLoadSample = () => {
     setError(null)
     setFront(createDemoImageInput('id-front', 'sample-id-front.svg'))
     setBack(createDemoImageInput('id-back', 'sample-id-back.svg'))
   }
-
-  const hasCards = Boolean(front || back)
 
   useEffect(() => {
     if (!front && !back) return
@@ -85,16 +105,16 @@ export function IdCardQuickTool({
         const output = await engines.idCard(front, back, {
           dpi: dpi === '300' ? 300 : 150,
           grayscale,
-          watermarkText,
-          watermarkOpacity: opacityPercent / 100,
+          watermarkText: debouncedWatermarkText,
+          watermarkOpacity: debouncedOpacityPercent / 100,
           watermarkColor: color,
-          watermarkFontSize: fontSize,
-          watermarkAngle: angle,
+          watermarkFontSize: debouncedFontSize,
+          watermarkAngle: debouncedAngle,
           watermarkMode,
         })
         if (!cancelled) setSheet(output)
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'A4 sheet rendering failed')
+        if (!cancelled) setError(err instanceof Error && err.message ? err.message : s.idCard.renderError)
       } finally {
         if (!cancelled) setRendering(false)
       }
@@ -103,7 +123,20 @@ export function IdCardQuickTool({
     return () => {
       cancelled = true
     }
-  }, [front, back, dpi, grayscale, watermarkText, opacityPercent, color, fontSize, angle, watermarkMode, engines])
+  }, [
+    front,
+    back,
+    dpi,
+    grayscale,
+    debouncedWatermarkText,
+    debouncedOpacityPercent,
+    color,
+    debouncedFontSize,
+    debouncedAngle,
+    watermarkMode,
+    engines,
+    s.idCard.renderError,
+  ])
 
   const activeSheet = hasCards ? sheet : null
 
@@ -126,7 +159,7 @@ export function IdCardQuickTool({
         <button
           type="button"
           onClick={handleLoadSample}
-          className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${tokens.buttonSecondary}`}
+          className={`min-h-8 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${tokens.focusRing} ${tokens.buttonSecondary}`}
         >
           {s.idCard.loadSampleId}
         </button>
@@ -143,7 +176,7 @@ export function IdCardQuickTool({
                   <button
                     type="button"
                     onClick={() => setFront(null)}
-                    className="text-[11px] font-medium text-rose-500 hover:underline"
+                    className={`inline-flex min-h-7 items-center rounded-md px-2 text-xs font-medium hover:underline ${tokens.focusRing} ${tokens.errorText}`}
                   >
                     {s.common.remove}
                   </button>
@@ -161,8 +194,9 @@ export function IdCardQuickTool({
                 compact
                 enablePaste={false}
                 title={s.idCard.uploadFront}
-                hint={front ? front.name : 'ID-1 · 85.6 × 54 mm'}
+                hint={front ? front.name : s.idCard.cardSizeHint}
                 buttonLabel={s.idCard.uploadFront}
+                invalidFileMessage={s.common.invalidFileError}
                 onFiles={handleFrontFiles}
               />
             </div>
@@ -174,7 +208,7 @@ export function IdCardQuickTool({
                   <button
                     type="button"
                     onClick={() => setBack(null)}
-                    className="text-[11px] font-medium text-rose-500 hover:underline"
+                    className={`inline-flex min-h-7 items-center rounded-md px-2 text-xs font-medium hover:underline ${tokens.focusRing} ${tokens.errorText}`}
                   >
                     {s.common.remove}
                   </button>
@@ -192,8 +226,9 @@ export function IdCardQuickTool({
                 compact
                 enablePaste={false}
                 title={s.idCard.uploadBack}
-                hint={back ? back.name : 'ID-1 · 85.6 × 54 mm'}
+                hint={back ? back.name : s.idCard.cardSizeHint}
                 buttonLabel={s.idCard.uploadBack}
+                invalidFileMessage={s.common.invalidFileError}
                 onFiles={handleBackFiles}
               />
             </div>
@@ -210,12 +245,16 @@ export function IdCardQuickTool({
                 </span>
               )}
             </div>
-            <div className={`flex min-h-[260px] items-center justify-center rounded-xl border p-3 ${tokens.cardMuted}`}>
+            <div
+              aria-busy={isBusy}
+              className={`relative flex min-h-[260px] items-center justify-center rounded-xl border p-3 ${tokens.cardMuted}`}
+            >
+              {isBusy && <PreviewBusyOverlay theme={theme} label={s.common.processing} />}
               {activeSheet ? (
                 <img
                   src={activeSheet.dataUrl}
-                  alt="A4 ID card print preview"
-                  className="max-h-[380px] rounded border border-slate-300 bg-white object-contain shadow-md"
+                  alt={s.idCard.previewAlt}
+                  className="max-h-[380px] rounded border border-zinc-300 bg-white object-contain shadow-md"
                 />
               ) : (
                 <p className={`text-xs ${tokens.textSubtle}`}>{s.common.emptyPreview}</p>
@@ -228,15 +267,16 @@ export function IdCardQuickTool({
         <div className={`flex flex-col justify-between gap-5 rounded-2xl border p-5 lg:col-span-5 ${tokens.card}`}>
           <div className="space-y-4">
             <div>
-              <label className={`mb-1.5 block text-xs font-semibold ${tokens.textMuted}`}>
+              <label htmlFor={watermarkInputId} className={`mb-1.5 block text-xs font-semibold ${tokens.textMuted}`}>
                 {s.idCard.watermarkLabel}
               </label>
               <input
+                id={watermarkInputId}
                 type="text"
                 value={watermarkText}
-                onChange={(e) => setWatermarkText(e.target.value)}
+                onChange={(e) => setCustomWatermark(e.target.value)}
                 placeholder={s.idCard.defaultWatermark}
-                className={`w-full rounded-lg border px-3 py-2 text-xs outline-none ${tokens.input}`}
+                className={`min-h-8 w-full rounded-lg border px-3 py-2 text-xs outline-none ${tokens.input}`}
               />
             </div>
 
@@ -283,7 +323,7 @@ export function IdCardQuickTool({
               theme={theme}
               label={s.idCard.color}
               value={color}
-              options={INK_SWATCHES}
+              options={inkSwatches}
               onChange={setColor}
             />
 
@@ -292,8 +332,8 @@ export function IdCardQuickTool({
               label={s.idCard.dpiLabel}
               value={dpi}
               options={[
-                { value: '300', label: '300 DPI · Print' },
-                { value: '150', label: '150 DPI · Fast' },
+                { value: '300', label: s.idCard.dpi300 },
+                { value: '150', label: s.idCard.dpi150 },
               ]}
               onChange={setDpi}
             />
@@ -303,7 +343,7 @@ export function IdCardQuickTool({
                 type="checkbox"
                 checked={grayscale}
                 onChange={(e) => setGrayscale(e.target.checked)}
-                className="h-3.5 w-3.5 accent-indigo-600"
+                className={`h-4 w-4 accent-violet-600 ${tokens.focusRing}`}
               />
               {s.idCard.grayscaleLabel}
             </label>
@@ -311,17 +351,17 @@ export function IdCardQuickTool({
 
           <div className="space-y-2 border-t pt-4 border-current/10">
             {error && (
-              <p role="alert" className="text-xs font-medium text-rose-500">
+              <p role="alert" className={`text-xs font-medium ${tokens.errorText}`}>
                 {error}
               </p>
             )}
             <button
               type="button"
-              disabled={!activeSheet || rendering}
+              disabled={!activeSheet || isBusy}
               onClick={() => activeSheet && triggerBlobDownload(activeSheet.blob, activeSheet.filename)}
-              className={`inline-flex w-full items-center justify-center rounded-xl px-4 py-2.5 text-xs font-semibold transition-colors disabled:opacity-50 ${tokens.buttonPrimary}`}
+              className={`inline-flex min-h-9 w-full items-center justify-center rounded-xl px-4 py-2.5 text-xs font-semibold transition-colors disabled:opacity-50 ${tokens.focusRing} ${tokens.buttonPrimary}`}
             >
-              {rendering ? s.common.processing : s.idCard.downloadA4}
+              {isBusy ? s.common.processing : s.idCard.downloadA4}
             </button>
           </div>
         </div>
