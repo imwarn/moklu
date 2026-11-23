@@ -52,17 +52,17 @@ export function ImageOverrideCell({
       <div
         className="min-h-[80px] h-full rounded-xl border px-3 py-3 mb-3"
         style={{
-          borderColor: isActiveColumn ? 'rgba(124,110,246,0.45)' : 'rgba(255,255,255,0.08)',
-          background: isActiveColumn ? 'rgba(124,110,246,0.08)' : 'rgba(255,255,255,0.02)',
+          borderColor: isActiveColumn ? 'color-mix(in srgb, var(--color-accent) 45%, transparent)' : 'rgba(255,255,255,0.08)',
+          background: isActiveColumn ? 'color-mix(in srgb, var(--color-accent) 8%, transparent)' : 'rgba(255,255,255,0.02)',
         }}
       >
         {previewSrc ? (
           <div className="flex items-center gap-3">
             <img src={previewSrc} alt={tl.baseImageAlt} className="h-12 w-9 rounded-lg border border-white/10 object-cover shrink-0" />
             <div className="min-w-0 flex-1">
-              <div className="truncate text-xs text-[#ecebfa]">{getFileLabel(row.defaultImageRef, fileLabels)}</div>
+              <div className="truncate text-xs text-[#f4f4f5]">{getFileLabel(row.defaultImageRef, fileLabels)}</div>
               <div className="mt-1.5 flex items-center justify-between gap-2">
-                <button type="button" onClick={onUpload} className="text-[10px] text-[#9d90f8] hover:text-white transition">
+                <button type="button" onClick={onUpload} className="text-[10px] text-accent-text hover:text-white transition">
                   {tl.change}
                 </button>
                 <span className="text-[10px] text-[#6b6b7a]">{tl.baseImage}</span>
@@ -74,7 +74,7 @@ export function ImageOverrideCell({
             <button
               type="button"
               onClick={onUpload}
-              className="rounded-lg border border-[rgba(124,110,246,0.4)] bg-[rgba(124,110,246,0.1)] px-3 py-1.5 text-xs font-medium text-[#c5befd] transition hover:bg-[rgba(124,110,246,0.2)]"
+              className="rounded-lg border border-accent/40 bg-accent-soft px-3 py-1.5 text-xs font-medium text-accent-text transition hover:bg-accent/20"
             >
               {tl.upload}
             </button>
@@ -98,11 +98,11 @@ export function ImageOverrideCell({
       className="min-h-[128px] h-full rounded-xl border px-3 py-3 mb-3"
       style={{
         borderColor: previewSrc
-          ? isActiveColumn ? '#7c6ef6' : 'rgba(124,110,246,0.45)'
-          : isActiveColumn ? 'rgba(124,110,246,0.4)' : 'rgba(255,255,255,0.14)',
+          ? isActiveColumn ? 'var(--color-accent)' : 'color-mix(in srgb, var(--color-accent) 45%, transparent)'
+          : isActiveColumn ? 'color-mix(in srgb, var(--color-accent) 40%, transparent)' : 'rgba(255,255,255,0.14)',
         background: previewSrc
-          ? isActiveColumn ? 'rgba(124,110,246,0.12)' : 'rgba(124,110,246,0.06)'
-          : isActiveColumn ? 'rgba(124,110,246,0.06)' : 'rgba(255,255,255,0.015)',
+          ? isActiveColumn ? 'color-mix(in srgb, var(--color-accent) 12%, transparent)' : 'color-mix(in srgb, var(--color-accent) 6%, transparent)'
+          : isActiveColumn ? 'color-mix(in srgb, var(--color-accent) 6%, transparent)' : 'rgba(255,255,255,0.015)',
       }}
     >
       {previewSrc ? (
@@ -113,13 +113,13 @@ export function ImageOverrideCell({
             className="h-12 w-9 rounded-lg border border-white/10 object-cover shrink-0"
           />
           <div className="min-w-0 flex-1">
-            <div className="truncate text-xs text-[#ecebfa]">
+            <div className="truncate text-xs text-[#f4f4f5]">
               {row.layerType === 'phone'
                 ? getFileLabel(override?.screenshotPath ?? override?.screenshotDataUrl, fileLabels)
                 : getFileLabel(override?.src, fileLabels)}
             </div>
             <div className="flex gap-2 mt-1.5">
-              <button type="button" onClick={onUpload} className="text-[10px] text-[#9d90f8] hover:text-white transition">
+              <button type="button" onClick={onUpload} className="text-[10px] text-accent-text hover:text-white transition">
                 {tl.change}
               </button>
               <button type="button" onClick={onClear} className="text-[10px] text-[#f87171] hover:text-white transition">
@@ -133,7 +133,7 @@ export function ImageOverrideCell({
           <button
             type="button"
             onClick={onUpload}
-            className="rounded-lg border border-[rgba(124,110,246,0.4)] bg-[rgba(124,110,246,0.1)] px-3 py-1.5 text-xs font-medium text-[#c5befd] transition hover:bg-[rgba(124,110,246,0.2)]"
+            className="rounded-lg border border-accent/40 bg-accent-soft px-3 py-1.5 text-xs font-medium text-accent-text transition hover:bg-accent/20"
           >
             {tl.upload}
           </button>

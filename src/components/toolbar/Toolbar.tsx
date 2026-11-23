@@ -169,8 +169,8 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
     <header
       className="flex h-12 shrink-0 items-center gap-2 border-b px-3 max-[1099px]:gap-2 max-[1099px]:px-2"
       style={{
-        background: '#18181f',
-        borderColor: 'rgba(255,255,255,0.08)',
+        background: 'var(--color-panel)',
+        borderColor: 'var(--color-border)',
       }}
     >
       {/* Lightweight Studio modals are bundled inside lazy StudioPage; HelpModal stays gated & resilient */}
@@ -234,7 +234,7 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
               if (e.key === 'Enter') commitName()
               if (e.key === 'Escape') cancelName()
             }}
-            className="w-40 shrink-0 rounded-[5px] border border-[#7c6ef6]/60 bg-white/[0.07] px-2 py-[3px] text-xs text-[#e8e8f0] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#7c6ef6]"
+            className="w-40 shrink-0 rounded-[5px] border border-accent/60 bg-white/[0.07] px-2 py-[3px] text-xs text-[#e8e8f0] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
           />
         ) : (
           <button
@@ -264,7 +264,7 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
           onClick={() => setQuickOpen(true)}
           title={t.toolbar.quickDesignTitle}
           aria-label={t.toolbar.quickDesignAria}
-          className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-[#8276e8]/60 bg-[#8276e8]/20 px-3 py-1.5 text-xs font-semibold text-[#d6d1ff] transition-colors hover:bg-[#8276e8]/30"
+          className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-accent/50 bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent-text transition-colors hover:bg-accent/20"
         >
           <span aria-hidden="true">✦</span>
           <span>{t.toolbar.quickDesign}</span>
@@ -366,7 +366,7 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
               type="button"
               onClick={() => createGroup(selectedLayerIds)}
               title={t.toolbar.groupLayersTitle}
-              className="inline-flex items-center gap-1 rounded border border-[rgba(124,110,246,0.5)] bg-[rgba(124,110,246,0.15)] px-2.5 py-1 text-xs text-[#e8e8f0] transition-colors hover:bg-[rgba(124,110,246,0.25)]"
+              className="inline-flex items-center gap-1 rounded border border-accent/50 bg-accent/15 px-2.5 py-1 text-xs text-[#e8e8f0] transition-colors hover:bg-accent/25"
             >
               <span aria-hidden="true">⊞</span>
               <span>{t.toolbar.groupLayers} ({selectedLayerIds.length})</span>
@@ -435,7 +435,7 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
                     }}
                     className={`flex items-center justify-between rounded-md px-2.5 py-1.5 text-xs transition-colors ${
                       active
-                        ? 'bg-[rgba(124,110,246,0.24)] font-medium text-[#d8d1ff]'
+                        ? 'bg-accent-soft font-medium text-accent-text'
                         : 'text-[#c2c2d0] hover:bg-white/5 hover:text-white'
                     }`}
                   >
@@ -467,7 +467,7 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
           aria-pressed={mode === 'localization'}
           className={`rounded border px-3 py-1.5 text-xs transition-colors ${
             mode === 'localization'
-              ? 'border-[rgba(124,110,246,0.45)] bg-[rgba(124,110,246,0.22)] text-white'
+              ? 'border-accent/50 bg-accent-soft text-white'
               : 'border-[rgba(255,255,255,0.1)] text-[#e8e8f0] hover:border-[rgba(255,255,255,0.2)] hover:bg-[rgba(255,255,255,0.05)]'
           }`}
         >

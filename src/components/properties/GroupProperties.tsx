@@ -31,9 +31,9 @@ export function GroupProperties({ layer }: { layer: GroupLayer }) {
   return (
     <div className="space-y-4">
       {/* Enter hint */}
-      <div className="rounded-xl border border-[rgba(124,110,246,0.25)] bg-[rgba(124,110,246,0.08)] p-3">
-        <p className="text-xs font-semibold text-[#c4b5fd] mb-1">{tp.groupSelected}</p>
-        <p className="text-xs text-[#9d90f8]">
+      <div className="rounded-xl border border-accent/30 bg-accent-soft p-3">
+        <p className="text-xs font-semibold text-accent-text mb-1">{tp.groupSelected}</p>
+        <p className="text-xs text-accent-text/90">
           {splitMessageTemplate(tp.groupEnterHint).map((part, idx) => (
             <Fragment key={idx}>
               {part.type === 'token' && part.key === 'action' ? (
@@ -52,7 +52,7 @@ export function GroupProperties({ layer }: { layer: GroupLayer }) {
           <label className={labelCls + ' !mb-0'}>{tp.scale}</label>
           <span className="text-xs text-[#e8e8f0]">{scale.toFixed(2)}×</span>
         </div>
-        <input type="range" min={0.1} max={4} step={0.05} value={scale} onChange={(e) => upd({ scale: Number(e.target.value) })} onMouseDown={pauseTemporal} onMouseUp={resumeTemporal} className="w-full accent-[#7c6ef6]" />
+        <input type="range" min={0.1} max={4} step={0.05} value={scale} onChange={(e) => upd({ scale: Number(e.target.value) })} onMouseDown={pauseTemporal} onMouseUp={resumeTemporal} className="w-full accent-accent" />
       </div>
 
       {/* Children list */}

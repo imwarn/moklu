@@ -81,9 +81,9 @@ export function TextOverrideCell({
   // Translating / queued state
   if (!isDefaultLocale && (cellStatus === 'translating' || cellStatus === 'queued')) {
     return (
-      <div className="min-h-[80px] rounded-xl border border-[rgba(124,110,246,0.3)] bg-[rgba(124,110,246,0.06)] px-4 py-3 flex items-center justify-center gap-2 mb-3">
-        <span className="text-[#7c6ef6] animate-spin text-sm">⟳</span>
-        <span className="text-xs text-[#9d90f8]">{cellStatus === 'queued' ? tl.queued : tl.translating}</span>
+      <div className="min-h-[80px] rounded-xl border border-accent/30 bg-accent-soft px-4 py-3 flex items-center justify-center gap-2 mb-3">
+        <span className="text-accent animate-spin text-sm">⟳</span>
+        <span className="text-xs text-accent-text">{cellStatus === 'queued' ? tl.queued : tl.translating}</span>
       </div>
     )
   }
@@ -114,8 +114,8 @@ export function TextOverrideCell({
       <div
         className="min-h-[80px] rounded-xl border border-dashed px-4 py-3 mb-3"
         style={{
-          borderColor: isActiveColumn ? 'rgba(124,110,246,0.4)' : 'rgba(255,255,255,0.14)',
-          background: isActiveColumn ? 'rgba(124,110,246,0.06)' : 'rgba(255,255,255,0.015)',
+          borderColor: isActiveColumn ? 'color-mix(in srgb, var(--color-accent) 40%, transparent)' : 'rgba(255,255,255,0.14)',
+          background: isActiveColumn ? 'color-mix(in srgb, var(--color-accent) 6%, transparent)' : 'rgba(255,255,255,0.015)',
         }}
       >
         <div className="mb-2 text-xs leading-5 text-[#6b6b7a]">
@@ -133,7 +133,7 @@ export function TextOverrideCell({
             <button
               type="button"
               onClick={onAiTranslate}
-              className="rounded-lg border border-[rgba(124,110,246,0.4)] bg-[rgba(124,110,246,0.1)] px-2.5 py-1 text-xs text-[#c5befd] hover:bg-[rgba(124,110,246,0.2)] transition"
+              className="rounded-lg border border-accent/40 bg-accent-soft px-2.5 py-1 text-xs text-accent-text hover:bg-accent/20 transition"
             >
               {tl.aiTranslate}
             </button>
@@ -153,7 +153,7 @@ export function TextOverrideCell({
         scrollMarginRight: 24,
         borderColor: cellStatus === 'done'
           ? 'rgba(52,211,153,0.5)'
-          : isActiveColumn ? '#7c6ef6' : 'rgba(124,110,246,0.45)',
+          : isActiveColumn ? 'var(--color-accent)' : 'color-mix(in srgb, var(--color-accent) 45%, transparent)',
         ...backgroundPreview.style,
       }}
     >
@@ -201,7 +201,7 @@ export function TextOverrideCell({
             <button
               type="button"
               onClick={onAiTranslate}
-              className="text-[10px] text-[#9d90f8] hover:text-white transition"
+              className="text-[10px] text-accent-text hover:text-white transition"
               title={tl.retranslateTitle}
             >
               {tl.retranslate}

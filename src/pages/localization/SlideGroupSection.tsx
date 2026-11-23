@@ -91,9 +91,9 @@ export function SlideGroupSection({
         className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left transition hover:bg-white/[0.03]"
       >
         <div className="flex items-center gap-3">
-          <span className="text-sm text-[#d5d2eb]">{collapsed ? '▸' : '▾'}</span>
+          <span className="text-sm text-[#d4d4d8]">{collapsed ? '▸' : '▾'}</span>
           <div>
-            <div className="text-xl text-[#f2efff]" style={{ fontFamily: 'Iowan Old Style, Palatino Linotype, serif' }}>
+            <div className="text-xl text-[#f4f4f5]" style={{ fontFamily: 'Iowan Old Style, Palatino Linotype, serif' }}>
               {slideGroup.name}
             </div>
             <div className="mt-1 text-sm text-[#7f8094]">
@@ -101,7 +101,7 @@ export function SlideGroupSection({
                 <Fragment key={idx}>
                   {part.type === 'token' ? (
                     part.key === 'language' ? (
-                      <span className="font-medium text-[#bdb7f6]">{activeLanguageName}</span>
+                      <span className="font-medium text-accent-text">{activeLanguageName}</span>
                     ) : part.key === 'eligible' ? (
                       eligibleRows.length
                     ) : part.key === 'complete' ? (
@@ -142,7 +142,7 @@ export function SlideGroupSection({
                   key={locale}
                   className="px-3 py-2 flex items-center gap-2"
                   style={{
-                    color: locale === activeLocale ? '#bdb7f6' : undefined,
+                    color: locale === activeLocale ? 'var(--color-accent-text)' : undefined,
                   }}
                 >
                   <span>{getLanguageName(locale)}</span>
@@ -170,7 +170,7 @@ export function SlideGroupSection({
                         <div className="flex items-start gap-3" style={{ paddingLeft: row.depth * 16 }}>
                           <div
                             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-[#111118] text-sm font-semibold mt-0.5"
-                            style={{ color: row.layerType === 'text' ? '#c9c3ff' : '#d9d9e6' }}
+                            style={{ color: row.layerType === 'text' ? 'var(--color-accent-text)' : '#d9d9e6' }}
                           >
                             {row.layerType === 'text' ? 'T' : row.layerType === 'phone' ? '📱' : '🖼'}
                           </div>

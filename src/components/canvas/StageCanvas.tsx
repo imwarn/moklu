@@ -1,5 +1,5 @@
 /**
- * [INPUT]: depends on react, react-konva, konva, zustand useShallow, useEditorStore, useAssetStore, resolveGroupView from @/utils/canvasFormats, getEffectivePano, studioTokens, multiDrag helper, and stage sub-hooks/overlays
+ * [INPUT]: depends on react, react-konva, konva, zustand useShallow, useEditorStore, useAssetStore, BRAND from @/theme/brand, resolveGroupView from @/utils/canvasFormats, getEffectivePano, studioTokens, multiDrag helper, and stage sub-hooks/overlays
  * [OUTPUT]: exports StageCanvas component with blur-safe Ctrl tracking and view-resolved multi-layer drag
  * [POS]: primary Konva editing viewport inside src/components/canvas mounted by StudioPage
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
@@ -10,6 +10,7 @@ import type Konva from 'konva'
 import { useShallow } from 'zustand/react/shallow'
 import { useEditorStore } from '@/store'
 import { useAssetStore } from '@/store/assets'
+import { BRAND } from '@/theme/brand'
 import { resolveGroupView } from '@/utils/canvasFormats'
 import { getEffectivePano } from '@/utils/panoGeometry'
 import type { Layer as AppLayer, BackgroundLayer } from '@/types'
@@ -201,9 +202,9 @@ export function StageCanvas({ stageRef }: StageCanvasProps) {
         <Layer listening={!selectedBackgroundLayer} onDragStart={handleContentLayerDragStart} onDragMove={handleContentLayerDragMove} onDragEnd={handleContentLayerDragEnd}>{group.layers.filter((layer) => layer.type !== 'background').map(renderStageLayerItem)}</Layer>
         <Layer name="editor-export-overlay">
           <Transformer ref={groupOutlineRef} enabledAnchors={[]} rotateEnabled={false} borderStroke="rgba(255,255,255,0.65)" borderStrokeWidth={1.5} borderDash={[6, 4]} anchorSize={0} listening={false} />
-          {rbRect && rbRect.w > 2 && rbRect.h > 2 && <Rect x={rbRect.x} y={rbRect.y} width={rbRect.w} height={rbRect.h} fill="rgba(124,110,246,0.08)" stroke="rgba(124,110,246,0.7)" strokeWidth={1 / zoom} dash={[4 / zoom, 3 / zoom]} listening={false} />}
-          <Transformer ref={transformerRef} keepRatio={!selectedLayerIsText} boundBoxFunc={(oldBox, newBox) => newBox.width < 20 || newBox.height < 20 ? oldBox : newBox} enabledAnchors={['top-left', 'top-center', 'top-right', 'middle-right', 'middle-left', 'bottom-left', 'bottom-center', 'bottom-right']} rotateEnabled={true} borderStroke="rgba(124,110,246,0.9)" borderStrokeWidth={2} anchorFill="#7c6ef6" anchorStroke="#ffffff" anchorSize={10} anchorCornerRadius={3} rotateAnchorOffset={40} />
-          <Transformer ref={accentTransformerRef} keepRatio={false} enabledAnchors={['top-left', 'top-center', 'top-right', 'middle-right', 'middle-left', 'bottom-left', 'bottom-center', 'bottom-right']} rotateEnabled={false} borderStroke="rgba(124,110,246,0.9)" borderStrokeWidth={2} anchorFill="#7c6ef6" anchorStroke="#ffffff" anchorSize={10} anchorCornerRadius={3} />
+          {rbRect && rbRect.w > 2 && rbRect.h > 2 && <Rect x={rbRect.x} y={rbRect.y} width={rbRect.w} height={rbRect.h} fill={BRAND.selectionFill} stroke={BRAND.selectionStroke} strokeWidth={1 / zoom} dash={[4 / zoom, 3 / zoom]} listening={false} />}
+          <Transformer ref={transformerRef} keepRatio={!selectedLayerIsText} boundBoxFunc={(oldBox, newBox) => newBox.width < 20 || newBox.height < 20 ? oldBox : newBox} enabledAnchors={['top-left', 'top-center', 'top-right', 'middle-right', 'middle-left', 'bottom-left', 'bottom-center', 'bottom-right']} rotateEnabled={true} borderStroke={BRAND.selectionStroke} borderStrokeWidth={2} anchorFill={BRAND.accent} anchorStroke={BRAND.anchorStroke} anchorSize={10} anchorCornerRadius={3} rotateAnchorOffset={40} />
+          <Transformer ref={accentTransformerRef} keepRatio={false} enabledAnchors={['top-left', 'top-center', 'top-right', 'middle-right', 'middle-left', 'bottom-left', 'bottom-center', 'bottom-right']} rotateEnabled={false} borderStroke={BRAND.selectionStroke} borderStrokeWidth={2} anchorFill={BRAND.accent} anchorStroke={BRAND.anchorStroke} anchorSize={10} anchorCornerRadius={3} />
         </Layer>
       </Stage>
       {/* Visual-only DOM separators never appear in Stage exports. */}

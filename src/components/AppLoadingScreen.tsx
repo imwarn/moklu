@@ -30,7 +30,7 @@ export function AppLoadingScreen({ visible }: AppLoadingScreenProps) {
       role="status"
       aria-live="polite"
       aria-label="Loading Moklu"
-      className={`fixed inset-0 z-[10000] flex items-center justify-center overflow-hidden bg-[#0f0f13] transition-opacity duration-200 ease-out ${
+      className={`fixed inset-0 z-[10000] flex items-center justify-center overflow-hidden bg-surface transition-opacity duration-200 ease-out ${
         visible ? 'opacity-100' : 'pointer-events-none opacity-0'
       }`}
     >
@@ -39,7 +39,7 @@ export function AppLoadingScreen({ visible }: AppLoadingScreenProps) {
         className="absolute inset-0"
         style={{
           background:
-            'radial-gradient(circle at 50% 43%, rgba(124,110,246,0.13) 0, rgba(124,110,246,0.035) 24%, transparent 52%)',
+            'radial-gradient(circle at 50% 43%, color-mix(in srgb, var(--color-accent) 6%, transparent) 0, transparent 48%)',
         }}
       />
       <div

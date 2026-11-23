@@ -67,7 +67,7 @@ function LanguageCombobox({
             if (e.key === 'Enter' && filtered.length === 0 && customCodeValid) handleSelect(customCodeValid)
           }}
           placeholder={tl.searchLanguagePlaceholder}
-          className="w-full rounded-lg border border-white/10 bg-[#0f0f13] px-3 py-2 text-sm text-white outline-none placeholder:text-[#6b6b7a] focus:border-[#7c6ef6]"
+          className="w-full rounded-lg border border-white/10 bg-surface px-3 py-2 text-sm text-white outline-none placeholder:text-muted/70 focus:border-accent"
         />
       </div>
       <div className="max-h-56 overflow-y-auto py-1">
@@ -84,12 +84,12 @@ function LanguageCombobox({
                 disabled
                   ? 'cursor-default text-[#4a4a5a]'
                   : already
-                    ? 'text-[#d9d9e6] hover:bg-[#7c6ef6]/10 hover:text-white'
+                    ? 'text-[#d9d9e6] hover:bg-accent/10 hover:text-white'
                   : 'text-[#d9d9e6] hover:bg-white/6 hover:text-white'
               }`}
             >
               <span>{lang.name}</span>
-              <span className={`text-xs font-mono ${disabled ? 'text-[#3a3a4a]' : already ? 'text-[#9d90f8]' : 'text-[#6b6b7a]'}`}>
+              <span className={`text-xs font-mono ${disabled ? 'text-[#3a3a4a]' : already ? 'text-accent-text' : 'text-muted'}`}>
                 {already ? '✓ ' : ''}{lang.code}
               </span>
             </button>
@@ -99,9 +99,9 @@ function LanguageCombobox({
           <button
             type="button"
             onClick={() => handleSelect(customCodeValid)}
-            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[#9d90f8] hover:bg-[#7c6ef6]/10 hover:text-white transition"
+            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-accent-text hover:bg-accent/10 hover:text-white transition"
           >
-            <span className="text-[#7c6ef6]">＋</span>
+            <span className="text-accent">＋</span>
             <span>
               {splitMessageTemplate(tl.useCustomCode).map((part, idx) => (
                 <Fragment key={idx}>

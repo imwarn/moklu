@@ -18,7 +18,7 @@ export function Kbd({ children }: { children: ReactNode }) {
 
 export function SectionHeader({ children }: { children: ReactNode }) {
   return (
-    <div className="mb-2.5 mt-7 border-b border-[rgba(255,255,255,0.06)] pb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8f82ff] first:mt-0">
+    <div className="mb-2.5 mt-7 border-b border-[rgba(255,255,255,0.06)] pb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-accent-text first:mt-0">
       {children}
     </div>
   )
@@ -55,8 +55,8 @@ export function GuideList({ children }: { children: ReactNode }) {
   return <ul className="m-0 space-y-3.5 p-0 text-[13px] leading-6 text-[#a7a7b4]">{children}</ul>
 }
 
-export function GuideItem({ children, tone = 'purple' }: { children: ReactNode; tone?: 'purple' | 'amber' | 'teal' }) {
-  const dot = tone === 'amber' ? 'bg-[#f2b84b]' : tone === 'teal' ? 'bg-[#48c7bf]' : 'bg-[#8f82ff]'
+export function GuideItem({ children, tone = 'accent' }: { children: ReactNode; tone?: 'accent' | 'amber' | 'teal' }) {
+  const dot = tone === 'amber' ? 'bg-[#f2b84b]' : tone === 'teal' ? 'bg-[#48c7bf]' : 'bg-accent'
   return (
     <li className="relative list-none pl-5">
       <span className={`absolute left-0 top-[10px] h-1.5 w-1.5 rounded-full ${dot} shadow-[0_0_8px_currentColor]`} />
@@ -73,9 +73,9 @@ export function Strong({ children }: { children: ReactNode }) {
   return <strong className="font-semibold text-[#dedee8]">{children}</strong>
 }
 
-export function Callout({ children, tone = 'purple', label }: { children: ReactNode; tone?: 'purple' | 'amber' | 'teal'; label?: string }) {
+export function Callout({ children, tone = 'accent', label }: { children: ReactNode; tone?: 'accent' | 'amber' | 'teal'; label?: string }) {
   const styles = {
-    purple: 'border-[rgba(124,110,246,0.22)] bg-[rgba(124,110,246,0.065)] text-[#bcb5f5]',
+    accent: 'border-accent/25 bg-accent-soft text-accent-text',
     amber: 'border-[rgba(242,184,75,0.22)] bg-[rgba(242,184,75,0.055)] text-[#d8b96f]',
     teal: 'border-[rgba(72,199,191,0.22)] bg-[rgba(72,199,191,0.055)] text-[#7dcec8]',
   }

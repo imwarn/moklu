@@ -216,12 +216,12 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
               onClick={() => setExportOpen((v) => !v)}
               title={tm.exportTitle}
               style={{
-                background: exportOpen ? 'rgba(124,110,246,0.18)' : 'rgba(255,255,255,0.04)',
+                background: exportOpen ? 'var(--color-accent-soft)' : 'rgba(255,255,255,0.04)',
                 border: exportOpen
-                  ? '1px solid rgba(124,110,246,0.45)'
+                  ? '1px solid color-mix(in srgb, var(--color-accent) 45%, transparent)'
                   : '1px solid rgba(255,255,255,0.1)',
                 borderRadius: 6,
-                color: exportOpen ? '#c4b9fc' : '#a0a0b0',
+                color: exportOpen ? 'var(--color-accent-text)' : 'var(--color-muted)',
                 cursor: 'pointer',
                 fontSize: 12,
                 fontWeight: 500,
@@ -287,8 +287,8 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
         {exportOpen && (
           <div
             style={{
-              background: 'rgba(124,110,246,0.05)',
-              borderBottom: '1px solid rgba(124,110,246,0.15)',
+              background: 'color-mix(in srgb, var(--color-accent) 6%, transparent)',
+              borderBottom: '1px solid color-mix(in srgb, var(--color-accent) 18%, transparent)',
               padding: '16px 20px',
               flexShrink: 0,
             }}
@@ -382,7 +382,7 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
                 onClick={handleExport}
                 disabled={!exportName.trim()}
                 style={{
-                  background: exportName.trim() ? '#7c6ef6' : 'rgba(124,110,246,0.25)',
+                  background: exportName.trim() ? 'var(--color-accent-strong)' : 'color-mix(in srgb, var(--color-accent-strong) 30%, transparent)',
                   border: 'none',
                   borderRadius: 6,
                   color: exportName.trim() ? '#fff' : 'rgba(255,255,255,0.35)',
@@ -490,11 +490,11 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
           <fieldset className="mb-4 rounded-xl border border-white/10 bg-white/[0.025] p-3">
             <legend className="px-1 text-xs font-semibold text-[#dedee8]">{tm.applyModeLegend}</legend>
             <div className="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <label className={`flex cursor-pointer items-start gap-2 rounded-lg border p-3 text-xs ${canvasApplyMode === 'layout' ? 'border-[#9489f6] bg-[#8276e8]/10' : 'border-white/10'}`}>
+              <label className={`flex cursor-pointer items-start gap-2 rounded-lg border p-3 text-xs ${canvasApplyMode === 'layout' ? 'border-accent bg-accent-soft' : 'border-white/10'}`}>
                 <input type="radio" name="template-apply-mode" checked={canvasApplyMode === 'layout'} onChange={() => setCanvasApplyMode('layout')} />
                 <span><strong className="block text-white">{tm.layoutModeTitle}</strong><span className="mt-1 block text-[#aeb0c3]">{tm.layoutModeDesc}</span></span>
               </label>
-              <label className={`flex cursor-pointer items-start gap-2 rounded-lg border p-3 text-xs ${canvasApplyMode === 'appearance' ? 'border-[#9489f6] bg-[#8276e8]/10' : 'border-white/10'}`}>
+              <label className={`flex cursor-pointer items-start gap-2 rounded-lg border p-3 text-xs ${canvasApplyMode === 'appearance' ? 'border-accent bg-accent-soft' : 'border-white/10'}`}>
                 <input type="radio" name="template-apply-mode" checked={canvasApplyMode === 'appearance'} onChange={() => setCanvasApplyMode('appearance')} />
                 <span><strong className="block text-white">{tm.styleOnlyTitle}</strong><span className="mt-1 block text-[#aeb0c3]">{tm.styleOnlyDesc}</span></span>
               </label>
@@ -528,7 +528,7 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
             <div className="mb-4 flex flex-col gap-3 sm:flex-row" role="search" aria-label={tm.searchLabel}>
               <label className="flex-1 text-xs text-[#aeb0c3]">{tm.searchLabel}
                 <input type="search" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)}
-                  placeholder={tm.searchPlaceholder} className="mt-1 w-full rounded-lg border border-white/20 bg-[#222330] p-2 text-sm text-white focus-visible:outline-2 focus-visible:outline-[#b9afff]" />
+                  placeholder={tm.searchPlaceholder} className="mt-1 w-full rounded-lg border border-white/20 bg-[#222330] p-2 text-sm text-white focus-visible:outline-2 focus-visible:outline-accent" />
               </label>
               <label className="text-xs text-[#aeb0c3]">{tm.category}
                 <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}
@@ -594,10 +594,10 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
                         {entry.category && (
                           <div
                             style={{
-                              background: 'rgba(124,110,246,0.18)',
-                              border: '1px solid rgba(124,110,246,0.3)',
+                              background: 'var(--color-accent-soft)',
+                              border: '1px solid color-mix(in srgb, var(--color-accent) 30%, transparent)',
                               borderRadius: 20,
-                              color: '#c4b9fc',
+                              color: 'var(--color-accent-text)',
                               fontSize: 9,
                               fontWeight: 600,
                               letterSpacing: '0.06em',
@@ -671,7 +671,7 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
                       <button
                         disabled={applying === entry.slug || (canvasApplyMode === 'appearance' && selectedAppearancePartCount === 0)}
                         onClick={() => { void handleGalleryApply(entry, 'canvas') }}
-                        className="rounded-md bg-[#7c6ef6] px-3 py-2 text-xs font-semibold text-white hover:bg-[#9689ff] disabled:opacity-50"
+                        className="rounded-md bg-accent-strong px-3 py-2 text-xs font-semibold text-accent-fg hover:bg-accent-strong/90 disabled:opacity-50"
                         title={canvasApplyMode === 'appearance' ? 'Change appearance without replacing any content or geometry' : 'Use template composition, preserving the main screenshot'}
                       >
                         {applying === entry.slug ? tm.applying : canvasApplyMode === 'appearance' ? tm.applyStyleKeepLayers : tm.useOnCurrentCanvas}

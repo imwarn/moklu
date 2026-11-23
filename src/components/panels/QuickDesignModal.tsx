@@ -204,7 +204,7 @@ function QuickDesignDialog({ activeGroup, onClose }: { activeGroup: SlideGroup |
             <h2 id="quick-design-title" className="text-xl font-semibold">{q.title}</h2>
             <p id="quick-design-description" className="mt-1 text-sm text-[#aaaabc]">{q.description}</p>
           </div>
-          <button type="button" onClick={onClose} className="text-xl text-[#aaaabc] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b9afff]" aria-label={q.closeAria}>×</button>
+          <button type="button" onClick={onClose} className="text-xl text-[#aaaabc] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" aria-label={q.closeAria}>×</button>
         </div>
         <div
           role="group"
@@ -218,7 +218,7 @@ function QuickDesignDialog({ activeGroup, onClose }: { activeGroup: SlideGroup |
             chooseFile(event.dataTransfer.files?.[0])
           }}
           className={`mb-5 rounded-xl border border-dashed p-4 text-sm text-white/90 transition-colors ${dragActive
-            ? 'border-[#b9afff] bg-[#8276e8]/15'
+            ? 'border-accent bg-accent-soft'
             : 'border-white/20 bg-white/[0.035]'}`}
         >
           <div className="mb-2 font-semibold">{q.step1} <span className="font-normal text-white/50">{q.optional}</span></div>
@@ -226,7 +226,7 @@ function QuickDesignDialog({ activeGroup, onClose }: { activeGroup: SlideGroup |
             {previewUrl && <img src={previewUrl} alt={q.chooseScreenshot} className="h-16 w-24 shrink-0 rounded border border-white/10 bg-black/20 object-contain" />}
             <div className="min-w-0 flex-1">
               <label className="block cursor-pointer">
-                <span className="inline-block rounded-md bg-[#8276e8] px-3 py-2 text-xs font-semibold text-white hover:bg-[#9388ee]">
+                <span className="inline-block rounded-md bg-accent-strong px-3 py-2 text-xs font-semibold text-accent-fg hover:bg-accent-strong/90">
                   {imageFile ? q.changeScreenshot : q.chooseScreenshot}
                 </span>
                 <input type="file" accept="image/png,image/jpeg,image/webp" className="sr-only focus-visible:not-sr-only"
@@ -266,7 +266,7 @@ function QuickDesignDialog({ activeGroup, onClose }: { activeGroup: SlideGroup |
         <div className="mt-3 grid grid-cols-3 gap-3">
           {(Object.entries(QUICK_THEMES) as [QuickTheme, (typeof QUICK_THEMES)[QuickTheme]][]).map(([id, value]) =>
             <button type="button" key={id} aria-pressed={theme === id} onClick={() => setTheme(id)}
-              className={`rounded-xl border p-2 text-left transition-colors ${theme === id ? 'border-[#b49eff] bg-[#b49eff]/10' : 'border-white/10 hover:border-white/30'}`}>
+              className={`rounded-xl border p-2 text-left transition-colors ${theme === id ? 'border-accent bg-accent-soft' : 'border-white/10 hover:border-white/30'}`}>
               <span className="block h-14 rounded-lg" style={{ background: `linear-gradient(140deg, ${value.top}, ${value.bottom})` }} />
               <span className="mt-2 block text-xs">{value.label}</span>
             </button>
@@ -281,7 +281,7 @@ function QuickDesignDialog({ activeGroup, onClose }: { activeGroup: SlideGroup |
               ['fill', q.stretchLabel, q.stretchHint],
             ] as const).map(([value, label, hint]) => (
               <label key={value} className={`cursor-pointer rounded-lg border px-2 py-2.5 text-center text-xs ${screenshotFit === value
-                ? 'border-[#b49eff] bg-[#b49eff]/10 text-white'
+                ? 'border-accent bg-accent-soft text-white'
                 : 'border-white/10 text-[#aeb0c3] hover:border-white/30'}`}>
                 <input type="radio" name="quick-screenshot-fit" className="sr-only"
                   value={value} checked={screenshotFit === value}
@@ -297,13 +297,13 @@ function QuickDesignDialog({ activeGroup, onClose }: { activeGroup: SlideGroup |
           theme={theme} mockup={mockup} screenshotSrc={screenshotSrc} screenshotFit={screenshotFit}
           browserChrome={currentMockup?.type === 'phone' ? currentMockup.browserChrome : undefined}
         />
-        <div role="note" className="mt-5 rounded-lg border border-[#8276e8]/25 bg-[#8276e8]/10 p-3 text-xs leading-5 text-[#bdbbd7]">
+        <div role="note" className="mt-5 rounded-lg border border-accent/25 bg-accent-soft p-3 text-xs leading-5 text-[#e4e4e7]">
           <strong className="text-white">{q.noteHeading}</strong> {q.noteBody}
-          <span className="mt-1 block text-[#9395aa]">{q.noteSub}</span>
+          <span className="mt-1 block text-muted">{q.noteSub}</span>
         </div>
         <div className="mt-4 flex justify-end gap-2">
           <button type="button" onClick={onClose} className="rounded-lg border border-white/15 px-4 py-2 text-sm">{t.common.cancel}</button>
-          <button type="button" onClick={() => { void apply() }} disabled={!activeGroup || applying} className="rounded-lg bg-[#8276e8] px-5 py-2 text-sm font-semibold text-white hover:bg-[#9388ee] disabled:opacity-50">{applying ? q.preparing : imageFile || existingShot ? q.applyEdit : q.startEmpty}</button>
+          <button type="button" onClick={() => { void apply() }} disabled={!activeGroup || applying} className="rounded-lg bg-accent-strong px-5 py-2 text-sm font-semibold text-accent-fg hover:bg-accent-strong/90 disabled:opacity-50">{applying ? q.preparing : imageFile || existingShot ? q.applyEdit : q.startEmpty}</button>
         </div>
       </section>
     </div>

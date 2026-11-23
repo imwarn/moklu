@@ -40,7 +40,7 @@ export function BulkTranslateBar({
       <div className="flex items-center gap-4 flex-wrap">
         <div className="flex items-center gap-2">
           <span className="text-xs text-[#6b6b7a]">{tl.bulkTranslateLabel}</span>
-          <span className="text-xs text-[#9d90f8]">
+          <span className="text-xs text-accent-text">
             {formatMessage(bulkEligibleCount === 1 ? tl.cellsCountOne : tl.cellsCountOther, { count: bulkEligibleCount })}
           </span>
         </div>
@@ -50,7 +50,7 @@ export function BulkTranslateBar({
             type="checkbox"
             checked={overwriteExisting}
             onChange={(e) => setOverwriteExisting(e.target.checked)}
-            className="accent-[#7c6ef6] w-3 h-3"
+            className="accent-accent w-3 h-3"
           />
           <span className="text-xs text-[#8f90a3]">{tl.overwriteExisting}</span>
         </label>
@@ -63,10 +63,10 @@ export function BulkTranslateBar({
             !hasApiKey
               ? 'border-white/8 text-[#4a4a5a] cursor-not-allowed'
               : isBulkRunning
-                ? 'border-[rgba(124,110,246,0.3)] text-[#9d90f8] cursor-wait'
+                ? 'border-accent/30 text-accent-text cursor-wait'
                 : bulkEligibleCount === 0
                   ? 'border-white/8 text-[#4a4a5a] cursor-not-allowed'
-                  : 'border-[rgba(124,110,246,0.5)] bg-[rgba(124,110,246,0.12)] text-[#c5befd] hover:bg-[rgba(124,110,246,0.22)] hover:text-white'
+                  : 'border-accent/50 bg-accent-soft text-accent-text hover:bg-accent/20 hover:text-white'
           }`}
           title={!hasApiKey ? tl.configureApiKeyTitle : undefined}
         >
