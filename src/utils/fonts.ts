@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on browser document.fonts, FontFace, and DOM link element globals
+ * [OUTPUT]: exports FontEntry, WEB_SAFE_FONTS, FONT_LIST, getFontWeights, ensureFontReady, loadGoogleFonts, loadFont, preloadFont, loadCustomFont, registerCustomFonts, generateCustomFontFamily, and unregisterCustomFont
+ * [POS]: curated Google Fonts catalog and custom font-face lifecycle manager in src/utils; initialized in src/main.tsx and used by font pickers and export capture
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 // ─── Curated Google Fonts for PixelDeck ──────────────────────────────────────
 
 export interface FontEntry {

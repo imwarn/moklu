@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on Layer, PhoneLayer, SlideGroup, Template, and ProjectSettings from @/types; depends on forEachLayerTree and mapLayerTree from @/utils/layerTree, scaleLayerToCanvas from @/utils/canvasFormats, and applyTemplate from @/utils/templates
+ * [OUTPUT]: exports ScreenshotBinding, findScreenshotTarget, and applyTemplateToCanvas
+ * [POS]: slot-preserving template application helper in src/utils; maps template layers onto the active canvas size while rebinding existing user screenshots
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { Layer, PhoneLayer, SlideGroup, Template, ProjectSettings } from '@/types'
 import { forEachLayerTree, mapLayerTree } from '@/utils/layerTree'
 import { scaleLayerToCanvas } from '@/utils/canvasFormats'

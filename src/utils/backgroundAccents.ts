@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on BackgroundAccent from @/types; depends on parseColorAlpha and withAlpha from ./gradients
+ * [OUTPUT]: exports updateBackgroundAccentAt, getBackgroundAccentOpacity, getBackgroundAccentRenderColor, and getNextBackgroundAccentIndex
+ * [POS]: pure background-accent opacity and color mutation helpers in src/utils; consumed by canvas background renderers and inspector controls
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { BackgroundAccent } from '@/types'
 import { parseColorAlpha, withAlpha } from './gradients'
 

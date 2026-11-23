@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on getPhoneSpec from @/assets/mockups/specs; depends on getQuickMockupPlacement, QuickMockup, and QuickScreenshotFit from @/utils/quickDesign
+ * [OUTPUT]: exports screenshotPreserveAspectRatio, QuickPreviewGeometry, getQuickPreviewGeometry, and makeSvgImageDataUrl
+ * [POS]: lightweight SVG mockup preview geometry and data-URL helper in src/utils; aligns Quick Workspace live preview with Konva PhoneNode fit modes
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { getPhoneSpec } from '@/assets/mockups/specs'
 import { getQuickMockupPlacement, type QuickMockup, type QuickScreenshotFit } from '@/utils/quickDesign'
 

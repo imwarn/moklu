@@ -1,4 +1,10 @@
 /**
+ * [INPUT]: depends on Project, Layer, GroupLayer, SlideGroup, LocaleContent, LocaleLayerPatch, and LocalizationMode from @/types; depends on mapLayerTree from @/utils/layerTree
+ * [OUTPUT]: exports resolveLayerLocale, applyLocaleToGroup, LocalizableLayerRef, getLocalizableLayers, effectiveLocalizationMode, isLocaleContentComplete, LocaleManifestEntry, LocaleManifestGroup, LocaleManifest, buildLocaleManifest, applyLocaleManifest, LanguageOption, LANGUAGES, getLanguageName, and detectLocaleFromFilename
+ * [POS]: project localization resolver, manifest extractor/importer, and language catalog in src/utils; consumed by canvasFormatLayout, LocalizationView, and AI translation flows
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
+/**
  * locale.ts — Localization utilities for PixelDeck
  *
  * The core resolver is applyLocaleToGroup(group, locale, defaultLocale).

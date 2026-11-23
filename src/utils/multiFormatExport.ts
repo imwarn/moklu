@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on Konva from konva, CanvasFormatId from @/types, exportGroupImages and PanoExportMode from ./export, acquireCaptureLock and waitForStageCaptureReady from ./stageCapture, useEditorStore from @/store, normalizePanoCompensationPx from ./panoGeometry, and buildExportFileTarget and buildExportPlan from ./exportPlan
+ * [OUTPUT]: exports FormatExportResult, ProjectExportScope, ExportCancelledError, ProjectImageExportOptions, ProjectImageExportResult, and exportProjectImages
+ * [POS]: multi-locale/multi-format batch capture orchestrator in src/utils; drives store view switching under capture lock and feeds results to exportZip and ExportModal
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type Konva from 'konva'
 import type { CanvasFormatId } from '@/types'
 import { exportGroupImages, type PanoExportMode } from './export'

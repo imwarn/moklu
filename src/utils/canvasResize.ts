@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on Layer from @/types and scaleLayerToCanvas from @/utils/canvasFormats
+ * [OUTPUT]: exports CanvasResizeMode, CANVAS_PRESETS, validateCanvasDimensions, and resizeCanvasLayers
+ * [POS]: authoring canvas dimension presets, validation, and layer recenter/fit resizer in src/utils; consumed by store resize actions and canvas settings UI
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { Layer } from '@/types'
 import { scaleLayerToCanvas } from '@/utils/canvasFormats'
 

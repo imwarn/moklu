@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on Project and Template from @/types and SLIDE_KEY_SCHEMA_VERSION from @/store/helpers
+ * [OUTPUT]: exports IMPORT_LIMITS, checkImportFileSize, parseBoundedImportJson, validateProjectImport, and validateTemplateImport
+ * [POS]: bounded JSON parser and schema validator for user-imported projects and templates in src/utils; guards store import paths against malformed or oversized payloads
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { Project, Template } from '@/types'
 import { SLIDE_KEY_SCHEMA_VERSION } from '@/store/helpers'
 

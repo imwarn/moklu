@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on Konva from konva, RefObject from react, and getPendingImageLoadCount from @/hooks/useCachedImage
+ * [OUTPUT]: exports classifyStageImages, isImagelessBlocking, nextFrame, isCaptureLocked, acquireCaptureLock, runExclusiveCapture, withHiddenEditorOverlays, withIdentityTransform, waitForStage, waitForStageSettled, and waitForStageCaptureReady
+ * [POS]: exclusive Konva stage capture lock, overlay isolation, and image/font settle synchronizer in src/utils; coordinates export, multiFormatExport, and headless ExportApp
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type Konva from 'konva'
 import type { RefObject } from 'react'
 import { getPendingImageLoadCount } from '@/hooks/useCachedImage'

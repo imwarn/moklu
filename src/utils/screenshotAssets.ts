@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on nanoid from nanoid and fileToDataUrl from ./files
+ * [OUTPUT]: exports MAX_SCREENSHOT_BYTES, validateScreenshotFile, and prepareScreenshotUpload
+ * [POS]: screenshot upload type/size validator and asset-key preparer in src/utils; consumed by Studio screenshot upload flows
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { nanoid } from 'nanoid'
 import { fileToDataUrl } from './files'
 

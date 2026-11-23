@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on TextMark and FillValue from @/types and fillToCss from @/utils/gradients
+ * [OUTPUT]: exports MarkStyle, StylePatch, isEmptyStyle, StyledSegment, segmentMarks, normalizeMarks, applyMarkStyle, clearMarkStyle, RangeStyle, getRangeStyle, cssColorToHex, marksToHtml, EditorModel, readEditorDom, parseEditorDom, domSelectionToOffsets, and setDomSelection
+ * [POS]: range-based rich-text mark model and contentEditable DOM serializer/selection bridge in src/utils; shared by textRendering and inline text editors
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { TextMark, FillValue } from '@/types'
 import { fillToCss } from '@/utils/gradients'
 
