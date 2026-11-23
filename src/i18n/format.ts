@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on StudioUiLocale from ./types and Intl.RelativeTimeFormat runtime API
- * [OUTPUT]: exports formatMessage template interpolator, formatRichParts template splitter, and formatRelativeTime Intl formatter
+ * [OUTPUT]: exports formatMessage template interpolator, splitMessageTemplate template splitter, and formatRelativeTime Intl formatter
  * [POS]: pure formatting utilities within src/i18n consumed by localized Studio panels, modals, and localization views
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
