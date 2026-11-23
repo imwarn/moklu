@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on readFileSync and writeFileSync from node:fs; depends on resolve from node:path
+ * [OUTPUT]: exports buildLocaleManifest, applyLocaleManifest, runLocaleManifest, and runLocaleImport
+ * [POS]: CLI localization manifest extractor and importer in cli/, called by cli/index.mjs and mirroring src/utils/locale.ts
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { readFileSync, writeFileSync } from 'fs'
 import { resolve } from 'path'
 
