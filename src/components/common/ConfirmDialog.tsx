@@ -1,11 +1,19 @@
-import { useEffect } from 'react'
+/**
+ * [INPUT]: depends on ModalShell from @/components/ui/ModalShell and useStudioLocale from @/i18n
+ * [OUTPUT]: exports ConfirmDialog accessible confirmation modal with focus trapping, AA danger styling, disabled states, and localized defaults
+ * [POS]: reusable confirmation modal within src/components/common, invoked by StudioPage, ProjectsModal, and EditingContext
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
+import { ModalShell } from '@/components/ui/ModalShell'
+import { useStudioLocale } from '@/i18n'
 
-interface ConfirmDialogProps {
+export interface ConfirmDialogProps {
   open: boolean
   title: string
   message: string
   confirmLabel?: string
   cancelLabel?: string
+  busyLabel?: string
   danger?: boolean
   busy?: boolean
   onConfirm: () => void
@@ -16,103 +24,69 @@ export function ConfirmDialog({
   open,
   title,
   message,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
+  confirmLabel,
+  cancelLabel,
+  busyLabel,
   danger = false,
   busy = false,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
-  useEffect(() => {
-    if (!open) return
-    const onKey = (e: KeyboardEvent) => {
-      const active = document.activeElement as HTMLElement | null
-      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) return
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        onCancel()
-      }
-      if (e.key === 'Enter') {
-        e.preventDefault()
-        onConfirm()
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [open, onCancel, onConfirm])
-
-  if (!open) return null
+  const { t } = useStudioLocale()
+  const resolvedConfirmLabel = confirmLabel ?? t.common.apply
+  const resolvedCancelLabel = cancelLabel ?? t.common.cancel
+  const resolvedBusyLabel = busyLabel ?? `${resolvedConfirmLabel}…`
 
   return (
-    <>
-      <div
-        onClick={onCancel}
-        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 210 }}
-      />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="confirm-dialog-title"
-        aria-describedby="confirm-dialog-message"
-        style={{
-          position: 'fixed',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: 400,
-          maxWidth: 'calc(100vw - 32px)',
-          background: '#1c1c27',
-          border: '1px solid rgba(255,255,255,0.12)',
-          borderRadius: 10,
-          padding: 24,
-          zIndex: 211,
-          boxShadow: '0 20px 60px rgba(0,0,0,0.7)',
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h3 id="confirm-dialog-title" style={{ margin: '0 0 10px', fontSize: 15, fontWeight: 600, color: '#e8e8f0' }}>
+    <ModalShell
+      open={open}
+      onClose={onCancel}
+      title={title}
+      showCloseButton={false}
+      closeOnEscape={!busy}
+      closeOnBackdrop={!busy}
+      maxWidth="max-w-[400px]"
+      backdropClassName="fixed inset-0 z-[210] flex items-center justify-center backdrop-blur-[1px]"
+      backdropStyle={{ background: 'rgba(0,0,0,0.6)' }}
+      panelClassName="relative mx-4 flex w-full flex-col overflow-hidden rounded-[10px] border p-6 shadow-2xl"
+      panelStyle={{
+        background: '#1c1c27',
+        borderColor: 'rgba(255,255,255,0.12)',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.7)',
+      }}
+      header={
+        <h3 className="m-0 mb-2.5 text-[15px] font-semibold text-[#e8e8f0]">
           {title}
         </h3>
-        <p id="confirm-dialog-message" style={{ margin: '0 0 20px', fontSize: 13, color: '#a0a0b0', lineHeight: 1.5 }}>
-          {message}
-        </p>
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+      }
+      footer={
+        <div className="flex justify-end gap-2">
           <button
             type="button"
             onClick={onCancel}
             disabled={busy}
-            style={{
-              background: 'none',
-              border: '1px solid rgba(255,255,255,0.12)',
-              borderRadius: 6,
-              color: '#a0a0b0',
-              cursor: 'pointer',
-              fontSize: 12,
-              fontWeight: 600,
-              padding: '5px 14px',
-            }}
+            className="cursor-pointer rounded-md border border-white/12 bg-transparent px-3.5 py-[5px] text-xs font-semibold text-[#b8b8c8] transition-colors hover:border-white/25 hover:bg-white/5 hover:text-[#e8e8f0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c6ef6] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {cancelLabel}
+            {resolvedCancelLabel}
           </button>
           <button
             type="button"
             onClick={onConfirm}
             disabled={busy}
-            style={{
-              background: danger ? '#f87171' : '#7c6ef6',
-              border: 'none',
-              borderRadius: 6,
-              color: '#fff',
-              cursor: 'pointer',
-              fontSize: 12,
-              fontWeight: 600,
-              padding: '5px 14px',
-            }}
+            className={`cursor-pointer rounded-md border-none px-3.5 py-[5px] text-xs font-semibold text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-[#1c1c27] disabled:cursor-not-allowed disabled:opacity-50 ${
+              danger
+                ? 'bg-[#dc2626] hover:bg-[#b91c1c] focus-visible:ring-[#ef4444]'
+                : 'bg-[#7c6ef6] hover:bg-[#6c5ed6] focus-visible:ring-[#a599ff]'
+            }`}
           >
-            {busy ? 'Working…' : confirmLabel}
+            {busy ? resolvedBusyLabel : resolvedConfirmLabel}
           </button>
         </div>
-      </div>
-    </>
+      }
+    >
+      <p className="m-0 mb-5 text-[13px] leading-relaxed text-[#a0a0b0]">
+        {message}
+      </p>
+    </ModalShell>
   )
 }

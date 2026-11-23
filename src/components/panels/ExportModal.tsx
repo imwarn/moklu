@@ -12,7 +12,7 @@ import { countFormatAdjustments, getCanvasFormat, getExportTargets, getFormatCan
 import { ExportCancelledError, exportProjectImages, type ProjectExportScope, type ProjectImageExportResult } from '@/utils/multiFormatExport'
 import { DEFAULT_PANO_COMPENSATION_PX, MAX_PANO_COMPENSATION_PX, normalizePanoCompensationPx } from '@/utils/panoGeometry'
 import { downloadDataUrl } from '@/utils/export'
-import { buildExportZipBlob, zipFileNameFor } from '@/utils/exportZip'
+import { buildExportZipBlob, writeExportDirectoryFile, zipFileNameFor } from '@/utils/exportZip'
 import { waitForStage } from '@/utils/stageCapture'
 import type { CanvasFormatId } from '@/types'
 import { ModalShell } from '@/components/ui/ModalShell'
@@ -134,19 +134,7 @@ export function ExportModal({ open, onClose, stageRef }: ExportModalProps) {
     dirHandle: Awaited<ReturnType<NonNullable<Window['showDirectoryPicker']>>>,
     item: ProjectImageExportResult,
   ) => {
-    const parts = item.relativePath.split('/')
-    const filename = `${parts.pop() ?? item.name}.png`
-    let current = dirHandle
-    for (const part of parts) {
-      if (!current.getDirectoryHandle) break
-      current = await current.getDirectoryHandle(part, { create: true })
-    }
-    const fileHandle = await current.getFileHandle(filename, { create: true })
-    const writable = await fileHandle.createWritable()
-    const res = await fetch(item.dataUrl)
-    const blob = await res.blob()
-    await writable.write(blob)
-    await writable.close()
+    await writeExportDirectoryFile(dirHandle, item)
   }
 
   const downloadResults = async (results: ProjectImageExportResult[]) => {
@@ -168,6 +156,7 @@ export function ExportModal({ open, onClose, stageRef }: ExportModalProps) {
   }
 
   const handleRunExport = async () => {
+    setExportError(null)
     if (!stageRef.current || !activeGroup) {
       setExportError('Export unavailable. Try again.')
       return
@@ -302,7 +291,7 @@ export function ExportModal({ open, onClose, stageRef }: ExportModalProps) {
           </button>
         </div> : <button disabled={!canRunExport} onClick={handleRunExport} className="w-full rounded-lg bg-[#7c6ef6] px-3 py-2.5 text-sm font-medium text-white hover:bg-[#6c5ed6] disabled:opacity-40 disabled:cursor-not-allowed transition-colors">{em.exportPngs}</button>}
         {exportError ? (
-          <p className="mt-2 rounded border border-[rgba(248,113,113,0.35)] bg-[rgba(248,113,113,0.08)] px-2 py-1.5 text-[10px] leading-snug text-[#fca5a5]">{exportError}</p>
+          <p role="alert" className="mt-2 rounded border border-[rgba(248,113,113,0.35)] bg-[rgba(248,113,113,0.08)] px-2 py-1.5 text-[10px] leading-snug text-[#fca5a5]">{exportError}</p>
         ) : !isExporting && selectedExportFormats.length === 0 ? (
           <p className="mt-2 text-[10px] leading-snug text-[#f59e0b]">{em.selectFormatWarning}</p>
         ) : !isExporting && selectedExportLocales.length === 0 ? (

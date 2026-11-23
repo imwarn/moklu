@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on react, konva, zustand useShallow, Toolbar, LayersPanel, PreviewModal, PropertiesPanel, SlideNavigator, StageCanvas, EditingContext, AppLoadingScreen, ConfirmDialog, ChunkErrorBoundary, useThumbnails, useImageCacheWarmer, useEditorStore/useUndoRedo, ensureProjectsBootstrapped/useProjectsStore, applyCanvasFormat/resolveGroupView, registerStage, getScopedEditingIndicator, applyDocumentTheme from @/theme/themeStore, buildLocalizedPath/LocaleCode from @/seo, and StudioLocaleProvider/getStudioDictionary from @/i18n
- * [OUTPUT]: exports StudioPage component containing the full Konva multi-layer editor wrapped in StudioLocaleProvider, localization mode, keyboard shortcuts, and Home/Tools navigation link
+ * [INPUT]: depends on react, konva, zustand useShallow, Toolbar, LayersPanel, PreviewModal, PropertiesPanel, SlideNavigator, StageCanvas, EditingContext, AppLoadingScreen, ConfirmDialog, ChunkErrorBoundary, useThumbnails, useImageCacheWarmer, useEditorStore/useUndoRedo, ensureProjectsBootstrapped/useProjectsStore, applyCanvasFormat/resolveGroupView, registerStage, getScopedEditingIndicator, studioShortcuts, applyDocumentTheme from @/theme/themeStore, buildLocalizedPath/LocaleCode from @/seo, and StudioLocaleProvider/getStudioDictionary from @/i18n
+ * [OUTPUT]: exports StudioPage component containing the full Konva multi-layer editor wrapped in StudioLocaleProvider, localization mode with Suspense skeleton, keyboard shortcuts, mobile drawers, and Home/Tools navigation link
  * [POS]: lazy-loaded full Studio editor page mounted by src/App.tsx on /studio and /<locale>/studio routes
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -27,6 +27,11 @@ import { ensureProjectsBootstrapped, useProjectsStore } from '@/store/projects'
 import { applyDocumentTheme } from '@/theme/themeStore'
 import { buildLocalizedPath, type LocaleCode } from '@/seo'
 import { StudioLocaleProvider, getStudioDictionary } from '@/i18n'
+import {
+  resolveDeletableLayerIds,
+  resolveNudgeTarget,
+  resolveStudioShortcut,
+} from './studioShortcuts'
 
 // Lazy-load the localization view — it's a separate mode and not needed on initial load.
 const LocalizationView = lazy(() =>
@@ -150,6 +155,8 @@ export function StudioPage({ locale = 'en', onNavigate }: StudioPageProps) {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (view !== 'editor') return
+
       // Don't fire when user is typing in an input or rich text editor
       const active = document.activeElement as HTMLElement | null
       if (
@@ -171,141 +178,125 @@ export function StudioPage({ locale = 'en', onNavigate }: StudioPageProps) {
         return
       }
 
-      if (e.key === 'Escape') {
-        if (editingGroupId) {
-          e.preventDefault()
-          exitGroupEdit()
-        }
-        return
-      }
+      const state = useEditorStore.getState()
+      const command = resolveStudioShortcut(
+        {
+          key: e.key,
+          ctrlKey: e.ctrlKey,
+          metaKey: e.metaKey,
+          shiftKey: e.shiftKey,
+          altKey: e.altKey,
+        },
+        {
+          view,
+          hasOpenMobilePanel: mobilePanel !== null,
+          editingGroupId,
+          hasSelection: Boolean(state.selection?.layerId || state.selectedLayerIds.length > 0),
+        },
+      )
 
-      if (e.ctrlKey || e.metaKey) {
-        if (e.key === 'g' && !e.shiftKey) {
-          e.preventDefault()
-          const { selectedLayerIds, createGroup } = useEditorStore.getState()
-          if (selectedLayerIds.length >= 2) createGroup(selectedLayerIds)
-        } else if (e.key === 'g' && e.shiftKey) {
-          e.preventDefault()
-          const { selection, editingGroupId: currentEditId, dissolveGroup } = useEditorStore.getState()
+      if (!command) return
+      e.preventDefault()
+
+      switch (command.type) {
+        case 'close-mobile-panel':
+          setMobilePanel(null)
+          return
+        case 'exit-group-edit':
+          exitGroupEdit()
+          return
+        case 'group':
+          if (state.selectedLayerIds.length >= 2) state.createGroup(state.selectedLayerIds)
+          return
+        case 'ungroup':
           // Only dissolve when a top-level group is selected (not when inside group edit mode)
-          if (selection?.layerId && !currentEditId) dissolveGroup(selection.layerId)
-        } else if (e.key === 'z' && !e.shiftKey) {
-          e.preventDefault()
+          if (state.selection?.layerId && !state.editingGroupId) {
+            state.dissolveGroup(state.selection.layerId)
+          }
+          return
+        case 'undo':
           undo()
-        } else if ((e.key === 'z' && e.shiftKey) || e.key === 'y') {
-          e.preventDefault()
+          return
+        case 'redo':
           redo()
-        } else if (e.key === 'c' && !e.altKey) {
-          e.preventDefault()
-          useEditorStore.getState().copyLayers()
-        } else if (e.key === 'x') {
-          e.preventDefault()
-          useEditorStore.getState().cutLayers()
-        } else if (e.key === 'v' && !e.altKey) {
-          e.preventDefault()
-          useEditorStore.getState().pasteLayers()
-        } else if (e.key === 'c' && e.altKey) {
-          e.preventDefault()
-          const { selection: sel, copyLayerStyle: cls } = useEditorStore.getState()
-          if (sel?.layerId) cls(sel.layerId)
-        } else if (e.key === 'v' && e.altKey) {
-          e.preventDefault()
-          const { selection: sel, pasteLayerStyle: pls } = useEditorStore.getState()
-          if (sel?.layerId) pls(sel.layerId)
-        } else if (e.key === 'd') {
-          e.preventDefault()
-          const { selection, duplicateLayer } = useEditorStore.getState()
-          if (selection?.layerId) duplicateLayer(selection.layerId)
-        } else if (e.key === '0') {
-          // Ctrl+0: fit — delegate to canvas by resetting centering flag
-          e.preventDefault()
-          const {
-            project: p,
-            activeSlideGroupId: gid,
-            activeCanvasFormat: fmt,
-            setZoom: sz,
-            setViewportPosition: svp,
-          } = useEditorStore.getState()
-          const viewProject = applyCanvasFormat(p, fmt)
-          const grp = viewProject.slideGroups.find((g) => g.id === gid)
+          return
+        case 'copy':
+          state.copyLayers()
+          return
+        case 'cut':
+          state.cutLayers()
+          return
+        case 'paste':
+          state.pasteLayers()
+          return
+        case 'copy-style':
+          if (state.selection?.layerId) state.copyLayerStyle(state.selection.layerId)
+          return
+        case 'paste-style':
+          if (state.selection?.layerId) state.pasteLayerStyle(state.selection.layerId)
+          return
+        case 'duplicate':
+          if (state.selection?.layerId) state.duplicateLayer(state.selection.layerId)
+          return
+        case 'zoom-fit': {
+          const viewProject = applyCanvasFormat(state.project, state.activeCanvasFormat)
+          const grp = viewProject.slideGroups.find((g) => g.id === state.activeSlideGroupId)
           if (grp) {
             const availW = window.innerWidth - 224 - 288 - 64
             const availH = window.innerHeight - 140
             const totalW = grp.slideWidth * grp.numSlides
             const fitScale = Math.max(0.05, Math.min(4, Math.min(availW / totalW, availH / grp.slideHeight)))
-            sz(fitScale)
-            svp((availW + 64 - totalW * fitScale) / 2, (availH - grp.slideHeight * fitScale) / 2 + 16)
+            state.setZoom(fitScale)
+            state.setViewportPosition(
+              (availW + 64 - totalW * fitScale) / 2,
+              (availH - grp.slideHeight * fitScale) / 2 + 16,
+            )
           }
-        } else if (e.key === '1') {
-          e.preventDefault()
-          useEditorStore.getState().setZoom(1)
+          return
         }
-      }
-
-      // Arrow keys — nudge selected layer 1px (Shift = 10px)
-      if (!e.ctrlKey && !e.metaKey) {
-        const { ArrowLeft, ArrowRight, ArrowUp, ArrowDown } = {
-          ArrowLeft: 'ArrowLeft',
-          ArrowRight: 'ArrowRight',
-          ArrowUp: 'ArrowUp',
-          ArrowDown: 'ArrowDown',
-        }
-        if (e.key === ArrowLeft || e.key === ArrowRight || e.key === ArrowUp || e.key === ArrowDown) {
-          e.preventDefault()
-          const step = e.shiftKey ? 10 : 1
-          const dx = e.key === ArrowLeft ? -step : e.key === ArrowRight ? step : 0
-          const dy = e.key === ArrowUp ? -step : e.key === ArrowDown ? step : 0
-          const {
-            selection,
-            editingGroupId: egi,
-            updateLayer,
-            updateChildLayer,
-            project: p,
-            activeSlideGroupId: gid,
-            activeLocale: loc,
-            activeCanvasFormat: fmt,
-          } = useEditorStore.getState()
-          if (!selection?.layerId) return
-          const rawGroup = p.slideGroups.find((group) => group.id === gid)
+        case 'zoom-reset':
+          state.setZoom(1)
+          return
+        case 'nudge': {
+          const rawGroup = state.project.slideGroups.find((group) => group.id === state.activeSlideGroupId)
           if (!rawGroup) return
-          const grp = resolveGroupView(rawGroup, p.settings, loc, fmt)
-          if (egi) {
-            const groupLayer = grp.layers.find((l) => l.id === egi)
-            if (groupLayer?.type === 'group') {
-              const child = groupLayer.children.find((c) => c.id === selection.layerId)
-              if (child) {
-                updateChildLayer(egi, selection.layerId, { x: child.x + dx, y: child.y + dy } as Parameters<typeof updateLayer>[1])
-              }
-            }
+          const grp = resolveGroupView(rawGroup, state.project.settings, state.activeLocale, state.activeCanvasFormat)
+          const target = resolveNudgeTarget(grp.layers, state.selection?.layerId, state.editingGroupId)
+          if (!target) return
+          const nextPos = { x: target.layer.x + command.dx, y: target.layer.y + command.dy } as Parameters<typeof state.updateLayer>[1]
+          if (target.kind === 'child') {
+            state.updateChildLayer(target.groupId, target.layer.id, nextPos)
           } else {
-            const layer = grp.layers.find((l) => l.id === selection.layerId)
-            if (layer) {
-              updateLayer(selection.layerId, { x: layer.x + dx, y: layer.y + dy } as Parameters<typeof updateLayer>[1])
-            }
+            state.updateLayer(target.layer.id, nextPos)
           }
+          return
         }
-
-        // Delete / Backspace — remove selected layer
-        if ((e.key === 'Delete' || e.key === 'Backspace') && useEditorStore.getState().selection?.layerId) {
-          e.preventDefault()
-          const { selection, selectedLayerIds, removeLayer } = useEditorStore.getState()
-          if (selectedLayerIds.length > 0) {
-            selectedLayerIds.forEach((id) => removeLayer(id))
-          } else if (selection?.layerId) {
-            removeLayer(selection.layerId)
-          }
+        case 'delete': {
+          const rawGroup = state.project.slideGroups.find((group) => group.id === state.activeSlideGroupId)
+          if (!rawGroup) return
+          const grp = resolveGroupView(rawGroup, state.project.settings, state.activeLocale, state.activeCanvasFormat)
+          const deletableIds = resolveDeletableLayerIds(
+            grp.layers,
+            state.selectedLayerIds,
+            state.selection?.layerId,
+            state.editingGroupId,
+          )
+          deletableIds.forEach((id) => state.removeLayer(id))
+          return
         }
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [undo, redo, exitGroupEdit, editingGroupId])
+  }, [undo, redo, exitGroupEdit, editingGroupId, view, mobilePanel])
 
   // Returning from localization starts the editor on the default locale.
   const handleSetMode = (mode: 'editor' | 'localization') => {
     if (mode === 'editor') {
       const s = useEditorStore.getState()
       s.setActiveLocale(s.project.settings.defaultLocale ?? 'en')
+    } else {
+      setMobilePanel(null)
     }
     setView(mode)
   }
@@ -357,7 +348,31 @@ export function StudioPage({ locale = 'en', onNavigate }: StudioPageProps) {
                 variant="inline"
                 onReset={() => handleSetMode('editor')}
               >
-                <Suspense>
+                <Suspense
+                  fallback={
+                    <div
+                      role="status"
+                      aria-live="polite"
+                      aria-busy="true"
+                      className="flex h-full w-full flex-col gap-4 bg-[#111118] p-6 text-[#a0a0b0]"
+                    >
+                      <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                        <div className="flex items-center gap-3">
+                          <span
+                            aria-hidden="true"
+                            className="h-4 w-4 animate-spin rounded-full border-2 border-[#7c6ef6] border-t-transparent"
+                          />
+                          <span className="text-sm font-medium text-[#e8e8f0]">{t.toolbar.localization}</span>
+                        </div>
+                        <div aria-hidden="true" className="h-7 w-40 animate-pulse rounded-md bg-white/[0.06]" />
+                      </div>
+                      <div aria-hidden="true" className="grid flex-1 grid-cols-1 gap-3 md:grid-cols-3">
+                        <div className="animate-pulse rounded-xl border border-white/5 bg-white/[0.03]" />
+                        <div className="animate-pulse rounded-xl border border-white/5 bg-white/[0.03] md:col-span-2" />
+                      </div>
+                    </div>
+                  }
+                >
                   <LocalizationView embedded onBack={() => handleSetMode('editor')} onPreview={handlePreviewLocale} />
                 </Suspense>
               </ChunkErrorBoundary>
@@ -365,12 +380,24 @@ export function StudioPage({ locale = 'en', onNavigate }: StudioPageProps) {
           )}
 
           {/* Editor view — always mounted so the Konva stage + ResizeObserver are always alive.
-              Hidden (pointer-events-none, invisible) when the localization view is on top. */}
+              Hidden (pointer-events-none, invisible, aria-hidden, inert) when the localization view is on top. */}
           <div
             className="flex min-w-0 flex-1 overflow-hidden"
+            aria-hidden={view === 'localization' || undefined}
+            inert={view === 'localization' ? true : undefined}
             style={view === 'localization' ? { visibility: 'hidden', pointerEvents: 'none' } : undefined}
           >
-            {/* Layers panel — always visible */}
+            {/* Mobile drawer backdrop — tap outside to dismiss Layers/Properties on narrow screens */}
+            {mobilePanel !== null && (
+              <div
+                data-testid="mobile-panel-backdrop"
+                aria-hidden="true"
+                onClick={() => setMobilePanel(null)}
+                className="absolute inset-0 z-10 bg-black/50 backdrop-blur-[1px] lg:hidden"
+              />
+            )}
+
+            {/* Layers panel — always visible on desktop, slide-over drawer on mobile */}
             <aside aria-label={t.studio.layersSidebarAria} className={`z-20 h-full shrink-0 lg:static lg:block ${mobilePanel === 'layers' ? 'absolute inset-y-0 left-0 block shadow-2xl' : 'hidden'}`}>
               <LayersPanel />
             </aside>
@@ -385,8 +412,13 @@ export function StudioPage({ locale = 'en', onNavigate }: StudioPageProps) {
                   type="button"
                   aria-label={t.studio.toggleLayersAria}
                   aria-expanded={mobilePanel === 'layers'}
+                  aria-pressed={mobilePanel === 'layers'}
                   onClick={() => setMobilePanel((panel) => panel === 'layers' ? null : 'layers')}
-                  className="rounded-lg border border-white/20 bg-[#222330] px-3 py-1.5 text-xs text-white"
+                  className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+                    mobilePanel === 'layers'
+                      ? 'border-[#7c6ef6] bg-[#7c6ef6]/25 text-[#e4e0ff]'
+                      : 'border-white/20 bg-[#222330] text-white hover:border-white/35 hover:bg-[#2a2b3b]'
+                  }`}
                 >
                   {t.studio.layersButton}
                 </button>
@@ -394,8 +426,13 @@ export function StudioPage({ locale = 'en', onNavigate }: StudioPageProps) {
                   type="button"
                   aria-label={t.studio.togglePropertiesAria}
                   aria-expanded={mobilePanel === 'properties'}
+                  aria-pressed={mobilePanel === 'properties'}
                   onClick={() => setMobilePanel((panel) => panel === 'properties' ? null : 'properties')}
-                  className="rounded-lg border border-white/20 bg-[#222330] px-3 py-1.5 text-xs text-white"
+                  className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+                    mobilePanel === 'properties'
+                      ? 'border-[#7c6ef6] bg-[#7c6ef6]/25 text-[#e4e0ff]'
+                      : 'border-white/20 bg-[#222330] text-white hover:border-white/35 hover:bg-[#2a2b3b]'
+                  }`}
                 >
                   {t.studio.propertiesButton}
                 </button>
