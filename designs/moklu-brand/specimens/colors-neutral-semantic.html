@@ -1,0 +1,152 @@
+<!-- @dsCard group="Colors" viewport="700x360" name="Neutral Zinc & Semantic Status" subtitle="Zero purple/blue cast neutral surfaces paired with hue-separated semantic tokens" -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        font-family: var(--font-sans);
+        background: #ffffff;
+        color: #18181b;
+        padding: 16px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+      .column {
+        border-radius: 12px;
+        border: 1px solid var(--color-border);
+        background: var(--color-surface);
+        color: var(--color-ink);
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .col-title {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+      .list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 7px 9px;
+        border-radius: 8px;
+        background: var(--color-panel);
+        border: 1px solid var(--color-border);
+      }
+      .left {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        min-width: 0;
+      }
+      .dot {
+        width: 18px;
+        height: 18px;
+        border-radius: 5px;
+        border: 1px solid var(--color-border);
+        flex: 0 0 18px;
+      }
+      .name {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 600;
+      }
+      .right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--color-muted);
+      }
+      .aa {
+        padding: 1px 5px;
+        border-radius: 4px;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        color: var(--color-ink);
+      }
+    </style>
+  </head>
+  <body>
+    <section class="column">
+      <div class="col-title">Light — Neutral Zinc + Semantic</div>
+      <div class="list">
+        <div class="row">
+          <div class="left"><span class="dot" style="background: var(--color-surface);"></span><span class="name">surface</span></div>
+          <div class="right"><span>#FAFAFA</span><span class="aa">16.97:1</span></div>
+        </div>
+        <div class="row">
+          <div class="left"><span class="dot" style="background: var(--color-panel);"></span><span class="name">panel</span></div>
+          <div class="right"><span>#FFFFFF</span><span class="aa">17.72:1</span></div>
+        </div>
+        <div class="row">
+          <div class="left"><span class="dot" style="background: var(--color-border);"></span><span class="name">border</span></div>
+          <div class="right"><span>#E4E4E7</span><span class="aa">1px</span></div>
+        </div>
+        <div class="row">
+          <div class="left"><span class="dot" style="background: var(--color-muted);"></span><span class="name">muted</span></div>
+          <div class="right"><span>#52525B</span><span class="aa">7.73:1</span></div>
+        </div>
+        <div class="row">
+          <div class="left"><span class="dot" style="background: var(--color-success);"></span><span class="name">success</span></div>
+          <div class="right"><span>#15803D</span><span class="aa">5.02:1</span></div>
+        </div>
+        <div class="row">
+          <div class="left"><span class="dot" style="background: var(--color-warning);"></span><span class="name">warning</span></div>
+          <div class="right"><span>#9A6312</span><span class="aa">5.04:1</span></div>
+        </div>
+        <div class="row">
+          <div class="left"><span class="dot" style="background: var(--color-danger);"></span><span class="name">danger</span></div>
+          <div class="right"><span>#B91C3C</span><span class="aa">6.37:1</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="column" data-theme="dark">
+      <div class="col-title">Dark / Studio — Neutral Zinc + Semantic</div>
+      <div class="list">
+        <div class="row">
+          <div class="left"><span class="dot" style="background: var(--color-surface);"></span><span class="name">surface</span></div>
+          <div class="right"><span>#09090B</span><span class="aa">18.10:1</span></div>
+        </div>
+        <div class="row">
+          <div class="left"><span class="dot" style="background: var(--color-panel);"></span><span class="name">panel</span></div>
+          <div class="right"><span>#141417</span><span class="aa">16.73:1</span></div>
+        </div>
+        <div class="row">
+          <div class="left"><span class="dot" style="background: var(--color-border);"></span><span class="name">border</span></div>
+          <div class="right"><span>#27272A</span><span class="aa">1px</span></div>
+        </div>
+        <div class="row">
+          <div class="left"><span class="dot" style="background: var(--color-muted);"></span><span class="name">muted</span></div>
+          <div class="right"><span>#A1A1AA</span><span class="aa">7.17:1</span></div>
+        </div>
+        <div class="row">
+          <div class="left"><span class="dot" style="background: var(--color-success);"></span><span class="name">success</span></div>
+          <div class="right"><span>#34D399</span><span class="aa">9.56:1</span></div>
+        </div>
+        <div class="row">
+          <div class="left"><span class="dot" style="background: var(--color-warning);"></span><span class="name">warning</span></div>
+          <div class="right"><span>#E8B339</span><span class="aa">9.58:1</span></div>
+        </div>
+        <div class="row">
+          <div class="left"><span class="dot" style="background: var(--color-danger);"></span><span class="name">danger</span></div>
+          <div class="right"><span>#EB6079</span><span class="aa">5.67:1</span></div>
+        </div>
+      </div>
+    </section>
+  </body>
+</html>

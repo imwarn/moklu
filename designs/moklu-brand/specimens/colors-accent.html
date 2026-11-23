@@ -1,0 +1,191 @@
+<!-- @dsCard group="Colors" viewport="700x360" name="Signal Orange Accent Scale" subtitle="Role-separated single accent in Light and Dark modes (HSL saturation < 80%, WCAG AA verified)" -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        font-family: var(--font-sans);
+        background: #ffffff;
+        color: #18181b;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .mode-block {
+        border-radius: 12px;
+        border: 1px solid var(--color-border);
+        background: var(--color-surface);
+        color: var(--color-ink);
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .mode-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .mode-title {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+      .mode-note {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--color-muted);
+      }
+      .swatch-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .swatch {
+        border-radius: 8px;
+        border: 1px solid var(--color-border);
+        background: var(--color-panel);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      .chip {
+        height: 48px;
+        padding: 8px;
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        font-weight: 600;
+      }
+      .meta {
+        padding: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .token {
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+        font-weight: 600;
+        color: var(--color-ink);
+      }
+      .hex {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--color-muted);
+      }
+      .ratio {
+        margin-top: 3px;
+        font-family: var(--font-mono);
+        font-size: 9.5px;
+        color: var(--color-accent-text);
+      }
+    </style>
+  </head>
+  <body>
+    <section class="mode-block">
+      <div class="mode-header">
+        <span class="mode-title">Light Mode — Quick Workspace &amp; Landing</span>
+        <span class="mode-note">:root · H15–16° · S ≤ 79.5%</span>
+      </div>
+      <div class="swatch-grid">
+        <div class="swatch">
+          <div class="chip" style="background: var(--color-accent); color: #ffffff;"><span>UI / Mark</span></div>
+          <div class="meta">
+            <span class="token">accent</span>
+            <span class="hex">#E5541F</span>
+            <span class="ratio">3.74:1 vs panel</span>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="chip" style="background: var(--color-accent-strong); color: var(--color-accent-fg);"><span>Aa CTA</span></div>
+          <div class="meta">
+            <span class="token">accent-strong</span>
+            <span class="hex">#C24217</span>
+            <span class="ratio">5.14:1 w/ #FFF</span>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="chip" style="background: var(--color-accent-soft); color: var(--color-accent-text);"><span>Soft</span></div>
+          <div class="meta">
+            <span class="token">accent-soft</span>
+            <span class="hex">#FCF2ED</span>
+            <span class="ratio">5.51:1 w/ text</span>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="chip" style="background: var(--color-panel); color: var(--color-accent-text); border-bottom: 1px solid var(--color-border);"><span>Aa Link</span></div>
+          <div class="meta">
+            <span class="token">accent-text</span>
+            <span class="hex">#AF3B14</span>
+            <span class="ratio">6.07:1 vs panel</span>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="chip" style="background: var(--color-accent-strong); color: var(--color-accent-fg);"><span>Fg #FFF</span></div>
+          <div class="meta">
+            <span class="token">accent-fg</span>
+            <span class="hex">#FFFFFF</span>
+            <span class="ratio">5.14:1 on strong</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="mode-block" data-theme="dark">
+      <div class="mode-header">
+        <span class="mode-title">Dark Mode &amp; Studio — Canvas Chrome</span>
+        <span class="mode-note">html[data-theme="dark"] · [data-surface="studio"]</span>
+      </div>
+      <div class="swatch-grid">
+        <div class="swatch">
+          <div class="chip" style="background: var(--color-accent); color: #09090b;"><span>Focus / Ring</span></div>
+          <div class="meta">
+            <span class="token">accent</span>
+            <span class="hex">#E76536</span>
+            <span class="ratio">5.53:1 vs panel</span>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="chip" style="background: var(--color-accent-strong); color: var(--color-accent-fg);"><span>Aa CTA</span></div>
+          <div class="meta">
+            <span class="token">accent-strong</span>
+            <span class="hex">#C64519</span>
+            <span class="ratio">4.92:1 w/ #FFF</span>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="chip" style="background: var(--color-accent-soft); color: var(--color-accent-text);"><span>Soft</span></div>
+          <div class="meta">
+            <span class="token">accent-soft</span>
+            <span class="hex">#2C1811</span>
+            <span class="ratio">6.19:1 w/ text</span>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="chip" style="background: var(--color-panel); color: var(--color-accent-text); border-bottom: 1px solid var(--color-border);"><span>Aa Link</span></div>
+          <div class="meta">
+            <span class="token">accent-text</span>
+            <span class="hex">#EB7F59</span>
+            <span class="ratio">6.75:1 vs panel</span>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="chip" style="background: var(--color-accent-strong); color: var(--color-accent-fg);"><span>Fg #FFF</span></div>
+          <div class="meta">
+            <span class="token">accent-fg</span>
+            <span class="hex">#FFFFFF</span>
+            <span class="ratio">4.92:1 on strong</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </body>
+</html>
