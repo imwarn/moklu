@@ -35,7 +35,7 @@ function StudioRouteShell({
     >
       <Suspense
         fallback={
-          <div className="flex h-screen w-screen items-center justify-center bg-[#0f0f13] text-sm text-[#a0a0b0]">
+          <div className="flex h-screen w-screen items-center justify-center bg-surface text-sm text-muted">
             Loading Moklu Studio…
           </div>
         }
