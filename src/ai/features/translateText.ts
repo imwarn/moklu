@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on transportChat from @/ai/transport; buildDesignContext from @/ai/context; parseMarkedText, serializeMarkedText, and stripMarkTags from @/ai/markedText; translation prompts from @/ai/prompts; AiProvider from @/ai/providers; Project, SlideGroup, and TextMark from @/types
+ * [OUTPUT]: exports AiAuth, TranslationResult, BatchTranslationItem, translateLayerText, translateGroupTexts, parseSingleTranslationResponse, and parseBatchTranslationResponse
+ * [POS]: single and batch text-layer localization orchestrator of src/ai/features/; owns JSON-contract parsing, control-char repair, retry loop, and rich-text mark round-tripping
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { transportChat } from '@/ai/transport'
 import { buildDesignContext } from '@/ai/context'
 import { parseMarkedText, serializeMarkedText, stripMarkTags } from '@/ai/markedText'

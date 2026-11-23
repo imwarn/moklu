@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on BrowserChromeOptions and PhoneModel from @/types
+ * [OUTPUT]: exports BrowserModel, DEFAULT_BROWSER_CHROME, isBrowserModel, escapeBrowserLabel, renderBrowserFrame, BROWSER_CHROME_SVG, BROWSER_SAFARI_SVG, and BROWSER_MINIMAL_SVG
+ * [POS]: hollow browser-window SVG generator of src/assets/mockups/; renders XML-escaped Chrome, Safari, and Minimal window chrome for registry.ts
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { BrowserChromeOptions, PhoneModel } from '@/types'
 
 export type BrowserModel = Extract<PhoneModel, 'browser-chrome' | 'browser-safari' | 'browser-minimal'>

@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on AiProvider from @/ai/providers
+ * [OUTPUT]: exports getAiRequestOrigin and buildOpenAiCompatibleHeaders
+ * [POS]: HTTP authorization and OpenRouter attribution header builder of src/ai/; shared by client.ts and models.ts
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { AiProvider } from '@/ai/providers'
 
 const APP_TITLE = 'PixelDeck'

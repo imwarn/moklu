@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on PhoneModel and PhoneModelSpec from @/types
+ * [OUTPUT]: exports IPHONE_16_PRO, PIXEL_9, IPHONE_16_PRO_PLAIN, PIXEL_9_PLAIN, APPLE_WATCH, WEAR_OS, IPAD_13, ANDROID_TABLET, SCREEN_16_9, SCREEN_16_10, BROWSER_CHROME, BROWSER_SAFARI, BROWSER_MINIMAL, PHONE_MODELS, getPhoneSpec, computePhoneFitScale, and getModelForPlatform
+ * [POS]: canonical device/browser geometry and status-bar metadata table of src/assets/mockups/; consumed by PhoneNode, quickDesign, quickPreview, and format-adaptation utils
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { PhoneModel, PhoneModelSpec } from '@/types'
 
 // iPhone 16 Pro: 6.3" display, 1320×2868 native

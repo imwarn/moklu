@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on Konva types from konva; RefObject from react
+ * [OUTPUT]: exports useLayerTransform
+ * [POS]: shared Konva transform-end normalizer of src/hooks/; resets transient node scaleX/scaleY back to 1 before emitting geometry-specific layer patches
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type Konva from 'konva'
 import type { RefObject } from 'react'
 

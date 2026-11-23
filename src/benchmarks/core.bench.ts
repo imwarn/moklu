@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on bench and describe from vitest; Layer, SlideGroup, and Template from @/types; QuickDesign, preview, canvas resize, browser frame, and template helpers from @/utils/* and @/assets/mockups/browser
+ * [OUTPUT]: registers Vitest CPU microbenchmarks for core Moklu layout, preview, frame rendering, resize, and template transfer paths
+ * [POS]: non-gating performance regression benchmark suite of src/benchmarks/
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { bench, describe } from 'vitest'
 import type { Layer, SlideGroup, Template } from '@/types'
 import { makeQuickLayers, getQuickMockupPlacement } from '@/utils/quickDesign'

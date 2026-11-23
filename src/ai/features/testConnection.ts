@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on transportChat from @/ai/transport; AiAuth from @/ai/features/translateText
+ * [OUTPUT]: exports testAiConnection
+ * [POS]: end-to-end provider and model connectivity probe of src/ai/features/; exercises the chat completion path with retries disabled
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { transportChat } from '@/ai/transport'
 import type { AiAuth } from '@/ai/features/translateText'
 

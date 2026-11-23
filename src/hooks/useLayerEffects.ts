@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on Konva types from konva; RefObject from react; BaseLayer from @/types; getShadowProps and useKonvaBlur from @/components/canvas/effects
+ * [OUTPUT]: exports useLayerEffects
+ * [POS]: shared canvas layer effect hook of src/hooks/; binds Konva blur caching and returns shadow props for layer renderers
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type Konva from 'konva'
 import type { RefObject } from 'react'
 import type { BaseLayer } from '@/types'

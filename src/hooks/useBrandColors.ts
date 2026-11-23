@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on useEditorStore from @/store; BrandColor from @/types
+ * [OUTPUT]: exports useBrandColors
+ * [POS]: stable-reference selector hook of src/hooks/; returns project brand palette without allocating an empty fallback array per render
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useEditorStore } from '@/store'
 import type { BrandColor } from '@/types'
 

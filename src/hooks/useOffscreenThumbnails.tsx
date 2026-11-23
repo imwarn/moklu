@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on React hooks/ReactNode from react; Konva types from konva; useEditorStore from @/store; resolveGroupView from @/utils/canvasFormats; thumbnail queue/geometry helpers from @/utils/thumbnailRender; stage capture helpers from @/utils/stageCapture; ThumbnailStage from @/components/canvas/ThumbnailStage
+ * [OUTPUT]: exports ThumbnailRequest (re-export), OffscreenThumbnailsApi, and useOffscreenThumbnails
+ * [POS]: hidden offscreen Konva stage thumbnail worker of src/hooks/; called by useThumbnails to render inactive slide-group nav thumbnails without switching the live stage
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type Konva from 'konva'
 import { useEditorStore } from '@/store'

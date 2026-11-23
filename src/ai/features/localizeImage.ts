@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on transportEditImage from @/ai/transport; buildDesignContext from @/ai/context; buildImageLocalizationPrompt and IMAGE_LOCALIZATION_SYSTEM_PROMPT from @/ai/prompts; Project and SlideGroup from @/types; AiAuth from @/ai/features/translateText
+ * [OUTPUT]: exports generateLocalizedImage
+ * [POS]: screenshot localization feature of src/ai/features/; combines slide-group design context with image-editing prompts and dispatches via transportEditImage
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { transportEditImage } from '@/ai/transport'
 import { buildDesignContext } from '@/ai/context'
 import { buildImageLocalizationPrompt, IMAGE_LOCALIZATION_SYSTEM_PROMPT } from '@/ai/prompts'

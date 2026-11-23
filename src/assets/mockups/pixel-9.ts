@@ -1,4 +1,10 @@
 /**
+ * [INPUT]: static inline SVG template with no module dependencies
+ * [OUTPUT]: exports PIXEL_9_SVG
+ * [POS]: Google Pixel 9 (with punch-hole camera) masked vector bezel of src/assets/mockups/; registered in registry.ts and paired with PIXEL_9 in specs.ts
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
+/**
  * Google Pixel 9 mockup SVG as a string.
  * Screen area is TRULY transparent via SVG mask.
  * ViewBox: 0 0 380 820

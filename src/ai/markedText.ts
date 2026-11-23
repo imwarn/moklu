@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on TextMark from @/types
+ * [OUTPUT]: exports SerializedMarkedText, serializeMarkedText, parseMarkedText, and stripMarkTags
+ * [POS]: rich-text <mN> tag codec of src/ai/; preserves inline TextMark ranges across AI translation for features/translateText.ts
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { TextMark } from '@/types'
 
 /**
