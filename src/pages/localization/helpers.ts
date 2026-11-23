@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on react CSSProperties, domain layer/format types, locale/canvasFormats/brandColors/gradients utilities, and LocalizableRow from ./types
+ * [OUTPUT]: exports slide background preview, row collection, override completeness, asset key builder, file label formatter, and platform badge helpers
+ * [POS]: pure utility module within src/pages/localization supporting localization table components
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { CSSProperties } from 'react'
 import type { BackgroundLayer, BrandColor, GroupLayer, Layer, SlideGroup, TextLayer, PhoneLayer, ImageLayer } from '@/types'
 import { effectiveLocalizationMode, isLocaleContentComplete } from '@/utils/locale'
@@ -140,9 +146,12 @@ export function truncate(value: string, length = 120): string {
   return `${value.slice(0, length - 1)}…`
 }
 
-export function getFileLabel(value?: string): string {
-  if (!value) return 'No image'
-  if (value.startsWith('data:')) return 'Embedded image'
+export function getFileLabel(
+  value?: string,
+  labels?: { noImage?: string; embeddedImage?: string },
+): string {
+  if (!value) return labels?.noImage ?? 'No image'
+  if (value.startsWith('data:')) return labels?.embeddedImage ?? 'Embedded image'
   // Locale-namespaced asset keys: `locale::{locale}::{slideGroupId}::{layerId}::{fileName}`
   if (value.startsWith('locale::')) {
     const parts = value.split('::')

@@ -1,6 +1,13 @@
+/**
+ * [INPUT]: depends on Layer/LocaleLayerPatch/TextLayer types, effectiveLocalizationMode, LocaleRichTextEditor, cellKey/types, helpers, and useStudioLocale/formatMessage from @/i18n
+ * [OUTPUT]: exports TextOverrideCell localized rich-text translation cell across EN/ZH/JA/KO
+ * [POS]: text override cell component inside SlideGroupSection within src/pages/localization
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { Layer, LocaleLayerPatch, TextLayer } from '@/types'
 import { effectiveLocalizationMode } from '@/utils/locale'
 import { LocaleRichTextEditor } from '@/components/text/LocaleRichTextEditor'
+import { formatMessage, useStudioLocale } from '@/i18n'
 import { cellKey, type CellStatus, type LocalizableRow } from './types'
 import type { SlideBackgroundPreview } from './helpers'
 import { truncate } from './helpers'
@@ -44,6 +51,8 @@ export function TextOverrideCell({
   clearLocaleContent,
   onAiTranslate,
 }: TextOverrideCellProps) {
+  const { t } = useStudioLocale()
+  const tl = t.modals.localization
   const override = row.layer.localeContent?.[locale]
   const displayOverride = previewOverride ?? override
   const isDefaultLocale = locale === defaultLocale
@@ -64,7 +73,7 @@ export function TextOverrideCell({
   if (!isDefaultLocale && isSkipped) {
     return (
       <div className="min-h-[80px] rounded-xl border border-dashed border-[rgba(239,68,68,0.2)] bg-[rgba(239,68,68,0.04)] px-4 py-3 flex items-center justify-center mb-3">
-        <span className="text-xs text-[#f87171]">— skipped —</span>
+        <span className="text-xs text-[#f87171]">{tl.skippedCell}</span>
       </div>
     )
   }
@@ -74,7 +83,7 @@ export function TextOverrideCell({
     return (
       <div className="min-h-[80px] rounded-xl border border-[rgba(124,110,246,0.3)] bg-[rgba(124,110,246,0.06)] px-4 py-3 flex items-center justify-center gap-2 mb-3">
         <span className="text-[#7c6ef6] animate-spin text-sm">⟳</span>
-        <span className="text-xs text-[#9d90f8]">{cellStatus === 'queued' ? 'Queued…' : 'Translating…'}</span>
+        <span className="text-xs text-[#9d90f8]">{cellStatus === 'queued' ? tl.queued : tl.translating}</span>
       </div>
     )
   }
@@ -83,7 +92,7 @@ export function TextOverrideCell({
   if (!isDefaultLocale && cellStatus === 'error') {
     return (
       <div className="min-h-[80px] rounded-xl border border-[rgba(239,68,68,0.35)] bg-[rgba(239,68,68,0.06)] px-4 py-3 space-y-2 mb-3">
-        <div className="text-xs text-[#f87171]">⚠ Translation failed</div>
+        <div className="text-xs text-[#f87171]">{tl.translationFailed}</div>
         {cellError && (
           <div className="text-[10px] text-[#f87171]/70 truncate" title={cellError}>
             {cellError}
@@ -94,7 +103,7 @@ export function TextOverrideCell({
           onClick={onAiTranslate}
           className="text-xs text-[#f87171] hover:text-white border border-[rgba(239,68,68,0.3)] rounded px-2 py-0.5 transition"
         >
-          Retry
+          {tl.retry}
         </button>
       </div>
     )
@@ -110,7 +119,7 @@ export function TextOverrideCell({
         }}
       >
         <div className="mb-2 text-xs leading-5 text-[#6b6b7a]">
-          Inherits: {truncate(row.defaultText ?? '', 60)}
+          {formatMessage(tl.inherits, { text: truncate(row.defaultText ?? '', 60) })}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <button
@@ -118,7 +127,7 @@ export function TextOverrideCell({
             onClick={() => setLocaleContent(row.slideGroupId, row.layerId, locale, { text: '' })}
             className="rounded-lg border border-[rgba(255,255,255,0.12)] px-2.5 py-1 text-xs text-[#a0a0b0] hover:border-[rgba(255,255,255,0.22)] hover:text-white transition"
           >
-            + Manual
+            {tl.manualAdd}
           </button>
           {mode === 'auto' && (
             <button
@@ -126,10 +135,10 @@ export function TextOverrideCell({
               onClick={onAiTranslate}
               className="rounded-lg border border-[rgba(124,110,246,0.4)] bg-[rgba(124,110,246,0.1)] px-2.5 py-1 text-xs text-[#c5befd] hover:bg-[rgba(124,110,246,0.2)] transition"
             >
-              ✦ AI
+              {tl.aiTranslate}
             </button>
           )}
-          <span className="text-xs text-amber-400/70">⚠ Missing</span>
+          <span className="text-xs text-amber-400/70">{tl.missingBadge}</span>
         </div>
       </div>
     )
@@ -156,13 +165,13 @@ export function TextOverrideCell({
       )}
       <div className="relative">
         {cellStatus === 'done' && (
-          <div className="text-[10px] text-emerald-400 mb-1">✓ AI translated</div>
+          <div className="text-[10px] text-emerald-400 mb-1">{tl.aiTranslated}</div>
         )}
         <LocaleRichTextEditor
           baseLayer={baseLayer}
           text={effectiveText}
           marks={effectiveMarks}
-          placeholder={isDefaultLocale ? 'Enter base text' : 'Enter localized text'}
+          placeholder={isDefaultLocale ? tl.enterBaseText : tl.enterLocalizedText}
           toolbarSlot={toolbarSlot}
           onEditingChange={onEditingChange}
           onCommit={({ text, marks }) => {
@@ -178,9 +187,7 @@ export function TextOverrideCell({
         {(formattingLostByAi || formattingMissing) && (
           <div className="mt-2 flex items-start gap-1.5 rounded-lg border border-[rgba(245,158,11,0.3)] bg-[rgba(245,158,11,0.07)] px-2 py-1.5">
             <span className="text-[10px] leading-relaxed text-[#fbbf24]">
-              {formattingLostByAi
-                ? '⚠ AI could not preserve the source formatting — click the text and re-apply it'
-                : '⚠ The source has styled words not applied here — click the text to style it'}
+              {formattingLostByAi ? tl.formattingLostByAi : tl.formattingMissing}
             </span>
           </div>
         )}
@@ -189,15 +196,15 @@ export function TextOverrideCell({
             but these controls are UI chrome, not part of the contrast test — keep them legible. */}
         <div className="mt-2 flex items-center justify-between rounded-md bg-[#18181f]/70 px-1.5 py-1 backdrop-blur-sm">
           {isDefaultLocale ? (
-            <span className="text-[10px] text-[#6b6b7a]">Base content</span>
+            <span className="text-[10px] text-[#6b6b7a]">{tl.baseContent}</span>
           ) : mode === 'auto' && (
             <button
               type="button"
               onClick={onAiTranslate}
               className="text-[10px] text-[#9d90f8] hover:text-white transition"
-              title="Re-translate with AI"
+              title={tl.retranslateTitle}
             >
-              ✦ Re-translate
+              {tl.retranslate}
             </button>
           )}
           {!isDefaultLocale && (
@@ -206,7 +213,7 @@ export function TextOverrideCell({
               onClick={() => clearLocaleContent(row.slideGroupId, row.layerId, locale)}
               className="ml-auto text-xs font-medium text-[#b9b6c9] transition hover:text-white"
             >
-              × Clear
+              {tl.clearCell}
             </button>
           )}
         </div>

@@ -1,7 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+/**
+ * [INPUT]: depends on react hooks/Fragment, react-dom createPortal, LANGUAGES from @/utils/locale, and useStudioLocale/splitMessageTemplate from @/i18n
+ * [OUTPUT]: exports LanguagePopover searchable locale selector popover localized across EN/ZH/JA/KO
+ * [POS]: anchored language picker popover within src/pages/localization
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { RefObject } from 'react'
 import { LANGUAGES } from '@/utils/locale'
+import { splitMessageTemplate, useStudioLocale } from '@/i18n'
 
 // ─── Language Combobox ────────────────────────────────────────────────────────
 
@@ -16,6 +23,8 @@ function LanguageCombobox({
   onAdd: (code: string) => void
   onCancel: () => void
 }) {
+  const { t } = useStudioLocale()
+  const tl = t.modals.localization
   const [query, setQuery] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -57,7 +66,7 @@ function LanguageCombobox({
             if (e.key === 'Enter' && filtered.length > 0) handleSelect(filtered[0].code)
             if (e.key === 'Enter' && filtered.length === 0 && customCodeValid) handleSelect(customCodeValid)
           }}
-          placeholder="Search language or type code…"
+          placeholder={tl.searchLanguagePlaceholder}
           className="w-full rounded-lg border border-white/10 bg-[#0f0f13] px-3 py-2 text-sm text-white outline-none placeholder:text-[#6b6b7a] focus:border-[#7c6ef6]"
         />
       </div>
@@ -93,12 +102,32 @@ function LanguageCombobox({
             className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[#9d90f8] hover:bg-[#7c6ef6]/10 hover:text-white transition"
           >
             <span className="text-[#7c6ef6]">＋</span>
-            Use custom code: <span className="font-mono">{customCodeValid}</span>
+            <span>
+              {splitMessageTemplate(tl.useCustomCode).map((part, idx) => (
+                <Fragment key={idx}>
+                  {part.type === 'token' && part.key === 'code' ? (
+                    <span className="font-mono">{customCodeValid}</span>
+                  ) : (
+                    part.type === 'text' ? part.value : ''
+                  )}
+                </Fragment>
+              ))}
+            </span>
           </button>
         )}
         {filtered.length === 0 && !customCodeValid && (
           <div className="px-3 py-4 text-center text-xs text-[#6b6b7a]">
-            No languages found. Type a valid locale code (e.g. <span className="font-mono">xx</span> or <span className="font-mono">xx-yy</span>).
+            {splitMessageTemplate(tl.noLanguagesFound).map((part, idx) => (
+              <Fragment key={idx}>
+                {part.type === 'token' && part.key === 'short' ? (
+                  <span className="font-mono">xx</span>
+                ) : part.type === 'token' && part.key === 'full' ? (
+                  <span className="font-mono">xx-yy</span>
+                ) : (
+                  part.type === 'text' ? part.value : ''
+                )}
+              </Fragment>
+            ))}
           </div>
         )}
       </div>
@@ -108,7 +137,7 @@ function LanguageCombobox({
           onClick={onCancel}
           className="w-full rounded-lg px-3 py-1.5 text-xs text-[#6b6b7a] hover:text-white transition"
         >
-          Cancel
+          {t.common.cancel}
         </button>
       </div>
     </div>

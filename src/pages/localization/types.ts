@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on ImageLayer, PhoneLayer, and TextLayer from @/types
+ * [OUTPUT]: exports LocalizableDisplayLayer, LocalizableRow, UploadTarget, CellStatus, CellKey, and cellKey helper
+ * [POS]: leaf type definitions within src/pages/localization shared across localization matrix components
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { ImageLayer, PhoneLayer, TextLayer } from '@/types'
 
 export type LocalizableDisplayLayer = TextLayer | PhoneLayer | ImageLayer

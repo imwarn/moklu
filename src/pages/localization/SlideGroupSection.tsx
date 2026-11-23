@@ -1,6 +1,13 @@
-import { useMemo } from 'react'
+/**
+ * [INPUT]: depends on react useMemo/Fragment, domain types, effectiveLocalizationMode/getLanguageName, ModeSelector, TextOverrideCell, ImageOverrideCell, helpers, types, and useStudioLocale/formatMessage/splitMessageTemplate from @/i18n
+ * [OUTPUT]: exports SlideGroupSection collapsible slide group localization matrix localized across EN/ZH/JA/KO
+ * [POS]: per-slide-group table section within src/pages/localization
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
+import { Fragment, useMemo } from 'react'
 import type { BrandColor, Layer, LocaleLayerPatch, LocalizationMode, SlideGroup } from '@/types'
 import { effectiveLocalizationMode, getLanguageName } from '@/utils/locale'
+import { formatMessage, splitMessageTemplate, useStudioLocale } from '@/i18n'
 import { ModeSelector } from './ModeSelector'
 import { TextOverrideCell } from './TextOverrideCell'
 import { ImageOverrideCell } from './ImageOverrideCell'
@@ -63,12 +70,15 @@ export function SlideGroupSection({
   scrollContainerRef,
   onHorizontalScroll,
 }: SlideGroupSectionProps) {
+  const { t } = useStudioLocale()
+  const tl = t.modals.localization
   const activeProgress = rows.filter((row) => isOverrideComplete(row, activeLocale, defaultLocale)).length
   const eligibleRows = rows.filter((r) => effectiveLocalizationMode(r.layer) !== 'skip')
   const backgroundPreview = useMemo(
     () => getSlideBackgroundPreview(slideGroup, brandColors),
     [slideGroup, brandColors],
   )
+  const activeLanguageName = getLanguageName(activeLocale)
 
   return (
     <section
@@ -87,8 +97,25 @@ export function SlideGroupSection({
               {slideGroup.name}
             </div>
             <div className="mt-1 text-sm text-[#7f8094]">
-              {eligibleRows.length} localizable · {activeProgress}/{eligibleRows.length} complete for{' '}
-              <span className="font-medium text-[#bdb7f6]">{getLanguageName(activeLocale)}</span>
+              {splitMessageTemplate(tl.sectionSummary).map((part, idx) => (
+                <Fragment key={idx}>
+                  {part.type === 'token' ? (
+                    part.key === 'language' ? (
+                      <span className="font-medium text-[#bdb7f6]">{activeLanguageName}</span>
+                    ) : part.key === 'eligible' ? (
+                      eligibleRows.length
+                    ) : part.key === 'complete' ? (
+                      activeProgress
+                    ) : part.key === 'total' ? (
+                      eligibleRows.length
+                    ) : (
+                      ''
+                    )
+                  ) : (
+                    part.value
+                  )}
+                </Fragment>
+              ))}
             </div>
           </div>
         </div>
@@ -109,7 +136,7 @@ export function SlideGroupSection({
               className="grid gap-3 pr-6 pb-3 text-xs font-semibold uppercase tracking-[0.18em] text-[#78798b]"
               style={{ gridTemplateColumns }}
             >
-              <div className="py-2 pl-4 pr-3 sticky left-0 z-10 bg-[#18181f]">Layer</div>
+              <div className="py-2 pl-4 pr-3 sticky left-0 z-10 bg-[#18181f]">{tl.layerColumn}</div>
               {locales.map((locale) => (
                 <div
                   key={locale}
@@ -120,7 +147,7 @@ export function SlideGroupSection({
                 >
                   <span>{getLanguageName(locale)}</span>
                   <span className="font-mono text-[10px] opacity-60">{locale}</span>
-                  {locale === defaultLocale && <span className="text-[9px] text-[#6b6b7a]">(default)</span>}
+                  {locale === defaultLocale && <span className="text-[9px] text-[#6b6b7a]">{tl.defaultBadgeParen}</span>}
                 </div>
               ))}
             </div>
@@ -152,12 +179,14 @@ export function SlideGroupSection({
                               type="button"
                               onClick={() => onNavigateToLayer(row)}
                               className="truncate font-medium text-[#d5d5df] text-sm hover:text-white transition text-left w-full"
-                              title="Go to layer in editor"
+                              title={tl.goToLayerTitle}
                             >
                               {row.layerName}
                             </button>
                             <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                              <span className="text-[10px] uppercase tracking-[0.14em] text-[#6b6b7a]">{row.layerType}</span>
+                              <span className="text-[10px] uppercase tracking-[0.14em] text-[#6b6b7a]">
+                                {t.properties.layerTypes[row.layerType] ?? row.layerType}
+                              </span>
                               {platformBadge && (
                                 <span
                                   className="text-[9px] px-1.5 py-0.5 rounded border font-medium"
@@ -167,17 +196,17 @@ export function SlideGroupSection({
                                     background: `${platformBadge.color}12`,
                                   }}
                                 >
-                                  {platformBadge.label} only
+                                  {formatMessage(tl.platformOnly, { platform: platformBadge.label })}
                                 </span>
                               )}
                               {mode === 'skip' && (
                                 <span className="text-[9px] px-1.5 py-0.5 rounded border border-[rgba(239,68,68,0.3)] bg-[rgba(239,68,68,0.08)] text-[#fca5a5]">
-                                  skip
+                                  {tl.badgeSkip}
                                 </span>
                               )}
                               {mode === 'manual' && row.layerType === 'text' && (
                                 <span className="text-[9px] px-1.5 py-0.5 rounded border border-[rgba(245,158,11,0.3)] bg-[rgba(245,158,11,0.08)] text-[#fbbf24]">
-                                  manual
+                                  {tl.badgeManual}
                                 </span>
                               )}
                             </div>
