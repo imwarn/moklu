@@ -2,8 +2,8 @@
 > L2 | Parent: ../GEMINI.md
 
 ## Member list
-- `main.tsx`: Tick-0 browser mount entry point, Google Fonts loader, non-blocking background project bootstrap (`ensureProjectsBootstrapped`), and headless ExportApp switch.
-- `App.tsx`: Lightweight History API SPA router routing `/` and 18 localized SEO tool slugs to `ToolLandingPage` and `/studio` to lazy-loaded `StudioPage`.
+- `main.tsx`: Tick-0 browser mount entry point, `vite:preloadError` auto-recovery (`installChunkRecoveryListener`), Google Fonts loader, non-blocking background project bootstrap (`ensureProjectsBootstrapped`), and headless ExportApp switch.
+- `App.tsx`: Lightweight History API SPA router routing `/` and 18 localized SEO tool slugs to `ToolLandingPage` and `/studio` to lazy-loaded `StudioPage` wrapped in `ChunkErrorBoundary`.
 - `config.ts`: Canonical site config exporting `SITE_URL` (`https://moklu.app`), `BRAND_NAME` (`Moklu`), and `getPixelDeckConfig()`.
 - `index.css`: Tailwind v4 theme tokens and adaptive Light/Dark workspace vs locked dark Studio body surface rules.
 - `globals.d.ts`: Build-time Vite constant declarations (`__APP_VERSION__`, `__GIT_HASH__`).

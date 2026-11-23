@@ -412,3 +412,58 @@ test('Localized /zh/studio renders Simplified Chinese Studio UI and switches UI 
   await expect(page).toHaveURL(/\/studio$/)
   await expect(page.locator('header')).toContainText('Quick Design')
 })
+
+test('Built /zh/studio avoids eager modal micro-chunks on load and isolates lazy HelpModal chunk failure without blank screen', async ({ browser, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Built static chunk resilience test runs once on Chromium')
+  const distDir = path.resolve('dist')
+  try {
+    await access(path.join(distDir, 'zh', 'studio', 'index.html'))
+  } catch {
+    test.skip(true, 'dist/ not built yet')
+    return
+  }
+
+  const server = await startStaticDistServer(distDir)
+  try {
+    const context = await browser.newContext({ viewport: { width: 1440, height: 900 } })
+    const page = await context.newPage()
+    const requestedAssets = []
+    page.on('request', (req) => {
+      const reqUrl = req.url()
+      if (reqUrl.includes('/assets/')) requestedAssets.push(reqUrl)
+    })
+
+    await page.goto(`${server.baseUrl}/zh/studio`, { waitUntil: 'networkidle' })
+    await expect(page.locator('.konvajs-content').first()).toBeVisible()
+    await expect(page.locator('header')).toContainText('快速设计')
+
+    // Zero eager dynamic modal micro-chunk fetches on initial Studio load
+    expect(requestedAssets.some((u) => /ProjectsModal-|TemplatesModal-|SettingsModal-|HelpModal-/i.test(u))).toBe(false)
+
+    // Pre-seed cooldown guard so simulated offline HelpModal failure shows inline ChunkErrorBoundary
+    // instead of looping reloads, and verify Studio stays interactive without blanking out.
+    await page.evaluate(() => {
+      window.sessionStorage.setItem(
+        'moklu:chunk-reload',
+        JSON.stringify({ pathname: window.location.pathname, timestamp: Date.now() }),
+      )
+    })
+    await page.route(/\/assets\/HelpModal-.*\.js$/, (route) => route.abort('failed'))
+    await page.getByRole('button', { name: /帮助/ }).click()
+
+    const inlineFallback = page.getByTestId('chunk-error-boundary-inline')
+    await expect(inlineFallback).toBeVisible()
+    await expect(inlineFallback).toContainText('Studio 资源已更新')
+    await expect(inlineFallback).toContainText('刷新页面')
+    // Canvas stays mounted and visible underneath!
+    await expect(page.locator('.konvajs-content').first()).toBeVisible()
+
+    // Dismissing inline fallback keeps Studio cleanly usable
+    await inlineFallback.getByRole('button', { name: '关闭' }).click()
+    await expect(inlineFallback).toHaveCount(0)
+
+    await context.close()
+  } finally {
+    await server.close()
+  }
+})

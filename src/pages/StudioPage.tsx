@@ -1,5 +1,5 @@
 /**
- * [INPUT]: depends on react, konva, zustand useShallow, Toolbar, LayersPanel, PreviewModal, PropertiesPanel, SlideNavigator, StageCanvas, EditingContext, AppLoadingScreen, ConfirmDialog, useThumbnails, useImageCacheWarmer, useEditorStore/useUndoRedo, ensureProjectsBootstrapped/useProjectsStore, applyCanvasFormat/resolveGroupView, registerStage, getScopedEditingIndicator, applyDocumentTheme from @/theme/themeStore, buildLocalizedPath/LocaleCode from @/seo, and StudioLocaleProvider/getStudioDictionary from @/i18n
+ * [INPUT]: depends on react, konva, zustand useShallow, Toolbar, LayersPanel, PreviewModal, PropertiesPanel, SlideNavigator, StageCanvas, EditingContext, AppLoadingScreen, ConfirmDialog, ChunkErrorBoundary, useThumbnails, useImageCacheWarmer, useEditorStore/useUndoRedo, ensureProjectsBootstrapped/useProjectsStore, applyCanvasFormat/resolveGroupView, registerStage, getScopedEditingIndicator, applyDocumentTheme from @/theme/themeStore, buildLocalizedPath/LocaleCode from @/seo, and StudioLocaleProvider/getStudioDictionary from @/i18n
  * [OUTPUT]: exports StudioPage component containing the full Konva multi-layer editor wrapped in StudioLocaleProvider, localization mode, keyboard shortcuts, and Home/Tools navigation link
  * [POS]: lazy-loaded full Studio editor page mounted by src/App.tsx on /studio and /<locale>/studio routes
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
@@ -22,6 +22,7 @@ import { applyCanvasFormat, resolveGroupView } from '@/utils/canvasFormats'
 import { registerStage } from '@/utils/stageRegistry'
 import { getScopedEditingIndicator } from '@/utils/scopedEditingIndicator'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { ChunkErrorBoundary } from '@/components/common/ChunkErrorBoundary'
 import { ensureProjectsBootstrapped, useProjectsStore } from '@/store/projects'
 import { applyDocumentTheme } from '@/theme/themeStore'
 import { buildLocalizedPath, type LocaleCode } from '@/seo'
@@ -351,9 +352,15 @@ export function StudioPage({ locale = 'en', onNavigate }: StudioPageProps) {
           {/* Localization view — absolutely covers the editor when active */}
           {view === 'localization' && (
             <main className="absolute inset-0 z-10 overflow-hidden bg-[#111118]">
-              <Suspense>
-                <LocalizationView embedded onBack={() => handleSetMode('editor')} onPreview={handlePreviewLocale} />
-              </Suspense>
+              <ChunkErrorBoundary
+                locale={locale}
+                variant="inline"
+                onReset={() => handleSetMode('editor')}
+              >
+                <Suspense>
+                  <LocalizationView embedded onBack={() => handleSetMode('editor')} onPreview={handlePreviewLocale} />
+                </Suspense>
+              </ChunkErrorBoundary>
             </main>
           )}
 

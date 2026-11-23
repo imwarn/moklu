@@ -1,5 +1,5 @@
 /**
- * [INPUT]: depends on react, zustand useShallow, useEditorStore/useUndoRedo from @/store, useProjectsStore from @/store/projects, toolbar buttons, lazy-loaded modals, stageRegistry, export helpers, buildLocalizedPath from @/seo, and STUDIO_UI_LOCALES/useStudioLocale from @/i18n
+ * [INPUT]: depends on react, zustand useShallow, useEditorStore/useUndoRedo from @/store, useProjectsStore from @/store/projects, toolbar buttons, statically imported lightweight modals (QuickDesignModal, CanvasSizeModal, ProjectsModal, TemplatesModal, SettingsModal), lazy HelpModal wrapped in ChunkErrorBoundary, stageRegistry, export helpers, buildLocalizedPath from @/seo, and STUDIO_UI_LOCALES/useStudioLocale from @/i18n
  * [OUTPUT]: exports Toolbar component providing localized project controls, Quick Design, Canvas Size, undo/redo, PNG export, localization toggle, Studio UI language switcher, and Home/Tools navigation back link
  * [POS]: top chrome bar of StudioPage inside src/components/toolbar
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
@@ -13,6 +13,10 @@ import { BrandKitButton } from '@/components/toolbar/BrandKitButton'
 import { Logo } from '@/components/toolbar/Logo'
 import { QuickDesignModal } from '@/components/panels/QuickDesignModal'
 import { CanvasSizeModal } from '@/components/panels/CanvasSizeModal'
+import { ProjectsModal } from '@/components/panels/ProjectsModal'
+import { TemplatesModal } from '@/components/panels/TemplatesModal'
+import { SettingsModal } from '@/components/panels/SettingsModal'
+import { ChunkErrorBoundary } from '@/components/common/ChunkErrorBoundary'
 import { ReplaceScreenshotButton } from '@/components/toolbar/ReplaceScreenshotButton'
 import { getStage } from '@/utils/stageRegistry'
 import { exportSlide, downloadDataUrl } from '@/utils/export'
@@ -20,16 +24,7 @@ import { runExclusiveCapture, waitForStageSettled } from '@/utils/stageCapture'
 import { buildLocalizedPath } from '@/seo'
 import { STUDIO_UI_LOCALES, useStudioLocale } from '@/i18n'
 
-// Lazy-load heavy modals — only fetched when the user opens them for the first time.
-const ProjectsModal = lazy(() =>
-  import('@/components/panels/ProjectsModal').then((m) => ({ default: m.ProjectsModal })),
-)
-const TemplatesModal = lazy(() =>
-  import('@/components/panels/TemplatesModal').then((m) => ({ default: m.TemplatesModal })),
-)
-const SettingsModal = lazy(() =>
-  import('@/components/panels/SettingsModal').then((m) => ({ default: m.SettingsModal })),
-)
+// Keep heavyweight markdown-backed HelpModal lazy and strictly mounted only when open.
 const HelpModal = lazy(() =>
   import('@/components/panels/HelpModal').then((m) => ({ default: m.HelpModal })),
 )
@@ -174,15 +169,23 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
         borderColor: 'rgba(255,255,255,0.08)',
       }}
     >
-      {/* Projects / Templates / API modals — lazy loaded on first open */}
-      <Suspense>
-        <QuickDesignModal open={quickOpen} onClose={() => setQuickOpen(false)} />
-        <CanvasSizeModal open={canvasSizeOpen} onClose={() => setCanvasSizeOpen(false)} />
-        <ProjectsModal open={projectsOpen} onClose={() => setProjectsOpen(false)} />
-        <TemplatesModal open={templatesOpen} onClose={() => setTemplatesOpen(false)} />
-        <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
-        <HelpModal open={helpOpen} onClose={() => setHelpOpen(false)} />
-      </Suspense>
+      {/* Lightweight Studio modals are bundled inside lazy StudioPage; HelpModal stays gated & resilient */}
+      <QuickDesignModal open={quickOpen} onClose={() => setQuickOpen(false)} />
+      <CanvasSizeModal open={canvasSizeOpen} onClose={() => setCanvasSizeOpen(false)} />
+      <ProjectsModal open={projectsOpen} onClose={() => setProjectsOpen(false)} />
+      <TemplatesModal open={templatesOpen} onClose={() => setTemplatesOpen(false)} />
+      <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      {helpOpen && (
+        <ChunkErrorBoundary
+          locale={uiLocale}
+          variant="inline"
+          onReset={() => setHelpOpen(false)}
+        >
+          <Suspense fallback={null}>
+            <HelpModal open={helpOpen} onClose={() => setHelpOpen(false)} />
+          </Suspense>
+        </ChunkErrorBoundary>
+      )}
 
       <div
         data-testid="toolbar-left"

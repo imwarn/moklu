@@ -4,7 +4,7 @@
  * [POS]: localization matrix view within src/pages, embedded in StudioPage when switching to the Localizations tab
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useEditorStore } from '@/store'
 import { useAssetStore } from '@/store/assets'
@@ -22,9 +22,7 @@ import { SlideGroupSection } from './localization/SlideGroupSection'
 import { PromoteLocaleDialog } from './localization/PromoteLocaleDialog'
 import { useStudioLocale } from '@/i18n'
 
-const ApiKeysModal = lazy(() =>
-  import('@/components/panels/ApiKeysModal').then((m) => ({ default: m.ApiKeysModal })),
-)
+import { ApiKeysModal } from '@/components/panels/ApiKeysModal'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -501,9 +499,7 @@ export function LocalizationView({ onBack, embedded = false, onPreview }: Locali
   return (
     <div className={`relative overflow-hidden bg-[#0f0f13] text-[#e8e8f0] ${embedded ? 'h-full w-full' : 'h-screen w-screen'}`}>
       {/* AI Settings modal — reachable from no-key states without leaving the view */}
-      <Suspense>
-        <ApiKeysModal open={aiSettingsOpen} onClose={() => setAiSettingsOpen(false)} />
-      </Suspense>
+      <ApiKeysModal open={aiSettingsOpen} onClose={() => setAiSettingsOpen(false)} />
       <PromoteLocaleDialog
         open={Boolean(promoteTarget && promotionPreview)}
         locale={promoteTarget}
