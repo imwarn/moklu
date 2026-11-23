@@ -1,7 +1,183 @@
+/**
+ * [INPUT]: depends on react hooks, useEditorStore from @/store, getPanoTotalWidth from @/utils/panoGeometry, and CanvasFormatId/SlideGroup types
+ * [OUTPUT]: exports useStageViewport hook plus pure helpers computeViewportTransition and shouldIgnoreSpacePanTarget
+ * [POS]: viewport zoom, pan, fit, and resize controller for StageCanvas inside src/components/canvas/stage
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useEditorStore } from '@/store'
 import { getPanoTotalWidth } from '@/utils/panoGeometry'
 import type { CanvasFormatId, SlideGroup } from '@/types'
+
+const MIN_ZOOM = 0.05
+const MAX_ZOOM = 4
+const AUTO_FIT_PADDING = 32
+const MANUAL_FIT_PADDING = 80
+const RESIZE_OVERFLOW_MARGIN = 24
+
+const INTERACTIVE_TAGS = new Set(['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON', 'A', 'SUMMARY'])
+const INTERACTIVE_ROLE_SELECTOR = [
+  '[contenteditable=""]',
+  '[contenteditable="true"]',
+  '[role="button"]',
+  '[role="menuitem"]',
+  '[role="option"]',
+  '[role="tab"]',
+  '[role="switch"]',
+  '[role="checkbox"]',
+  '[role="radio"]',
+  '[role="slider"]',
+  '[role="combobox"]',
+  '[role="listbox"]',
+  '[role="textbox"]',
+  '[role="dialog"]',
+  '[aria-modal="true"]',
+].join(',')
+
+// ─── Pure viewport & keyboard helpers ────────────────────────────────────────
+
+function clampZoom(zoom: number): number {
+  return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom))
+}
+
+export interface ViewportSnapshot {
+  groupId: string
+  family: string
+  format: CanvasFormatId
+  totalW: number
+  totalH: number
+  containerW: number
+}
+
+export interface ViewportState {
+  zoom: number
+  viewportX: number
+  viewportY: number
+}
+
+export interface ViewportTransitionInput {
+  prev: ViewportSnapshot | null
+  next: ViewportSnapshot
+  containerH: number
+  current: ViewportState
+}
+
+export function computeFitViewport(
+  totalW: number,
+  totalH: number,
+  containerW: number,
+  containerH: number,
+  padding: number,
+): ViewportState {
+  const zoom = clampZoom(Math.min(
+    (containerW - padding) / totalW,
+    (containerH - padding) / totalH,
+  ))
+  return {
+    zoom,
+    viewportX: (containerW - totalW * zoom) / 2,
+    viewportY: (containerH - totalH * zoom) / 2,
+  }
+}
+
+/**
+ * Resolves viewport zoom and pan across mount, device-family switch,
+ * same-family format switch, canvas geometry changes, and container resize.
+ *
+ * Returning `null` leaves the user's current zoom and pan untouched.
+ */
+export function computeViewportTransition({
+  prev,
+  next,
+  containerH,
+  current,
+}: ViewportTransitionInput): ViewportState | null {
+  if (next.containerW <= 0 || containerH <= 0 || next.totalW <= 0 || next.totalH <= 0) {
+    return null
+  }
+
+  // 1. Initial mount: fit the canvas into the viewport.
+  if (!prev) {
+    return computeFitViewport(next.totalW, next.totalH, next.containerW, containerH, AUTO_FIT_PADDING)
+  }
+
+  // 2. Switching device family (e.g. phone -> watch/vr): full fit so drastically
+  //    different dimensions never appear tiny or oversized.
+  if (prev.family !== next.family) {
+    return computeFitViewport(next.totalW, next.totalH, next.containerW, containerH, MANUAL_FIT_PADDING)
+  }
+
+  // 3. Switching format within the same family & group: preserve visual scale
+  //    (diagonal-rescaled zoom) and re-anchor pan around the same relative point.
+  if (prev.format !== next.format && prev.groupId === next.groupId) {
+    const oldCenterX = (next.containerW / 2 - current.viewportX) / current.zoom
+    const oldCenterY = (containerH / 2 - current.viewportY) / current.zoom
+    const fx = prev.totalW > 0 ? oldCenterX / prev.totalW : 0.5
+    const fy = prev.totalH > 0 ? oldCenterY / prev.totalH : 0.5
+    const prevDiag = Math.hypot(prev.totalW, prev.totalH)
+    const newDiag = Math.hypot(next.totalW, next.totalH)
+    const sizeRatio = prevDiag > 0 && newDiag > 0 ? prevDiag / newDiag : 1
+    const zoom = clampZoom(current.zoom * sizeRatio)
+    return {
+      zoom,
+      viewportX: next.containerW / 2 - fx * next.totalW * zoom,
+      viewportY: containerH / 2 - fy * next.totalH * zoom,
+    }
+  }
+
+  // 4. Slide group switched or canvas geometry changed (e.g. Single -> Pano,
+  //    gap compensation toggled, custom format resized): fit to viewport.
+  const geometryChanged =
+    prev.groupId !== next.groupId ||
+    prev.totalW !== next.totalW ||
+    prev.totalH !== next.totalH
+  if (geometryChanged) {
+    return computeFitViewport(next.totalW, next.totalH, next.containerW, containerH, AUTO_FIT_PADDING)
+  }
+
+  // 5. Container width changed (e.g. sidebar toggled / window resized):
+  //    fit only when the canvas would overflow; otherwise keep user zoom and re-center.
+  if (prev.containerW !== next.containerW) {
+    const shouldFit = next.totalW * current.zoom > next.containerW - RESIZE_OVERFLOW_MARGIN
+    const zoom = shouldFit
+      ? clampZoom(Math.min(
+          (next.containerW - AUTO_FIT_PADDING) / next.totalW,
+          (containerH - AUTO_FIT_PADDING) / next.totalH,
+        ))
+      : current.zoom
+    return {
+      zoom,
+      viewportX: (next.containerW - next.totalW * zoom) / 2,
+      viewportY: (containerH - next.totalH * zoom) / 2,
+    }
+  }
+
+  return null
+}
+
+function isInteractiveOrEditableElement(node: EventTarget | Element | null | undefined): boolean {
+  if (!node || typeof node !== 'object') return false
+  const el = node as Partial<HTMLElement>
+  const tag = typeof el.tagName === 'string' ? el.tagName.toUpperCase() : ''
+  if (INTERACTIVE_TAGS.has(tag)) return true
+  if (el.isContentEditable) return true
+  if (typeof el.closest === 'function' && el.closest(INTERACTIVE_ROLE_SELECTOR)) return true
+  return false
+}
+
+/**
+ * Returns true when a Space keydown event originated in or targets an
+ * interactive control, editable surface, or modal dialog so Space is passed
+ * through instead of hijacked for canvas panning.
+ */
+export function shouldIgnoreSpacePanTarget(
+  target: EventTarget | null,
+  activeElement?: Element | null,
+): boolean {
+  return isInteractiveOrEditableElement(target) || isInteractiveOrEditableElement(activeElement)
+}
+
+// ─── Hook ────────────────────────────────────────────────────────────────────
 
 interface UseStageViewportOptions {
   group: SlideGroup | undefined
@@ -11,7 +187,7 @@ interface UseStageViewportOptions {
   setViewportPosition: (x: number, y: number) => void
   /** Format family key (e.g. 'phone', 'watch', 'vr') — switching families triggers a full fit-to-view. */
   activeFamily: string
-  /** Active canvas format id — switching formats within the same family re-anchors pan by relative position (see effect below), zoom untouched. */
+  /** Active canvas format id — switching formats within the same family re-anchors pan by relative position, rescaling zoom by diagonal ratio. */
   activeCanvasFormat: CanvasFormatId
 }
 
@@ -30,10 +206,16 @@ export function useStageViewport({
   const [spaceDown, setSpaceDown] = useState(false)
   const [isPanning, setIsPanning] = useState(false)
   const panStartRef = useRef<{ clientX: number; clientY: number; vpX: number; vpY: number } | null>(null)
-  const lastContainerW = useRef(0)
-  const lastCanvasDimensions = useRef('')
-  const lastFamilyRef = useRef<string | null>(null)
-  const prevCanvasRef = useRef<{ format: CanvasFormatId; totalW: number; totalH: number } | null>(null)
+  const prevSnapshotRef = useRef<ViewportSnapshot | null>(null)
+
+  const groupId = group?.id ?? null
+  const slideWidth = group?.slideWidth ?? 0
+  const slideHeight = group?.slideHeight ?? 0
+  const numSlides = group?.numSlides ?? 0
+  const totalW = groupId
+    ? getPanoTotalWidth({ slideWidth, numSlides }, panoCompensate ? panoCompensationPx : 0)
+    : 0
+  const totalH = groupId ? slideHeight : 0
 
   useEffect(() => {
     const el = containerRef.current
@@ -46,30 +228,42 @@ export function useStageViewport({
     return () => ro.disconnect()
   }, [])
 
+  // Unified viewport synchronization: avoids Effect 1 clobbering user zoom/pan
+  // before same-family relative format scaling can read it.
   useEffect(() => {
-    if (!containerSize.w || !containerSize.h || !group) return
-    const totalW = getPanoTotalWidth(group, panoCompensate ? panoCompensationPx : 0)
-    const totalH = group.slideHeight
-    const dimensions = `${group.id}:${totalW}:${totalH}`
-    const geometryChanged = lastCanvasDimensions.current !== dimensions
-    const viewportChanged = lastContainerW.current !== containerSize.w
-    if (!geometryChanged && !viewportChanged) return
-    lastCanvasDimensions.current = dimensions
-    lastContainerW.current = containerSize.w
-    const currentZoom = useEditorStore.getState().zoom
-    // Fit when a new canvas is applied or a narrow viewport cannot display
-    // the old canvas. Keep user zoom otherwise (e.g. opening sidebars).
-    const shouldFit = geometryChanged || totalW * currentZoom > containerSize.w - 24
-    const nextZoom = shouldFit ? Math.max(0.05, Math.min(4, Math.min(
-      (containerSize.w - 32) / totalW,
-      (containerSize.h - 32) / totalH,
-    ))) : currentZoom
-    if (nextZoom !== currentZoom) setZoom(nextZoom)
-    setViewportPosition(
-      (containerSize.w - totalW * nextZoom) / 2,
-      (containerSize.h - totalH * nextZoom) / 2,
-    )
-  }, [containerSize.w, containerSize.h, group?.id, group?.slideWidth, group?.slideHeight, group?.numSlides, panoCompensate, panoCompensationPx, setZoom, setViewportPosition])
+    if (!containerSize.w || !containerSize.h || !groupId || totalW <= 0 || totalH <= 0) return
+
+    const nextSnapshot: ViewportSnapshot = {
+      groupId,
+      family: activeFamily,
+      format: activeCanvasFormat,
+      totalW,
+      totalH,
+      containerW: containerSize.w,
+    }
+    const { zoom, viewportX, viewportY } = useEditorStore.getState()
+    const transition = computeViewportTransition({
+      prev: prevSnapshotRef.current,
+      next: nextSnapshot,
+      containerH: containerSize.h,
+      current: { zoom, viewportX, viewportY },
+    })
+    prevSnapshotRef.current = nextSnapshot
+
+    if (!transition) return
+    if (transition.zoom !== zoom) setZoom(transition.zoom)
+    setViewportPosition(transition.viewportX, transition.viewportY)
+  }, [
+    containerSize.w,
+    containerSize.h,
+    groupId,
+    totalW,
+    totalH,
+    activeFamily,
+    activeCanvasFormat,
+    setZoom,
+    setViewportPosition,
+  ])
 
   useEffect(() => {
     const el = containerRef.current
@@ -83,7 +277,7 @@ export function useStageViewport({
         const px = e.clientX - rect.left
         const py = e.clientY - rect.top
         const factor = e.deltaY < 0 ? 1.08 : 0.93
-        const newZoom = Math.max(0.05, Math.min(4, cz * factor))
+        const newZoom = clampZoom(cz * factor)
         const canvasX = (px - vpX) / cz
         const canvasY = (py - vpY) / cz
         sz(newZoom)
@@ -99,28 +293,30 @@ export function useStageViewport({
   }, [])
 
   useEffect(() => {
+    const resetSpacePan = () => {
+      spaceRef.current = false
+      setSpaceDown(false)
+      panStartRef.current = null
+      setIsPanning(false)
+    }
     const down = (e: KeyboardEvent) => {
       if (e.code === 'Space' && !e.repeat) {
-        const tag = (document.activeElement as HTMLElement | null)?.tagName
-        if (tag === 'INPUT' || tag === 'TEXTAREA') return
+        if (shouldIgnoreSpacePanTarget(e.target, document.activeElement)) return
         e.preventDefault()
         spaceRef.current = true
         setSpaceDown(true)
       }
     }
     const up = (e: KeyboardEvent) => {
-      if (e.code === 'Space') {
-        spaceRef.current = false
-        setSpaceDown(false)
-        panStartRef.current = null
-        setIsPanning(false)
-      }
+      if (e.code === 'Space') resetSpacePan()
     }
     window.addEventListener('keydown', down)
     window.addEventListener('keyup', up)
+    window.addEventListener('blur', resetSpacePan)
     return () => {
       window.removeEventListener('keydown', down)
       window.removeEventListener('keyup', up)
+      window.removeEventListener('blur', resetSpacePan)
     }
   }, [])
 
@@ -148,59 +344,11 @@ export function useStageViewport({
   }
 
   const handleFit = useCallback(() => {
-    if (!group || !containerSize.w || !containerSize.h) return
-    const totalW = getPanoTotalWidth(group, panoCompensate ? panoCompensationPx : 0)
-    const totalH = group.slideHeight
-    const PADDING = 80
-    const fitScale = Math.max(0.05, Math.min(4, Math.min(
-      (containerSize.w - PADDING) / totalW,
-      (containerSize.h - PADDING) / totalH,
-    )))
-    setZoom(fitScale)
-    setViewportPosition(
-      (containerSize.w - totalW * fitScale) / 2,
-      (containerSize.h - totalH * fitScale) / 2,
-    )
-  }, [group, containerSize.w, containerSize.h, setZoom, setViewportPosition, panoCompensate, panoCompensationPx])
-
-  // Switching device family (e.g. phone -> watch/vr) spans very different canvas
-  // sizes/aspect ratios; auto-fit so the new format isn't left tiny/oversized at
-  // the previous family's zoom. Switching *format within the same family* keeps
-  // continuity, but "keep the same zoom number" still looks like a jump because
-  // formats in a family still differ in absolute size — the canvas's apparent
-  // on-screen footprint would shrink/grow with it. Instead we rescale zoom by
-  // the ratio of canvas diagonals (so the design keeps roughly the same visual
-  // size on screen) and re-anchor pan so the same *relative* area stays centered.
-  useEffect(() => {
-    if (!containerSize.w || !containerSize.h || !group) return
-    const totalW = getPanoTotalWidth(group, panoCompensate ? panoCompensationPx : 0)
-    const totalH = group.slideHeight
-    const familyChanged = lastFamilyRef.current !== null && lastFamilyRef.current !== activeFamily
-    lastFamilyRef.current = activeFamily
-    const prevCanvas = prevCanvasRef.current
-
-    if (familyChanged) {
-      handleFit()
-    } else if (prevCanvas && prevCanvas.format !== activeCanvasFormat) {
-      const { zoom: currentZoom, viewportX: vpX, viewportY: vpY, setZoom: sz, setViewportPosition: svp } = useEditorStore.getState()
-      const oldCenterX = (containerSize.w / 2 - vpX) / currentZoom
-      const oldCenterY = (containerSize.h / 2 - vpY) / currentZoom
-      const fx = prevCanvas.totalW > 0 ? oldCenterX / prevCanvas.totalW : 0.5
-      const fy = prevCanvas.totalH > 0 ? oldCenterY / prevCanvas.totalH : 0.5
-      const prevDiag = Math.hypot(prevCanvas.totalW, prevCanvas.totalH)
-      const newDiag = Math.hypot(totalW, totalH)
-      const sizeRatio = prevDiag > 0 && newDiag > 0 ? prevDiag / newDiag : 1
-      const newZoom = Math.max(0.05, Math.min(4, currentZoom * sizeRatio))
-      sz(newZoom)
-      svp(
-        containerSize.w / 2 - fx * totalW * newZoom,
-        containerSize.h / 2 - fy * totalH * newZoom,
-      )
-    }
-
-    prevCanvasRef.current = { format: activeCanvasFormat, totalW, totalH }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeFamily, activeCanvasFormat, containerSize.w, containerSize.h, group?.id])
+    if (!groupId || totalW <= 0 || totalH <= 0 || !containerSize.w || !containerSize.h) return
+    const fit = computeFitViewport(totalW, totalH, containerSize.w, containerSize.h, MANUAL_FIT_PADDING)
+    setZoom(fit.zoom)
+    setViewportPosition(fit.viewportX, fit.viewportY)
+  }, [groupId, totalW, totalH, containerSize.w, containerSize.h, setZoom, setViewportPosition])
 
   return {
     containerRef,

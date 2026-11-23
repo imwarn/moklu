@@ -1,4 +1,11 @@
+/**
+ * [INPUT]: depends on useEffect, useRef, CSSProperties, and ReactNode from react; depends on STUDIO_TEXT_MUTED_CLS from ./studioTokens
+ * [OUTPUT]: exports accessible ModalShell dialog component with focus trapping, Escape dismissal, and AA-compliant close button contrast
+ * [POS]: foundational modal shell inside src/components/ui used by Studio modals and landing PricingModal
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react'
+import { STUDIO_TEXT_MUTED_CLS } from './studioTokens'
 
 function shouldCloseModalForKey(key: string): boolean {
   return key === 'Escape'
@@ -115,7 +122,7 @@ export function ModalShell({
   footerClassName,
   backdropStyle = { background: 'rgba(0,0,0,0.65)' },
   panelStyle = { background: '#18181f', borderColor: 'rgba(255,255,255,0.1)' },
-  closeButtonClassName = 'absolute top-4 right-4 z-10 text-[#6b6b7a] hover:text-[#e8e8f0] transition-colors text-lg w-7 h-7 flex items-center justify-center rounded hover:bg-[rgba(255,255,255,0.06)]',
+  closeButtonClassName = `absolute top-4 right-4 z-10 ${STUDIO_TEXT_MUTED_CLS} hover:text-[#e8e8f0] transition-colors text-lg w-7 h-7 flex items-center justify-center rounded hover:bg-[rgba(255,255,255,0.06)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c6ef6]/70`,
   closeButtonStyle,
   closeLabel = 'Close modal',
   closeGlyph = '✕',

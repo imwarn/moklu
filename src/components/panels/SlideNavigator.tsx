@@ -1,10 +1,10 @@
 /**
- * [INPUT]: depends on react, konva, zustand useShallow, @dnd-kit/core, @dnd-kit/sortable, useEditorStore, canvasFormats, panoGeometry, ExportModal, and useStudioLocale from @/i18n
- * [OUTPUT]: exports SlideNavigator bottom filmstrip component with localized Slides controls, Compensate/Gap inputs, Preview Slides, and Export buttons
+ * [INPUT]: depends on react, konva, zustand useShallow, @dnd-kit/core, @dnd-kit/sortable, useEditorStore, canvasFormats, panoGeometry, ExportModal, contextMenu and studioTokens from @/components/ui, and useStudioLocale from @/i18n
+ * [OUTPUT]: exports SlideNavigator bottom filmstrip component with AA contrast, ARIA state, viewport-clamped accessible context menu, and localized Slides controls
  * [POS]: bottom slide navigation footer of StudioPage inside src/components/panels
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
-import { Fragment, useState, useEffect, useRef } from 'react'
+import { Fragment, useState, useEffect, useRef, useCallback } from 'react'
 import type Konva from 'konva'
 import { useShallow } from 'zustand/react/shallow'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
@@ -17,6 +17,13 @@ import { BASE_CANVAS_FORMAT, getExportTargets, getFormatCanvasDims, getProjectBa
 import { MAX_PANO_COMPENSATION_PX } from '@/utils/panoGeometry'
 import type { BackgroundLayer, SlideGroup } from '@/types'
 import type { ThumbnailMap } from '@/hooks/useThumbnails'
+import { useClampedMenuPosition, useContextMenuKeyboard } from '@/components/ui/contextMenu'
+import {
+  STUDIO_COLORS,
+  STUDIO_SECTION_LABEL_CLS,
+  STUDIO_TEXT_MUTED_CLS,
+  STUDIO_TEXT_SUBTLE_CLS,
+} from '@/components/ui/studioTokens'
 import { ExportModal } from './ExportModal'
 import { useStudioLocale } from '@/i18n'
 
@@ -24,6 +31,78 @@ interface ContextMenu {
   groupId: string
   x: number
   y: number
+}
+
+const SLIDE_MENU_ESTIMATED_WIDTH = 152
+const SLIDE_MENU_ESTIMATED_HEIGHT = 112
+
+function SlideContextMenu({
+  contextMenu,
+  canDelete,
+  onAction,
+  onClose,
+}: {
+  contextMenu: ContextMenu
+  canDelete: boolean
+  onAction: (action: string, groupId: string) => void
+  onClose: () => void
+}) {
+  const { t } = useStudioLocale()
+  const menuRef = useRef<HTMLDivElement>(null)
+  const position = useClampedMenuPosition(
+    menuRef,
+    contextMenu.x,
+    contextMenu.y,
+    SLIDE_MENU_ESTIMATED_WIDTH,
+    SLIDE_MENU_ESTIMATED_HEIGHT,
+    { flipY: true },
+  )
+
+  useContextMenuKeyboard(menuRef, true, onClose)
+
+  return (
+    <div
+      ref={menuRef}
+      role="menu"
+      tabIndex={-1}
+      aria-label={t.slides.title}
+      className="fixed z-50 py-1 rounded shadow-2xl border focus:outline-none"
+      style={{
+        left: position.left,
+        top: position.top,
+        background: STUDIO_COLORS.surfacePanel,
+        borderColor: STUDIO_COLORS.borderSubtle,
+        minWidth: 140,
+      }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {[
+        { action: 'rename', label: t.common.rename },
+        { action: 'duplicate', label: t.common.duplicate },
+      ].map(({ action, label }) => (
+        <button
+          key={action}
+          type="button"
+          role="menuitem"
+          className="w-full text-left px-3 py-2 text-xs hover:bg-[rgba(255,255,255,0.06)] focus-visible:outline-none focus-visible:bg-[rgba(255,255,255,0.1)] transition-colors"
+          style={{ color: STUDIO_COLORS.textPrimary }}
+          onClick={() => onAction(action, contextMenu.groupId)}
+        >
+          {label}
+        </button>
+      ))}
+      <div role="separator" className="my-1 border-t border-[rgba(255,255,255,0.08)]" />
+      <button
+        type="button"
+        role="menuitem"
+        disabled={!canDelete}
+        className="w-full text-left px-3 py-2 text-xs text-[#f87171] hover:bg-[rgba(255,255,255,0.06)] focus-visible:outline-none focus-visible:bg-[rgba(255,255,255,0.1)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        onClick={() => onAction('delete', contextMenu.groupId)}
+      >
+        {t.common.delete}
+      </button>
+    </div>
+  )
 }
 
 interface SlideNavigatorProps {
@@ -137,7 +216,7 @@ function SortableGroupItem({
             style={{
               width: '100%',
               fontSize: 10,
-              color: isActive ? '#9b8fff' : '#8b8b9e',
+              color: isActive ? STUDIO_COLORS.textAccent : STUDIO_COLORS.textMuted,
               lineHeight: '14px',
               height: 14,
               cursor: 'default',
@@ -201,7 +280,7 @@ function SortableGroupItem({
                     )}
                   </div>
 
-                  <span style={{ fontSize: 9, color: isActive ? '#7c6ef6' : '#6b6b7a', lineHeight: 1 }}>
+                  <span style={{ fontSize: 9, color: isActive ? STUDIO_COLORS.textAccent : STUDIO_COLORS.textMuted, lineHeight: 1 }}>
                     {num}
                   </span>
                 </div>
@@ -295,12 +374,12 @@ export function SlideNavigator({ thumbnails, staleGroupIds, stageRef, onCaptureT
     setRenameValue('')
   }
 
+  const closeContextMenu = useCallback(() => setContextMenu(null), [])
+
   const handleContextMenu = (e: React.MouseEvent, groupId: string) => {
     e.preventDefault()
     e.stopPropagation()
-    const MENU_HEIGHT = 100 // 3 items × ~32px
-    const y = e.clientY + MENU_HEIGHT > window.innerHeight ? e.clientY - MENU_HEIGHT : e.clientY
-    setContextMenu({ groupId, x: e.clientX, y })
+    setContextMenu({ groupId, x: e.clientX, y: e.clientY })
   }
 
   const selectSlideGroup = (id: string) => {
@@ -365,7 +444,7 @@ export function SlideNavigator({ thumbnails, staleGroupIds, stageRef, onCaptureT
     >
       {/* Width follows the responsive LayersPanel width, less this footer's 12px inset. */}
       <div className="flex w-[196px] shrink-0 flex-col gap-1.5 border-r border-[rgba(255,255,255,0.06)] pr-3 min-[1440px]:w-[212px]">
-        <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#6b6b7a]">{t.slides.title}</div>
+        <div className={STUDIO_SECTION_LABEL_CLS}>{t.slides.title}</div>
         {activeGroup && (
           <div className="flex items-center gap-1.5">
             {([
@@ -375,11 +454,13 @@ export function SlideNavigator({ thumbnails, staleGroupIds, stageRef, onCaptureT
             ]).map(({ value, label }) => (
               <button
                 key={value}
+                type="button"
+                aria-pressed={activeGroup.numSlides === value}
                 onClick={() => updateSlideGroup(activeGroup.id, { numSlides: value })}
                 className={`text-[11px] px-2 py-1 rounded border transition-colors ${
                   activeGroup.numSlides === value
                     ? 'bg-[#7c6ef6] border-[#7c6ef6] text-white'
-                    : 'border-[rgba(255,255,255,0.08)] text-[#8f90a3] hover:text-[#e8e8f0] hover:border-[rgba(255,255,255,0.15)]'
+                    : `border-[rgba(255,255,255,0.08)] ${STUDIO_TEXT_MUTED_CLS} hover:text-[#e8e8f0] hover:border-[rgba(255,255,255,0.15)]`
                 }`}
               >
                 {label}
@@ -390,7 +471,7 @@ export function SlideNavigator({ thumbnails, staleGroupIds, stageRef, onCaptureT
         {/* Always rendered (even with no pano groups) so this column's height never
             shifts the numSlides buttons when switching between Single/Pano/Strip. */}
         <label
-          className={`flex items-center gap-1.5 text-[10px] ${hasPano ? 'text-[#6b6b7a]' : 'text-[#4a4a57]'}`}
+          className={`flex items-center gap-1.5 text-[10px] ${hasPano ? STUDIO_TEXT_MUTED_CLS : STUDIO_TEXT_SUBTLE_CLS}`}
         >
           <input
             type="checkbox"
@@ -449,16 +530,19 @@ export function SlideNavigator({ thumbnails, staleGroupIds, stageRef, onCaptureT
 
         {/* Add slide group button — kept outside SortableContext so it's not draggable */}
         <button
+          type="button"
           onClick={addSlideGroup}
+          aria-label={t.slides.addSlideGroup}
           title={t.slides.addSlideGroup}
-          className="shrink-0 w-8 h-8 flex items-center justify-center text-[#6b6b7a] hover:text-[#e8e8f0] rounded border border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.2)] text-base transition-colors ml-1"
+          className={`shrink-0 w-8 h-8 flex items-center justify-center ${STUDIO_TEXT_MUTED_CLS} hover:text-[#e8e8f0] rounded border border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.2)] text-base transition-colors ml-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c6ef6]/70`}
         >
-          ＋
+          <span aria-hidden="true">＋</span>
         </button>
       </div>
 
       <div className="ml-auto flex items-center gap-2 shrink-0 border-l border-[rgba(255,255,255,0.06)] pl-3">
         <button
+          type="button"
           onClick={onOpenPreview}
           className="text-xs text-[#e8e8f0] px-3 py-2 rounded border border-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] hover:bg-[rgba(255,255,255,0.05)] transition-colors"
         >
@@ -466,6 +550,7 @@ export function SlideNavigator({ thumbnails, staleGroupIds, stageRef, onCaptureT
         </button>
 
         <button
+          type="button"
           onClick={() => setExportOpen(true)}
           disabled={exportableFormats.length === 0}
           className="text-xs text-white px-3 py-2 rounded bg-[#7c6ef6] hover:bg-[#6c5ed6] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
@@ -478,33 +563,12 @@ export function SlideNavigator({ thumbnails, staleGroupIds, stageRef, onCaptureT
 
       {/* Context menu */}
       {contextMenu && (
-        <div
-          className="fixed z-50 py-1 rounded shadow-2xl border"
-          style={{
-            left: contextMenu.x,
-            top: contextMenu.y,
-            background: '#18181f',
-            borderColor: 'rgba(255,255,255,0.08)',
-            minWidth: 140,
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {[
-            { action: 'rename', label: t.common.rename },
-            { action: 'duplicate', label: t.common.duplicate },
-          ].map(({ action, label }) => (
-            <button
-              key={action}
-              className="w-full text-left px-3 py-2 text-xs hover:bg-[rgba(255,255,255,0.06)] transition-colors"
-              style={{ color: '#e8e8f0' }}
-              onClick={() => handleMenuAction(action, contextMenu.groupId)}
-            >
-              {label}
-            </button>
-          ))}
-          <div className="my-1 border-t border-[rgba(255,255,255,0.08)]" />
-          <button className="w-full text-left px-3 py-2 text-xs text-[#f87171] hover:bg-[rgba(255,255,255,0.06)] transition-colors" onClick={() => handleMenuAction('delete', contextMenu.groupId)}>{t.common.delete}</button>
-        </div>
+        <SlideContextMenu
+          contextMenu={contextMenu}
+          canDelete={project.slideGroups.length > 1}
+          onAction={handleMenuAction}
+          onClose={closeContextMenu}
+        />
       )}
     </footer>
   )

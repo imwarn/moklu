@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on useEditorStore from @/store; useBrandColors; AiProviderSettings, BrandColorList, ModalShell, NumberInput, ToggleSwitch; useStudioLocale from @/i18n
- * [OUTPUT]: exports SettingsModal component for global AI provider config and per-project Brand/Pano preferences
+ * [INPUT]: depends on useEditorStore from @/store; useBrandColors; AiProviderSettings, BrandColorList, ModalShell, NumberInput, ToggleSwitch; shared contrast tokens from @/components/properties/panelConstants; useStudioLocale from @/i18n
+ * [OUTPUT]: exports SettingsModal component for global AI provider config and per-project Brand/Pano preferences with WCAG AA contrast
  * [POS]: settings dialog within src/components/panels, mounted by StudioPage
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -9,6 +9,12 @@ import { useEditorStore } from '@/store'
 import { useBrandColors } from '@/hooks/useBrandColors'
 import { AiProviderSettings } from '@/components/ai/AiProviderSettings'
 import { BrandColorList } from '@/components/common/BrandColorList'
+import {
+  labelCls,
+  STUDIO_SUBTLE_SECTION_LABEL_CLS,
+  STUDIO_TEXT_MUTED_CLS,
+  STUDIO_TEXT_SUBTLE_CLS,
+} from '@/components/properties/panelConstants'
 import { ModalShell } from '@/components/ui/ModalShell'
 import { NumberInput } from '@/components/ui/NumberInput'
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch'
@@ -18,10 +24,6 @@ interface SettingsModalProps {
   open: boolean
   onClose: () => void
 }
-
-// ─── Shared style tokens ────────────────────────────────────────────────────
-
-const labelCls = 'text-[11px] text-[#6b6b7a] mb-1 block uppercase tracking-[0.08em]'
 
 // ─── Tab definitions ─────────────────────────────────────────────────────────
 
@@ -50,11 +52,11 @@ function BrandSettingsContent() {
   return (
     <div>
       <h3 className="text-sm font-semibold text-[#e8e8f0] mb-1">{sm.brandTitle}</h3>
-      <p className="text-[12px] text-[#6b6b7a] mb-5 leading-relaxed">
+      <p className={`text-[12px] ${STUDIO_TEXT_MUTED_CLS} mb-5 leading-relaxed`}>
         {sm.brandDesc}
       </p>
       <div className="flex items-center justify-between mb-3">
-        <span className="text-[11px] text-[#4a4a5a] uppercase tracking-[0.1em]">
+        <span className={`text-[11px] ${STUDIO_TEXT_SUBTLE_CLS} uppercase tracking-[0.1em]`}>
           {brandColors.length}
         </span>
       </div>
@@ -76,19 +78,20 @@ function PanoSettingsContent() {
   return (
     <div>
       <h3 className="text-sm font-semibold text-[#e8e8f0] mb-1">{sm.panoTitle}</h3>
-      <p className="text-[12px] text-[#6b6b7a] mb-5 leading-relaxed">
+      <p className={`text-[12px] ${STUDIO_TEXT_MUTED_CLS} mb-5 leading-relaxed`}>
         {sm.panoDesc}
       </p>
 
       <div className="space-y-5">
         {/* Gap input */}
         <div className="rounded-xl border border-[rgba(255,255,255,0.08)] p-4 bg-[rgba(255,255,255,0.02)]">
-          <label className={labelCls}>{sm.storePreviewGap}</label>
-          <p className="text-[11px] text-[#4a4a5a] mb-3 leading-relaxed">
+          <label htmlFor="pano-gap-px" className={labelCls}>{sm.storePreviewGap}</label>
+          <p className={`text-[11px] ${STUDIO_TEXT_SUBTLE_CLS} mb-3 leading-relaxed`}>
             {sm.storePreviewGapDesc}
           </p>
           <div className="flex items-center gap-3">
             <NumberInput
+              id="pano-gap-px"
               min={0}
               max={300}
               value={panoSettings.gapPx ?? 24}
@@ -97,9 +100,10 @@ function PanoSettingsContent() {
               }
               className="bg-[#0f0f13] border border-[rgba(255,255,255,0.1)] rounded px-3 py-2 text-sm text-[#e8e8f0] w-24 focus:outline-none focus:border-[rgba(124,110,246,0.5)]"
             />
-            <span className="text-xs text-[#6b6b7a]">px</span>
+            <span className={`text-xs ${STUDIO_TEXT_MUTED_CLS}`}>px</span>
             <input
               type="range"
+              aria-label={sm.storePreviewGap}
               min={0}
               max={300}
               value={panoSettings.gapPx ?? 24}
@@ -126,7 +130,7 @@ function PanoSettingsContent() {
               >
                 {sm.compensateOnExport}
               </label>
-              <p className="text-[11px] text-[#4a4a5a] mt-1 leading-relaxed">
+              <p className={`text-[11px] ${STUDIO_TEXT_SUBTLE_CLS} mt-1 leading-relaxed`}>
                 {sm.compensateOnExportDesc}
               </p>
             </div>
@@ -135,7 +139,7 @@ function PanoSettingsContent() {
 
         {/* Status summary */}
         <div className="rounded-lg border border-[rgba(255,255,255,0.05)] bg-[rgba(255,255,255,0.01)] px-4 py-3">
-          <p className="text-[11px] text-[#6b6b7a] leading-relaxed">
+          <p className={`text-[11px] ${STUDIO_TEXT_MUTED_CLS} leading-relaxed`}>
             <span className="text-[#c4b5fd]">{sm.current}</span>{' '}
             {panoSettings.gapPx ?? 24}px
           </p>
@@ -167,11 +171,11 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
       footerClassName="shrink-0 px-5 py-2.5 border-t border-[rgba(255,255,255,0.06)] flex items-center gap-3"
       footer={(
         <>
-          <span className="text-[11px] text-[#4a4a5a] font-mono select-all">v{typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev'}</span>
-          <span className="text-[#2a2a3a]">·</span>
-          <span className="text-[11px] text-[#4a4a5a] font-mono select-all" title="Git commit hash">{typeof __GIT_HASH__ !== 'undefined' ? __GIT_HASH__ : 'local'}</span>
+          <span className={`text-[11px] ${STUDIO_TEXT_SUBTLE_CLS} font-mono select-all`}>v{typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev'}</span>
+          <span className={STUDIO_TEXT_SUBTLE_CLS} aria-hidden="true">·</span>
+          <span className={`text-[11px] ${STUDIO_TEXT_SUBTLE_CLS} font-mono select-all`} title="Git commit hash">{typeof __GIT_HASH__ !== 'undefined' ? __GIT_HASH__ : 'local'}</span>
           <span className="flex-1" />
-          <a href="https://github.com/imwarn/moklu" target="_blank" rel="noopener noreferrer" className="text-[11px] text-[#4a4a5a] hover:text-[#7c6ef6] transition-colors">github.com/imwarn/moklu</a>
+          <a href="https://github.com/imwarn/moklu" target="_blank" rel="noopener noreferrer" className={`text-[11px] ${STUDIO_TEXT_SUBTLE_CLS} hover:text-[#9b8fff] transition-colors`}>github.com/imwarn/moklu</a>
         </>
       )}
     >
@@ -179,26 +183,28 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
         <div className="flex flex-1 min-h-0">
           {/* Sidebar */}
           <nav
+            aria-label={sm.title}
             className="w-44 shrink-0 border-r border-[rgba(255,255,255,0.06)] p-3 overflow-y-auto"
             style={{ background: 'rgba(0,0,0,0.15)' }}
           >
             {sections.map((section) => (
               <div key={section}>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#4a4a5a] mb-1 mt-3 first:mt-0 px-2">
+                <p className={`${STUDIO_SUBTLE_SECTION_LABEL_CLS} mb-1 mt-3 first:mt-0 px-2`}>
                   {sm.sections[section]}
                 </p>
                 {tabsBySection(section).map((item) => (
                   <button
                     key={item.id}
                     type="button"
+                    aria-current={tab === item.id ? 'page' : undefined}
                     onClick={() => setTab(item.id)}
                     className={`w-full text-left px-2 py-1.5 rounded-md text-xs transition-colors flex items-center gap-2 ${
                       tab === item.id
                         ? 'bg-[rgba(124,110,246,0.18)] text-[#c4b5fd]'
-                        : 'text-[#6b6b7a] hover:text-[#e8e8f0] hover:bg-[rgba(255,255,255,0.05)]'
+                        : `${STUDIO_TEXT_MUTED_CLS} hover:text-[#e8e8f0] hover:bg-[rgba(255,255,255,0.05)]`
                     }`}
                   >
-                    <span>{item.icon}</span>
+                    <span aria-hidden="true">{item.icon}</span>
                     <span>{sm.tabs[item.id]}</span>
                   </button>
                 ))}
@@ -211,7 +217,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
             {tab === 'ai' && (
               <div>
                 <h3 className="text-sm font-semibold text-[#e8e8f0] mb-1">{sm.aiTitle}</h3>
-                <p className="text-[12px] text-[#6b6b7a] mb-5 leading-relaxed">
+                <p className={`text-[12px] ${STUDIO_TEXT_MUTED_CLS} mb-5 leading-relaxed`}>
                   {sm.aiDesc}
                 </p>
                 <AiProviderSettings />
