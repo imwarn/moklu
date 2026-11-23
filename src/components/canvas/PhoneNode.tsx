@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on react (useMemo, useRef), react-konva (Group, Rect, Image), konva type, PhoneLayer type from @/types, getPhoneSpec from @/assets/mockups/specs, getMockupSvg from @/assets/mockups/registry, useAssetStore from @/store/assets, resolveBrandColor from @/utils/brandColors, hooks (useCachedImage, useBrandColors, useLayerEffects, useLayerInteraction, useLayerTransform) from @/hooks, PhoneStatusBar from ./PhoneStatusBar, and calcScreenshotLayout from ./PhoneNode.geometry
+ * [OUTPUT]: exports PhoneNode component compositing clipped screenshot imagery, optional screen border, PhoneStatusBar, and SVG device/browser frame
+ * [POS]: mockup-frame Konva renderer in src/components/canvas; dispatched by LayerNode for type 'phone' and persists uniform scale transforms around the frame center
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useMemo, useRef } from 'react'
 import { Group, Rect, Image } from 'react-konva'
 import type Konva from 'konva'

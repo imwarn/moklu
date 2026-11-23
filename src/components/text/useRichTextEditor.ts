@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on react (useEffect, useRef, useState), useEditorStore from @/store, TextLayer/TextMark/Layer/FillValue types from @/types, spansToMarks from @/utils/textRendering, and richText DOM/mark helpers from @/utils/richText
+ * [OUTPUT]: exports RichTextEditorApi, UseRichTextEditorOptions, toggleBoolPatch, and useRichTextEditor hook managing contentEditable DOM sync, selection tracking, mark patching, and undo/redo routing
+ * [POS]: core WYSIWYG rich-text engine in src/components/text; shared by CanvasTextEditor, LocaleRichTextEditor, and RichTextToolbar
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useEffect, useRef, useState } from 'react'
 import type React from 'react'
 import { useEditorStore } from '@/store'

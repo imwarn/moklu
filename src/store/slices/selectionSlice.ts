@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on EditorStore, EditorSet, and EditorGet from ../types
+ * [OUTPUT]: exports createSelectionSlice slice creator managing single/multi-layer selection, accent selection, group-edit mode, inline text editing, and canvas viewport/zoom/guides
+ * [POS]: transient UI selection and viewport slice in src/store/slices/; excluded from zundo undo history and composed into useEditorStore by src/store/index.ts
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { EditorStore, EditorSet, EditorGet } from '../types'
 
 export const createSelectionSlice = (

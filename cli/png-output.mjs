@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on Node.js Buffer binary readers (no external module imports)
+ * [OUTPUT]: exports decodeValidatedPng
+ * [POS]: PNG data-URL decoder and IHDR dimension integrity gate in cli/, called by cli/export.mjs before writing exported files
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 /** Decode the headless browser's PNG and reject any incorrect output before disk writes. */
 export function decodeValidatedPng(dataUrl, width, height) {
   if (!Number.isSafeInteger(width) || width <= 0 || !Number.isSafeInteger(height) || height <= 0) {

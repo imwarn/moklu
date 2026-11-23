@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on BrandColor/Template from @/types, canvasFormats/templates/templateSlots/templateAppearance/projectAssets utils, EditorStore/EditorSet/EditorGet from ../types, useAssetStore from ../assets, and project helpers from ../helpers
+ * [OUTPUT]: exports createProjectSlice slice creator managing project metadata, settings, brand colors, JSON import/export/reset, and template export/import/application
+ * [POS]: project-level lifecycle and template bridge slice in src/store/slices/; composed into useEditorStore by src/store/index.ts with undo-history clearing hook
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { BrandColor, Template } from '@/types'
 import { normalizeProjectFormats, BASE_CANVAS_FORMAT, getGroupFamilyKey } from '@/utils/canvasFormats'
 import { projectToTemplate, applyTemplate, extractInlineScreenshots } from '@/utils/templates'

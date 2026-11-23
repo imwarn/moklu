@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on RefObject type from react, Layer and Stage from react-konva, konva type, Layer/SlideGroup types from @/types, getThumbnailStageGeometry from @/utils/thumbnailRender, and LayerNode from ./LayerNode
+ * [OUTPUT]: exports ThumbnailStage component rendering a non-interactive scaled Konva Stage for offscreen slide thumbnail capture
+ * [POS]: read-only preview stage in src/components/canvas; mounted hidden by StudioPage/SlideNavigator thumbnail capture hooks to rasterize slide previews
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { RefObject } from 'react'
 import { Layer, Stage } from 'react-konva'
 import type Konva from 'konva'

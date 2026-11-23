@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on GroupLayer, Layer, Project, SlideGroup, and TextLayer from @/types
+ * [OUTPUT]: exports DesignContext and buildDesignContext
+ * [POS]: slide-group design-context serializer of src/ai/; feeds translateText and localizeImage prompts with per-slide text roles and visual inventory
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { GroupLayer, Layer, Project, SlideGroup, TextLayer } from '@/types'
 
 /**

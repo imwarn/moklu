@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on react-konva (Group, Rect, Arc, Circle, Text) and PhoneStatusBarInfo type from @/types
+ * [OUTPUT]: exports PhoneStatusBar component rendering non-interactive iOS/Android status bar chrome (9:41 time, signal bars, Wi-Fi arcs, battery, and optional solid backdrop)
+ * [POS]: vector status-bar overlay in src/components/canvas; rendered by PhoneNode between the clipped screenshot and device frame SVG
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { Group, Rect, Arc, Circle, Text } from 'react-konva'
 import type { PhoneStatusBarInfo } from '@/types'
 

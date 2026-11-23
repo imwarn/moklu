@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on FillValue, LinearGradient, RadialGradient, and GradientStop from @/types
+ * [OUTPUT]: exports parseColorAlpha, withAlpha, toTransparentColor, angleToPoints, toKonvaColorStops, fillToKonvaProps, fillToCss, and createCanvasGradient
+ * [POS]: color alpha and linear/radial gradient conversion layer in src/utils; bridges FillValue to Konva props, CSS strings, and HTML5 Canvas gradients
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { FillValue, LinearGradient, RadialGradient, GradientStop } from '@/types'
 
 /** Extract the alpha (0–1) from an rgba() string. Other inputs are opaque. */

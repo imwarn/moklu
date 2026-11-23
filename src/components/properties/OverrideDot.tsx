@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on react (useEffect, useRef, useState), useShallow from zustand/react/shallow, useEditorStore from @/store, BASE_CANVAS_FORMAT/getProjectBaseFormat/LOCALE_DELTA_FIELDS from @/utils/canvasFormats, and Layer/GroupLayer types from @/types
+ * [OUTPUT]: exports OverrideDot component displaying per-property format override and base/format locale layout adjustment indicators with reset menus
+ * [POS]: override-state badge in src/components/properties; mounted beside property labels by PropertyControls and property sub-panels to inspect and clear composed overrides
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useEffect, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useEditorStore } from '@/store'

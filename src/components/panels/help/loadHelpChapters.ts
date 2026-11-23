@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on js-yaml and Vite import.meta.glob raw Markdown imports from /docs/help/*.md
+ * [OUTPUT]: exports HelpSectionId, HelpGroup, HelpChapter types and the sorted HELP_CHAPTERS array parsed from YAML frontmatter
+ * [POS]: build-time help content loader in src/components/panels/help; turns docs/help/*.md into the single source of truth consumed by HelpModal
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import yaml from 'js-yaml'
 
 export type HelpSectionId =

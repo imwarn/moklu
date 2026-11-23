@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on CanvasFormatId, Project, and SlideGroup from @/types; depends on BASE_CANVAS_FORMAT, getFormatLabel, groupTargetsFormat, isCustomFormatId, and resolveProjectView from ./canvasFormats
+ * [OUTPUT]: exports ExportPlanScope, ExportPlanPanoMode, BuildExportPlanOptions, ExportPlanEntry, ExportPlanBatch, ExportPlan, BuildExportFileTargetOptions, safeExportSegment, buildExportFileTarget, and buildExportPlan
+ * [POS]: deterministic multi-format/multi-locale export planner and path sanitizer in src/utils; consumed by multiFormatExport and ExportModal
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { CanvasFormatId, Project, SlideGroup } from '@/types'
 import { BASE_CANVAS_FORMAT, getFormatLabel, groupTargetsFormat, isCustomFormatId, resolveProjectView } from './canvasFormats'
 

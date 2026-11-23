@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on FormatLayerPatch, Layer, LocaleLayerPatch, and Project from @/types; depends on forEachLayerTree from @/utils/layerTree
+ * [OUTPUT]: exports collectAssetKeys, ProjectExportBundle, buildProjectExportBundle, and isProjectExportBundle
+ * [POS]: project asset reference collector and portable JSON bundle serializer in src/utils; consumed by project export/import and IndexedDB asset GC
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { FormatLayerPatch, Layer, LocaleLayerPatch, Project } from '@/types'
 import { forEachLayerTree } from '@/utils/layerTree'
 

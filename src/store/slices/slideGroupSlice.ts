@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on core domain types from @/types, EditorStore/EditorSet/EditorGet from ../types, helpers (cloneLayerWithNewIds, createBackgroundLayer, touchProject, newSlideGroup, newId, mutateActiveGroup) from ../helpers, planContentSync from @/utils/contentSync, canvasFormats utilities, and mapLayerTree from @/utils/layerTree
+ * [OUTPUT]: exports resolveContentSyncSourceGroup helper and createSlideGroupSlice slice creator managing slide group CRUD, ordering, resizing, family forking, background updates, and cross-family content sync
+ * [POS]: slide-group and multi-family canvas orchestration slice in src/store/slices/; composed into useEditorStore by src/store/index.ts
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { BackgroundLayer, CanvasFormatId, GroupLayer, Layer, PhoneLayer, Project, SlideGroup } from '@/types'
 import type { EditorStore, EditorSet, EditorGet } from '../types'
 import { cloneLayerWithNewIds, createBackgroundLayer, touchProject, newSlideGroup, newId, mutateActiveGroup } from '../helpers'

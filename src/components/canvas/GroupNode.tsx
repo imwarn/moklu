@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on react (useRef), react-konva (Group), konva type, GroupLayer/Layer types from @/types, useLayerEffects from @/hooks/useLayerEffects, LayerNode from ./LayerNode, and estimateGroupBox from ./GroupNode.geometry
+ * [OUTPUT]: exports GroupNode component rendering nested child layers with uniform center-pivot scaling and double-click group-edit entry
+ * [POS]: composite container renderer in src/components/canvas; mutually recursive with LayerNode and coordinates child selection/editing with StageLayerItem
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useRef } from 'react'
 import { Group } from 'react-konva'
 import type Konva from 'konva'

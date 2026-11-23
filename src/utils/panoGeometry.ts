@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on SlideGroup and PanoSettings from @/types
+ * [OUTPUT]: exports DEFAULT_PANO_COMPENSATION_PX, MAX_PANO_COMPENSATION_PX, normalizePanoCompensationPx, getPanoGapPx, getPanoTotalWidth, getPanoSlideX, and getEffectivePano
+ * [POS]: panoramic multi-slide width, gap-compensation, and slide offset geometry in src/utils; shared by StageCanvas, export, multiFormatExport, and thumbnailRender
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { SlideGroup, PanoSettings } from '@/types'
 
 export const DEFAULT_PANO_COMPENSATION_PX = 24

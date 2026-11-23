@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on useEditorStore from @/store; depends on studioTokens from @/components/ui/studioTokens
- * [OUTPUT]: exports pauseTemporal, resumeTemporal, shared panel CSS class constants, re-exported Studio contrast tokens, and PanelTab type
+ * [OUTPUT]: exports pauseTemporal, resumeTemporal, PanelTab type, CSS constants (inputCls, labelCls, rowCls, fieldCls, panelSectionCls, subtleButtonCls), and re-exported Studio contrast tokens (STUDIO_COLORS, STUDIO_SECTION_LABEL_CLS, STUDIO_SUBTLE_SECTION_LABEL_CLS, STUDIO_TEXT_MUTED_CLS, STUDIO_TEXT_SUBTLE_CLS)
  * [POS]: shared styling and temporal helper module for src/components/properties and Studio panels
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */

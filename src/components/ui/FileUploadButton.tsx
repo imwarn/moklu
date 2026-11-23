@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on forwardRef, useRef, DragEvent, and ReactNode from react
+ * [OUTPUT]: exports FileUploadButton forward-ref component supporting button and keyboard/drag-and-drop dropzone file-picker triggers
+ * [POS]: file-input UI primitive in src/components/ui; encapsulates hidden input reset semantics and ref forwarding for toolbar, panel, and property upload actions
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { forwardRef, useRef, type DragEvent, type ReactNode } from 'react'
 
 interface FileUploadButtonProps {

@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on Konva types from konva; RefObject from react
+ * [OUTPUT]: exports useLayerInteraction
+ * [POS]: shared canvas pointer interaction hook of src/hooks/; normalizes unlocked click/tap/drag selection and drag-end position reporting for Konva layer nodes
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type Konva from 'konva'
 import type { RefObject } from 'react'
 

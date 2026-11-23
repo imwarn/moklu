@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on react (useMemo, useRef, useEffect), react-konva (Image, Group), konva type, EmojiLayer type from @/types, and hooks (useLayerEffects, useLayerInteraction, useLayerTransform) from @/hooks
+ * [OUTPUT]: exports EmojiNode component rasterizing Unicode emoji onto an offscreen canvas and normalizing Konva resize scales into fontSize
+ * [POS]: emoji Konva renderer in src/components/canvas; dispatched by LayerNode for type 'emoji' to ensure consistent cross-platform shadow and blur compositing
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useMemo, useRef, useEffect } from 'react'
 import { Image as KonvaImage, Group } from 'react-konva'
 import type Konva from 'konva'

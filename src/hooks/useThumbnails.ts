@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on React hooks from react; Konva types from konva; useEditorStore from @/store; usePreviewCache from @/store/previewCache; idbStorage from @/store/idb-storage; format/pano/capture/key helpers from @/utils/*; useOffscreenThumbnails from @/hooks/useOffscreenThumbnails; CanvasFormatId and Project from @/types
+ * [OUTPUT]: exports ThumbnailMap, ThumbnailEntry, PreviewProgress, PersistedThumbnailMap, getFreshThumbs, needsThumbnailCapture, getPrecacheScheduleKey, shouldRestoreCapturedSlideGroup, buildThumbnailRequests, and useThumbnails
+ * [POS]: central Studio thumbnail and high-res preview capture orchestrator of src/hooks/; coordinates live debounced capture, IndexedDB persistence, idle offscreen precaching, visibility recovery, and exclusive high-res preview sweeps
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useRef, useState, useCallback, useEffect, useLayoutEffect, useMemo, type RefObject } from 'react'
 import type Konva from 'konva'
 import { useEditorStore } from '@/store'

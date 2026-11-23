@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on core domain types from @/types, ContentSyncPlan from @/utils/contentSync, FormatFamilyKey from @/utils/canvasFormats, and TemplateApplyMode/TemplateAppearanceParts from @/utils/templateAppearance
+ * [OUTPUT]: exports EditorStore state-and-action contract interface, EditorSet, and EditorGet Zustand slice type aliases
+ * [POS]: central TypeScript contract in src/store/; shared by index.ts, factories.ts, and all 9 slices under src/store/slices/
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type {
   Project, SlideGroup, Layer, Selection,
   LayerType,

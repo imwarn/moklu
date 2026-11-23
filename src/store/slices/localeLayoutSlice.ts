@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on EditorStore/EditorSet/EditorGet from ../types, and mutateActiveGroup/resetLocaleAdjustsInLayerTree/updateLayerInTree/withoutLocaleAdjust/withoutLocaleAdjustKey from ../helpers
+ * [OUTPUT]: exports createLocaleLayoutSlice slice creator implementing clearLayerLocaleAdjust, clearLayerLocaleAdjustKey, and resetActiveLocaleAdjust
+ * [POS]: locale-scoped layout adjustment reset slice in src/store/slices/; operates on the unified 3-tier localeAdjust field in useEditorStore
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { EditorStore, EditorSet, EditorGet } from '../types'
 import {
   mutateActiveGroup,

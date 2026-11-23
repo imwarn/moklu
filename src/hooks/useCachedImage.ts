@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on useEffect and useState from react
+ * [OUTPUT]: exports CachedImageStatus, getPendingImageLoadCount, __clearImageCacheForTests, warmImageCache, and useCachedImage
+ * [POS]: LRU module-level image decode cache and React hook of src/hooks/; eliminates slide-switch flash for Konva image/phone/background nodes and tracks in-flight loads for stageCapture
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useEffect, useState } from 'react'
 
 export type CachedImageStatus = 'loading' | 'loaded' | 'failed'

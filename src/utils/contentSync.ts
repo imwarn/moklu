@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on Layer and LayerType from @/types
+ * [OUTPUT]: exports CONTENT_SYNC_KEYS, ContentSyncStatus, ContentSyncEntry, ContentSyncPlan, and planContentSync
+ * [POS]: cross-family content synchronization planner in src/utils; pairs layers between format families without overwriting layout, model, or fill
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { Layer, LayerType } from '@/types'
 
 /**

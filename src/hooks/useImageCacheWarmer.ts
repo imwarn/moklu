@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on useEffect and useRef from react; useEditorStore from @/store; useAssetStore from @/store/assets; forEachLayerTree from @/utils/layerTree; Layer from @/types; warmImageCache from ./useCachedImage
+ * [OUTPUT]: exports useImageCacheWarmer
+ * [POS]: idle-time project image pre-decoder of src/hooks/; warms useCachedImage across all slide groups after initial load completes
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { useEffect, useRef } from 'react'
 import { useEditorStore } from '@/store'
 import { useAssetStore } from '@/store/assets'

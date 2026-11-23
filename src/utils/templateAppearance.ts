@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on Layer, PhoneLayer, ProjectSettings, SlideGroup, Template, and TextLayer from @/types; depends on forEachLayerTree and mapLayerTree from @/utils/layerTree, applyTemplate from @/utils/templates, and findScreenshotTarget from @/utils/templateSlots
+ * [OUTPUT]: exports TemplateApplyMode, TemplateAppearanceParts, DEFAULT_APPEARANCE_PARTS, and applyTemplateAppearance
+ * [POS]: selective style-only template applier in src/utils; transfers background, typography, and phone appearance parts while preserving existing slide content and layout
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { Layer, PhoneLayer, ProjectSettings, SlideGroup, Template, TextLayer } from '@/types'
 import { forEachLayerTree, mapLayerTree } from '@/utils/layerTree'
 import { applyTemplate } from '@/utils/templates'

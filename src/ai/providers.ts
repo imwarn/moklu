@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: static BYOK provider configuration with no module dependencies
+ * [OUTPUT]: exports AiProvider, AiModel, AiProviderConfig, AI_PROVIDERS, getProviderConfig, and getDefaultModel
+ * [POS]: canonical AI provider metadata and default-model registry of src/ai/; imported by client.ts, headers.ts, models.ts, errors.ts, and settings UI
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 export type AiProvider = 'openai' | 'openrouter' | 'google' | 'custom'
 
 export interface AiModel {

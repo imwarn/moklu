@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on InputHTMLAttributes type from react
+ * [OUTPUT]: exports ToggleSwitch component rendering either an ARIA switch button or a native checkbox variant
+ * [POS]: boolean-toggle UI primitive in src/components/ui; provides accessible role="switch" and checkbox controls across properties panels and modals
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { InputHTMLAttributes } from 'react'
 
 interface ToggleSwitchProps {

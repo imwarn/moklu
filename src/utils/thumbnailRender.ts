@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on Layer from @/types and getPanoSlideX and getPanoTotalWidth from @/utils/panoGeometry
+ * [OUTPUT]: exports NAV_THUMB_CAPTURE_HEIGHT_PX, ThumbnailRequest, stripExpensiveEffects, getThumbnailStageGeometry, and enqueueRequests
+ * [POS]: slide-navigator thumbnail capture geometry, effect stripping, and queue prioritization helpers in src/utils; consumed by useThumbnailRenderer
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { Layer } from '@/types'
 import { getPanoSlideX, getPanoTotalWidth } from '@/utils/panoGeometry'
 

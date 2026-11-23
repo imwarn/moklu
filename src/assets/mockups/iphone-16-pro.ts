@@ -1,4 +1,10 @@
 /**
+ * [INPUT]: static inline SVG template with no module dependencies
+ * [OUTPUT]: exports IPHONE_16_PRO_SVG
+ * [POS]: iPhone 16 Pro (with Dynamic Island) masked vector bezel of src/assets/mockups/; registered in registry.ts and paired with IPHONE_16_PRO in specs.ts
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
+/**
  * iPhone 16 Pro mockup SVG as a string.
  * The screen area is TRULY transparent via an SVG mask —
  * the mask paints the entire phone white except the screen (black = transparent).

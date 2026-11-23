@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on PhoneModel and BrowserChromeOptions from @/types; device SVG constants and browser helpers from sibling mockup modules
+ * [OUTPUT]: exports MockupCategory, getMockupCategory, and getMockupSvg
+ * [POS]: central frame-art and category registry of src/assets/mockups/; maps PhoneModel ids to static device SVGs or dynamic browser chrome
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { PhoneModel, BrowserChromeOptions } from '@/types'
 import { IPHONE_16_PRO_SVG } from './iphone-16-pro'
 import { IPHONE_16_PRO_PLAIN_SVG } from './iphone-16-pro-plain'

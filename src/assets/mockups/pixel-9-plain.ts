@@ -1,4 +1,10 @@
 /**
+ * [INPUT]: static inline SVG template with no module dependencies
+ * [OUTPUT]: exports PIXEL_9_PLAIN_SVG
+ * [POS]: Google Pixel 9 (no punch-hole camera) masked vector bezel of src/assets/mockups/; registered in registry.ts and paired with PIXEL_9_PLAIN in specs.ts
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
+/**
  * Google Pixel 9 mockup — variant WITHOUT punch-hole camera.
  * Identical to pixel-9.ts except the punch-hole circle is removed.
  * ViewBox: 0 0 380 820

@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on zustand, fileToDataUrl from @/utils/files, and idbStorage from ./idb-storage
+ * [OUTPUT]: exports AssetEntry interface and useAssetStore Zustand store for project-scoped binary image assets
+ * [POS]: per-project screenshot/image asset store in src/store/; debounces IndexedDB write-through per activeProjectId and bridges File/Directory imports into the editor
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { create } from 'zustand'
 import { fileToDataUrl } from '@/utils/files'
 import { idbStorage } from './idb-storage'

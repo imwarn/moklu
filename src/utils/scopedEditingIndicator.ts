@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on CanvasFormatId and Project from @/types and getProjectBaseFormat from @/utils/canvasFormats
+ * [OUTPUT]: exports getScopedEditingIndicator
+ * [POS]: active locale/format edit-scope status resolver in src/utils; drives scoped-editing badges in Studio toolbar and inspector headers
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { CanvasFormatId, Project } from '@/types'
 import { getProjectBaseFormat } from '@/utils/canvasFormats'
 

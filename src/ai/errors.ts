@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on AiProvider from @/ai/providers
+ * [OUTPUT]: exports formatAiNetworkError
+ * [POS]: browser network and CORS error formatter of src/ai/; called by models.ts when direct provider fetch fails
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import type { AiProvider } from '@/ai/providers'
 
 export function formatAiNetworkError(provider: AiProvider, action: string, error: unknown): Error {

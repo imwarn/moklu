@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on zustand, Template type from @/types, and parseBoundedImportJson/validateTemplateImport from @/utils/importValidation
+ * [OUTPUT]: exports TemplateManifestEntry interface, toAbsolute URL helper, and useTemplatesStore Zustand store
+ * [POS]: built-in template catalog loader in src/store/; fetches public/templates/index.json and validates individual template JSON payloads on demand
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { create } from 'zustand'
 import type { Template } from '@/types'
 import { parseBoundedImportJson, validateTemplateImport } from '@/utils/importValidation'
