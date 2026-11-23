@@ -1,15 +1,18 @@
 /**
- * [INPUT]: depends on Tailwind CSS v4 core (`tailwindcss`); reads `html[data-theme]` and `html[data-surface]` attributes set by themeStore and SSG
- * [OUTPUT]: provides Tailwind v4 `@custom-variant dark` bound to `data-theme="dark"`, static light/dark Signal Orange + Neutral Zinc design tokens, Geist font families, scrollbar rules, and Studio loader animations
+ * [INPUT]: depends on Tailwind CSS v4 core (`tailwindcss`), `@fontsource-variable/geist`, and `@fontsource-variable/geist-mono`; reads `html[data-theme]` and `html[data-surface]` attributes set by themeStore and SSG
+ * [OUTPUT]: provides self-hosted Geist + Geist Mono variable font faces, Tailwind v4 `@custom-variant dark` bound to `data-theme="dark"`, static light/dark Signal Orange + Neutral Zinc design tokens, scrollbar rules, and Studio loader animations
  * [POS]: global stylesheet entry imported by src/main.tsx and bundled into all workspace and Studio builds; mirrors hex values in src/theme/brand.ts
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist/wght-italic.css";
+@import "@fontsource-variable/geist-mono";
 @import "tailwindcss";
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 @theme static {
-  --font-sans: 'Geist', system-ui, -apple-system, sans-serif;
-  --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-sans: 'Geist Variable', 'Geist', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Geist Mono Variable', 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /* Neutral Zinc — light default (overridden in dark/studio below) */
   --color-surface: #fafafa;
