@@ -162,6 +162,13 @@ describe('canvasHelpers', () => {
     vi.stubGlobal('Image', MockImage)
 
     await expect(loadImageItem('https://example.com/leak.png')).rejects.toThrow(/offline/i)
+    await expect(loadImageItem('//example.com/leak.png')).rejects.toThrow(/offline/i)
+    await expect(loadImageItem('  //example.com/leak.png')).rejects.toThrow(/offline/i)
+    await expect(loadImageItem('/\\example.com/leak.png')).rejects.toThrow(/offline/i)
+
+    const localItem = await loadImageItem('/assets/local.png')
+    expect(localItem.width).toBe(640)
+    localItem.dispose()
 
     const blob = new Blob([new Uint8Array(128)], { type: 'image/jpeg' })
     const item = await loadImageItem(blob, { name: 'front.jpg' })
@@ -180,5 +187,30 @@ describe('canvasHelpers', () => {
     shouldFail = true
     await expect(loadImageItems([blob])).rejects.toThrow(/Failed to decode/)
     expect(revokeObjectURL).toHaveBeenCalledTimes(2)
+  })
+
+  it('allows same-origin HTTP(S) URLs and rejects cross-origin or protocol-relative URLs', async () => {
+    class MockImage {
+      decoding = ''
+      naturalWidth = 320
+      naturalHeight = 240
+      width = 320
+      height = 240
+      onload: (() => void) | null = null
+      onerror: (() => void) | null = null
+      set src(_value: string) {
+        queueMicrotask(() => this.onload?.())
+      }
+    }
+    vi.stubGlobal('Image', MockImage)
+    vi.stubGlobal('location', { origin: 'https://moklu.app' })
+
+    const sameOrigin = await loadImageItem('https://moklu.app/assets/same-origin.png')
+    expect(sameOrigin.width).toBe(320)
+    sameOrigin.dispose()
+
+    await expect(loadImageItem('https://cdn.other.example/leak.png')).rejects.toThrow(/offline/i)
+    await expect(loadImageItem('//moklu.app/assets/protocol-relative.png')).rejects.toThrow(/offline/i)
+    await expect(loadImageItem('//cdn.other.example/leak.png')).rejects.toThrow(/offline/i)
   })
 })

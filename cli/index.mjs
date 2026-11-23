@@ -1,18 +1,28 @@
 #!/usr/bin/env node
 /**
- * PixelDeck CLI
- * 
- * Usage:
- *   pixeldeck export --project=<path> --screenshots=<dir> --output=<dir>
- *   pixeldeck export --config=<batch.yaml>
- *   pixeldeck serve  # serve dist/ for development
+ * [INPUT]: depends on node fs/path/url and lazy-loaded command handlers from ./export.mjs and ./locale.mjs
+ * [OUTPUT]: exports parseArgs and runs the Moklu/PixelDeck headless CLI commands (export, locale-manifest, locale-import)
+ * [POS]: executable CLI entrypoint of cli/; parses --key=value flags without truncating '=' in values and dispatches subcommands
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
-function parseArgs(rawArgs) {
+import { realpathSync } from 'fs'
+import { resolve } from 'path'
+import { fileURLToPath } from 'url'
+
+export function parseArgs(rawArgs) {
   const opts = {}
   for (const arg of rawArgs) {
     if (!arg.startsWith('--')) continue
-    const [key, value = 'true'] = arg.slice(2).split('=')
-    opts[key] = value
+    const body = arg.slice(2)
+    if (!body) continue
+    const eqIndex = body.indexOf('=')
+    if (eqIndex === -1) {
+      opts[body] = 'true'
+    } else {
+      const key = body.slice(0, eqIndex)
+      if (!key) continue
+      opts[key] = body.slice(eqIndex + 1)
+    }
   }
   return opts
 }
@@ -91,11 +101,23 @@ Examples:
 `)
 }
 
-try {
-  await main()
-} catch (error) {
-  const verbose = process.argv.includes('--verbose') || Boolean(process.env.DEBUG)
-  const message = error instanceof Error ? error.message : String(error)
-  console.error(`[PixelDeck CLI] ${verbose && error instanceof Error ? error.stack ?? message : message}`)
-  process.exitCode = 1
+function isDirectCliExecution() {
+  const entryArg = process.argv[1]
+  if (!entryArg) return false
+  try {
+    return realpathSync(resolve(entryArg)) === realpathSync(fileURLToPath(import.meta.url))
+  } catch {
+    return resolve(entryArg) === fileURLToPath(import.meta.url)
+  }
+}
+
+if (isDirectCliExecution()) {
+  try {
+    await main()
+  } catch (error) {
+    const verbose = process.argv.includes('--verbose') || Boolean(process.env.DEBUG)
+    const message = error instanceof Error ? error.message : String(error)
+    console.error(`[PixelDeck CLI] ${verbose && error instanceof Error ? error.stack ?? message : message}`)
+    process.exitCode = 1
+  }
 }
