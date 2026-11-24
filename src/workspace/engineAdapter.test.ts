@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on vitest, formatSuffixedFilename, parseBackgroundFill, and createToolsWorkspaceEngines from ./engineAdapter, and mocked @/tools canvas engines
- * [OUTPUT]: unit tests verifying free-aspect crop preservation, safe filename suffix/fallback formatting, linear-gradient parsing, and guaranteed LoadedImageItem disposal
+ * [OUTPUT]: unit tests verifying free-aspect crop preservation, merge alignment/border/rotation/PDF preview forwarding, safe filename suffix/fallback formatting, linear-gradient parsing, and guaranteed LoadedImageItem disposal
  * [POS]: automated verification suite for src/workspace/engineAdapter
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -202,5 +202,60 @@ describe('createToolsWorkspaceEngines', () => {
       engines.compress([SAMPLE_INPUT], { format: 'image/webp', quality: 0.8 }),
     ).rejects.toThrow('encode failed')
     expect(mockTools.disposeImageItems).toHaveBeenCalledTimes(2)
+  })
+
+  it('forwards merge align, border, itemRotations, scaleFactor, and uses JPEG previewBlob for PDF output', async () => {
+    const pdfBlob = new Blob(['%PDF-1.4'], { type: 'application/pdf' })
+    const jpegPreview = new Blob(['jpeg-preview'], { type: 'image/jpeg' })
+    mockTools.mergeImages.mockResolvedValue({
+      blob: pdfBlob,
+      previewBlob: jpegPreview,
+      width: 2000,
+      height: 1500,
+      format: 'application/pdf',
+      bytes: pdfBlob.size,
+      filename: 'moklu-merged.pdf',
+      layout: { width: 2000, height: 1500, scaleFactor: 0.5, placements: [] },
+    })
+
+    const engines = createToolsWorkspaceEngines()
+    const out = await engines.merge(
+      [
+        { ...SAMPLE_INPUT, id: 'a', rotation: 90 },
+        { ...SAMPLE_INPUT, id: 'b', rotation: 270 },
+      ],
+      {
+        direction: 'horizontal',
+        normalize: 'original',
+        align: 'end',
+        columns: 4,
+        aspectCell: '1:1',
+        fit: 'contain',
+        gap: 12,
+        padding: 20,
+        borderRadius: 8,
+        borderWidth: 4,
+        borderColor: '#111827',
+        background: '#f8fafc',
+        format: 'application/pdf',
+        quality: 0.88,
+      },
+    )
+
+    expect(mockTools.mergeImages).toHaveBeenCalledTimes(1)
+    const passed = mockTools.mergeImages.mock.calls[0][1]
+    expect(passed.align).toBe('end')
+    expect(passed.fit).toBe('contain')
+    expect(passed.borderWidth).toBe(4)
+    expect(passed.borderColor).toBe('#111827')
+    expect(passed.itemRotations).toEqual([90, 270])
+    expect(passed.format).toBe('application/pdf')
+    expect(passed.filename).toBe('moklu-merged.pdf')
+
+    expect(out.mimeType).toBe('application/pdf')
+    expect(out.blob).toBe(pdfBlob)
+    expect(out.dataUrl).toContain('data:image/jpeg;base64,')
+    expect(out.scaleFactor).toBe(0.5)
+    expect(mockTools.disposeImageItems).toHaveBeenCalledTimes(1)
   })
 })

@@ -143,6 +143,7 @@ export function QuickWorkspace({
     preset.mockupModel ?? '',
     preset.canvasSize ?? '',
     preset.mergeDirection ?? '',
+    preset.mergeFormat ?? '',
     preset.splitMode ?? '',
     preset.targetFormat ?? '',
     preset.resizeMode ?? '',

@@ -140,8 +140,9 @@ async function toBlobOutput(
   height: number,
   filename: string,
   mimeType: string,
+  options?: { previewBlob?: Blob; scaleFactor?: number },
 ): Promise<WorkspaceBlobOutput> {
-  const dataUrl = await blobToDataUrl(blob)
+  const dataUrl = await blobToDataUrl(options?.previewBlob ?? blob)
   return {
     blob,
     dataUrl,
@@ -150,6 +151,7 @@ async function toBlobOutput(
     filename,
     sizeBytes: blob.size,
     mimeType,
+    ...(options?.scaleFactor !== undefined ? { scaleFactor: options.scaleFactor } : {}),
   }
 }
 
@@ -157,21 +159,29 @@ export function createToolsWorkspaceEngines(): WorkspaceEngines {
   return {
     async merge(images: WorkspaceImageInput[], options: WorkspaceMergeOptions): Promise<WorkspaceBlobOutput> {
       return withLoadedImages(images, async (loaded) => {
+        const ext = options.format === 'application/pdf' ? 'pdf' : extensionForFormat(options.format)
         const result = await mergeImages(loaded, {
           mode: options.direction,
           normalize: options.normalize,
+          align: options.align,
           columns: options.columns,
           aspectCell: options.aspectCell,
           fit: options.fit,
           gap: options.gap,
           padding: options.padding,
           borderRadius: options.borderRadius,
+          borderWidth: options.borderWidth,
+          borderColor: options.borderColor,
+          itemRotations: images.map((img) => img.rotation ?? 0),
           background: parseBackgroundFill(options.background),
           format: options.format,
           quality: options.quality,
-          filename: `moklu-merged.${extensionForFormat(options.format)}`,
+          filename: `moklu-merged.${ext}`,
         })
-        return toBlobOutput(result.blob, result.width, result.height, result.filename, result.format)
+        return toBlobOutput(result.blob, result.width, result.height, result.filename, result.format, {
+          previewBlob: result.previewBlob,
+          scaleFactor: result.layout.scaleFactor,
+        })
       })
     },
 

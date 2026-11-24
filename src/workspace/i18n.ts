@@ -26,7 +26,12 @@ export interface WorkspaceStrings {
     proBatchCta: string
     downloadPng: string
     downloadImage: string
+    downloadPdf: string
     downloadZip: string
+    copyImage: string
+    copied: string
+    copyError: string
+    customColor: string
     downloading: string
     processing: string
     clearAll: string
@@ -96,8 +101,24 @@ export interface WorkspaceStrings {
     matchMin: string
     matchMax: string
     original: string
+    alignLabel: string
+    alignTop: string
+    alignMiddle: string
+    alignBottom: string
+    alignLeft: string
+    alignCenter: string
+    alignRight: string
     columns: string
     cellAspect: string
+    fitLabel: string
+    fitCover: string
+    fitContain: string
+    borderWidth: string
+    borderColor: string
+    reverseOrder: string
+    rotate90: string
+    dragToReorder: string
+    scaledNotice: string
     addMore: string
     loadDemoSet: string
     itemsCount: string
