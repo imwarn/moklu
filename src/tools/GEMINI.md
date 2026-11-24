@@ -5,7 +5,7 @@ Pure client-side HTML5 Canvas, Blob, binary EXIF/PDF, dynamic HEIC WASM, and JSZ
 
 Member list
 - `types.ts`: Shared input, option, layout, canvas abstraction, vertical seam telemetry, PDF mode, target-KB compression, and result interfaces across all processing engines.
-- `canvasHelpers.ts`: Offline image loader with `URL.revokeObjectURL` lifecycle, 8192px/64MP dimension clamp, rounded-rect clipping, solid/gradient fill, canvas-to-Blob encoding, byte formatter, and `packBlobsToZip` via `jszip`.
+- `canvasHelpers.ts`: Offline image loader with `URL.revokeObjectURL` lifecycle, 8192px/64MP dimension clamp, rounded-rect clipping, solid/gradient fill, Canvas format capability detection (`canEncodeCanvasFormat`, `resetCanvasFormatProbeCache`, `resolveEncodedImageFormat`), canvas-to-Blob encoding with WebKit/Safari silent WebP-to-PNG fallback re-encoding as JPEG, byte formatter, and `packBlobsToZip` via `jszip`.
 - `heicDecoder.ts`: Native-first local HEIC/HEIF detector (`isHeicFile`) and decoder (`decodeHeicToBlob`) falling back to lazy dynamic `import('heic-to/csp')` (zero `eval`/`new Function`, 0 KB main-bundle impact) with injectable hooks for Node tests.
 - `exifReader.ts`: Zero-dependency pure `DataView` binary EXIF & GPS inspector (`parseExifFromBuffer`, `readExifSummary`) supporting JPEG `APP1`, PNG `eXIf`, WebP `EXIF`, and ISOBMFF/HEIC `Exif` payloads without ever throwing.
 - `pdfHelper.ts`: Zero-dependency single- and multi-page PDF 1.4 binary builder (`buildSinglePagePdfBytes`, `createSinglePagePdfFromJpeg`, `buildMultiPagePdfBytes`, `createMultiPagePdfFromJpegs`) supporting ISO A4 portrait/landscape, fit-to-image sizing, 36pt margins, white backgrounds, and 20-byte `xref` tables via `/DCTDecode`.

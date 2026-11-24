@@ -398,4 +398,34 @@ describe('createToolsWorkspaceEngines', () => {
     expect(items[0].appliedQuality).toBe(0.72)
     expect(items[0].exif).toEqual(sampleExif)
   })
+
+  it('syncs output filename extension and mimeType to image/jpeg when Safari falls back from image/webp', async () => {
+    mockTools.compressImages.mockResolvedValue({
+      items: [
+        {
+          id: 'c-safari',
+          originalName: 'IMG_7220.HEIC',
+          originalBytes: 2_150_000,
+          outputBytes: 390_000,
+          originalWidth: 2316,
+          originalHeight: 3088,
+          width: 2316,
+          height: 3088,
+          blob: new Blob(['jpeg-bytes'], { type: 'image/jpeg' }),
+          format: 'image/jpeg',
+          appliedQuality: 0.82,
+        },
+      ],
+    })
+
+    const engines = createToolsWorkspaceEngines()
+    const items = await engines.compress(
+      [{ ...SAMPLE_INPUT, name: 'IMG_7220.HEIC', sizeBytes: 2_150_000 }],
+      { format: 'image/webp', quality: 0.82 },
+    )
+
+    expect(items[0].filename).toBe('IMG_7220-compressed.jpg')
+    expect(items[0].mimeType).toBe('image/jpeg')
+    expect(items[0].originalBytes).toBe(2_150_000)
+  })
 })

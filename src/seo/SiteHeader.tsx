@@ -100,16 +100,17 @@ export function SiteHeader({
       >
         {ui.skipToContent}
       </a>
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-2 px-3 sm:gap-3 sm:px-6 lg:px-8">
         {/* Brand */}
-        <div className="flex items-center gap-6">
+        <div className="flex min-w-0 items-center gap-4 sm:gap-6">
           <a
             href={homeHref}
+            aria-label={ui.brandName}
             onClick={(event) => {
               setMobileOpen(false)
               handleSpaLinkClick(event, homeHref, onNavigate)
             }}
-            className="group flex items-center gap-2.5 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="group flex shrink-0 items-center gap-2 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:gap-2.5"
           >
             <svg
               aria-hidden="true"
@@ -124,7 +125,7 @@ export function SiteHeader({
               <rect fill="var(--color-accent)" x="12" y="2" width="18" height="18" rx="4" />
               <rect fill="var(--color-accent-fg)" x="18" y="6" width="6" height="2" rx="1" />
             </svg>
-            <span className="text-lg font-bold tracking-tight">
+            <span className="hidden text-lg font-bold tracking-tight min-[350px]:inline">
               {ui.brandName}
             </span>
           </a>
@@ -161,7 +162,7 @@ export function SiteHeader({
         </div>
 
         {/* Right actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           {/* Locale switcher with real crawlable anchor links */}
           <div ref={langRef} className="relative">
             <button
@@ -170,7 +171,7 @@ export function SiteHeader({
               aria-expanded={langOpen}
               aria-haspopup="menu"
               aria-label={ui.languageLabel}
-              className={`inline-flex h-9 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${subtleBtnCls}`}
+              className={`inline-flex h-9 items-center gap-1 rounded-lg border px-2 text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:gap-1.5 sm:px-2.5 ${subtleBtnCls}`}
             >
               <svg
                 aria-hidden="true"
@@ -304,7 +305,7 @@ export function SiteHeader({
               setMobileOpen(false)
               handleSpaLinkClick(event, studioHref, onNavigate)
             }}
-            className="inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg bg-accent-strong px-3.5 text-xs font-semibold text-accent-fg shadow-[0_1px_2px_rgba(24,24,27,0.1)] transition-[filter,transform] hover:brightness-95 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="inline-flex h-9 shrink-0 items-center gap-1 whitespace-nowrap rounded-lg bg-accent-strong px-2.5 text-xs font-semibold text-accent-fg shadow-[0_1px_2px_rgba(24,24,27,0.1)] transition-[filter,transform] hover:brightness-95 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:gap-1.5 sm:px-3.5"
           >
             <span className="hidden sm:inline">{ui.openStudio}</span>
             <span className="sm:hidden">{ui.openStudioShort}</span>
@@ -344,9 +345,9 @@ export function SiteHeader({
         <nav
           id="mobile-tool-nav"
           aria-label={ui.mobileNavAria}
-          className="border-t border-border bg-panel px-4 py-3 lg:hidden"
+          className="border-t border-border bg-panel px-3 py-3 sm:px-4 lg:hidden"
         >
-          <div className="grid grid-cols-2 gap-1.5">
+          <div className="grid grid-cols-1 gap-1.5 min-[360px]:grid-cols-2">
             {NAV_TOOL_ORDER.map((toolId) => {
               const href = buildLocalizedPath(route.locale, PRIMARY_TOOL_SLUGS[toolId])
               const isActive = isToolNavActive(route, toolId)

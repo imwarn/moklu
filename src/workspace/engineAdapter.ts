@@ -12,6 +12,7 @@ import {
   loadImageItem,
   mergeImages,
   packBlobsToZip,
+  resolveEncodedImageFormat,
   sanitizeFilenameStem,
   splitImage,
   transformImages,
@@ -60,6 +61,9 @@ async function withLoadedImages<T>(
   try {
     for (const input of inputs) {
       const item = await loadImageItem(input.file ?? input.dataUrl, { name: input.name })
+      if (input.sizeBytes > 0) {
+        item.originalBytes = input.sizeBytes
+      }
       loaded.push(item)
     }
     return await fn(loaded)
@@ -234,12 +238,17 @@ export function createToolsWorkspaceEngines(): WorkspaceEngines {
 
         const slices = await Promise.all(
           result.slices.map(async (slice) => {
+            const sliceFormat = resolveEncodedImageFormat(options.format, slice.blob)
+            const sliceFilename =
+              sliceFormat !== options.format
+                ? `${sanitizeFilenameStem(slice.filename, 'slice')}.${extensionForFormat(sliceFormat)}`
+                : slice.filename
             const base = await toBlobOutput(
               slice.blob,
               slice.width,
               slice.height,
-              slice.filename,
-              options.format,
+              sliceFilename,
+              sliceFormat,
             )
             return {
               ...base,
@@ -276,13 +285,14 @@ export function createToolsWorkspaceEngines(): WorkspaceEngines {
             const originalBytes = source?.sizeBytes && source.sizeBytes > 0
               ? source.sizeBytes
               : item.originalBytes
-            const filename = formatSuffixedFilename(originalName, 'compressed', options.format)
+            const actualFormat = resolveEncodedImageFormat(item.format, item.blob)
+            const filename = formatSuffixedFilename(originalName, 'compressed', actualFormat)
             const base = await toBlobOutput(
               item.blob,
               item.width,
               item.height,
               filename,
-              item.format,
+              actualFormat,
             )
             const savedRatio = originalBytes > 0 ? (originalBytes - item.outputBytes) / originalBytes : 0
             return {
@@ -343,10 +353,11 @@ export function createToolsWorkspaceEngines(): WorkspaceEngines {
         return Promise.all(
           batch.items.map((item, index) => {
             const source = images[index]
+            const actualFormat = resolveEncodedImageFormat(item.format, item.blob)
             const filename = source
-              ? formatSuffixedFilename(source.name, options.mode, options.format)
+              ? formatSuffixedFilename(source.name, options.mode, actualFormat)
               : item.filename
-            return toBlobOutput(item.blob, item.width, item.height, filename, item.format)
+            return toBlobOutput(item.blob, item.width, item.height, filename, actualFormat)
           }),
         )
       })

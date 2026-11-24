@@ -139,6 +139,43 @@ describe('compressEngine', () => {
     expect(floored.width).toBeGreaterThanOrEqual(320)
     expect(floored.targetBytesMet).toBe(false)
   })
+
+  it('syncs result format and .jpg extension when WebKit canvas falls back from image/webp to image/jpeg', async () => {
+    const { createCanvas: baseFactory } = createRecordingCanvasFactory()
+    const safariFactory = (width: number, height: number) => {
+      const base = baseFactory(width, height)
+      return {
+        ...base,
+        convertToBlob: undefined,
+        toBlob(cb: (blob: Blob | null) => void, type = 'image/png', quality = 0.82) {
+          if (type === 'image/webp') {
+            cb(new Blob([new Uint8Array(9_870_000)], { type: 'image/png' }))
+            return
+          }
+          const size = Math.round(500_000 * quality)
+          cb(new Blob([new Uint8Array(size)], { type: 'image/jpeg' }))
+        },
+      }
+    }
+
+    const item = makeMockImageItem({
+      id: 'heic-1',
+      name: 'IMG_7220.HEIC',
+      width: 2316,
+      height: 3088,
+      originalBytes: 2_050_000,
+    })
+
+    const res = await compressImage(item, {
+      format: 'image/webp',
+      quality: 0.82,
+      createCanvas: safariFactory,
+    })
+    expect(res.format).toBe('image/jpeg')
+    expect(res.filename).toBe('IMG_7220.jpg')
+    expect(res.outputBytes).toBe(410_000)
+    expect(res.savedRatio).toBeGreaterThan(0.75)
+  })
 })
 
 describe('transformEngine', () => {

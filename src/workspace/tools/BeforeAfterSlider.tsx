@@ -223,7 +223,7 @@ export function BeforeAfterSlider({
         onPointerCancel={handlePointerUp}
         onKeyDown={handleKeyDown}
         onWheel={handleWheel}
-        className={`relative w-full touch-none select-none overflow-hidden rounded-xl border bg-zinc-950/90 ${viewportHeightClass} ${
+        className={`@container relative w-full touch-none select-none overflow-hidden rounded-xl border bg-zinc-950/90 ${viewportHeightClass} ${
           dragging ? 'cursor-grabbing ring-2 ring-accent' : 'cursor-ew-resize'
         } ${tokens.focusRing} ${tokens.border}`}
       >
@@ -272,29 +272,32 @@ export function BeforeAfterSlider({
           style={{ left: `${splitPercent}%` }}
           className="pointer-events-none absolute inset-y-0 z-10 w-0.5 -translate-x-1/2 bg-white shadow-[0_0_8px_rgba(0,0,0,0.65)]"
         >
-          <div className="absolute left-1/2 top-1/2 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white bg-accent-strong text-accent-fg shadow-md">
-            <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2">
+          <div className="absolute left-1/2 top-1/2 flex h-8 w-8 pointer-coarse:h-11 pointer-coarse:w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white bg-accent-strong text-accent-fg shadow-md">
+            <svg viewBox="0 0 16 16" className="h-3.5 w-3.5 pointer-coarse:h-4 pointer-coarse:w-4" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M5.5 4.5 2.5 8l3 3.5M10.5 4.5 13.5 8l-3 3.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
         </div>
 
-        {/* Floating Left & Right Metadata Labels */}
+        {/* Floating Left & Right Metadata Labels (opposite corners on narrow mobile containers to prevent overlap) */}
         <span
           data-testid="ba-left-label"
-          className="pointer-events-none absolute left-2.5 top-2.5 z-20 rounded-md bg-zinc-950/80 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-zinc-100 backdrop-blur-xs"
+          className="pointer-events-none absolute left-2 top-2 z-20 max-w-[calc(100%-1rem)] truncate rounded-md bg-zinc-950/80 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-zinc-100 backdrop-blur-xs @sm:left-2.5 @sm:top-2.5 @sm:max-w-[46%]"
         >
           {leftPillText}
         </span>
         <span
           data-testid="ba-right-label"
-          className="pointer-events-none absolute right-2.5 top-2.5 z-20 rounded-md bg-zinc-950/80 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-zinc-100 backdrop-blur-xs"
+          className="pointer-events-none absolute bottom-2 right-2 z-20 max-w-[calc(100%-1rem)] truncate rounded-md bg-zinc-950/80 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-zinc-100 backdrop-blur-xs @sm:bottom-auto @sm:right-2.5 @sm:top-2.5 @sm:max-w-[50%]"
         >
           {rightPillText}
         </span>
       </div>
 
-      <p className={`text-[11px] ${tokens.textSubtle}`}>{p1.slider.keyboardHint}</p>
+      <p className={`text-[11px] ${tokens.textSubtle}`}>
+        <span className="pointer-coarse:hidden">{p1.slider.keyboardHint}</span>
+        <span className="hidden pointer-coarse:inline">{p1.slider.touchHint}</span>
+      </p>
     </div>
   )
 }

@@ -99,10 +99,10 @@ function blobToDataUrl(blob: Blob): Promise<string> {
   })
 }
 
-function canvasToBlob(
+function encodeHtmlCanvasOnce(
   canvas: HTMLCanvasElement,
   format: WorkspaceImageFormat,
-  quality: number,
+  effectiveQuality: number | undefined,
 ): Promise<Blob> {
   return new Promise((resolve, reject) => {
     canvas.toBlob(
@@ -111,9 +111,22 @@ function canvasToBlob(
         else reject(new Error(`Canvas export failed for ${format}`))
       },
       format,
-      format === 'image/png' ? undefined : Math.max(0.05, Math.min(1, quality)),
+      effectiveQuality,
     )
   })
+}
+
+async function canvasToBlob(
+  canvas: HTMLCanvasElement,
+  format: WorkspaceImageFormat,
+  quality: number,
+): Promise<Blob> {
+  const effectiveQuality = format === 'image/png' ? undefined : Math.max(0.05, Math.min(1, quality))
+  const blob = await encodeHtmlCanvasOnce(canvas, format, effectiveQuality)
+  if (format === 'image/webp' && blob.type === 'image/png') {
+    return encodeHtmlCanvasOnce(canvas, 'image/jpeg', effectiveQuality)
+  }
+  return blob
 }
 
 export async function finalizeCanvasOutput(
@@ -123,15 +136,23 @@ export async function finalizeCanvasOutput(
   quality: number,
 ): Promise<WorkspaceBlobOutput> {
   const blob = await canvasToBlob(canvas, format, quality)
+  const actualFormat: WorkspaceImageFormat =
+    blob.type === 'image/jpeg' || blob.type === 'image/webp' || blob.type === 'image/png'
+      ? blob.type
+      : format
+  const resolvedFilename =
+    actualFormat !== format
+      ? `${stripExtension(filename) || 'image'}.${extensionForMime(actualFormat)}`
+      : filename
   const dataUrl = await blobToDataUrl(blob)
   return {
     blob,
     dataUrl,
     width: canvas.width,
     height: canvas.height,
-    filename,
+    filename: resolvedFilename,
     sizeBytes: blob.size,
-    mimeType: format,
+    mimeType: actualFormat,
   }
 }
 
@@ -257,6 +278,15 @@ export async function readFileAsImageInput(
     const img = await loadHtmlImage(objectUrl)
     const dataUrl = await blobToDataUrl(workingBlob)
     const ext = inferImageExtension(name, file.type)
+    const originalSizeBytes = file.size > 0 ? file.size : workingBlob.size
+    const decodedFile =
+      heicSource && typeof File !== 'undefined'
+        ? new File([workingBlob], `${stripExtension(name) || 'photo'}.jpg`, {
+            type: workingBlob.type || 'image/jpeg',
+          })
+        : file instanceof File
+          ? file
+          : undefined
     trackFunnelEvent('image_loaded', { ext })
     return {
       id: nanoid(10),
@@ -264,10 +294,10 @@ export async function readFileAsImageInput(
       width: img.naturalWidth || img.width,
       height: img.naturalHeight || img.height,
       dataUrl,
-      sizeBytes: workingBlob.size,
+      sizeBytes: originalSizeBytes,
       mimeType: workingBlob.type || file.type || 'image/png',
       exif,
-      ...(file instanceof File ? { file } : {}),
+      ...(decodedFile ? { file: decodedFile } : {}),
     }
   } finally {
     URL.revokeObjectURL(objectUrl)

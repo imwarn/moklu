@@ -353,8 +353,8 @@ export function IdCardQuickTool({
 
           <ExifPrivacyBanner theme={theme} locale={locale} images={draftImages} />
 
-          <div className={`rounded-2xl border p-4 ${tokens.stage}`}>
-            <div className="mb-2 flex items-center justify-between gap-2">
+          <div className={`rounded-2xl border p-3.5 sm:p-4 ${tokens.stage}`}>
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
               <span className={`text-xs font-semibold uppercase tracking-wider ${tokens.textMuted}`}>
                 A4 {dpi} DPI · {s.common.preview}
               </span>
@@ -373,7 +373,7 @@ export function IdCardQuickTool({
                 <img
                   src={activeSheet.dataUrl}
                   alt={s.idCard.previewAlt}
-                  className="max-h-[380px] rounded border border-zinc-300 bg-white object-contain shadow-md"
+                  className="max-h-[380px] max-w-full rounded border border-zinc-300 bg-white object-contain shadow-md"
                 />
               ) : (
                 <p className={`text-xs ${tokens.textSubtle}`}>{s.common.emptyPreview}</p>
@@ -392,7 +392,7 @@ export function IdCardQuickTool({
         </div>
 
         {/* Right: Watermark & Print Controls */}
-        <div className={`flex flex-col justify-between gap-5 rounded-2xl border p-5 lg:col-span-5 ${tokens.card}`}>
+        <div className={`flex flex-col justify-between gap-5 rounded-2xl border p-4 sm:p-5 lg:col-span-5 ${tokens.card}`}>
           <div className="space-y-4">
             <div>
               <label htmlFor={watermarkInputId} className={`mb-1.5 block text-xs font-semibold ${tokens.textMuted}`}>

@@ -53,12 +53,20 @@ html[data-surface="studio"] {
 
 * { box-sizing: border-box; }
 
+html:not([data-surface="studio"]) {
+  scroll-padding-top: 4.5rem;
+  scroll-padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+}
+
+html:not([data-surface="studio"]) :is(h1, h2, h3) {
+  text-wrap: balance;
+}
+
 body {
   margin: 0;
   background: var(--color-surface);
   color: #18181b;
   font-family: var(--font-sans);
-  overflow-x: hidden;
   overflow-y: auto;
   color-scheme: light;
 }

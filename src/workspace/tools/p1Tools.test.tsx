@@ -79,6 +79,7 @@ describe('p1ToolsLocale 4-language coverage and zero em-dash enforcement', () =>
         p1.compress.modeQuality,
         p1.compress.modeTargetKb,
         p1.compress.pngAutoSwitchedNote,
+        p1.compress.webpFallbackNote,
         p1.compress.autoDownscaleNotice(1280, 200),
         p1.compress.preserveUnmetNotice(200),
         p1.compress.exifBannerWithGps(7),
@@ -86,6 +87,7 @@ describe('p1ToolsLocale 4-language coverage and zero em-dash enforcement', () =>
         p1.slider.original,
         p1.slider.compressed,
         p1.slider.keyboardHint,
+        p1.slider.touchHint,
       ]
       for (const text of samples) {
         expect(text.trim().length).toBeGreaterThan(0)

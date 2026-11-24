@@ -1,16 +1,16 @@
 /**
- * [INPUT]: depends on react, ModalShell from @/components/ui/ModalShell, isHeicFile/decodeHeicToBlob/readExifSummary from @/tools, trackFunnelEvent from @/utils/telemetry, BeforeAfterSlider from ./BeforeAfterSlider, p1ToolsLocale from ../locales/p1ToolsLocale, canvasUtils, draftStorage, i18n, themeTokens, uiPrimitives, useDebouncedValue, useToolDraft, and workspace types
- * [OUTPUT]: exports ExifPrivacyBanner, CompressPreviewModal, and CompressQuickTool supporting quality-slider vs target-KB binary-search compression, auto-downscale fallback toggle, HEIC/EXIF ingestion & inspector banner, interactive Before/After split slider with 200% zoom, clipboard copy, telemetry, draft auto-save, and ZIP download
+ * [INPUT]: depends on react, ModalShell from @/components/ui/ModalShell, canEncodeCanvasFormat/isHeicFile from @/tools, trackFunnelEvent from @/utils/telemetry, BeforeAfterSlider from ./BeforeAfterSlider, p1ToolsLocale from ../locales/p1ToolsLocale, canvasUtils, draftStorage, i18n, themeTokens, uiPrimitives, useDebouncedValue, useToolDraft, and workspace types
+ * [OUTPUT]: exports ExifPrivacyBanner, CompressPreviewModal, and CompressQuickTool supporting quality-slider vs target-KB binary-search compression, Safari WebP-to-JPEG capability fallback, container-query responsive item cards, auto-downscale fallback toggle, HEIC/EXIF ingestion & inspector banner, interactive Before/After split slider with 200% zoom, clipboard copy, telemetry, draft auto-save, and ZIP download
  * [POS]: local batch image compressor, target-KB optimizer, and EXIF stripper panel inside src/workspace/tools; delegates encoding to injected engines.compress
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { ModalShell } from '@/components/ui/ModalShell'
-import { decodeHeicToBlob, isHeicFile, readExifSummary } from '@/tools'
+import { canEncodeCanvasFormat, isHeicFile } from '@/tools'
 import { trackFunnelEvent } from '@/utils/telemetry'
 import {
-  copyImageToClipboard, createDemoImageInput, formatBytes,
-  readFileAsImageInput, stripExtension, triggerBlobDownload,
+  copyImageToClipboard, createDemoImageInput, formatBytes, loadHtmlImage,
+  readFileAsImageInput, triggerBlobDownload, type DemoVariant,
 } from '../canvasUtils'
 import { deserializeDraftImages, type WorkspaceToolDraft } from '../draftStorage'
 import { getWorkspaceStrings } from '../i18n'
@@ -55,17 +55,29 @@ function clampTargetKb(raw: number): number {
   return Math.max(10, Math.min(10240, Math.round(raw)))
 }
 
-async function readCompressFileWithHeicAndExif(file: File): Promise<WorkspaceImageInput> {
-  const exif = await readExifSummary(file)
-  if (isHeicFile(file)) {
-    const decoded = await decodeHeicToBlob(file, { outputType: 'image/jpeg', quality: 0.92 })
-    const decodedName = `${stripExtension(file.name) || 'photo'}.jpg`
-    const decodedFile = new File([decoded], decodedName, { type: decoded.type || 'image/jpeg' })
-    const loaded = await readFileAsImageInput(decodedFile, decodedName)
-    return { ...loaded, exif: loaded.exif ?? exif }
+function preferredLossyFormat(): WorkspaceImageFormat {
+  return canEncodeCanvasFormat('image/webp') ? 'image/webp' : 'image/jpeg'
+}
+
+async function createRasterCompressDemoInput(variant: DemoVariant, filename: string): Promise<WorkspaceImageInput> {
+  const base = createDemoImageInput(variant, filename)
+  if (typeof document === 'undefined') return base
+  try {
+    const img = await loadHtmlImage(base.dataUrl)
+    const canvas = document.createElement('canvas')
+    canvas.width = base.width
+    canvas.height = base.height
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return base
+    ctx.drawImage(img, 0, 0, base.width, base.height)
+    const pngBlob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'))
+    if (!pngBlob) return base
+    const pngFile = new File([pngBlob], filename, { type: 'image/png' })
+    const loaded = await readFileAsImageInput(pngFile, filename)
+    return { ...loaded, isDemo: true }
+  } catch {
+    return base
   }
-  const loaded = await readFileAsImageInput(file)
-  return { ...loaded, exif: loaded.exif ?? exif }
 }
 
 function formatExposureSummary(exif: WorkspaceExifSummary): string | null {
@@ -227,9 +239,9 @@ export function CompressPreviewModal({
       header={header}
       showCloseButton={false}
       maxWidth="max-w-4xl"
-      backdropClassName="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/75 p-4 backdrop-blur-xs"
+      backdropClassName="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/75 p-3 sm:p-4 backdrop-blur-xs"
       backdropStyle={{}}
-      panelClassName={`flex max-h-[92vh] w-full flex-col overflow-hidden rounded-2xl border p-4 shadow-2xl ${tokens.card}`}
+      panelClassName={`flex max-h-[92vh] w-full flex-col overflow-hidden rounded-2xl border p-3.5 sm:p-4 shadow-2xl ${tokens.card}`}
       panelStyle={{}}
     >
       <div data-testid="compress-preview-modal" className="flex flex-1 flex-col overflow-y-auto">
@@ -260,12 +272,18 @@ export function CompressQuickTool({ preset, locale, theme, engines }: WorkspaceT
   const initialTargetMode = Boolean(preset.targetSizeKb && preset.targetSizeKb > 0)
   const initialPngSwitched = initialTargetMode && preset.targetFormat === 'image/png'
 
+  const rawInitialFormat: WorkspaceImageFormat = initialPngSwitched ? 'image/webp' : (preset.targetFormat ?? 'image/webp')
   const [images, setImages] = useState<WorkspaceImageInput[]>([])
   const [compressMode, setCompressMode] = useState<CompressMode>(initialTargetMode ? 'target-kb' : 'quality')
   const [targetKb, setTargetKb] = useState<number>(() => clampTargetKb(preset.targetSizeKb ?? 200))
   const [preserveOriginalDimensions, setPreserveOriginalDimensions] = useState<boolean>(false)
-  const [format, setFormat] = useState<WorkspaceImageFormat>(initialPngSwitched ? 'image/webp' : (preset.targetFormat ?? 'image/webp'))
+  const [format, setFormat] = useState<WorkspaceImageFormat>(() =>
+    rawInitialFormat === 'image/webp' && !canEncodeCanvasFormat('image/webp') ? 'image/jpeg' : rawInitialFormat,
+  )
   const [pngAutoSwitched, setPngAutoSwitched] = useState<boolean>(initialPngSwitched)
+  const [webpFallbackNote, setWebpFallbackNote] = useState<boolean>(
+    () => rawInitialFormat === 'image/webp' && !canEncodeCanvasFormat('image/webp'),
+  )
   const [qualityPercent, setQualityPercent] = useState<number>(82)
   const [maxWidthKey, setMaxWidthKey] = useState<string>('0')
   const [results, setResults] = useState<WorkspaceCompressItem[]>([])
@@ -291,8 +309,11 @@ export function CompressQuickTool({ preset, locale, theme, engines }: WorkspaceT
     if (typeof cfg.preserveOriginalDimensions === 'boolean') setPreserveOriginalDimensions(cfg.preserveOriginalDimensions)
     if (cfg.format === 'image/png' || cfg.format === 'image/jpeg' || cfg.format === 'image/webp') {
       if (cfg.compressMode === 'target-kb' && cfg.format === 'image/png') {
-        setFormat('image/webp')
+        setFormat(preferredLossyFormat())
         setPngAutoSwitched(true)
+      } else if (cfg.format === 'image/webp' && !canEncodeCanvasFormat('image/webp')) {
+        setFormat('image/jpeg')
+        setWebpFallbackNote(true)
       } else {
         setFormat(cfg.format)
       }
@@ -312,8 +333,10 @@ export function CompressQuickTool({ preset, locale, theme, engines }: WorkspaceT
   const handleModeChange = (nextMode: CompressMode) => {
     setCompressMode(nextMode)
     if (nextMode === 'target-kb' && format === 'image/png') {
-      setFormat('image/webp')
+      const lossy = preferredLossyFormat()
+      setFormat(lossy)
       setPngAutoSwitched(true)
+      if (lossy === 'image/jpeg') setWebpFallbackNote(true)
     } else if (nextMode === 'quality') {
       setPngAutoSwitched(false)
     }
@@ -321,11 +344,20 @@ export function CompressQuickTool({ preset, locale, theme, engines }: WorkspaceT
 
   const handleFormatChange = (nextFormat: WorkspaceImageFormat) => {
     if (compressMode === 'target-kb' && nextFormat === 'image/png') {
-      setFormat('image/webp')
+      const lossy = preferredLossyFormat()
+      setFormat(lossy)
       setPngAutoSwitched(true)
+      if (lossy === 'image/jpeg') setWebpFallbackNote(true)
+      return
+    }
+    if (nextFormat === 'image/webp' && !canEncodeCanvasFormat('image/webp')) {
+      setPngAutoSwitched(false)
+      setFormat('image/jpeg')
+      setWebpFallbackNote(true)
       return
     }
     setPngAutoSwitched(false)
+    setWebpFallbackNote(false)
     setFormat(nextFormat)
   }
 
@@ -344,7 +376,7 @@ export function CompressQuickTool({ preset, locale, theme, engines }: WorkspaceT
       const hasHeic = files.some((file) => isHeicFile(file))
       if (hasHeic) setDecodingHeic(true)
       try {
-        const loaded = await Promise.all(files.map((file) => readCompressFileWithHeicAndExif(file)))
+        const loaded = await Promise.all(files.map((file) => readFileAsImageInput(file)))
         setImages((prev) => [...prev, ...loaded])
         trackFunnelEvent('image_loaded', { tool: 'compress', count: loaded.length, hasHeic, hasExif: loaded.some((item) => Boolean(item.exif?.hasExif)) })
       } catch {
@@ -356,9 +388,13 @@ export function CompressQuickTool({ preset, locale, theme, engines }: WorkspaceT
     [s.common.decodeError],
   )
 
-  const handleLoadDemo = () => {
+  const handleLoadDemo = async () => {
     setError(null)
-    setImages([createDemoImageInput('saas', 'landing-hero.svg'), createDemoImageInput('photo-1', 'feature-banner.svg')])
+    const [first, second] = await Promise.all([
+      createRasterCompressDemoInput('saas', 'landing-hero.png'),
+      createRasterCompressDemoInput('photo-1', 'feature-banner.png'),
+    ])
+    setImages([first, second])
   }
 
   const handleRemoveById = (id: string) => {
@@ -442,12 +478,16 @@ export function CompressQuickTool({ preset, locale, theme, engines }: WorkspaceT
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
       {/* Left: EXIF Inspector, Split Comparison & File List */}
       <div className="flex flex-col gap-4 lg:col-span-7">
-        <div className={`rounded-2xl border p-4 ${tokens.stage}`}>
+        <div className={`rounded-2xl border p-3.5 sm:p-4 ${tokens.stage}`}>
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <span className={`text-xs font-semibold uppercase tracking-wider ${tokens.textMuted}`}>{s.compress.beforeAfter}</span>
               {activeResults.length > 0 && (
-                <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold tabular-nums ${tokens.privacyBadge}`}>
+                <span
+                  className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold tabular-nums ${
+                    totalSavedPct >= 0 ? tokens.privacyBadge : tokens.badgeWarning
+                  }`}
+                >
                   {s.compress.totalSaved}: {totalSavedPct >= 0 ? `-${totalSavedPct}%` : `+${Math.abs(totalSavedPct)}%`}
                 </span>
               )}
@@ -528,19 +568,23 @@ export function CompressQuickTool({ preset, locale, theme, engines }: WorkspaceT
                   {activeResults.map((item, idx) => {
                     const pct = Math.round(item.savedRatio * 100)
                     return (
-                      <li key={item.id} data-testid={`compress-item-${idx}`} className={`flex flex-wrap items-center justify-between gap-3 rounded-xl border p-2.5 ${tokens.card}`}>
+                      <li
+                        key={item.id}
+                        data-testid={`compress-item-${idx}`}
+                        className={`@container flex flex-col gap-2.5 rounded-xl border p-2.5 @md:flex-row @md:items-center @md:justify-between ${tokens.card}`}
+                      >
                         <button
                           type="button"
                           data-testid={`compress-preview-btn-${idx}`}
                           title={s.compress.clickToPreview}
                           aria-label={`${s.common.inspectPreview}: ${item.filename}`}
                           onClick={() => setPreviewId(item.id)}
-                          className={`group flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left ${tokens.focusRing}`}
+                          className={`group flex w-full min-w-0 items-center gap-3 rounded-lg text-left @md:w-auto @md:flex-1 ${tokens.focusRing}`}
                         >
                           <img src={item.dataUrl} alt={item.filename} className="h-12 w-12 shrink-0 rounded-lg object-cover ring-1 ring-black/10 transition-transform group-hover:scale-105" />
-                          <div className="min-w-0">
+                          <div className="min-w-0 flex-1">
                             <p className={`truncate text-xs font-semibold group-hover:text-accent-text ${tokens.text}`}>{item.filename}</p>
-                            <p className={`mt-0.5 text-[11px] tabular-nums ${tokens.textSubtle}`}>
+                            <p className={`mt-0.5 text-[11px] leading-snug tabular-nums ${tokens.textSubtle}`}>
                               {formatBytes(item.originalBytes)} → {formatBytes(item.outputBytes)} · {item.width}×{item.height}
                               {compressMode === 'target-kb' && item.appliedQuality !== undefined
                                 ? ` · ${p1.compress.appliedQualityLabel} ${Math.round(item.appliedQuality * 100)}%`
@@ -548,7 +592,7 @@ export function CompressQuickTool({ preset, locale, theme, engines }: WorkspaceT
                             </p>
                           </div>
                         </button>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex flex-wrap items-center justify-end gap-1.5 border-t border-current/10 pt-2 @md:shrink-0 @md:border-t-0 @md:pt-0">
                           {compressMode === 'target-kb' && item.targetBytesMet && (
                             <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${tokens.badgePositive}`}>{p1.compress.targetMetBadge}</span>
                           )}
@@ -603,7 +647,7 @@ export function CompressQuickTool({ preset, locale, theme, engines }: WorkspaceT
       </div>
 
       {/* Right: Compression Mode, Target-KB / Quality & Format Controls */}
-      <div className={`flex flex-col justify-between gap-5 rounded-2xl border p-5 lg:col-span-5 ${tokens.card}`}>
+      <div className={`flex flex-col justify-between gap-5 rounded-2xl border p-4 sm:p-5 lg:col-span-5 ${tokens.card}`}>
         <div className="space-y-4">
           <SegmentedControl
             theme={theme}
@@ -622,6 +666,11 @@ export function CompressQuickTool({ preset, locale, theme, engines }: WorkspaceT
           {pngAutoSwitched && (
             <p data-testid="compress-png-autoswitch-note" className={`rounded-lg border px-2.5 py-1.5 text-[11px] ${tokens.cardMuted} ${tokens.textMuted}`}>
               {p1.compress.pngAutoSwitchedNote}
+            </p>
+          )}
+          {webpFallbackNote && (
+            <p data-testid="compress-webp-fallback-note" className={`rounded-lg border px-2.5 py-1.5 text-[11px] ${tokens.cardMuted} ${tokens.textMuted}`}>
+              {p1.compress.webpFallbackNote}
             </p>
           )}
           {compressMode === 'target-kb' ? (

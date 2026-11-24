@@ -27,7 +27,7 @@ CSP 最怕照抄模板。下面每一条都有仓库里的实测依据：
 
 | 指令 | 取值 | 为什么必须是这个 |
 | --- | --- | --- |
-| `script-src 'self' https://static.cloudflareinsights.com` | hashed bundle + Cloudflare Web Analytics beacon | `index.html` 无内联 `<script>`，全仓库 `grep 'eval(\|new Function('` 为 0 → **不需要** `'unsafe-inline'` / `'unsafe-eval'`；仅额外放行无 cookie 的 Cloudflare Web Analytics 外部脚本（`beacon.min.js`） |
+| `script-src 'self' 'wasm-unsafe-eval' https://static.cloudflareinsights.com` | hashed bundle + HEIC WASM 实例化 + Cloudflare Web Analytics beacon | `index.html` 无内联 `<script>`，全仓库 `grep 'eval(\|new Function('` 为 0 → **禁止** `'unsafe-inline'` / `'unsafe-eval'`；`'wasm-unsafe-eval'` 仅允许 `WebAssembly.instantiate` 按需解码 iPhone `.heic` / `.avif`（`heic-to/csp`）；同时放行无 cookie 的 Cloudflare Web Analytics 外部脚本（`beacon.min.js`） |
 | `style-src ... 'unsafe-inline'` | 必须加 | 33 个组件用 React `style={{...}}`（行内 style 属性受 `style-src` 管辖） |
 | `style-src ... fonts.googleapis.com` | 必须加 | `src/utils/fonts.ts:186,207` 在**运行时**动态注入 `<link rel=stylesheet href="https://fonts.googleapis.com/...">` |
 | `font-src ... fonts.gstatic.com` | 必须加 | 字体文件由 gstatic 提供 |
@@ -363,3 +363,36 @@ curl -sSI https://moklu.app/studio/unknown-check
   ```
   （若容器监听了自定义 `PORT`，请将 `80` 替换为实际端口。）
 - **Cloudflare 边缘缓存排除**：如果线上通过 Cloudflare Cache Rules 缓存静态资源，建议为 `/healthz.txt` 与 `/healthz/*` 配置 **Bypass cache**（与 `public/_headers` 中的 `Cache-Control: no-store` 保持一致），确保外部拨测同样命中实时响应。
+
+---
+
+## 八、安全响应头对日常功能与 Cloudflare 面板开关的边界说明
+
+当前线上边缘（`workers/telemetry` Worker 路由 `moklu.app/*`）与仓库唯一真相源 `public/_headers` 同步下发以下响应头组合：
+
+- `Content-Security-Policy`（含 `script-src 'self' 'wasm-unsafe-eval' https://static.cloudflareinsights.com` 与受限 `connect-src`）
+- `X-Frame-Options: DENY`（与 CSP `frame-ancestors 'none'` 双重对齐）
+- `X-Content-Type-Options: nosniff`
+- `Referrer-Policy: strict-origin-when-cross-origin`
+- `Permissions-Policy: camera=(), microphone=(), geolocation=()`
+
+### 1. `'wasm-unsafe-eval'` 的真实安全边界
+
+- **只开放 WebAssembly 线性内存沙箱，不放开任意 JS 动态执行**：`'wasm-unsafe-eval'`（CSP Level 3 标准指令）仅允许 `WebAssembly.compile` / `WebAssembly.instantiate` 编译二进制模块（供 `src/tools/heicDecoder.ts` 按需加载 `heic-to/csp` 本地解码 `.heic` / `.heif`），**`eval()`、`new Function()`、字符串 `setTimeout("...")` 以及内联 `<script>` 依然被浏览器 100% 拦截**。
+- **叠加出口白名单双重锁死**：即使极端情况下第三方 WASM 解码器遇到畸形图片触发内存越界，WASM 本身没有 DOM / 网络 API 权限，且外层 `connect-src` 严格锁定在 `'self'`、3 个内置 AI 官方域名与 `cloudflareinsights.com`，本地图片像素与证件数据无法外传至未知第三方服务器。
+
+### 2. 日常使用中有感知的 2 个预期安全边界
+
+| 场景 | 表现 | 原因与处理方式 |
+| --- | --- | --- |
+| **Studio 自带 Key（BYOK）填写第三方 `Custom` 中转域名** | 浏览器在发包前直接拦截，`src/ai/client.ts` 给出明确 CSP 提示 | OpenAI / Google Gemini / OpenRouter 官方直连及 **Zero-Key 免 Key 复制粘贴翻译**均正常可用；若团队确需固定自建代理域名，需同步加入 `public/_headers`、`workers/telemetry/src/index.ts` 与 `CSP_CONNECT_ALLOWED_ORIGINS` 并执行 `node scripts/check-headers.mjs` |
+| **外部网站通过 `<iframe src="https://moklu.app/...">` 嵌入** | 浏览器拒绝渲染子框架 | `X-Frame-Options: DENY` + `frame-ancestors 'none'` 用于防御点击劫持（防止诱导用户在透明遮罩下处理含敏感信息的截图或证件）；若未来推出官方可嵌入 Widget，应仅为独立子路径（如 `/embed/*`）单独按域名白名单放开 `frame-ancestors` |
+
+> 补充说明：`Permissions-Policy: camera=(), microphone=(), geolocation=()` 仅禁用网页直接调用 `getUserMedia` / `navigator.geolocation` 硬件实时权限，**完全不影响** iOS Safari / Android Chrome 点击上传框时系统原生的「拍照或选择照片」选择器，也不影响本地读取图片二进制 EXIF/GPS 元数据。
+
+### 3. Cloudflare Dashboard 必须保持关闭的 2 个开关
+
+由于 `script-src` 严格不放行 `'unsafe-inline'`，在 Cloudflare 控制台切勿开启以下向 HTML 动态注入内联脚本的功能，否则会触发 CSP 拦截告警：
+
+1. **Speed → Optimization → Content Optimization → Rocket Loader**：保持 **OFF**（Vite 产出的 ES Module 分包已原生异步加载，无需且不兼容 Rocket Loader 内联改写）。
+2. **Scrape Shield → Email Address Obfuscation**：保持 **OFF**（若页面出现邮箱文本，Cloudflare 会注入无哈希内联解码脚本并被 CSP 拦截）。

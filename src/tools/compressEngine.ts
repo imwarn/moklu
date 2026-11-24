@@ -6,6 +6,7 @@
  */
 
 import {
+  canEncodeCanvasFormat,
   canvasToBlob,
   clampCanvasDimensions,
   clampQuality,
@@ -14,6 +15,7 @@ import {
   get2dContext,
   packBlobsToZip,
   replaceFileExtension,
+  resolveEncodedImageFormat,
 } from './canvasHelpers'
 import type {
   CanvasLike,
@@ -72,7 +74,10 @@ function renderItemToCanvas(
   const canvas = createCanvas(width, height, options.createCanvas)
   const ctx = get2dContext(canvas)
 
-  if (options.format === 'image/jpeg') {
+  if (
+    options.format === 'image/jpeg' ||
+    (options.format === 'image/webp' && !canEncodeCanvasFormat('image/webp'))
+  ) {
     fillBackground(ctx, width, height, options.background ?? '#ffffff')
   }
 
@@ -187,17 +192,18 @@ export async function compressImage(
     }
   }
 
+  const actualFormat = resolveEncodedImageFormat(format, blob)
   const originalBytes = Math.max(0, item.originalBytes)
   const outputBytes = blob.size
   const savedBytes = originalBytes - outputBytes
   const savedRatio = originalBytes > 0 ? savedBytes / originalBytes : 0
-  const filename = replaceFileExtension(item.name, format, `compressed-${item.id}`)
+  const filename = replaceFileExtension(item.name, actualFormat, `compressed-${item.id}`)
 
   return {
     id: item.id,
     originalName: item.name,
     filename,
-    format,
+    format: actualFormat,
     originalWidth: item.width,
     originalHeight: item.height,
     width: finalWidth,

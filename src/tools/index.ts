@@ -78,6 +78,7 @@ export type {
 export {
   MAX_CANVAS_DIMENSION,
   MAX_CANVAS_PIXELS,
+  canEncodeCanvasFormat,
   canvasToBlob,
   clampCanvasDimensions,
   clampNumber,
@@ -95,6 +96,8 @@ export {
   loadImageItems,
   packBlobsToZip,
   replaceFileExtension,
+  resetCanvasFormatProbeCache,
+  resolveEncodedImageFormat,
   sanitizeFilenameStem,
   traceRoundedRectPath,
 } from './canvasHelpers'

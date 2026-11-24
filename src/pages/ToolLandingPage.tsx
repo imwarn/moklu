@@ -151,7 +151,7 @@ export function ToolLandingPage({ route, onNavigate }: ToolLandingPageProps) {
         ) : (
           <>
             {/* Compact Above-the-Fold Hero + Instant 6-Tool Workspace */}
-            <section className="mx-auto max-w-7xl px-4 pt-6 pb-8 sm:px-6 lg:px-8">
+            <section className="mx-auto max-w-7xl px-3 pt-5 pb-8 sm:px-6 sm:pt-6 lg:px-8">
               <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                 <div className="max-w-3xl space-y-1.5">
                   <span

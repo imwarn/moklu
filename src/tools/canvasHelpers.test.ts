@@ -10,6 +10,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   MAX_CANVAS_DIMENSION,
   MAX_CANVAS_PIXELS,
+  canEncodeCanvasFormat,
   canvasToBlob,
   clampCanvasDimensions,
   computeObjectFitRects,
@@ -21,6 +22,8 @@ import {
   loadImageItems,
   packBlobsToZip,
   replaceFileExtension,
+  resetCanvasFormatProbeCache,
+  resolveEncodedImageFormat,
 } from './canvasHelpers'
 import { createRecordingCanvasFactory } from './testHelpers'
 
@@ -29,6 +32,7 @@ const TINY_PNG_DATA_URL =
 
 describe('canvasHelpers', () => {
   afterEach(() => {
+    resetCanvasFormatProbeCache()
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
   })
@@ -116,6 +120,46 @@ describe('canvasHelpers', () => {
     )
     expect(blob.type).toBe('image/png')
     expect(blob.size).toBe(decoded.size)
+  })
+
+  it('detects WebKit silent WebP-to-PNG fallback and re-encodes as lossy image/jpeg', async () => {
+    expect(canEncodeCanvasFormat('image/png')).toBe(true)
+    expect(canEncodeCanvasFormat('image/jpeg')).toBe(true)
+    expect(
+      canEncodeCanvasFormat('image/webp', () => ({
+        toDataURL: () => 'data:image/png;base64,AAAA',
+      })),
+    ).toBe(false)
+    expect(
+      canEncodeCanvasFormat('image/webp', () => ({
+        toDataURL: () => 'data:image/webp;base64,UklGRg==',
+      })),
+    ).toBe(true)
+
+    const calls: Array<{ type: string; quality?: number }> = []
+    const safariLikeCanvas = {
+      width: 2316,
+      height: 3088,
+      getContext: () => null,
+      toBlob(cb: (blob: Blob | null) => void, type = 'image/png', quality?: number) {
+        calls.push({ type, quality })
+        if (type === 'image/webp') {
+          // Simulate iOS Safari / WebKit silently returning a huge uncompressed PNG
+          cb(new Blob([new Uint8Array(9_870)], { type: 'image/png' }))
+          return
+        }
+        cb(new Blob([new Uint8Array(420)], { type }))
+      },
+    }
+
+    const encoded = await canvasToBlob(safariLikeCanvas, 'image/webp', 0.82)
+    expect(calls).toEqual([
+      { type: 'image/webp', quality: 0.82 },
+      { type: 'image/jpeg', quality: 0.82 },
+    ])
+    expect(encoded.type).toBe('image/jpeg')
+    expect(encoded.size).toBe(420)
+    expect(resolveEncodedImageFormat('image/webp', encoded)).toBe('image/jpeg')
   })
 
   it('packs Blobs and Uint8Arrays into a valid JSZip archive with deduplicated safe filenames', async () => {

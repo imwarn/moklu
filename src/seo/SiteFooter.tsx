@@ -62,7 +62,7 @@ export function SiteFooter({ route, theme, onNavigate }: SiteFooterProps) {
         isDark ? 'text-zinc-300' : 'text-zinc-700'
       }`}
     >
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 pt-12 pb-[max(3rem,calc(2rem+env(safe-area-inset-bottom,0px)))] sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-6">
           {/* Brand summary */}
           <div className="space-y-3 lg:col-span-2">

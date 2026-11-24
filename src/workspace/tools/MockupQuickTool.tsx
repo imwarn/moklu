@@ -436,7 +436,7 @@ export function MockupQuickTool({
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
       {/* Left: Live Mockup Stage + Redact Micro-Toolbar */}
       <div className="flex flex-col gap-4 lg:col-span-7">
-        <div className={`rounded-2xl border p-4 ${tokens.stage}`}>
+        <div className={`rounded-2xl border p-3.5 sm:p-4 ${tokens.stage}`}>
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <span className={`text-xs font-semibold uppercase tracking-wider ${tokens.textMuted}`}>
@@ -532,7 +532,7 @@ export function MockupQuickTool({
       </div>
 
       {/* Right: Controls & Instant Actions */}
-      <div className={`flex flex-col justify-between gap-5 rounded-2xl border p-5 lg:col-span-5 ${tokens.card}`}>
+      <div className={`@container flex flex-col justify-between gap-5 rounded-2xl border p-4 sm:p-5 lg:col-span-5 ${tokens.card}`}>
         <div className="space-y-4">
           {/* 2-Level 13-Device Selector: Level 1 Categories + Level 2 Model Pills */}
           <div className="space-y-2" data-testid="mockup-device-selector">
@@ -631,7 +631,7 @@ export function MockupQuickTool({
 
           <div>
             <span className={`mb-1.5 block text-xs font-semibold ${tokens.textMuted}`}>{s.mockup.themeLabel}</span>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 gap-2 @[290px]:grid-cols-3">
               {(Object.keys(QUICK_THEMES) as QuickTheme[]).map((key) => {
                 const palette = QUICK_THEMES[key]
                 const active = key === quickTheme

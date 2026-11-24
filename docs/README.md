@@ -6,6 +6,9 @@ This folder **extends** the existing in-app guides under [help/](./help/) rather
 | --- | --- |
 | [development-plan.md](./development-plan.md) | 从 v0.1 到 v1.0 正式商用的阶段路线、范围、质量关卡和维护约定 |
 | [benchmark-plan.md](./benchmark-plan.md) | 测量方法、性能预算（暂定）、导出质量、安全、浏览器兼容性、数据与 CI 策略 |
+| [cloudflare-response-headers.md](./cloudflare-response-headers.md) | 边缘 CSP（含 `'wasm-unsafe-eval'` 安全边界）、安全响应头同步、功能边界说明、Railpack 迁移与 Healthcheck 指南 |
+| [analytics.md](./analytics.md) | Cloudflare Web Analytics 与同源零 PII 漏斗统计（`/_telemetry` + D1 `moklu-funnel`）说明 |
+| [deployment-release.md](./deployment-release.md) | 部署、回滚与发布运行手册 |
 | [release-checklist.md](./release-checklist.md) | 持续更新的 RC/GA 发布前验收清单 |
 | [help/](./help/) | 编辑器功能操作指南（沿用已有文档） |
 

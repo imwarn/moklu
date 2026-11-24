@@ -53,6 +53,7 @@ export interface P1ToolsLocaleStrings {
     targetKbLabel: string
     customKbLabel: string
     pngAutoSwitchedNote: string
+    webpFallbackNote: string
     autoDownscaleNotice: (width: number, targetKb: number) => string
     preserveUnmetNotice: (targetKb: number) => string
     keepOriginalRetry: string
@@ -83,6 +84,7 @@ export interface P1ToolsLocaleStrings {
     dividerAriaLabel: string
     zoomLabel: string
     keyboardHint: string
+    touchHint: string
     copyImage: string
     copied: string
     download: string
@@ -136,6 +138,7 @@ const EN_P1_STRINGS: P1ToolsLocaleStrings = {
     targetKbLabel: 'Max File Size (KB)',
     customKbLabel: 'Custom KB (10 to 10240)',
     pngAutoSwitchedNote: 'PNG is lossless. Switched to WebP automatically to meet the file size cap.',
+    webpFallbackNote: 'WebP canvas export is unavailable in this browser. Switched to JPEG for reliable compression.',
     autoDownscaleNotice: (width, targetKb) =>
       `Source dimensions were too large. Auto-scaled width to ${width}px so the image stays crisp under ${targetKb}KB.`,
     preserveUnmetNotice: (targetKb) =>
@@ -170,6 +173,7 @@ const EN_P1_STRINGS: P1ToolsLocaleStrings = {
     dividerAriaLabel: 'Before and after comparison divider',
     zoomLabel: 'Zoom',
     keyboardHint: 'ArrowLeft/ArrowRight to move divider · Wheel to zoom',
+    touchHint: 'Drag divider to compare · Tap zoom buttons above',
     copyImage: 'Copy Image',
     copied: 'Copied!',
     download: 'Download',
@@ -223,6 +227,7 @@ const ZH_P1_STRINGS: P1ToolsLocaleStrings = {
     targetKbLabel: '最大体积上限 (KB)',
     customKbLabel: '自定义 KB (10 - 10240)',
     pngAutoSwitchedNote: 'PNG 为无损格式，已自动切换为 WebP 以满足体积限制。',
+    webpFallbackNote: '当前浏览器不支持 Canvas 导出 WebP，已自动切换为 JPEG 以确保真实压缩效果。',
     autoDownscaleNotice: (width, targetKb) =>
       `原图尺寸过大，已自动等比缩小宽度至 ${width}px 以确保在 ${targetKb}KB 内依然清晰可读`,
     preserveUnmetNotice: (targetKb) =>
@@ -257,6 +262,7 @@ const ZH_P1_STRINGS: P1ToolsLocaleStrings = {
     dividerAriaLabel: '拖动对比压缩前后画质',
     zoomLabel: '缩放',
     keyboardHint: '支持 ←/→ 键微调对比线 · 滚轮缩放',
+    touchHint: '左右拖动对比线查看细节 · 点击上方按钮缩放',
     copyImage: '复制图片',
     copied: '已复制',
     download: '下载图片',
@@ -310,6 +316,7 @@ const JA_P1_STRINGS: P1ToolsLocaleStrings = {
     targetKbLabel: '最大サイズ上限 (KB)',
     customKbLabel: 'カスタム KB (10 - 10240)',
     pngAutoSwitchedNote: 'PNG は可逆形式のため、容量上限に合わせて WebP に自動切替しました。',
+    webpFallbackNote: 'お使いのブラウザは WebP 書き出し非対応のため、確実に圧縮できるよう JPEG に自動切替しました。',
     autoDownscaleNotice: (width, targetKb) =>
       `元画像が大きいため、${targetKb}KB 以内で鮮明さを保つよう幅を ${width}px に自動縮小しました。`,
     preserveUnmetNotice: (targetKb) =>
@@ -344,6 +351,7 @@ const JA_P1_STRINGS: P1ToolsLocaleStrings = {
     dividerAriaLabel: '圧縮前後の比較スライダー',
     zoomLabel: 'ズーム',
     keyboardHint: '←/→ キーで比較線を移動 · ホイールで拡大縮小',
+    touchHint: '比較線をドラッグして確認 · 上のボタンで拡大',
     copyImage: '画像をコピー',
     copied: 'コピー済み',
     download: 'ダウンロード',
@@ -397,6 +405,7 @@ const KO_P1_STRINGS: P1ToolsLocaleStrings = {
     targetKbLabel: '최대 파일 크기 (KB)',
     customKbLabel: '사용자 지정 KB (10 - 10240)',
     pngAutoSwitchedNote: 'PNG는 무손실 형식이므로 용량 제한을 맞추기 위해 WebP로 자동 전환했습니다.',
+    webpFallbackNote: '현재 브라우저에서 WebP 내보내기를 지원하지 않아 안정적인 압축을 위해 JPEG로 자동 전환했습니다.',
     autoDownscaleNotice: (width, targetKb) =>
       `원본 크기가 커서 ${targetKb}KB 이하에서 선명도를 유지하도록 너비를 ${width}px로 자동 축소했습니다.`,
     preserveUnmetNotice: (targetKb) =>
@@ -431,6 +440,7 @@ const KO_P1_STRINGS: P1ToolsLocaleStrings = {
     dividerAriaLabel: '압축 전후 비교 슬라이더',
     zoomLabel: '확대',
     keyboardHint: '←/→ 키로 비교선 이동 · 마우스 휠로 확대/축소',
+    touchHint: '비교선을 좌우로 드래그 · 상단 버튼으로 확대',
     copyImage: '이미지 복사',
     copied: '복사됨',
     download: '다운로드',

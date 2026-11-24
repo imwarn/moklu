@@ -266,7 +266,7 @@ export function QuickWorkspace({
       data-active-tool={activeTool}
       data-paste-pulse={pastePulse ? 'true' : undefined}
       aria-label={s.tabs[activeTool].label}
-      className={`w-full rounded-3xl border p-4 sm:p-6 transition-[color,background-color,box-shadow] duration-300 ${tokens.shell} ${
+      className={`w-full rounded-2xl border p-3 transition-[color,background-color,box-shadow] duration-300 sm:rounded-3xl sm:p-6 ${tokens.shell} ${
         pastePulse ? 'ring-2 ring-accent/50' : ''
       } ${className}`}
     >

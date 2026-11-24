@@ -242,12 +242,12 @@ export function OverlapTunerModal({
       header={header}
       showCloseButton={false}
       maxWidth="max-w-2xl"
-      backdropClassName="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/75 p-4 backdrop-blur-xs"
+      backdropClassName="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/75 p-3 sm:p-4 backdrop-blur-xs"
       backdropStyle={{}}
-      panelClassName={`flex max-h-[92vh] w-full flex-col overflow-hidden rounded-2xl border p-5 shadow-2xl ${tokens.card}`}
+      panelClassName={`flex max-h-[92vh] w-full flex-col overflow-hidden rounded-2xl border p-3.5 sm:p-5 shadow-2xl ${tokens.card}`}
       panelStyle={{}}
     >
-      <div data-testid="overlap-tuner-modal" className="flex flex-col gap-4">
+      <div data-testid="overlap-tuner-modal" className="flex flex-1 flex-col gap-4 overflow-y-auto">
         <p className={`text-xs leading-relaxed ${tokens.textMuted}`}>{p1.overlapModal.hint}</p>
 
         {/* 50% Ghost-Overlay Interactive Alignment Viewport */}
@@ -333,7 +333,7 @@ export function OverlapTunerModal({
             <label htmlFor={rangeId} className={`text-xs font-semibold ${tokens.textMuted}`}>
               {p1.overlapModal.overlapHeightLabel}
             </label>
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
               {([-10, -1, 1, 10] as const).map((delta) => (
                 <button
                   key={delta}

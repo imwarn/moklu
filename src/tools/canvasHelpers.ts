@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on jszip for ZIP archiving and shared canvas/image types from ./types
- * [OUTPUT]: exports canvas creation, safe clamping, image loading/disposal, rounded-rect clipping, background fill, object-fit math, canvas-to-Blob, byte formatting, and ZIP packing helpers
+ * [OUTPUT]: exports canvas creation, safe clamping, image loading/disposal, rounded-rect clipping, background fill, object-fit math, canvas format capability detection, canvas-to-Blob (with WebKit WebP-to-JPEG fallback), byte formatting, and ZIP packing helpers
  * [POS]: shared low-level canvas & binary utility module of src/tools; consumed by all five image processing engines
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -345,13 +345,68 @@ function estimateDataUrlBytes(dataUrl: string): number {
   return new TextEncoder().encode(decodeURIComponent(payload)).byteLength
 }
 
-export async function canvasToBlob(
-  canvas: CanvasLike,
-  format: ImageFormat = 'image/png',
-  quality?: number,
-): Promise<Blob> {
-  const effectiveQuality = format === 'image/png' ? undefined : clampQuality(quality)
+let webpEncodeSupportCache: boolean | null = null
 
+export function resetCanvasFormatProbeCache(): void {
+  webpEncodeSupportCache = null
+}
+
+/**
+ * Check whether the current browser Canvas 2D implementation can natively encode `format`.
+ * WebKit / iOS Safari builds without WebP canvas encoding silently serialize `image/webp`
+ * as uncompressed `image/png` per WHATWG HTML spec. Returns `true` in SSR/Node runtimes.
+ */
+export function canEncodeCanvasFormat(
+  format: ImageFormat,
+  probeCanvasFactory?: () => Pick<CanvasLike, 'toDataURL'>,
+): boolean {
+  if (format !== 'image/webp') return true
+
+  if (probeCanvasFactory) {
+    try {
+      const probe = probeCanvasFactory()
+      if (typeof probe.toDataURL !== 'function') return true
+      const url = probe.toDataURL('image/webp')
+      return url.startsWith('data:image/') ? url.startsWith('data:image/webp') : true
+    } catch {
+      return true
+    }
+  }
+
+  if (typeof document === 'undefined' || typeof document.createElement !== 'function') {
+    return true
+  }
+
+  if (webpEncodeSupportCache !== null) {
+    return webpEncodeSupportCache
+  }
+
+  try {
+    const probe = document.createElement('canvas')
+    probe.width = 1
+    probe.height = 1
+    const url = probe.toDataURL('image/webp')
+    webpEncodeSupportCache = url.startsWith('data:image/')
+      ? url.startsWith('data:image/webp')
+      : true
+  } catch {
+    webpEncodeSupportCache = true
+  }
+  return webpEncodeSupportCache
+}
+
+export function resolveEncodedImageFormat(requested: ImageFormat, blob: Blob): ImageFormat {
+  if (blob.type === 'image/jpeg' || blob.type === 'image/webp' || blob.type === 'image/png') {
+    return blob.type
+  }
+  return requested
+}
+
+async function encodeCanvasOnce(
+  canvas: CanvasLike,
+  format: ImageFormat,
+  effectiveQuality: number | undefined,
+): Promise<Blob> {
   if (typeof canvas.convertToBlob === 'function') {
     return canvas.convertToBlob({ type: format, quality: effectiveQuality })
   }
@@ -378,6 +433,22 @@ export async function canvasToBlob(
   }
 
   throw new Error('Canvas implementation provides neither convertToBlob, toBlob, nor toDataURL.')
+}
+
+export async function canvasToBlob(
+  canvas: CanvasLike,
+  format: ImageFormat = 'image/png',
+  quality?: number,
+): Promise<Blob> {
+  const effectiveQuality = format === 'image/png' ? undefined : clampQuality(quality)
+  const blob = await encodeCanvasOnce(canvas, format, effectiveQuality)
+
+  // Guard against WebKit / iOS Safari silently falling back from image/webp to huge uncompressed image/png.
+  if (format === 'image/webp' && blob.type === 'image/png') {
+    return encodeCanvasOnce(canvas, 'image/jpeg', effectiveQuality)
+  }
+
+  return blob
 }
 
 // ============================================================================

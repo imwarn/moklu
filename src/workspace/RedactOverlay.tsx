@@ -382,7 +382,9 @@ export function RedactOverlay({
     <div
       ref={containerRef}
       data-testid="redact-overlay"
-      className={`absolute inset-1 z-10 select-none ${activeMode ? 'cursor-crosshair' : 'pointer-events-none'}`}
+      className={`absolute inset-1 z-10 select-none ${
+        activeMode || drag ? 'touch-none' : ''
+      } ${activeMode ? 'cursor-crosshair' : 'pointer-events-none'}`}
       onPointerDown={handleSurfacePointerDown}
       onPointerMove={handleSurfacePointerMove}
       onPointerUp={finishDrag}
@@ -442,7 +444,7 @@ export function RedactOverlay({
                 containerRef.current?.setPointerCapture?.(e.pointerId)
                 setDrag({ kind: 'move', id: region.id, startX: pt.x, startY: pt.y, origin: region })
               }}
-              className={`pointer-events-auto absolute cursor-move rounded border-2 transition-shadow ${borderClass} ${
+              className={`pointer-events-auto absolute cursor-move touch-none rounded border-2 transition-shadow ${borderClass} ${
                 selected ? 'ring-2 ring-white/90 shadow-md' : 'opacity-80 hover:opacity-100'
               }`}
             >
@@ -458,7 +460,7 @@ export function RedactOverlay({
                       containerRef.current?.setPointerCapture?.(e.pointerId)
                       setDrag({ kind: 'resize', id: region.id, corner: corner.id, origin: region })
                     }}
-                    className={`absolute h-3 w-3 rounded-full border-2 border-white bg-accent shadow ${corner.posClass} ${corner.cursor}`}
+                    className={`absolute h-3 w-3 touch-none rounded-full border-2 border-white bg-accent shadow after:absolute after:-inset-4 after:content-[''] ${corner.posClass} ${corner.cursor}`}
                   />
                 ))}
             </div>
