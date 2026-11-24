@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on RouteCopy and SecondaryToolSlug types from ../types.ts
- * [OUTPUT]: exports EN_TOOL_ROUTES containing English copy for split, compress, resize, and ID-card routes
+ * [OUTPUT]: exports EN_TOOL_ROUTES containing English copy for merge-photos-to-pdf, split, compress, resize, and ID-card routes
  * [POS]: secondary route-copy chunk for en within src/seo/locales, merged into EN_LOCALE by ./en.ts to keep every file <= 800 lines
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -8,6 +8,62 @@
 import type { RouteCopy, SecondaryToolSlug } from '../types.ts'
 
 export const EN_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
+  'merge-photos-to-pdf': {
+    navLabel: 'Merge Photos to PDF',
+    title: 'Merge Photos to Single-Page PDF Online Free (Local) | Moklu',
+    metaDescription:
+      'Combine multiple photos, receipts, or screenshots into one clean single-page PDF 1.4 sheet directly in your browser. Zero uploads, custom borders, and quality control.',
+    badge: 'Single-Page PDF 1.4 · Zero Uploads',
+    h1: 'Merge Multiple Photos into One Single-Page PDF',
+    subtitle:
+      'Arrange receipts, scans, or screenshots vertically, side by side, or in a 2 to 6 column grid and export a print-ready single-page PDF 1.4 file locally in your browser.',
+    steps: [
+      {
+        title: 'Add and order your photos',
+        description: 'Drop, select, or paste images with Cmd/Ctrl+V, drag thumbnails to reorder, reverse order, or rotate individual photos 90 degrees.',
+      },
+      {
+        title: 'Choose layout, borders, and PDF quality',
+        description: 'Pick vertical, horizontal, or 2 to 6 column grid layout, tune spacing, padding, per-image borders, and set PDF quality (50% to 100%, default 92%).',
+      },
+      {
+        title: 'Export your local single-page PDF',
+        description: 'Download a standard PDF 1.4 file directly from HTML5 Canvas with zero server uploads and zero watermarks.',
+      },
+    ],
+    highlights: [
+      {
+        title: 'Zero-Dependency Local PDF 1.4',
+        description: 'Generates a clean single-page PDF sheet straight in browser RAM, ideal for expense receipts, notes, and printouts.',
+      },
+      {
+        title: 'Automatic White Backdrop for Transparency',
+        description: 'Transparent PNG cutouts automatically composite onto a crisp white sheet when exporting to PDF or JPEG.',
+      },
+      {
+        title: 'Flexible Grid, Rotation & Borders',
+        description: 'Switch between cover and contain fit, add 0 to 24px per-image borders, and pick any custom canvas color.',
+      },
+    ],
+    faqs: [
+      {
+        question: 'Does Merge Photos to PDF create a single-page or multi-page PDF?',
+        answer: 'Moklu packages your combined image sheet into a clean single-page PDF 1.4 file. It is designed for combining photos onto one printable sheet rather than merging existing multi-page PDF documents.',
+      },
+      {
+        question: 'Can I control the file size and quality of the exported PDF?',
+        answer: 'Yes. When PDF output is selected, Moklu exposes a quality slider from 50% to 100% (default 92%) so you can balance sharp text with compact file size.',
+      },
+      {
+        question: 'What happens if I merge transparent PNGs into a PDF?',
+        answer: 'Transparent backgrounds automatically flatten onto a clean white sheet for PDF and JPEG output so nothing renders as solid black.',
+      },
+      {
+        question: 'Are my receipts or documents uploaded to create the PDF?',
+        answer: 'Never. The entire layout and PDF 1.4 binary encoding run 100% offline inside your browser tab.',
+      },
+    ],
+  },
   'carousel-splitter': {
     navLabel: 'Carousel Splitter',
     title: 'Seamless Carousel Panorama Splitter for Instagram & Xiaohongshu | Moklu',

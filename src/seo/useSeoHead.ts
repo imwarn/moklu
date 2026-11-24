@@ -1,13 +1,13 @@
 /**
- * [INPUT]: depends on useEffect from react; depends on ResolvedRoute from ./types.ts; depends on buildCanonicalUrl, getHreflangLinks, and getSiteUrl from ./routes.ts; depends on getOgLocale and getRouteCopy from ./i18n.ts; depends on buildRouteSchemaList and serializeJsonLd from ./schema.ts
+ * [INPUT]: depends on useEffect from react; depends on ResolvedRoute from ./types.ts; depends on buildCanonicalUrl, getHreflangLinks, getHtmlLang, and getSiteUrl from ./routes.ts; depends on getOgLocale and getRouteCopy from ./i18n.ts; depends on buildRouteSchemaList and serializeJsonLd from ./schema.ts
  * [OUTPUT]: exports applySeoHead and useSeoHead
- * [POS]: runtime document <head> synchronizer within src/seo, updating title, lang, meta, canonical, OG/Twitter tags, hreflang alternates, and JSON-LD scripts on SPA navigation
+ * [POS]: runtime document <head> synchronizer within src/seo, updating title, lang (`zh-CN` for Chinese), meta, canonical, OG/Twitter tags, hreflang alternates (`zh-Hans`), and JSON-LD scripts on SPA navigation
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
 import { useEffect } from 'react'
 import type { ResolvedRoute } from './types.ts'
-import { buildCanonicalUrl, getHreflangLinks, getSiteUrl } from './routes.ts'
+import { buildCanonicalUrl, getHreflangLinks, getHtmlLang, getSiteUrl } from './routes.ts'
 import { getOgLocale, getRouteCopy } from './i18n.ts'
 import { buildRouteSchemaList, serializeJsonLd } from './schema.ts'
 
@@ -54,7 +54,7 @@ export function applySeoHead(
   const ogImage = `${base}/og-image.png`
   const ogLocale = getOgLocale(route.locale)
 
-  doc.documentElement.lang = route.locale
+  doc.documentElement.lang = getHtmlLang(route.locale)
   doc.title = copy.title
 
   // Primary meta

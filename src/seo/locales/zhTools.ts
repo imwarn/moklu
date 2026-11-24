@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on RouteCopy and SecondaryToolSlug types from ../types.ts
- * [OUTPUT]: exports ZH_TOOL_ROUTES containing Simplified Chinese copy for split, compress, resize, and ID-card routes
+ * [OUTPUT]: exports ZH_TOOL_ROUTES containing Simplified Chinese copy for merge-photos-to-pdf, split, compress, resize, and ID-card routes
  * [POS]: secondary route-copy chunk for zh within src/seo/locales, merged into ZH_LOCALE by ./zh.ts to keep every file <= 800 lines
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -8,6 +8,62 @@
 import type { RouteCopy, SecondaryToolSlug } from '../types.ts'
 
 export const ZH_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
+  'merge-photos-to-pdf': {
+    navLabel: '多图拼接转 PDF',
+    title: '在线多图拼接导出单页 PDF（纯本地零上传）| Moklu',
+    metaDescription:
+      '将多张照片、发票报销单或截图按竖向、横向或 2–6 列宫格排在一张画面上，直接导出标准单页 PDF 1.4 文件。100% 浏览器本地生成，无水印。',
+    badge: '单页 PDF 1.4 · 零上传本地生成',
+    h1: '多张图片拼接并导出为单页 PDF',
+    subtitle:
+      '把发票、合同照片、课件截图按竖向长图、横向并排或 2–6 列宫格整齐排布，支持拖拽调序、90° 旋转、单图边框与质量滑块，在浏览器内直接生成单页 PDF 1.4 文件。',
+    steps: [
+      {
+        title: '添加照片并拖拽排好顺序',
+        description: '批量拖入或 Cmd/Ctrl+V 粘贴图片，支持缩略图拖拽排序、一键反转顺序和单图顺时针 90° 旋转。',
+      },
+      {
+        title: '设置布局、边框与 PDF 质量',
+        description: '选择竖向、横向或 2–6 列宫格（支持 cover/contain），调节间距、外边距、单图描边边框与 50%–100% 导出质量（默认 92%）。',
+      },
+      {
+        title: '本地导出单页 PDF 1.4',
+        description: '直接由本地 HTML5 Canvas 封装为标准单页 PDF 文件下载，不经过服务器，也不添加水印。',
+      },
+    ],
+    highlights: [
+      {
+        title: '零上传本地封装 PDF 1.4',
+        description: '报销发票、扫描件和个人证件照全程留在本机浏览器内存中，断网同样可用。',
+      },
+      {
+        title: '透明底自动转纯净白底',
+        description: '导出 PDF 或 JPEG 时，透明背景自动铺设纯白画布，避免打印出现黑底异常。',
+      },
+      {
+        title: '灵活排版与可控体积',
+        description: '支持 2–6 列宫格、自定义取色器与 50%–100% 质量调节，清晰度与体积自由平衡。',
+      },
+    ],
+    faqs: [
+      {
+        question: '导出的是单页 PDF 还是多页 PDF？',
+        answer: 'Moklu 将拼好的整张大图封装为标准单页 PDF 1.4 文件，适合多张发票、证明或截图拼成一页打印提交，不支持合并已有多个多页 PDF 文档。',
+      },
+      {
+        question: '可以调节导出 PDF 的画质和文件体积吗？',
+        answer: '可以。选择 PDF 格式后界面会显示 50%–100% 质量滑块（默认 92%），可在文字清晰度与邮件/系统上传体积上限之间自由取舍。',
+      },
+      {
+        question: '透明背景的 PNG 拼图转 PDF 会变黑吗？',
+        answer: '不会。导出 PDF 或 JPEG 时，Moklu 会自动将透明区域转为纯白背景，确保打印与阅览效果干净清晰。',
+      },
+      {
+        question: '把发票或合同拼成 PDF 会上传到云端吗？',
+        answer: '绝对不会。整个拼接与 PDF 1.4 封装过程 100% 在你的浏览器本地内存中完成，零网络上传。',
+      },
+    ],
+  },
   'carousel-splitter': {
     navLabel: '轮播无缝切图',
     title: '小红书 / Instagram 无缝轮播全景切图工具 | Moklu',

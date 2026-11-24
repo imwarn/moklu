@@ -1,12 +1,13 @@
 /**
- * [INPUT]: depends on LocaleBundle type from ../types.ts; depends on EN_TOOL_ROUTES from ./enTools.ts
- * [OUTPUT]: exports EN_LOCALE complete English UI labels and 19 intent-specific route copy entries
+ * [INPUT]: depends on LocaleBundle type from ../types.ts; depends on EN_TOOL_ROUTES from ./enTools.ts and INFO_PAGE_ROUTES from ./infoRoutes.ts
+ * [OUTPUT]: exports EN_LOCALE complete English UI labels and 23 intent/info route copy entries
  * [POS]: default (root `/`) English language pack within src/seo/locales, loaded by src/seo/i18n.ts
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
 import type { LocaleBundle } from '../types.ts'
 import { EN_TOOL_ROUTES } from './enTools.ts'
+import { INFO_PAGE_ROUTES } from './infoRoutes.ts'
 
 export const EN_LOCALE: LocaleBundle = {
   code: 'en',
@@ -416,57 +417,77 @@ export const EN_LOCALE: LocaleBundle = {
     },
     'merge-images': {
       navLabel: 'Merge Images',
-      title: 'Merge Images Online Free: Side-by-Side, Vertical & Grid | Moklu',
+      title: 'Merge Images Online Free | Side-by-Side, Vertical, Grid & PDF | Moklu',
       metaDescription:
-        'Combine multiple photos or screenshots horizontally, vertically, or in a clean grid collage. 100% browser-local processing with custom gaps and borders.',
-      badge: 'Horizontal · Vertical · Grid',
-      h1: 'Merge Multiple Images Locally in Seconds',
+        'Combine multiple photos or screenshots horizontally, vertically, or in a 2 to 6 column grid collage and export PNG, WebP, JPEG, clipboard image, or single-page PDF 100% locally.',
+      badge: 'Horizontal · Vertical · 2–6 Col Grid · PDF',
+      h1: 'Merge Images Online Free',
       subtitle:
-        'Drop or paste two or more screenshots and combine them side-by-side, stacked vertically, or in a balanced grid with custom spacing, rounded corners, and zero uploads.',
+        'Drop or paste two or more photos to combine them horizontally, vertically, or in a 2 to 6 column grid with cover/contain fit, drag-and-drop reorder, per-image borders, custom colors, clipboard copy, and single-page PDF export.',
       steps: [
         {
-          title: 'Add and reorder your images',
-          description: 'Select multiple files or paste screenshots sequentially, then arrange them in the exact order you want.',
+          title: 'Add, drag-reorder, or rotate your images',
+          description: 'Drop files or paste with Cmd/Ctrl+V, drag thumbnails to reorder (or use arrow buttons and Reverse), and rotate any image 90 degrees clockwise.',
         },
         {
-          title: 'Pick merge layout and spacing',
-          description: 'Switch between horizontal, vertical, or grid layouts and tune gap width, outer padding, corner radius, and background.',
+          title: 'Pick layout, alignment, borders, and background',
+          description: 'Switch between horizontal, vertical, or 2 to 6 column grid (cover/contain), set gap (0 to 64px), padding (0 to 80px), radius (0 to 48px), per-image borders (0 to 24px), and custom background colors.',
         },
         {
-          title: 'Export combined PNG or WebP',
-          description: 'Download the merged high-resolution image locally, or open it in Moklu Studio for arrows and comparison labels.',
+          title: 'Copy to clipboard or export PNG, WebP, JPEG, or PDF',
+          description: 'Copy the merged PNG in one click, download PNG, WebP, JPEG, or single-page PDF 1.4 with quality control (50% to 100%), or open in Moklu Studio.',
         },
       ],
       highlights: [
         {
-          title: 'Automatic Size Alignment',
-          description: 'Normalize mismatched image heights or widths cleanly so merged panels sit flush without awkward gaps.',
+          title: 'Horizontal, Vertical & 2–6 Column Grid',
+          description: 'Align mixed resolutions via match-min, match-max, or original mode with start/center/end alignment, plus cover or contain grid cell fitting.',
         },
         {
-          title: 'Rounded Corners & Clean Padding',
-          description: 'Add subtle corner rounding and neutral or gradient backdrops for presentation-grade visuals.',
+          title: 'Drag-and-Drop Reorder, Rotation & Borders',
+          description: 'Reorder thumbnails visually, reverse sequence in one click, rotate individual photos 90 degrees, and tune borders and custom background colors.',
         },
         {
-          title: '100% Private Local Stitching',
-          description: 'Merge personal photos, financial chats, or internal UI comparisons strictly inside your browser memory.',
+          title: 'Clipboard Copy & Single-Page PDF Export',
+          description: 'Paste merged results directly into chat apps or save crisp PNG, WebP, JPEG, and single-page PDF 1.4 files 100% locally with zero uploads.',
         },
       ],
       faqs: [
         {
-          question: 'How many images can I merge at once?',
-          answer: 'You can add multiple images in one batch; Moklu automatically clamps extreme canvas dimensions safely so your browser stays responsive.',
+          question: 'Which merge layouts and grid options does Moklu support?',
+          answer: 'Moklu supports horizontal side-by-side, vertical long stitching, and 2 to 6 column grid collages. Grid mode includes 1:1, 4:3, 3:4, and auto cell aspect ratios plus both cover (crop-to-fill) and contain (full uncropped) fitting.',
         },
         {
-          question: 'What happens if my images have different resolutions?',
-          answer: 'Moklu normalizes heights in horizontal mode and widths in vertical mode so mixed-size screenshots line up seamlessly.',
+          question: 'How does Moklu align photos with different resolutions?',
+          answer: 'In horizontal and vertical modes, choose match-min (default), match-max, or original size. In original mode, align images to start (top/left), center (default), or end (bottom/right).',
         },
         {
-          question: 'Can I add "Before" and "After" text labels to merged photos?',
-          answer: 'Yes. After merging, click Open in Studio to place crisp badges, divider lines, and captions on top.',
+          question: 'Can I drag-and-drop reorder, reverse order, or rotate a single image?',
+          answer: 'Yes. Drag thumbnails directly to reorder (accessible left/right arrow buttons are also kept), click Reverse to flip the whole batch order, or rotate any individual photo 90 degrees clockwise.',
         },
         {
-          question: 'Are merged photos uploaded to cloud storage?',
-          answer: 'Never. All pixel composition happens on a local HTML5 Canvas in your browser.',
+          question: 'What spacing, border, corner radius, and background controls are available?',
+          answer: 'Adjust gap (0 to 64px), outer padding (0 to 80px), corner radius (0 to 48px), and per-image stroke borders (0 to 24px with preset swatches or a custom color picker). Canvas background supports presets, gradients, transparency, and a custom color picker.',
+        },
+        {
+          question: 'Which export formats and quality settings are supported?',
+          answer: 'Export as PNG, WebP, JPEG, or single-page PDF 1.4. JPEG, WebP, and PDF include a quality slider from 50% to 100% (default 92%), and transparent backgrounds automatically fill with white on JPEG and PDF.',
+        },
+        {
+          question: 'Can I copy the merged image directly to my clipboard?',
+          answer: 'Yes. Click Copy to Clipboard to place a lossless PNG of the merged result straight onto your system clipboard for instant pasting into Slack, WeChat, Feishu, Notion, or email.',
+        },
+        {
+          question: 'How many images can I merge and what is the resolution ceiling?',
+          answer: 'There is no fixed image count limit. To protect browser stability, the output canvas enforces an 8192px / 64MP safety ceiling; if exceeded, Moklu scales down proportionally and shows a scaled notice beside the preview dimensions.',
+        },
+        {
+          question: 'Does vertical stitching automatically remove overlapping screenshot headers?',
+          answer: 'No. Moklu stitches images cleanly edge-to-edge without automatically cropping overlapping scroll regions or repeated status bars, keeping every source pixel predictable.',
+        },
+        {
+          question: 'Can I merge photos on mobile or add headlines and arrows afterwards?',
+          answer: 'Yes. Everything runs locally in desktop and mobile browsers with zero server uploads. Click Open in Studio to place headlines, callout arrows, badges, and shadows over your merged output.',
         },
       ],
     },
@@ -639,5 +660,6 @@ export const EN_LOCALE: LocaleBundle = {
       ],
     },
     ...EN_TOOL_ROUTES,
+    ...INFO_PAGE_ROUTES.en,
   },
 }

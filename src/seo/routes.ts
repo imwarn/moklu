@@ -1,12 +1,14 @@
 /**
- * [INPUT]: depends on RouteDefinition, RouteSlug, LocaleCode, ResolvedRoute, HreflangLink, and ToolId types from ./types.ts
- * [OUTPUT]: exports LOCALE_CODES, DEFAULT_LOCALE, DEFAULT_SITE_URL, ROUTE_SLUGS, ROUTE_DEFINITIONS, ALL_ROUTES, TOOL_ROUTE_DEFINITIONS, PRIMARY_TOOL_SLUGS, getSiteUrl, isLocaleCode, isRouteSlug, getRouteDefinition, buildLocalizedPath, buildCanonicalUrl, getHreflangLinks, resolvePathname, and getRelatedRoutes
- * [POS]: single source of truth for all 19 intent slugs (76 localized URLs), URL normalization, preset mapping, and internal link graphs across client routing and build-time SSG
+ * [INPUT]: depends on RouteDefinition, RouteSlug, LocaleCode, HtmlLangCode, HreflangCode, ResolvedRoute, HreflangLink, and ToolId types from ./types.ts
+ * [OUTPUT]: exports LOCALE_CODES, DEFAULT_LOCALE, DEFAULT_SITE_URL, ROUTE_SLUGS, ROUTE_DEFINITIONS, ALL_ROUTES, TOOL_ROUTE_DEFINITIONS, INFO_ROUTE_DEFINITIONS, PRIMARY_TOOL_SLUGS, getHtmlLang, getHreflangCode, getSiteUrl, isLocaleCode, isRouteSlug, getRouteDefinition, buildLocalizedPath, buildCanonicalUrl, getHreflangLinks, resolvePathname, and getRelatedRoutes
+ * [POS]: single source of truth for all 23 intent/info slugs (92 localized URLs), BCP-47 lang/hreflang tags (`zh-CN`/`zh-Hans`), URL normalization, preset mapping, and internal link graphs across client routing and build-time SSG
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
 import type {
+  HreflangCode,
   HreflangLink,
+  HtmlLangCode,
   LocaleCode,
   ResolvedRoute,
   RouteDefinition,
@@ -17,6 +19,28 @@ import type {
 export const DEFAULT_SITE_URL = 'https://moklu.app'
 export const DEFAULT_LOCALE: LocaleCode = 'en'
 export const LOCALE_CODES: readonly LocaleCode[] = ['en', 'zh', 'ja', 'ko'] as const
+
+const HTML_LANG_MAP: Record<LocaleCode, HtmlLangCode> = {
+  en: 'en',
+  zh: 'zh-CN',
+  ja: 'ja',
+  ko: 'ko',
+}
+
+const HREFLANG_MAP: Record<LocaleCode, Exclude<HreflangCode, 'x-default'>> = {
+  en: 'en',
+  zh: 'zh-Hans',
+  ja: 'ja',
+  ko: 'ko',
+}
+
+export function getHtmlLang(locale: LocaleCode): HtmlLangCode {
+  return HTML_LANG_MAP[locale] ?? 'en'
+}
+
+export function getHreflangCode(locale: LocaleCode): Exclude<HreflangCode, 'x-default'> {
+  return HREFLANG_MAP[locale] ?? 'en'
+}
 
 const LOCALE_SET: ReadonlySet<string> = new Set(LOCALE_CODES)
 
@@ -100,7 +124,7 @@ export const ROUTE_DEFINITIONS: readonly RouteDefinition[] = [
     isStudio: false,
     priority: 0.95,
     preset: { tool: 'merge', mergeDirection: 'horizontal' },
-    relatedSlugs: ['combine-photos-side-by-side', 'stitch-images-vertically', 'photo-collage-grid', 'carousel-splitter', 'compress-image', 'add-border-to-photo'],
+    relatedSlugs: ['combine-photos-side-by-side', 'stitch-images-vertically', 'photo-collage-grid', 'merge-photos-to-pdf', 'carousel-splitter', 'compress-image'],
   },
   {
     slug: 'combine-photos-side-by-side',
@@ -108,7 +132,7 @@ export const ROUTE_DEFINITIONS: readonly RouteDefinition[] = [
     isStudio: false,
     priority: 0.9,
     preset: { tool: 'merge', mergeDirection: 'horizontal' },
-    relatedSlugs: ['merge-images', 'stitch-images-vertically', 'photo-collage-grid', 'crop-image', 'add-border-to-photo', 'browser-mockup'],
+    relatedSlugs: ['merge-images', 'stitch-images-vertically', 'photo-collage-grid', 'merge-photos-to-pdf', 'add-border-to-photo', 'browser-mockup'],
   },
   {
     slug: 'stitch-images-vertically',
@@ -116,7 +140,7 @@ export const ROUTE_DEFINITIONS: readonly RouteDefinition[] = [
     isStudio: false,
     priority: 0.9,
     preset: { tool: 'merge', mergeDirection: 'vertical' },
-    relatedSlugs: ['merge-images', 'combine-photos-side-by-side', 'photo-collage-grid', 'compress-image', 'resize-image', 'id-card-watermark'],
+    relatedSlugs: ['merge-images', 'combine-photos-side-by-side', 'photo-collage-grid', 'merge-photos-to-pdf', 'compress-image', 'id-card-watermark'],
   },
   {
     slug: 'photo-collage-grid',
@@ -124,7 +148,15 @@ export const ROUTE_DEFINITIONS: readonly RouteDefinition[] = [
     isStudio: false,
     priority: 0.9,
     preset: { tool: 'merge', mergeDirection: 'grid' },
-    relatedSlugs: ['merge-images', 'combine-photos-side-by-side', 'image-grid-splitter', 'add-border-to-photo', 'crop-image', 'studio'],
+    relatedSlugs: ['merge-images', 'combine-photos-side-by-side', 'merge-photos-to-pdf', 'image-grid-splitter', 'add-border-to-photo', 'studio'],
+  },
+  {
+    slug: 'merge-photos-to-pdf',
+    category: 'merge',
+    isStudio: false,
+    priority: 0.9,
+    preset: { tool: 'merge', mergeDirection: 'vertical', mergeFormat: 'application/pdf' },
+    relatedSlugs: ['merge-images', 'stitch-images-vertically', 'combine-photos-side-by-side', 'photo-collage-grid', 'id-card-watermark', 'compress-image'],
   },
   // Split family
   {
@@ -200,14 +232,46 @@ export const ROUTE_DEFINITIONS: readonly RouteDefinition[] = [
     isStudio: false,
     priority: 0.95,
     preset: { tool: 'id-card' },
-    relatedSlugs: ['stitch-images-vertically', 'combine-photos-side-by-side', 'compress-image', 'crop-image', 'resize-image', 'add-border-to-photo'],
+    relatedSlugs: ['merge-photos-to-pdf', 'stitch-images-vertically', 'combine-photos-side-by-side', 'compress-image', 'crop-image', 'resize-image'],
+  },
+  // Trust & architecture info pages (E-E-A-T)
+  {
+    slug: 'about',
+    category: 'info',
+    isStudio: false,
+    isInfoPage: true,
+    priority: 0.65,
+    preset: { tool: 'mockup', mockupModel: 'browser-chrome', canvasSize: 'wide' },
+    relatedSlugs: ['merge-images', 'browser-mockup', 'carousel-splitter', 'compress-image', 'id-card-watermark', 'privacy'],
+  },
+  {
+    slug: 'privacy',
+    category: 'info',
+    isStudio: false,
+    isInfoPage: true,
+    priority: 0.65,
+    preset: { tool: 'mockup', mockupModel: 'browser-chrome', canvasSize: 'wide' },
+    relatedSlugs: ['about', 'terms', 'id-card-watermark', 'merge-images', 'compress-image', 'browser-mockup'],
+  },
+  {
+    slug: 'terms',
+    category: 'info',
+    isStudio: false,
+    isInfoPage: true,
+    priority: 0.55,
+    preset: { tool: 'mockup', mockupModel: 'browser-chrome', canvasSize: 'wide' },
+    relatedSlugs: ['about', 'privacy', 'merge-images', 'browser-mockup', 'studio', 'id-card-watermark'],
   },
 ] as const
 
 export const ROUTE_SLUGS: readonly RouteSlug[] = ROUTE_DEFINITIONS.map((def) => def.slug)
 
 export const TOOL_ROUTE_DEFINITIONS: readonly RouteDefinition[] = ROUTE_DEFINITIONS.filter(
-  (def) => !def.isStudio && def.slug !== '',
+  (def) => !def.isStudio && !def.isInfoPage && def.slug !== '',
+)
+
+export const INFO_ROUTE_DEFINITIONS: readonly RouteDefinition[] = ROUTE_DEFINITIONS.filter(
+  (def) => Boolean(def.isInfoPage),
 )
 
 const ROUTE_MAP = new Map<RouteSlug, RouteDefinition>(
@@ -268,7 +332,7 @@ export function buildCanonicalUrl(
 
 export function getHreflangLinks(slug: RouteSlug, siteUrl?: string): HreflangLink[] {
   const links: HreflangLink[] = LOCALE_CODES.map((locale) => ({
-    hreflang: locale,
+    hreflang: getHreflangCode(locale),
     href: buildCanonicalUrl(locale, slug, siteUrl),
   }))
   links.push({
@@ -289,6 +353,7 @@ function toResolvedRoute(
     path: buildLocalizedPath(locale, def.slug),
     category: def.category,
     isStudio: def.isStudio,
+    isInfoPage: Boolean(def.isInfoPage),
     isFallback,
     priority: def.priority,
     preset: { ...def.preset },

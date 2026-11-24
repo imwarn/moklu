@@ -1,12 +1,13 @@
 /**
- * [INPUT]: depends on LocaleBundle type from ../types.ts; depends on KO_TOOL_ROUTES from ./koTools.ts
- * [OUTPUT]: exports KO_LOCALE complete Korean UI labels and 19 intent-specific route copy entries
+ * [INPUT]: depends on LocaleBundle type from ../types.ts; depends on KO_TOOL_ROUTES from ./koTools.ts and INFO_PAGE_ROUTES from ./infoRoutes.ts
+ * [OUTPUT]: exports KO_LOCALE complete Korean UI labels and 23 intent/info route copy entries
  * [POS]: Korean (`/ko/...`) language pack within src/seo/locales, loaded by src/seo/i18n.ts
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
 import type { LocaleBundle } from '../types.ts'
 import { KO_TOOL_ROUTES } from './koTools.ts'
+import { INFO_PAGE_ROUTES } from './infoRoutes.ts'
 
 export const KO_LOCALE: LocaleBundle = {
   code: 'ko',
@@ -415,58 +416,78 @@ export const KO_LOCALE: LocaleBundle = {
       ],
     },
     'merge-images': {
-      navLabel: '이미지 합치기',
-      title: '무료 온라인 사진 합치기 (가로·세로·그리드) | Moklu',
+      navLabel: '온라인 이미지 합치기',
+      title: '온라인 이미지 합치기 | 여러 사진 가로·세로·그리드 병합 및 PDF 저장 | Moklu',
       metaDescription:
-        '여러 장의 사진과 스크린샷을 가로 나란히, 세로 긴 이미지, 또는 그리드 콜라주로 100% 브라우저 로컬 합치기. 여백·모서리 라운드 지원, 업로드 없음.',
-      badge: '가로 · 세로 · 그리드 합치기',
-      h1: '여러 이미지를 브라우저에서 즉시 합치기',
+        '무료 로컬 온라인 이미지 합치기 도구: 가로·세로·2~6열 그리드(cover/contain), 드래그 정렬, 순서 뒤집기, 90° 회전, 개별 테두리, 커스텀 색상 선택기, 클립보드 복사 및 단일 페이지 PDF 저장. 업로드 제로.',
+      badge: '가로 · 세로 · 2~6열 그리드 · PDF',
+      h1: '온라인 이미지 합치기 도구',
       subtitle:
-        '두 장 이상의 사진이나 캡처를 드롭해 가로 비교, 세로 이어붙이기, 균등 그리드로 손쉽게 합치세요. 자동 크기 맞춤과 간격·라운드 조절이 모두 로컬에서 처리됩니다.',
+        '여러 사진이나 캡처를 끌어놓거나 Cmd/Ctrl+V로 붙여넣어 가로, 세로, 2~6열 그리드(cover/contain)로 합치세요. 드래그 정렬, 순서 뒤집기, 90° 회전, 테두리, 클립보드 복사, 단일 페이지 PDF 저장까지 100% 브라우저 로컬로 처리합니다.',
       steps: [
         {
-          title: '합칠 이미지를 추가하고 순서 정렬',
-          description: '여러 파일을 한 번에 선택하거나 연속 붙여넣기한 뒤 원하는 순서로 배열하세요.',
+          title: '이미지 추가 후 드래그 정렬 또는 회전',
+          description: '파일을 끌어놓거나 Cmd/Ctrl+V로 붙여넣고 썸네일 드래그 정렬(←/→ 버튼 병행), 순서 뒤집기, 개별 90° 시계 방향 회전을 적용하세요.',
         },
         {
-          title: '배치 방향과 간격·배경 조정',
-          description: '가로, 세로, 그리드 중 선택하고 사진 간격, 바깥 여백, 둥근 모서리, 배경색을 맞춥니다.',
+          title: '레이아웃, 정렬, 테두리 및 배경 설정',
+          description: '가로, 세로, 2~6열 그리드(cover/contain)를 선택하고 간격(0~64px), 바깥 여백(0~80px), 모서리 라운드(0~48px), 개별 테두리(0~24px), 커스텀 배경색을 조절합니다.',
         },
         {
-          title: '고화질 PNG / WebP 저장 또는 Studio 편집',
-          description: '완성된 이미지를 즉시 내려받거나 Studio에서 비교 라벨과 화살표를 더할 수 있습니다.',
+          title: '클립보드 복사 또는 이미지 / PDF 내보내기',
+          description: '원클릭으로 PNG를 클립보드에 복사하거나 PNG, WebP, JPEG, 단일 페이지 PDF 1.4(품질 50%~100%)로 저장하고 Studio에서 후속 편집할 수 있습니다.',
         },
       ],
       highlights: [
         {
-          title: '서로 다른 해상도 자동 정렬',
-          description: '가로 합치기는 높이, 세로 합치기는 너비를 자동으로 맞춰 들쭉날쭉함 없이 깔끔하게 이어집니다.',
+          title: '가로·세로·2~6열 그리드 & 정밀 정렬',
+          description: '최소 맞춤, 최대 맞춤, 원본 크기(상/좌·가운데·하/우 정렬)와 그리드 cover/contain 전환으로 다양한 해상도를 깔끔하게 맞춥니다.',
         },
         {
-          title: '무간격 이어붙이기부터 카드 프레임까지',
-          description: '0px 빈틈없는 연결도, 여백과 라운드를 준 깔끔한 프레젠테이션 스타일도 슬라이더로 즉시 조정합니다.',
+          title: '드래그 정렬, 순서 뒤집기 & 개별 테두리',
+          description: '썸네일 드래그 순서 변경, 원클릭 역순 정렬, 개별 90° 회전, 0~24px 개별 테두리와 커스텀 색상 선택기를 지원합니다.',
         },
         {
-          title: '대화 캡처와 개인 사진도 100% 로컬 보호',
-          description: '서버 업로드가 전혀 없어 민감한 채팅 기록이나 사내 UI 비교도 안심하고 합칠 수 있습니다.',
+          title: '클립보드 복사 & 단일 페이지 PDF 저장',
+          description: '메신저에 바로 붙여넣는 클립보드 복사와 로컬 단일 페이지 PDF 1.4 저장을 서버 업로드와 워터마크 없이 제공합니다.',
         },
       ],
       faqs: [
         {
-          question: '한 번에 여러 장의 이미지를 합칠 수 있나요?',
-          answer: '네. 다수의 이미지를 한 번에 추가할 수 있으며 초대형 캔버스에서도 브라우저가 멈추지 않도록 안전한 크기 보호가 작동합니다.',
+          question: '어떤 병합 레이아웃과 그리드 옵션을 지원하나요?',
+          answer: '가로 나란히, 세로 긴 이미지, 2~6열 그리드를 지원합니다. 그리드에서는 1:1, 4:3, 3:4, 자동 비율과 cover(채우기 크롭) 또는 contain(잘림 없이 전체 표시) 모드를 선택할 수 있습니다.',
         },
         {
-          question: '사진 크기가 제각각인데 합치면 어색하지 않나요?',
-          answer: '가로 모드에서는 높이 맞춤, 세로 모드에서는 너비 맞춤 옵션으로 서로 다른 해상도도 매끈하게 정렬됩니다.',
+          question: '해상도가 다른 사진들은 어떻게 정렬되나요?',
+          answer: '가로·세로 모드에서 최소 크기 맞춤(기본), 최대 크기 맞춤, 원본 크기 유지 중 선택할 수 있으며, 원본 크기 모드에서는 시작(상단/좌측), 가운데(기본), 끝(하단/우측) 정렬을 지원합니다.',
         },
         {
-          question: '합친 이미지 위에 "전 / 후" 텍스트 라벨을 올릴 수 있나요?',
-          answer: '네. 합친 뒤 Studio에서 열기를 클릭하면 배지, 구분선, 캡션을 깔끔하게 얹을 수 있습니다.',
+          question: '드래그 정렬, 순서 뒤집기, 개별 사진 회전이 가능한가요?',
+          answer: '네. 썸네일을 드래그해 순서를 바꾸고(←/→ 버튼도 유지), 순서 뒤집기 버튼으로 전체 순서를 반전하거나 개별 이미지를 90° 시계 방향으로 회전할 수 있습니다.',
         },
         {
-          question: '합친 사진이 클라우드에 임시 저장되나요?',
-          answer: '절대 저장되지 않습니다. 모든 픽셀 합성은 내 브라우저 HTML5 Canvas에서 로컬로만 수행됩니다.',
+          question: '간격, 개별 테두리, 둥근 모서리, 배경색은 어디까지 조절할 수 있나요?',
+          answer: '간격(0~64px), 바깥 여백(0~80px), 모서리 라운드(0~48px), 개별 테두리(0~24px, 프리셋 및 색상 선택기)를 조절할 수 있으며, 배경은 6개 프리셋(그라디언트·투명 포함)과 커스텀 색상 선택기를 지원합니다.',
+        },
+        {
+          question: '어떤 출력 형식과 품질 설정을 지원하며 PDF로도 저장할 수 있나요?',
+          answer: 'PNG, WebP, JPEG, 단일 페이지 PDF 1.4를 지원합니다. JPEG, WebP, PDF에서는 50%~100%(기본 92%) 품질 슬라이더를 제공하며 투명 배경은 JPEG/PDF 저장 시 자동으로 흰색 배경이 적용됩니다. PDF 출력은 병합된 이미지를 한 장에 담는 단일 페이지 방식이며 다중 페이지 PDF 병합 도구는 아닙니다.',
+        },
+        {
+          question: '합친 이미지를 바로 클립보드에 복사해 메신저에 붙여넣을 수 있나요?',
+          answer: '네. 클립보드 복사 버튼을 누르면 병합된 결과가 자동으로 PNG로 변환되어 시스템 클립보드에 복사되므로 카카오톡, 슬랙, 노션 등에 즉시 붙여넣을 수 있습니다.',
+        },
+        {
+          question: '장수 제한이나 최대 해상도 한도가 있나요?',
+          answer: '고정된 사진 장수 제한은 없습니다. 브라우저 안정성을 위해 출력 캔버스는 8192px / 64MP 안전 한도를 적용하며, 초과 시 자동으로 비례 축소되고 미리보기 크기 옆에 축소 안내가 표시됩니다.',
+        },
+        {
+          question: '세로 긴 스크린샷을 합칠 때 겹치는 영역이나 상태바를 자동으로 제거하나요?',
+          answer: '자동 겹침 제거 기능은 포함하지 않습니다. 모든 원본 픽셀을 손실 없이 예측 가능하게 순서대로 이어 붙입니다.',
+        },
+        {
+          question: '모바일에서도 사용할 수 있고, 합친 뒤 텍스트나 화살표를 넣을 수 있나요?',
+          answer: '네. 데스크톱과 모바일 브라우저 모두에서 오프라인·무료·무워터마크로 작동합니다. 제목, 배지, 화살표를 추가하려면 Studio 열기를 눌러 멀티 레이어 캔버스에서 편집하세요.',
         },
       ],
     },
@@ -639,5 +660,6 @@ export const KO_LOCALE: LocaleBundle = {
       ],
     },
     ...KO_TOOL_ROUTES,
+    ...INFO_PAGE_ROUTES.ko,
   },
 }

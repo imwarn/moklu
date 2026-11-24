@@ -1,5 +1,5 @@
 /**
- * [INPUT]: depends on useEffect, useRef, useState from react; depends on ResolvedRoute from ./types.ts; depends on PRIMARY_TOOL_SLUGS and buildLocalizedPath from ./routes.ts; depends on SUPPORTED_LOCALES and getUiLabels from ./i18n.ts; depends on NAV_TOOL_ORDER, handleSpaLinkClick, and isToolNavActive from ./navHelpers.ts
+ * [INPUT]: depends on useEffect, useRef, useState from react; depends on ResolvedRoute from ./types.ts; depends on PRIMARY_TOOL_SLUGS, buildLocalizedPath, and getHreflangCode from ./routes.ts; depends on SUPPORTED_LOCALES and getUiLabels from ./i18n.ts; depends on NAV_TOOL_ORDER, handleSpaLinkClick, and isToolNavActive from ./navHelpers.ts
  * [OUTPUT]: exports SiteHeader component and SiteHeaderProps type
  * [POS]: top-level semantic site navigation bar within src/seo, rendering skip-to-content link, crawlable tool category nav, accessible mobile drawer, 4-locale switcher, theme toggle, Pro CTA, and Studio link
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
@@ -7,7 +7,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import type { ResolvedRoute } from './types.ts'
-import { PRIMARY_TOOL_SLUGS, buildLocalizedPath } from './routes.ts'
+import { PRIMARY_TOOL_SLUGS, buildLocalizedPath, getHreflangCode } from './routes.ts'
 import { SUPPORTED_LOCALES, getUiLabels } from './i18n.ts'
 import { NAV_TOOL_ORDER, handleSpaLinkClick, isToolNavActive } from './navHelpers.ts'
 
@@ -203,7 +203,7 @@ export function SiteHeader({
                     <a
                       key={item.code}
                       href={href}
-                      hrefLang={item.code}
+                      hrefLang={getHreflangCode(item.code)}
                       role="menuitem"
                       aria-current={active ? 'true' : undefined}
                       onClick={(event) => {

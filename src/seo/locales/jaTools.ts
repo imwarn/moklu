@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on RouteCopy and SecondaryToolSlug types from ../types.ts
- * [OUTPUT]: exports JA_TOOL_ROUTES containing Japanese copy for split, compress, resize, and ID-card routes
+ * [OUTPUT]: exports JA_TOOL_ROUTES containing Japanese copy for merge-photos-to-pdf, split, compress, resize, and ID-card routes
  * [POS]: secondary route-copy chunk for ja within src/seo/locales, merged into JA_LOCALE by ./ja.ts to keep every file <= 800 lines
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -8,6 +8,62 @@
 import type { RouteCopy, SecondaryToolSlug } from '../types.ts'
 
 export const JA_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
+  'merge-photos-to-pdf': {
+    navLabel: '複数画像を PDF 化',
+    title: '複数画像を 1 ページ PDF に結合（無料・完全ローカル）| Moklu',
+    metaDescription:
+      '領収書・写真・スクリーンショットを縦結合・横並び・2〜6 列グリッドで 1 枚にまとめ、標準単ページ PDF 1.4 としてブラウザ内で即出力。送信ゼロ・透かしなし。',
+    badge: '単ページ PDF 1.4 · サーバー送信ゼロ',
+    h1: '複数写真を 1 枚の単ページ PDF に結合',
+    subtitle:
+      '領収書、書類写真、画面キャプチャを縦・横・2〜6 列グリッドに整列し、ドラッグ並び替え・90° 回転・枠線・画質調整を行ってローカルで単ページ PDF 1.4 出力します。',
+    steps: [
+      {
+        title: '画像を追加して順序を整える',
+        description: 'ドロップや Cmd/Ctrl+V で画像を追加し、サムネイルのドラッグ並び替え、順序反転、個別 90° 回転を行います。',
+      },
+      {
+        title: 'レイアウト・枠線・PDF 画質を調整',
+        description: '縦・横・2〜6 列グリッド（cover / contain）を選び、間隔・余白・枠線と画質スライダー（50%〜100%、既定 92%）を設定します。',
+      },
+      {
+        title: 'ローカルで単ページ PDF 1.4 を保存',
+        description: 'HTML5 Canvas から直接 PDF 1.4 を生成して保存。サーバーへのアップロードや透かしは一切ありません。',
+      },
+    ],
+    highlights: [
+      {
+        title: '外部送信ゼロのローカル PDF 生成',
+        description: '経費領収書や社内資料の写真も端末ブラウザのメモリ内だけで PDF 1.4 化されます。',
+      },
+      {
+        title: '透過背景を自動で白地合成',
+        description: '透過 PNG を PDF や JPEG へ書き出す際は自動で白背景を適用し、印刷時の黒潰れを防ぎます。',
+      },
+      {
+        title: '自由なグリッド＆画質コントロール',
+        description: '2〜6 列グリッド、0〜24px の個別枠線、カスタムカラー、画質スライダーで用途に合わせて調整できます。',
+      },
+    ],
+    faqs: [
+      {
+        question: '書き出されるのは単ページ PDF ですか？複数ページ PDF ですか？',
+        answer: '結合した 1 枚のシートを格納した標準の単ページ PDF 1.4 を生成します。既存の複数ページ PDF 文書を結合するツールではありません。',
+      },
+      {
+        question: 'PDF の画質やファイルサイズは調整できますか？',
+        answer: 'はい。PDF 出力を選ぶと 50%〜100%（初期値 92%）の画質スライダーが表示され、鮮明さと容量を自在に調整できます。',
+      },
+      {
+        question: '透過 PNG を PDF に変換すると背景が黒くなりませんか？',
+        answer: 'なりません。PDF および JPEG 書き出し時は透過領域が自動的に白背景へ合成されます。',
+      },
+      {
+        question: '領収書や書類の写真がサーバーに送られることはありますか？',
+        answer: '一切ありません。配置計算から PDF 1.4 バイナリ生成まですべてブラウザ内でオフライン完結します。',
+      },
+    ],
+  },
   'carousel-splitter': {
     navLabel: 'カルーセル分割',
     title: 'Instagram / SNS シームレス・カルーセルパノラマ分割 | Moklu',

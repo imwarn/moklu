@@ -1,11 +1,10 @@
 /**
- * [INPUT]: depends on useState from react; depends on ResolvedRoute from ./types.ts; depends on TOOL_ROUTE_DEFINITIONS, buildLocalizedPath, and getRelatedRoutes from ./routes.ts; depends on getRouteCopy and getUiLabels from ./i18n.ts; depends on NAV_TOOL_ORDER and handleSpaLinkClick from ./navHelpers.ts
+ * [INPUT]: depends on ResolvedRoute from ./types.ts; depends on TOOL_ROUTE_DEFINITIONS, buildLocalizedPath, and getRelatedRoutes from ./routes.ts; depends on getRouteCopy and getUiLabels from ./i18n.ts; depends on NAV_TOOL_ORDER and handleSpaLinkClick from ./navHelpers.ts; depends on getToolQuickFacts from ./quickFacts.ts
  * [OUTPUT]: exports SeoLandingSections component and SeoLandingSectionsProps type
- * [POS]: below-the-fold crawlable editorial and conversion sections within src/seo, rendering privacy proof banner, 4/8 vertical-rail How-To timeline, 1+2 asymmetric workflow bento, Studio + Pro conversion strip, 2-column related-tools index, category-grouped tool directory, and interactive FAQ accordion
+ * [POS]: below-the-fold crawlable editorial and conversion sections within src/seo, rendering privacy proof banner, Quick Facts & capability boundaries, 4/8 vertical-rail How-To timeline, 1+2 asymmetric workflow bento, Studio + Pro conversion strip, 2-column related-tools index, category-grouped tool directory, and native details/summary FAQ accordion
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
-import { useState } from 'react'
 import type { ResolvedRoute } from './types.ts'
 import {
   TOOL_ROUTE_DEFINITIONS,
@@ -14,6 +13,7 @@ import {
 } from './routes.ts'
 import { getRouteCopy, getUiLabels } from './i18n.ts'
 import { NAV_TOOL_ORDER, handleSpaLinkClick } from './navHelpers.ts'
+import { getToolQuickFacts } from './quickFacts.ts'
 
 export interface SeoLandingSectionsProps {
   route: ResolvedRoute
@@ -33,10 +33,9 @@ export function SeoLandingSections({
   const isDark = theme === 'dark'
   const ui = getUiLabels(route.locale)
   const copy = getRouteCopy(route.locale, route.slug)
+  const quickFacts = getToolQuickFacts(route.locale, route)
   const relatedRoutes = getRelatedRoutes(route.slug, route.locale)
   const studioHref = buildLocalizedPath(route.locale, 'studio')
-
-  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0)
 
   const headingCls = isDark ? 'text-zinc-50' : 'text-zinc-950'
   const mutedCls = 'text-muted'
@@ -123,6 +122,49 @@ export function SeoLandingSections({
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3.5 8.5 6.5 11.5 12.5 5" />
                 </svg>
                 <span>{point}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* 1.5. Quick Facts & Capability Boundaries (2-col/3-col spec cards + boundary callout; 1-col < 768px) */}
+      <section aria-labelledby="seo-quick-facts-heading" className="space-y-6">
+        <div className="max-w-2xl space-y-1.5">
+          <h2 id="seo-quick-facts-heading" className={`text-2xl font-bold tracking-tight ${headingCls}`}>
+            {quickFacts.heading}
+          </h2>
+          <p className={`text-sm sm:text-base ${mutedCls}`}>{quickFacts.subheading}</p>
+        </div>
+
+        <dl className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+          {quickFacts.facts.map((item) => (
+            <div
+              key={item.label}
+              className={`rounded-xl border p-4 ${cardCls}`}
+            >
+              <dt className={`text-xs font-semibold ${mutedCls}`}>{item.label}</dt>
+              <dd className={`mt-1 text-sm font-medium leading-relaxed ${headingCls}`}>
+                {item.value}
+              </dd>
+            </div>
+          ))}
+        </dl>
+
+        <div className={`rounded-xl border p-5 ${recessedCardCls}`}>
+          <h3 className={`text-sm font-semibold ${headingCls}`}>
+            {quickFacts.boundariesHeading}
+          </h3>
+          <ul className="mt-2.5 space-y-1.5">
+            {quickFacts.boundaries.map((boundary) => (
+              <li
+                key={boundary}
+                className={`flex items-start gap-2 text-xs leading-relaxed sm:text-sm ${mutedCls}`}
+              >
+                <span aria-hidden="true" className="mt-0.5 shrink-0 font-mono text-accent-text">
+                  /
+                </span>
+                <span>{boundary}</span>
               </li>
             ))}
           </ul>
@@ -370,7 +412,7 @@ export function SeoLandingSections({
         </div>
       </section>
 
-      {/* 7. Interactive FAQ Accordion (matches FAQPage JSON-LD verbatim) */}
+      {/* 7. Native <details>/<summary> FAQ Accordion (100% answers in SSG DOM, matches FAQPage JSON-LD verbatim) */}
       <section aria-labelledby="seo-faq-heading" className="space-y-6">
         <div className="max-w-2xl space-y-1.5">
           <h2 id="seo-faq-heading" className={`text-2xl font-bold tracking-tight ${headingCls}`}>
@@ -384,45 +426,33 @@ export function SeoLandingSections({
             isDark ? 'divide-white/10' : 'divide-zinc-200/70'
           }`}
         >
-          {copy.faqs.map((faq, index) => {
-            const isOpen = openFaqIndex === index
-            const panelId = `seo-faq-panel-${index}`
-            return (
-              <div
-                key={faq.question}
-                className="bg-panel"
+          {copy.faqs.map((faq, index) => (
+            <details
+              key={faq.question}
+              open={index === 0}
+              className="group bg-panel"
+            >
+              <summary
+                className={`flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-left text-sm font-semibold transition-colors sm:px-6 sm:text-base [&::-webkit-details-marker]:hidden ${headingCls} ${
+                  isDark ? 'hover:bg-white/[0.03]' : 'hover:bg-surface'
+                }`}
               >
-                <h3>
-                  <button
-                    type="button"
-                    aria-expanded={isOpen}
-                    aria-controls={panelId}
-                    onClick={() => setOpenFaqIndex(isOpen ? null : index)}
-                    className={`flex w-full items-center justify-between gap-4 px-5 py-4 text-left text-sm font-semibold transition-colors sm:px-6 sm:text-base ${headingCls} ${
-                      isDark ? 'hover:bg-white/[0.03]' : 'hover:bg-surface'
-                    }`}
-                  >
-                    <span>{faq.question}</span>
-                    <span
-                      aria-hidden="true"
-                      className={`shrink-0 text-lg leading-none transition-transform ${mutedCls} ${
-                        isOpen ? 'rotate-45' : ''
-                      }`}
-                    >
-                      +
-                    </span>
-                  </button>
-                </h3>
-                <div
-                  id={panelId}
-                  hidden={!isOpen}
-                  className={`px-5 pb-5 text-sm leading-relaxed sm:px-6 ${mutedCls}`}
+                <span>{faq.question}</span>
+                <span
+                  aria-hidden="true"
+                  className={`shrink-0 text-lg leading-none transition-transform group-open:rotate-45 ${mutedCls}`}
                 >
-                  {faq.answer}
-                </div>
+                  +
+                </span>
+              </summary>
+              <div
+                id={`seo-faq-panel-${index}`}
+                className={`px-5 pb-5 text-sm leading-relaxed sm:px-6 ${mutedCls}`}
+              >
+                {faq.answer}
               </div>
-            )
-          })}
+            </details>
+          ))}
         </div>
       </section>
     </div>

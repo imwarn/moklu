@@ -1,12 +1,13 @@
 /**
- * [INPUT]: depends on LocaleBundle type from ../types.ts; depends on ZH_TOOL_ROUTES from ./zhTools.ts
- * [OUTPUT]: exports ZH_LOCALE complete Simplified Chinese UI labels and 19 intent-specific route copy entries
+ * [INPUT]: depends on LocaleBundle type from ../types.ts; depends on ZH_TOOL_ROUTES from ./zhTools.ts and INFO_PAGE_ROUTES from ./infoRoutes.ts
+ * [OUTPUT]: exports ZH_LOCALE complete Simplified Chinese UI labels and 23 intent/info route copy entries
  * [POS]: Simplified Chinese (`/zh/...`) language pack within src/seo/locales, loaded by src/seo/i18n.ts
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
 import type { LocaleBundle } from '../types.ts'
 import { ZH_TOOL_ROUTES } from './zhTools.ts'
+import { INFO_PAGE_ROUTES } from './infoRoutes.ts'
 
 export const ZH_LOCALE: LocaleBundle = {
   code: 'zh',
@@ -79,13 +80,13 @@ export const ZH_LOCALE: LocaleBundle = {
   routes: {
     '': {
       navLabel: '工具首页',
-      title: 'Moklu | 免费纯本地截图套壳、拼图切图与证件水印工具箱',
+      title: 'Moklu | 免费纯本地在线图片拼接、截图套壳与证件水印工具箱',
       metaDescription:
-        '在线浏览器与 iPhone 16 Pro 截图套壳、长图拼接、小红书轮播切图、批量压缩转 WebP、身份证 A4 防盗水印，100% 浏览器本地处理不上传服务器。',
+        '免费在线图片拼接（横向/竖向长图/2–6 列宫格/单页 PDF）、浏览器与 iPhone 16 Pro 截图套壳、小红书轮播切图、批量压缩转 WebP、身份证 A4 防盗水印，100% 浏览器本地处理不上传服务器。',
       badge: '100% 浏览器本地 · 不上传服务器',
       h1: '截图美化与纯本地图片处理工作台',
       subtitle:
-        '拖入或粘贴图片即可套上 Chrome / iPhone 16 Pro 边框、拼接长图、切分小红书无缝轮播与九宫格、压缩转换格式或制作身份证 A4 防盗水印，并支持一键转入 Studio 精修。',
+        '拖入或粘贴图片即可套上 Chrome / iPhone 16 Pro 边框、进行在线图片拼接与长图合成、切分小红书无缝轮播与九宫格、压缩转换格式或制作身份证 A4 防盗水印，并支持一键转入 Studio 精修。',
       steps: [
         {
           title: '选择工具或直接粘贴截图',
@@ -414,58 +415,78 @@ export const ZH_LOCALE: LocaleBundle = {
       ],
     },
     'merge-images': {
-      navLabel: '图片合并拼接',
-      title: '免费在线拼图合并工具（横向对比 / 竖向长图 / 宫格）| Moklu',
+      navLabel: '在线图片拼接',
+      title: '在线图片拼接 | 免费多图合成一张、横向/竖向长图与宫格拼图 | Moklu',
       metaDescription:
-        '浏览器本地合并多张照片或截图：支持左右拼接、竖向长截图和自由网格拼图，自定义间距、圆角与背景色，不上传任何图片。',
-      badge: '横向 · 竖向 · 宫格多图合并',
-      h1: '多图拼接与合并工具',
+        '免费纯本地在线图片拼接工具：支持横向并排、竖向长图、2–6 列宫格（cover/contain）、拖拽排序、单图边框与旋转、自定义取色器、一键复制到剪贴板及单页 PDF 导出，零上传无水印。',
+      badge: '横向 · 竖向 · 2–6 列宫格 · 单页 PDF',
+      h1: '在线图片拼接工具',
       subtitle:
-        '拖入或连续粘贴多张图片，自由切换横向对比、竖向长图或宫格拼图，支持自动对齐尺寸、调节间距圆角，100% 浏览器本地瞬间合成。',
+        '拖入或 Cmd/Ctrl+V 粘贴多张图片，自由切换横向并排、竖向长图或 2–6 列宫格，支持拖拽调序、反转顺序、单图 90° 旋转、描边边框、自定义取色器、一键复制剪贴板与单页 PDF 导出，100% 浏览器本地完成。',
       steps: [
         {
-          title: '添加并调整多张图片顺序',
-          description: '批量选图或连续 Ctrl/Cmd+V 粘贴，自由调整图片先后排列顺序。',
+          title: '添加照片并拖拽排序或旋转',
+          description: '支持批量拖入或连续 Cmd/Ctrl+V 粘贴，可拖拽缩略图调序（同时保留 ←/→ 按钮）、一键反转顺序，以及单图顺时针 90° 旋转。',
         },
         {
-          title: '选择拼接方向与外观细节',
-          description: '切换横向、竖向或网格拼图，调节图片间距、外边距、圆角大小与背景色。',
+          title: '设置布局、对齐、边框与底色',
+          description: '切换横向、竖向或 2–6 列宫格（支持 cover 铺满 / contain 完整显示），调节间距（0–64px）、外边距（0–80px）、圆角（0–48px）、单图描边边框（0–24px）与自定义取色器背景。',
         },
         {
-          title: '导出合成大图或进 Studio 加注',
-          description: '本地下载高清 PNG 或轻量 WebP，也可一键转入 Studio 添加对比标签与箭头。',
+          title: '一键复制剪贴板或导出图片 / PDF',
+          description: '直接复制到系统剪贴板粘贴进微信/飞书/钉钉，或下载 PNG / WebP / JPEG / 单页 PDF 1.4（支持 50%–100% 质量滑块），也可一键转入 Studio 精修。',
         },
       ],
       highlights: [
         {
-          title: '异形分辨率智能对齐',
-          description: '横向拼接自动统一高度、竖向拼接自动统一宽度，不同来源的截图也能严丝合缝。',
+          title: '横向、竖向与 2–6 列宫格全覆盖',
+          description: '支持按最小对齐、按最大对齐或保持原尺寸（含靠顶/左、居中、靠底/右对齐），宫格可自由切换 cover 与 contain 填充。',
         },
         {
-          title: '留白与圆角一眼精致',
-          description: '可设 0px 无缝拼合，也可加白边圆角做出杂志风产品合集图。',
+          title: '拖拽排序、一键反转与单图微调',
+          description: '手机批量选图顺序颠倒可一键反转，单张拍歪可点 90° 旋转，并可单独配置 0–24px 描边边框与自定义底色。',
         },
         {
-          title: '聊天记录与私密照绝对安全',
-          description: '无需上传到任何云端拼图站点，全部像素合成就在当前浏览器标签页内完成。',
+          title: '一键复制剪贴板 + 单页 PDF 导出',
+          description: '拼完即贴聊天窗口，或本地生成标准单页 PDF 1.4 方便打印提交，全程零上传、无水印。',
         },
       ],
       faqs: [
         {
-          question: '一次可以合并多少张图片？',
-          answer: '支持同时添加多张图片批量拼接，内置智能画布尺寸上限保护，防止浏览器内存溢出。',
+          question: '这款在线图片拼接工具支持哪些布局和宫格参数？',
+          answer: '支持横向并排、竖向长图和 2–6 列宫格拼图。宫格模式提供 1:1、4:3、3:4 与自动比例，并可在 cover（铺满裁剪）和 contain（完整显示不裁剪）之间自由切换。',
         },
         {
-          question: '两张图原本分辨率不一样，拼出来会参差不齐吗？',
-          answer: '不会。系统提供自动等高/等宽对齐选项，能把不同尺寸的图片等比缩放后整齐拼合。',
+          question: '分辨率不同的图片拼在一起怎么对齐？',
+          answer: '横向与竖向模式支持按最小对齐（默认）、按最大对齐和保持原尺寸三种方式；原尺寸模式下还可选择靠顶/靠左、居中（默认）或靠底/靠右对齐。',
         },
         {
-          question: '拼完之后想加上“改造前/改造后”文字标签怎么办？',
-          answer: '点击“在 Studio 画布精修”即可把拼好的成品图直接送入画布，自由加字、加边框和水印。',
+          question: '支持拖拽调序、反转顺序和单图旋转吗？',
+          answer: '支持。你可以直接拖拽缩略图调整顺序（也保留无障碍 ←/→ 按钮），点击“反转顺序”一键翻转整批照片，并可对单张图片顺时针 90° 旋转。',
         },
         {
-          question: '拼接后的图片会被压缩画质吗？',
-          answer: '导出 PNG 时完全无损保留清晰度；若需控制体积发社交平台，也可切换为高画质 WebP。',
+          question: '可以自定义边框、圆角和任意背景颜色吗？',
+          answer: '可以。支持调节图片间距（0–64px）、外边距（0–80px）、圆角（0–48px）和单图描边边框（0–24px，含色板与自定义取色器）；背景提供 6 套预设色板（含渐变与透明）及自定义取色器。',
+        },
+        {
+          question: '支持哪些导出格式？可以导出 PDF 吗？',
+          answer: '支持导出 PNG、WebP、JPEG 和单页 PDF 1.4。选择 JPEG、WebP 或 PDF 时会显示 50%–100% 质量滑块（默认 92%），且透明底在导出 JPEG/PDF 时自动铺设白底。注意 PDF 导出是将拼好的整张图存为单页 PDF，而非多页 PDF 文档合并。',
+        },
+        {
+          question: '拼好的图片可以直接复制到剪贴板贴进微信或飞书吗？',
+          answer: '可以。点击“复制到剪贴板”按钮会自动将成品转为无损 PNG 写入系统剪贴板，直接 Ctrl/Cmd+V 就能发进微信、飞书、钉钉或文档，无需先落盘。',
+        },
+        {
+          question: '一次最多拼几张图？有没有画质或尺寸限制？',
+          answer: '没有固定张数限制。为防止浏览器内存溢出，输出画布设有 8192px / 64MP 安全上限，超限时会自动等比缩放并在预览尺寸旁明确提示已缩放。',
+        },
+        {
+          question: '竖向拼长截图会自动去除重复状态栏或重叠区域吗？',
+          answer: '不包含自动去重叠功能。Moklu 会严格保留每张源图内容并按设定间距整齐拼接，确保文字和界面细节不被误裁。',
+        },
+        {
+          question: '手机浏览器能用吗？拼完想加标题或箭头怎么办？',
+          answer: '支持手机与电脑浏览器本地离线使用，零上传、免费无水印。如需添加大字标题、对比标签、箭头或阴影，点击“打开 Studio”即可无缝进入多图层画布继续精修。',
         },
       ],
     },
@@ -638,5 +659,6 @@ export const ZH_LOCALE: LocaleBundle = {
       ],
     },
     ...ZH_TOOL_ROUTES,
+    ...INFO_PAGE_ROUTES.zh,
   },
 }

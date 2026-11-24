@@ -1,12 +1,13 @@
 /**
- * [INPUT]: depends on LocaleBundle type from ../types.ts; depends on JA_TOOL_ROUTES from ./jaTools.ts
- * [OUTPUT]: exports JA_LOCALE complete Japanese UI labels and 19 intent-specific route copy entries
+ * [INPUT]: depends on LocaleBundle type from ../types.ts; depends on JA_TOOL_ROUTES from ./jaTools.ts and INFO_PAGE_ROUTES from ./infoRoutes.ts
+ * [OUTPUT]: exports JA_LOCALE complete Japanese UI labels and 23 intent/info route copy entries
  * [POS]: Japanese (`/ja/...`) language pack within src/seo/locales, loaded by src/seo/i18n.ts
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
 import type { LocaleBundle } from '../types.ts'
 import { JA_TOOL_ROUTES } from './jaTools.ts'
+import { INFO_PAGE_ROUTES } from './infoRoutes.ts'
 
 export const JA_LOCALE: LocaleBundle = {
   code: 'ja',
@@ -415,58 +416,78 @@ export const JA_LOCALE: LocaleBundle = {
       ],
     },
     'merge-images': {
-      navLabel: '画像結合',
-      title: '無料ローカル画像結合ツール（横並び・縦結合・グリッド）| Moklu',
+      navLabel: 'オンライン画像結合',
+      title: 'オンライン画像結合 | 複数画像を 1 枚に横並び・縦結合・グリッド・PDF 出力 | Moklu',
       metaDescription:
-        '複数枚の画像やスクショを横並び・縦長・グリッド状にローカル結合。サイズ自動揃え、余白、角丸、背景色に対応。サーバー送信ゼロ。',
-      badge: '横並び · 縦結合 · グリッド',
-      h1: '複数画像をブラウザで瞬時に結合',
+        '無料ローカルのオンライン画像結合ツール。横並び・縦長結合・2〜6 列グリッド（cover/contain）、ドラッグ並び替え、90° 回転、個別枠線、カスタム背景色、クリップボードコピー、単ページ PDF 出力に対応。送信ゼロ。',
+      badge: '横並び · 縦結合 · 2〜6 列グリッド · PDF',
+      h1: 'オンライン画像結合ツール',
       subtitle:
-        '複数の写真やスクリーンショットを横並び・縦長・グリッドに自在に連結。異なる解像度も自動で揃え、余白や角丸を整えてサーバー送信ゼロで出力します。',
+        '複数枚の写真をドロップまたは Cmd/Ctrl+V で貼り付け、横並び・縦結合・2〜6 列グリッド（cover/contain）で 1 枚に結合。ドラッグ並び替え、順序反転、90° 回転、枠線、クリップボードコピー、単ページ PDF 出力まで 100% ローカル処理します。',
       steps: [
         {
-          title: '複数画像を追加して並び替え',
-          description: '複数ファイルを一括ドロップまたは連続ペーストし、希望の表示順に整えます。',
+          title: '画像を追加してドラッグ並び替え・回転',
+          description: '複数ファイルをドロップまたは Cmd/Ctrl+V で貼り付け、サムネイルのドラッグ並び替え（←/→ ボタン併用）、順序反転、個別 90° 回転を行います。',
         },
         {
-          title: '結合方向・間隔・角丸を設定',
-          description: '横・縦・グリッドを切り替え、画像間隔、外枠余白、角丸、背景色を指定します。',
+          title: 'レイアウト・配置・枠線・背景を設定',
+          description: '横・縦・2〜6 列グリッド（cover/contain）を選び、間隔（0〜64px）、外余白（0〜80px）、角丸（0〜48px）、個別枠線（0〜24px）、カスタム背景色を調整します。',
         },
         {
-          title: '高解像度 PNG / WebP で出力',
-          description: '結合画像をローカル保存するか、Studio を開いて比較ラベルや矢印を追記できます。',
+          title: 'クリップボードへコピーまたは画像 / PDF 保存',
+          description: 'ワンクリックで PNG をクリップボードへコピーするか、PNG / WebP / JPEG / 単ページ PDF 1.4（画質 50%〜100%）で保存。Studio への引き継ぎも可能です。',
         },
       ],
       highlights: [
         {
-          title: '異なる解像度を自動正規化',
-          description: '横結合では高さ、縦結合では幅を自動で揃え、段差のない端正なレイアウトを実現します。',
+          title: '横・縦・2〜6 列グリッドと精密配置',
+          description: '最小揃え・最大揃え・原寸（先頭/中央/末尾揃え）とグリッドの cover / contain 切替で、異なるサイズの画像も端正に整列します。',
         },
         {
-          title: '隙間ゼロからカード風余白まで自在',
-          description: '0px のシームレス連結も、角丸と余白を効かせたギャラリー風結合もスライダー 1 つで切替。',
+          title: 'ドラッグ並び替え・順序反転・個別枠線',
+          description: 'サムネイルのドラッグ操作、一括順序反転、個別 90° 回転、0〜24px の個別枠線とカスタムカラーピッカーを備えています。',
         },
         {
-          title: 'プライベート写真も外部送信ゼロ',
-          description: 'チャット履歴や社内画面の結合でも画像がクラウドへ送られることはありません。',
+          title: 'クリップボードコピー＆単ページ PDF 出力',
+          description: 'チャットツールへ即貼り付けできるコピー機能と、完全ローカルの単ページ PDF 1.4 出力に対応。アップロードも透かしも不要です。',
         },
       ],
       faqs: [
         {
-          question: '一度に何枚くらいの画像を結合できますか？',
-          answer: '複数枚まとめて処理でき、極端に大きなキャンバスでは安全な最大解像度ガードが自動で働きます。',
+          question: 'どのような結合レイアウトとグリッド設定に対応していますか？',
+          answer: '横並び、縦結合、2〜6 列グリッドに対応しています。グリッドでは 1:1 / 4:3 / 3:4 / 自動のセル比率と、cover（切り抜き敷き詰め）・contain（切らずに全体表示）を切り替えられます。',
         },
         {
-          question: 'サイズがバラバラの画像を結合してもガタガタになりませんか？',
-          answer: 'なりません。横結合は高さ揃え、縦結合は幅揃えオプションで綺麗に整列します。',
+          question: '解像度がバラバラの画像はどのように揃えられますか？',
+          answer: '横・縦結合では最小サイズ揃え（初期値）、最大サイズ揃え、原寸維持から選択できます。原寸モードでは上/左揃え、中央揃え（初期値）、下/右揃えを指定できます。',
         },
         {
-          question: '結合した画像に「Before / After」などの文字を入れられますか？',
-          answer: 'はい。結合後に「Studio で編集」を押せば、ラベルや矢印をレイヤーとして重ねられます。',
+          question: 'ドラッグ並び替え、順序反転、単体回転はできますか？',
+          answer: 'はい。サムネイルをドラッグして直感的に並び替えでき（キーボードや ←/→ ボタンにも対応）、ワンクリック順序反転と画像ごとの 90° 時計回り回転が使えます。',
         },
         {
-          question: '結合処理中に画像はサーバーへ保存されますか？',
-          answer: 'いいえ。すべてのピクセル合成はブラウザ内の HTML5 Canvas でローカル完結します。',
+          question: '余白、枠線、角丸、背景色はどこまでカスタマイズできますか？',
+          answer: '間隔（0〜64px）、外余白（0〜80px）、角丸（0〜48px）、個別枠線（0〜24px、色プリセット＋カラーピッカー）を調整でき、背景も 6 種のプリセット（グラデーション・透過含む）とカスタムカラーピッカーに対応しています。',
+        },
+        {
+          question: '対応出力形式と画質設定を教えてください。PDF 出力はできますか？',
+          answer: 'PNG、WebP、JPEG、単ページ PDF 1.4 に対応しています。JPEG / WebP / PDF では 50%〜100%（初期値 92%）の画質スライダーが使え、透過背景は JPEG / PDF 時に自動で白地合成されます。なお PDF は結合画像を 1 ページに収める単ページ仕様であり、複数ページ PDF 文書の結合ツールではありません。',
+        },
+        {
+          question: '結合画像をそのままクリップボードにコピーできますか？',
+          answer: 'はい。「クリップボードにコピー」を押すと結合結果を PNG としてクリップボードへ書き込み、Slack・LINE・メール・資料へそのまま貼り付けられます。',
+        },
+        {
+          question: '枚数や解像度の上限はありますか？',
+          answer: '枚数の固定上限はありません。ブラウザの安定性を守るため出力キャンバスには 8192px / 64MP の安全上限があり、超過時は自動等比縮小してプレビュー寸法の横に縮小通知を表示します。',
+        },
+        {
+          question: '縦長スクショ結合で重複するヘッダーや重なり部分を自動カットしますか？',
+          answer: '重複部分の自動削除機能は搭載していません。すべての元画像を欠けなく確実に並べて結合する設計です。',
+        },
+        {
+          question: 'スマホでも使えますか？結合後に文字や矢印を追加したい場合は？',
+          answer: 'はい。PC・スマートフォンどちらのブラウザでもオフラインかつ透かし無料で使えます。見出し文字や注釈矢印を重ねたい場合は「Studio を開く」から多層キャンバスで編集できます。',
         },
       ],
     },
@@ -639,5 +660,6 @@ export const JA_LOCALE: LocaleBundle = {
       ],
     },
     ...JA_TOOL_ROUTES,
+    ...INFO_PAGE_ROUTES.ja,
   },
 }

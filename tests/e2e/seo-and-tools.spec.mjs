@@ -183,7 +183,7 @@ test('4-locale SEO routes sync lang, canonical, hreflang, JSON-LD, and tool pres
   const cases = [
     {
       path: '/zh/id-card-watermark',
-      lang: 'zh',
+      lang: 'zh-CN',
       tool: 'id-card',
       canonical: 'https://moklu.app/zh/id-card-watermark',
     },
@@ -213,7 +213,7 @@ test('4-locale SEO routes sync lang, canonical, hreflang, JSON-LD, and tool pres
   }
 })
 
-test('Pre-rendered SSG HTML and sitemap.xml contain all 76 routes with full React UI and zero inline executable scripts', async ({ browserName }) => {
+test('Pre-rendered SSG HTML, sitemap.xml, and llms.txt contain all 92 routes with full React UI and zero inline executable scripts', async ({ browserName }) => {
   test.skip(browserName !== 'chromium', 'Filesystem SSG artifact check runs once on Chromium')
   const distDir = path.resolve('dist')
   try {
@@ -225,13 +225,20 @@ test('Pre-rendered SSG HTML and sitemap.xml contain all 76 routes with full Reac
 
   const sitemap = await readFile(path.join(distDir, 'sitemap.xml'), 'utf8')
   const urlMatches = sitemap.match(/<url>/g) ?? []
-  expect(urlMatches.length).toBe(76)
+  expect(urlMatches.length).toBe(92)
   expect(sitemap).toContain('https://moklu.app/zh/id-card-watermark')
   expect(sitemap).toContain('https://moklu.app/ja/merge-images')
   expect(sitemap).toContain('https://moklu.app/ko/browser-mockup')
+  expect(sitemap).toContain('https://moklu.app/merge-photos-to-pdf')
+  expect(sitemap).toContain('https://moklu.app/zh/privacy')
 
   const robots = await readFile(path.join(distDir, 'robots.txt'), 'utf8')
   expect(robots).toContain('Sitemap: https://moklu.app/sitemap.xml')
+
+  const llms = await readFile(path.join(distDir, 'llms.txt'), 'utf8')
+  expect(llms.startsWith('# Moklu')).toBe(true)
+  expect(llms).not.toMatch(/<!doctype html|<html/i)
+  expect(llms).toContain('在线图片拼接')
 
   const landingPages = [
     path.join(distDir, 'index.html'),
@@ -304,7 +311,7 @@ test('Pre-rendered SSG renders full styled UI with JS disabled and has zero FOUC
     // Verify localized /zh/id-card-watermark with JS disabled
     await noJsPage.goto(`${server.baseUrl}/zh/id-card-watermark`, { waitUntil: 'load' })
     await expect(noJsPage.locator('[data-ssg-shell]')).toHaveCount(0)
-    await expect(noJsPage.locator('html')).toHaveAttribute('lang', 'zh')
+    await expect(noJsPage.locator('html')).toHaveAttribute('lang', 'zh-CN')
     await expect(noJsPage.getByTestId('quick-workspace')).toHaveAttribute('data-active-tool', 'id-card')
     await expect(noJsPage.locator('#seo-faq-heading')).toBeVisible()
     await noJsContext.close()
@@ -389,7 +396,7 @@ test('Localized /zh/studio renders Simplified Chinese Studio UI and switches UI 
   test.skip(browserName !== 'chromium', 'Localized Studio UI regression runs once on Chromium')
   await page.goto('/zh/studio')
   await expect(page.locator('.konvajs-content').first()).toBeVisible()
-  await expect(page.locator('html')).toHaveAttribute('lang', 'zh')
+  await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN')
 
   // Verify Chinese toolbar, layers panel, properties panel, and slide navigator labels
   await expect(page.locator('header')).toContainText('工具箱')

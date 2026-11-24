@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on RouteCopy and SecondaryToolSlug types from ../types.ts
- * [OUTPUT]: exports KO_TOOL_ROUTES containing Korean copy for split, compress, resize, and ID-card routes
+ * [OUTPUT]: exports KO_TOOL_ROUTES containing Korean copy for merge-photos-to-pdf, split, compress, resize, and ID-card routes
  * [POS]: secondary route-copy chunk for ko within src/seo/locales, merged into KO_LOCALE by ./ko.ts to keep every file <= 800 lines
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -8,6 +8,62 @@
 import type { RouteCopy, SecondaryToolSlug } from '../types.ts'
 
 export const KO_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
+  'merge-photos-to-pdf': {
+    navLabel: '사진 합쳐 PDF 저장',
+    title: '여러 사진 한 페이지 PDF로 합치기 (무료·로컬) | Moklu',
+    metaDescription:
+      '영수증, 사진, 스크린샷을 세로·가로·2~6열 그리드로 한 장에 배치해 표준 단일 페이지 PDF 1.4로 즉시 저장. 서버 업로드 제로, 워터마크 없음.',
+    badge: '단일 페이지 PDF 1.4 · 업로드 제로',
+    h1: '여러 사진을 한 장의 단일 페이지 PDF로 합치기',
+    subtitle:
+      '영수증, 스캔 사진, 캡처 화면을 세로·가로·2~6열 그리드로 정리하고 드래그 정렬, 90° 회전, 개별 테두리, 품질 슬라이더를 맞춰 브라우저에서 바로 단일 페이지 PDF 1.4로 내보내세요.',
+    steps: [
+      {
+        title: '사진을 추가하고 순서 정렬',
+        description: '파일을 끌어놓거나 Cmd/Ctrl+V로 붙여넣은 뒤 썸네일 드래그 정렬, 순서 뒤집기, 개별 90° 회전을 적용하세요.',
+      },
+      {
+        title: '레이아웃, 테두리 및 PDF 품질 설정',
+        description: '세로·가로·2~6열 그리드(cover/contain)를 고르고 간격, 여백, 개별 테두리, 품질 슬라이더(50%~100%, 기본 92%)를 조절합니다.',
+      },
+      {
+        title: '로컬 단일 페이지 PDF 1.4 다운로드',
+        description: 'HTML5 Canvas에서 바로 표준 PDF 1.4 파일을 생성해 저장하며 서버 전송이나 워터마크가 없습니다.',
+      },
+    ],
+    highlights: [
+      {
+        title: '서버 업로드 없는 로컬 PDF 1.4 생성',
+        description: '영수증이나 문서 사진도 기기 브라우저 메모리 안에서만 처리되어 안전합니다.',
+      },
+      {
+        title: '투명 배경 자동 흰색 처리',
+        description: '투명 PNG를 PDF 또는 JPEG로 저장할 때 자동으로 깔끔한 흰색 배경을 채워 인쇄 오류를 방지합니다.',
+      },
+      {
+        title: '그리드·회전·테두리 맞춤 제어',
+        description: '2~6열 그리드, 0~24px 개별 테두리, 커스텀 색상 선택기, 품질 조절로 제출용 문서를 정교하게 맞춥니다.',
+      },
+    ],
+    faqs: [
+      {
+        question: '단일 페이지 PDF인가요, 여러 페이지 PDF 병합인가요?',
+        answer: '합쳐진 이미지를 한 장에 담은 표준 단일 페이지 PDF 1.4를 생성합니다. 기존 다중 페이지 PDF 문서를 합치는 도구가 아니라 여러 사진을 한 장의 인쇄용 PDF로 정리할 때 적합합니다.',
+      },
+      {
+        question: '내보내는 PDF의 화질과 용량을 조절할 수 있나요?',
+        answer: '네. PDF 형식을 선택하면 50%~100%(기본 92%) 품질 슬라이더가 나타나 선명도와 파일 크기를 쉽게 조절할 수 있습니다.',
+      },
+      {
+        question: '투명 배경 PNG를 PDF로 저장하면 검게 변하나요?',
+        answer: '아니요. PDF와 JPEG 내보내기 시 투명 배경은 자동으로 흰색 시트로 합성됩니다.',
+      },
+      {
+        question: '영수증이나 서류 사진이 서버로 업로드되나요?',
+        answer: '전혀 업로드되지 않습니다. 레이아웃 합성과 PDF 1.4 인코딩 모두 브라우저 탭 안에서 100% 오프라인으로 처리됩니다.',
+      },
+    ],
+  },
   'carousel-splitter': {
     navLabel: '캐러셀 분할',
     title: '인스타그램·SNS 심리스 캐러셀 파노라마 분할기 | Moklu',

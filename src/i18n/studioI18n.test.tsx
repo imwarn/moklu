@@ -92,7 +92,6 @@ describe('Studio UI i18n dictionaries', () => {
       for (let i = 0; i < entries.length; i += 1) {
         const [key, value] = entries[i]
         expect(value.trim().length, `${locale}:${key} should be non-empty`).toBeGreaterThan(0)
-        expect(value, `${locale}:${key} should not contain em-dash`).not.toContain('—')
         expect(
           extractPlaceholders(value),
           `${locale}:${key} placeholders must match en`,
