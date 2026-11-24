@@ -1,18 +1,41 @@
 /**
- * [INPUT]: depends on react, canvasUtils from ../canvasUtils, strings from ../i18n, themeTokens from ../themeTokens, UI primitives from ../uiPrimitives, useDebouncedValue from ../useDebouncedValue, and WorkspaceToolPanelProps from ../types
- * [OUTPUT]: exports MergeQuickTool component for horizontal, vertical, and grid multi-image stitching with reorderable strip and debounced preview
+ * [INPUT]: depends on react, @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities, canvasUtils from ../canvasUtils, strings from ../i18n, themeTokens from ../themeTokens, UI primitives from ../uiPrimitives, useDebouncedValue from ../useDebouncedValue, and workspace types from ../types
+ * [OUTPUT]: exports MergeQuickTool component for horizontal, vertical, and 2..6-col grid multi-image stitching with drag-and-drop reordering, reverse order, 90deg per-item rotation, cross-axis alignment, per-image border, custom color picker, quality slider, clipboard copy, and single-page PDF export
  * [POS]: merge and collage tool panel inside src/workspace/tools; delegates canvas composition to injected engines.merge
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { createDemoImageInput, formatBytes, readFileAsImageInput, triggerBlobDownload } from '../canvasUtils'
+import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  arrayMove,
+  horizontalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  copyImageToClipboard,
+  createDemoImageInput,
+  formatBytes,
+  readFileAsImageInput,
+  triggerBlobDownload,
+} from '../canvasUtils'
 import { getWorkspaceStrings } from '../i18n'
-import { getWorkspaceThemeTokens } from '../themeTokens'
+import { getWorkspaceThemeTokens, type WorkspaceThemeTokens } from '../themeTokens'
 import type {
   WorkspaceBlobOutput,
-  WorkspaceImageFormat,
   WorkspaceImageInput,
+  WorkspaceMergeAlign,
+  WorkspaceMergeFormat,
   WorkspaceMergeOptions,
+  WorkspaceMergeRotation,
   WorkspaceToolPanelProps,
 } from '../types'
 import {
@@ -24,6 +47,141 @@ import {
   StudioHandoffButton,
 } from '../uiPrimitives'
 import { useDebouncedValue } from '../useDebouncedValue'
+
+function nextQuarterTurn(current?: WorkspaceMergeRotation): WorkspaceMergeRotation {
+  switch (current ?? 0) {
+    case 0: return 90
+    case 90: return 180
+    case 180: return 270
+    case 270: return 0
+  }
+}
+
+interface SortableMergeThumbProps {
+  item: WorkspaceImageInput
+  index: number
+  total: number
+  tokens: WorkspaceThemeTokens
+  labels: {
+    moveLeft: string
+    moveRight: string
+    rotate90: string
+    remove: string
+  }
+  onMove: (index: number, delta: -1 | 1) => void
+  onRotate: (id: string) => void
+  onRemove: (id: string) => void
+}
+
+function SortableMergeThumb({
+  item,
+  index,
+  total,
+  tokens,
+  labels,
+  onMove,
+  onRotate,
+  onRemove,
+}: SortableMergeThumbProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: item.id,
+  })
+  const rotation = item.rotation ?? 0
+
+  return (
+    <li
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+      }}
+      data-testid={`merge-thumb-${index}`}
+      className={`flex shrink-0 items-center gap-2 rounded-xl border p-1.5 ${tokens.card} ${
+        isDragging ? 'z-20 opacity-85 shadow-md ring-2 ring-accent/40' : ''
+      }`}
+    >
+      <div
+        {...attributes}
+        {...listeners}
+        className="relative flex cursor-grab touch-none items-center gap-1.5 active:cursor-grabbing"
+      >
+        <svg
+          viewBox="0 0 12 20"
+          className={`h-4 w-2.5 shrink-0 opacity-50 ${tokens.textSubtle}`}
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <circle cx="3" cy="5" r="1.2" />
+          <circle cx="9" cy="5" r="1.2" />
+          <circle cx="3" cy="10" r="1.2" />
+          <circle cx="9" cy="10" r="1.2" />
+          <circle cx="3" cy="15" r="1.2" />
+          <circle cx="9" cy="15" r="1.2" />
+        </svg>
+        <div className="relative h-12 w-12 overflow-hidden rounded-lg bg-black/5">
+          <img
+            src={item.dataUrl}
+            alt={item.name}
+            style={rotation ? { transform: `rotate(${rotation}deg)` } : undefined}
+            className="h-full w-full object-cover transition-transform"
+          />
+          {rotation !== 0 && (
+            <span className="absolute bottom-0.5 right-0.5 rounded bg-zinc-900/80 px-1 text-[9px] font-bold tabular-nums text-white">
+              {rotation}°
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <span className={`max-w-[120px] truncate text-[11px] font-medium ${tokens.text}`}>
+          {index + 1}. {item.name}
+        </span>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            aria-label={`${labels.moveLeft}: ${item.name}`}
+            disabled={index === 0}
+            onClick={() => onMove(index, -1)}
+            className={`inline-flex h-7 min-w-7 items-center justify-center rounded-md border px-1.5 text-xs transition-colors disabled:opacity-30 ${tokens.focusRing} ${tokens.pillIdle}`}
+          >
+            ←
+          </button>
+          <button
+            type="button"
+            aria-label={`${labels.moveRight}: ${item.name}`}
+            disabled={index === total - 1}
+            onClick={() => onMove(index, 1)}
+            className={`inline-flex h-7 min-w-7 items-center justify-center rounded-md border px-1.5 text-xs transition-colors disabled:opacity-30 ${tokens.focusRing} ${tokens.pillIdle}`}
+          >
+            →
+          </button>
+          <button
+            type="button"
+            title={labels.rotate90}
+            aria-label={`${labels.rotate90}: ${item.name}`}
+            data-testid={`merge-rotate-${index}`}
+            onClick={() => onRotate(item.id)}
+            className={`inline-flex h-7 min-w-7 items-center justify-center rounded-md border px-1.5 text-xs transition-colors ${tokens.focusRing} ${tokens.pillIdle}`}
+          >
+            <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+              <path d="M12.5 8a4.5 4.5 0 1 1-1.3-3.2" strokeLinecap="round" />
+              <path d="M12.5 2.8v2.6H9.9" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            aria-label={`${labels.remove}: ${item.name}`}
+            onClick={() => onRemove(item.id)}
+            className={`inline-flex h-7 min-w-7 items-center justify-center rounded-md border px-1.5 text-xs font-semibold transition-colors ${tokens.focusRing} ${tokens.dangerGhost}`}
+          >
+            ×
+          </button>
+        </div>
+      </div>
+    </li>
+  )
+}
 
 export function MergeQuickTool({
   preset,
@@ -47,44 +205,84 @@ export function MergeQuickTool({
     [s.swatches],
   )
 
+  const borderSwatches = useMemo(
+    () => [
+      { label: s.swatches.white, value: '#ffffff' },
+      { label: s.swatches.softGray, value: '#e4e4e7' },
+      { label: s.swatches.slateDark, value: '#0f172a' },
+      { label: s.swatches.sunset, value: '#f97316' },
+    ],
+    [s.swatches],
+  )
+
   const [images, setImages] = useState<WorkspaceImageInput[]>([])
   const [direction, setDirection] = useState<WorkspaceMergeOptions['direction']>(
     preset.mergeDirection ?? 'horizontal',
   )
   const [normalize, setNormalize] = useState<WorkspaceMergeOptions['normalize']>('match-min')
+  const [align, setAlign] = useState<WorkspaceMergeAlign>('center')
   const [columns, setColumns] = useState<number>(2)
   const [aspectCell, setAspectCell] = useState<WorkspaceMergeOptions['aspectCell']>('1:1')
+  const [fit, setFit] = useState<WorkspaceMergeOptions['fit']>('cover')
   const [gap, setGap] = useState<number>(16)
   const [padding, setPadding] = useState<number>(24)
   const [borderRadius, setBorderRadius] = useState<number>(12)
+  const [borderWidth, setBorderWidth] = useState<number>(0)
+  const [borderColor, setBorderColor] = useState<string>('#ffffff')
   const [background, setBackground] = useState<string>('#ffffff')
-  const [format, setFormat] = useState<WorkspaceImageFormat>('image/png')
+  const [format, setFormat] = useState<WorkspaceMergeFormat>(
+    preset.mergeFormat ?? preset.targetFormat ?? 'image/png',
+  )
+  const [qualityPercent, setQualityPercent] = useState<number>(92)
   const [result, setResult] = useState<WorkspaceBlobOutput | null>(null)
   const [rendering, setRendering] = useState(false)
+  const [copied, setCopied] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const copyTimerRef = useRef<number | null>(null)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 5 },
+    }),
+  )
+
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current !== null && typeof window !== 'undefined') {
+        window.clearTimeout(copyTimerRef.current)
+      }
+    }
+  }, [])
 
   const debouncedColumns = useDebouncedValue(columns)
   const debouncedGap = useDebouncedValue(gap)
   const debouncedPadding = useDebouncedValue(padding)
   const debouncedBorderRadius = useDebouncedValue(borderRadius)
+  const debouncedBorderWidth = useDebouncedValue(borderWidth)
+  const debouncedQuality = useDebouncedValue(qualityPercent)
 
   const hasPendingParams =
     images.length > 0 &&
     (debouncedColumns !== columns ||
       debouncedGap !== gap ||
       debouncedPadding !== padding ||
-      debouncedBorderRadius !== borderRadius)
+      debouncedBorderRadius !== borderRadius ||
+      debouncedBorderWidth !== borderWidth ||
+      debouncedQuality !== qualityPercent)
   const isBusy = rendering || hasPendingParams
 
-  const handleFiles = useCallback(async (files: File[]) => {
-    setError(null)
-    try {
-      const loaded = await Promise.all(files.map((file) => readFileAsImageInput(file)))
-      setImages((prev) => [...prev, ...loaded])
-    } catch {
-      setError(s.common.decodeError)
-    }
-  }, [s.common.decodeError])
+  const handleFiles = useCallback(
+    async (files: File[]) => {
+      setError(null)
+      try {
+        const loaded = await Promise.all(files.map((file) => readFileAsImageInput(file)))
+        setImages((prev) => [...prev, ...loaded])
+      } catch {
+        setError(s.common.decodeError)
+      }
+    },
+    [s.common.decodeError],
+  )
 
   const handleLoadDemo = () => {
     setError(null)
@@ -99,15 +297,35 @@ export function MergeQuickTool({
     setImages((prev) => {
       const nextIndex = index + delta
       if (nextIndex < 0 || nextIndex >= prev.length) return prev
-      const copy = [...prev]
-      const [moved] = copy.splice(index, 1)
-      copy.splice(nextIndex, 0, moved)
-      return copy
+      return arrayMove(prev, index, nextIndex)
     })
+  }
+
+  const reverseImages = () => {
+    setImages((prev) => [...prev].reverse())
+  }
+
+  const rotateImage = (id: string) => {
+    setImages((prev) =>
+      prev.map((img) =>
+        img.id === id ? { ...img, rotation: nextQuarterTurn(img.rotation) } : img,
+      ),
+    )
   }
 
   const removeImage = (id: string) => {
     setImages((prev) => prev.filter((img) => img.id !== id))
+  }
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    setImages((prev) => {
+      const oldIndex = prev.findIndex((item) => item.id === active.id)
+      const newIndex = prev.findIndex((item) => item.id === over.id)
+      if (oldIndex < 0 || newIndex < 0) return prev
+      return arrayMove(prev, oldIndex, newIndex)
+    })
   }
 
   useEffect(() => {
@@ -120,15 +338,18 @@ export function MergeQuickTool({
         const merged = await engines.merge(images, {
           direction,
           normalize,
+          align,
           columns: debouncedColumns,
           aspectCell,
-          fit: 'cover',
+          fit,
           gap: debouncedGap,
           padding: debouncedPadding,
           borderRadius: debouncedBorderRadius,
+          borderWidth: debouncedBorderWidth,
+          borderColor,
           background,
           format,
-          quality: 0.92,
+          quality: debouncedQuality / 100,
         })
         if (!cancelled) setResult(merged)
       } catch (err) {
@@ -145,18 +366,45 @@ export function MergeQuickTool({
     images,
     direction,
     normalize,
+    align,
     debouncedColumns,
     aspectCell,
+    fit,
     debouncedGap,
     debouncedPadding,
     debouncedBorderRadius,
+    debouncedBorderWidth,
+    borderColor,
     background,
     format,
+    debouncedQuality,
     engines,
     s.merge.mergeError,
   ])
 
   const activeResult = images.length > 0 ? result : null
+  const isScaledDown =
+    activeResult?.scaleFactor !== undefined && activeResult.scaleFactor < 0.999
+
+  const handleCopy = async () => {
+    if (!activeResult) return
+    setError(null)
+    try {
+      await copyImageToClipboard(activeResult.blob, activeResult.dataUrl)
+      setCopied(true)
+      if (copyTimerRef.current !== null && typeof window !== 'undefined') {
+        window.clearTimeout(copyTimerRef.current)
+      }
+      if (typeof window !== 'undefined') {
+        copyTimerRef.current = window.setTimeout(() => {
+          setCopied(false)
+          copyTimerRef.current = null
+        }, 2000)
+      }
+    } catch {
+      setError(s.common.copyError)
+    }
+  }
 
   const handleOpenInStudio = () => {
     if (!activeResult) return
@@ -175,19 +423,42 @@ export function MergeQuickTool({
     })
   }
 
+  const alignOptions =
+    direction === 'horizontal'
+      ? [
+          { value: 'start' as const, label: s.merge.alignTop },
+          { value: 'center' as const, label: s.merge.alignMiddle },
+          { value: 'end' as const, label: s.merge.alignBottom },
+        ]
+      : [
+          { value: 'start' as const, label: s.merge.alignLeft },
+          { value: 'center' as const, label: s.merge.alignCenter },
+          { value: 'end' as const, label: s.merge.alignRight },
+        ]
+
+  const downloadLabel = format === 'application/pdf' ? s.common.downloadPdf : s.common.downloadImage
+
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
       {/* Left: Reorderable Strip + Live Merged Preview */}
       <div className="flex flex-col gap-4 lg:col-span-7">
         <div className={`rounded-2xl border p-4 ${tokens.stage}`}>
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className={`text-xs font-semibold uppercase tracking-wider ${tokens.textMuted}`}>
                 {s.common.preview}
               </span>
               {activeResult && (
                 <span className={`rounded-md border px-2 py-0.5 text-[11px] font-medium tabular-nums ${tokens.card} ${tokens.textSubtle}`}>
                   {activeResult.width} × {activeResult.height} · {formatBytes(activeResult.sizeBytes)}
+                </span>
+              )}
+              {isScaledDown && (
+                <span
+                  data-testid="merge-scaled-notice"
+                  className={`rounded-md px-2 py-0.5 text-[11px] font-semibold ${tokens.badgeWarning}`}
+                >
+                  {s.merge.scaledNotice}
                 </span>
               )}
             </div>
@@ -205,8 +476,9 @@ export function MergeQuickTool({
                   onClick={() => {
                     setImages([])
                     setResult(null)
+                    setCopied(false)
                   }}
-                  className={`min-h-8 rounded-lg px-2.5 py-1 text-xs font-medium ${tokens.focusRing} ${tokens.textMuted} hover:text-danger`}
+                  className={`min-h-8 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${tokens.focusRing} ${tokens.textMuted} hover:text-danger`}
                 >
                   {s.common.clearAll}
                 </button>
@@ -232,58 +504,63 @@ export function MergeQuickTool({
 
           {images.length > 0 && (
             <div className="mt-3">
-              <div className="mb-1.5 flex items-center justify-between text-xs">
-                <span className={`font-semibold ${tokens.textMuted}`}>
-                  {images.length} {s.merge.itemsCount}
-                </span>
-              </div>
-              <ul className="flex gap-2 overflow-x-auto pb-1">
-                {images.map((item, idx) => (
-                  <li
-                    key={item.id}
-                    className={`flex shrink-0 items-center gap-2 rounded-xl border p-1.5 ${tokens.card}`}
+              <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className={`font-semibold ${tokens.textMuted}`}>
+                    {images.length} {s.merge.itemsCount}
+                  </span>
+                  {images.length >= 2 && (
+                    <span className={`text-[11px] ${tokens.textSubtle}`}>
+                      · {s.merge.dragToReorder}
+                    </span>
+                  )}
+                </div>
+                {images.length >= 2 && (
+                  <button
+                    type="button"
+                    data-testid="merge-reverse-order"
+                    onClick={reverseImages}
+                    className={`inline-flex min-h-7 items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold transition-colors ${tokens.focusRing} ${tokens.pillIdle}`}
                   >
-                    <img
-                      src={item.dataUrl}
-                      alt={item.name}
-                      className="h-12 w-12 rounded-lg object-cover"
-                    />
-                    <div className="flex flex-col gap-1">
-                      <span className={`max-w-[110px] truncate text-[11px] font-medium ${tokens.text}`}>
-                        {idx + 1}. {item.name}
-                      </span>
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          aria-label={`${s.common.moveLeft}: ${item.name}`}
-                          disabled={idx === 0}
-                          onClick={() => moveImage(idx, -1)}
-                          className={`inline-flex h-7 min-w-7 items-center justify-center rounded-md border px-1.5 text-xs disabled:opacity-30 ${tokens.focusRing} ${tokens.pillIdle}`}
-                        >
-                          ←
-                        </button>
-                        <button
-                          type="button"
-                          aria-label={`${s.common.moveRight}: ${item.name}`}
-                          disabled={idx === images.length - 1}
-                          onClick={() => moveImage(idx, 1)}
-                          className={`inline-flex h-7 min-w-7 items-center justify-center rounded-md border px-1.5 text-xs disabled:opacity-30 ${tokens.focusRing} ${tokens.pillIdle}`}
-                        >
-                          →
-                        </button>
-                        <button
-                          type="button"
-                          aria-label={`${s.common.remove}: ${item.name}`}
-                          onClick={() => removeImage(item.id)}
-                          className={`inline-flex h-7 min-w-7 items-center justify-center rounded-md border px-1.5 text-xs font-semibold ${tokens.focusRing} ${tokens.dangerGhost}`}
-                        >
-                          ×
-                        </button>
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+                    <svg viewBox="0 0 16 16" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+                      <path d="M3 5.5h10M10.5 3 13 5.5 10.5 8M13 10.5H3M5.5 8 3 10.5 5.5 13" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    <span>{s.merge.reverseOrder}</span>
+                  </button>
+                )}
+              </div>
+              <DndContext
+                id="moklu-merge-dnd"
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={images.map((img) => img.id)}
+                  strategy={horizontalListSortingStrategy}
+                >
+                  <ul className="flex gap-2 overflow-x-auto pb-1">
+                    {images.map((item, idx) => (
+                      <SortableMergeThumb
+                        key={item.id}
+                        item={item}
+                        index={idx}
+                        total={images.length}
+                        tokens={tokens}
+                        labels={{
+                          moveLeft: s.common.moveLeft,
+                          moveRight: s.common.moveRight,
+                          rotate90: s.merge.rotate90,
+                          remove: s.common.remove,
+                        }}
+                        onMove={moveImage}
+                        onRotate={rotateImage}
+                        onRemove={removeImage}
+                      />
+                    ))}
+                  </ul>
+                </SortableContext>
+              </DndContext>
             </div>
           )}
 
@@ -318,17 +595,28 @@ export function MergeQuickTool({
           />
 
           {direction !== 'grid' ? (
-            <SegmentedControl
-              theme={theme}
-              label={s.merge.normalizeLabel}
-              value={normalize}
-              options={[
-                { value: 'match-min', label: s.merge.matchMin },
-                { value: 'match-max', label: s.merge.matchMax },
-                { value: 'original', label: s.merge.original },
-              ]}
-              onChange={setNormalize}
-            />
+            <div className="space-y-3">
+              <SegmentedControl
+                theme={theme}
+                label={s.merge.normalizeLabel}
+                value={normalize}
+                options={[
+                  { value: 'match-min', label: s.merge.matchMin },
+                  { value: 'match-max', label: s.merge.matchMax },
+                  { value: 'original', label: s.merge.original },
+                ]}
+                onChange={setNormalize}
+              />
+              {normalize === 'original' && (
+                <SegmentedControl
+                  theme={theme}
+                  label={s.merge.alignLabel}
+                  value={align}
+                  options={alignOptions}
+                  onChange={setAlign}
+                />
+              )}
+            </div>
           ) : (
             <div className="space-y-3">
               <SliderField
@@ -336,7 +624,7 @@ export function MergeQuickTool({
                 label={s.merge.columns}
                 value={columns}
                 min={2}
-                max={4}
+                max={6}
                 onChange={setColumns}
               />
               <SegmentedControl
@@ -351,18 +639,43 @@ export function MergeQuickTool({
                 ]}
                 onChange={setAspectCell}
               />
+              <SegmentedControl
+                theme={theme}
+                label={s.merge.fitLabel}
+                value={fit}
+                options={[
+                  { value: 'cover', label: s.merge.fitCover },
+                  { value: 'contain', label: s.merge.fitContain },
+                ]}
+                onChange={setFit}
+              />
             </div>
           )}
 
           <SliderField theme={theme} label={s.common.gap} value={gap} min={0} max={64} unit="px" onChange={setGap} />
           <SliderField theme={theme} label={s.common.padding} value={padding} min={0} max={80} unit="px" onChange={setPadding} />
           <SliderField theme={theme} label={s.common.radius} value={borderRadius} min={0} max={48} unit="px" onChange={setBorderRadius} />
+          <SliderField theme={theme} label={s.merge.borderWidth} value={borderWidth} min={0} max={24} unit="px" onChange={setBorderWidth} />
+
+          {borderWidth > 0 && (
+            <ColorSwatchRow
+              theme={theme}
+              label={s.merge.borderColor}
+              value={borderColor}
+              options={borderSwatches}
+              allowCustom
+              customLabel={s.common.customColor}
+              onChange={setBorderColor}
+            />
+          )}
 
           <ColorSwatchRow
             theme={theme}
             label={s.common.background}
             value={background}
             options={bgSwatches}
+            allowCustom
+            customLabel={s.common.customColor}
             onChange={setBackground}
           />
 
@@ -374,9 +687,22 @@ export function MergeQuickTool({
               { value: 'image/png', label: 'PNG' },
               { value: 'image/webp', label: 'WebP' },
               { value: 'image/jpeg', label: 'JPEG' },
+              { value: 'application/pdf', label: 'PDF' },
             ]}
             onChange={setFormat}
           />
+
+          {format !== 'image/png' && (
+            <SliderField
+              theme={theme}
+              label={s.common.quality}
+              value={qualityPercent}
+              min={50}
+              max={100}
+              unit="%"
+              onChange={setQualityPercent}
+            />
+          )}
         </div>
 
         <div className="space-y-2 border-t pt-4 border-current/10">
@@ -392,8 +718,23 @@ export function MergeQuickTool({
               onClick={() => activeResult && triggerBlobDownload(activeResult.blob, activeResult.filename)}
               className={`inline-flex min-h-9 items-center justify-center rounded-xl px-4 py-2.5 text-xs font-semibold transition-colors disabled:opacity-50 ${tokens.focusRing} ${tokens.buttonPrimary}`}
             >
-              {isBusy ? s.common.processing : s.common.downloadImage}
+              {isBusy ? s.common.processing : downloadLabel}
             </button>
+            <button
+              type="button"
+              data-testid="merge-copy-image"
+              disabled={!activeResult || isBusy}
+              onClick={() => void handleCopy()}
+              className={`inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-semibold transition-colors disabled:opacity-50 ${tokens.focusRing} ${tokens.buttonSecondary}`}
+            >
+              <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+                <rect x="5" y="5" width="8" height="8" rx="1.5" />
+                <path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5" />
+              </svg>
+              <span>{copied ? s.common.copied : s.common.copyImage}</span>
+            </button>
+          </div>
+          <div className="grid grid-cols-1">
             <StudioHandoffButton
               theme={theme}
               label={s.common.openInStudio}

@@ -1,7 +1,7 @@
 /**
  * [INPUT]: depends on nanoid, getMockupSvg from @/assets/mockups/registry, getPhoneSpec from @/assets/mockups/specs, BRAND from @/theme/brand, QUICK_THEMES from @/utils/quickDesign, getQuickPreviewGeometry and makeSvgImageDataUrl from @/utils/quickPreview, demoAssets, and workspace types from ./types
- * [OUTPUT]: exports low-level canvas primitives, readFileAsImageInput, triggerBlobDownload, formatBytes, renderMockupCanvasToPng, and re-exports demoAssets helpers
- * [POS]: memory-safe browser image I/O and offscreen mockup PNG renderer for src/workspace
+ * [OUTPUT]: exports low-level canvas primitives, readFileAsImageInput, triggerBlobDownload, copyImageToClipboard, isClipboardImageSupported, formatBytes, renderMockupCanvasToPng, and re-exports demoAssets helpers
+ * [POS]: memory-safe browser image I/O, clipboard export, and offscreen mockup PNG renderer for src/workspace
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 import { nanoid } from 'nanoid'
@@ -16,7 +16,12 @@ import {
   type QuickTheme,
 } from '@/utils/quickDesign'
 import { getQuickPreviewGeometry, makeSvgImageDataUrl } from '@/utils/quickPreview'
-import type { WorkspaceBlobOutput, WorkspaceImageFormat, WorkspaceImageInput } from './types'
+import type {
+  WorkspaceBlobOutput,
+  WorkspaceImageFormat,
+  WorkspaceImageInput,
+  WorkspaceMergeFormat,
+} from './types'
 
 export { createDemoImageInput, createDemoScreenshotDataUrl, type DemoVariant } from './demoAssets'
 
@@ -30,10 +35,11 @@ export function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`
 }
 
-export function extensionForMime(mime: WorkspaceImageFormat): string {
+export function extensionForMime(mime: WorkspaceMergeFormat): string {
   switch (mime) {
     case 'image/jpeg': return 'jpg'
     case 'image/webp': return 'webp'
+    case 'application/pdf': return 'pdf'
     case 'image/png': return 'png'
   }
 }
@@ -235,6 +241,47 @@ export function triggerBlobDownload(blob: Blob, filename: string): void {
   window.setTimeout(() => {
     URL.revokeObjectURL(url)
   }, 1500)
+}
+
+export function isClipboardImageSupported(): boolean {
+  return (
+    typeof navigator !== 'undefined' &&
+    typeof navigator.clipboard?.write === 'function' &&
+    typeof ClipboardItem !== 'undefined'
+  )
+}
+
+/**
+ * Copy a rendered image result to the system clipboard as image/png.
+ * Re-encodes non-PNG outputs (JPEG, WebP, or PDF preview dataUrl) onto an offscreen canvas.
+ */
+export async function copyImageToClipboard(blob: Blob, previewDataUrl?: string): Promise<void> {
+  if (!isClipboardImageSupported()) {
+    throw new Error('Clipboard image copy is not supported in this browser.')
+  }
+
+  let pngBlob: Blob
+  if (blob.type === 'image/png') {
+    pngBlob = blob
+  } else {
+    const objectUrl = !previewDataUrl && typeof URL !== 'undefined' ? URL.createObjectURL(blob) : null
+    try {
+      const src = previewDataUrl ?? objectUrl
+      if (!src) throw new Error('No raster image source available for clipboard copy.')
+      const img = await loadHtmlImage(src)
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.max(1, img.naturalWidth || img.width)
+      canvas.height = Math.max(1, img.naturalHeight || img.height)
+      const ctx = canvas.getContext('2d')
+      if (!ctx) throw new Error('2D canvas context unavailable')
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+      pngBlob = await canvasToBlob(canvas, 'image/png', 1)
+    } finally {
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+    }
+  }
+
+  await navigator.clipboard.write([new ClipboardItem({ 'image/png': pngBlob })])
 }
 
 export interface MockupRenderParams {

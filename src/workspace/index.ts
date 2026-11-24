@@ -20,7 +20,9 @@ export {
   type DemoVariant,
 } from './demoAssets'
 export {
+  copyImageToClipboard,
   formatBytes,
+  isClipboardImageSupported,
   readFileAsImageInput,
   renderMockupCanvasToPng,
   triggerBlobDownload,
@@ -40,7 +42,10 @@ export type {
   WorkspaceImageFormat,
   WorkspaceImageInput,
   WorkspaceLocale,
+  WorkspaceMergeAlign,
+  WorkspaceMergeFormat,
   WorkspaceMergeOptions,
+  WorkspaceMergeRotation,
   WorkspacePreset,
   WorkspaceQuickTheme,
   WorkspaceScreenshotFit,

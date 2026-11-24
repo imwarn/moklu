@@ -1,9 +1,10 @@
 /**
- * [INPUT]: depends on dynamic jszip import, canvas helpers from ./canvasUtils, and workspace engine types from ./types
- * [OUTPUT]: exports createDefaultWorkspaceEngines providing standalone browser-native merge, split, compress, transform, idCard, and on-demand packZip implementations
+ * [INPUT]: depends on dynamic jszip import, createSinglePagePdfFromJpeg from @/tools/pdfHelper, canvas helpers from ./canvasUtils, and workspace engine types from ./types
+ * [OUTPUT]: exports createDefaultWorkspaceEngines providing standalone browser-native merge (PNG/JPEG/WebP/PDF, rotation, borders, cross-axis alignment), split, compress, transform, idCard, and on-demand packZip implementations
  * [POS]: default DIP fallback implementation for QuickWorkspace when concrete src/tools engines are not injected
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
+import { createSinglePagePdfFromJpeg } from '@/tools/pdfHelper'
 import {
   clampDimensions,
   drawFittedImage,
@@ -22,7 +23,9 @@ import type {
   WorkspaceEngines,
   WorkspaceIdCardOptions,
   WorkspaceImageInput,
+  WorkspaceMergeAlign,
   WorkspaceMergeOptions,
+  WorkspaceMergeRotation,
   WorkspaceSplitOptions,
   WorkspaceSplitResult,
   WorkspaceSplitSlice,
@@ -36,6 +39,14 @@ interface MergePlacement {
   w: number
   h: number
   fit: 'cover' | 'contain'
+  rotation: WorkspaceMergeRotation
+}
+
+function resolveCrossOffset(containerSpan: number, itemSpan: number, align: WorkspaceMergeAlign): number {
+  const slack = containerSpan - itemSpan
+  if (align === 'start') return 0
+  if (align === 'end') return slack
+  return slack / 2
 }
 
 function aspectRatioValue(aspect: WorkspaceAspectPreset): number | null {
@@ -62,72 +73,71 @@ async function packZipFallback(files: Array<{ filename: string; blob: Blob }>): 
 }
 
 function computeMergeLayout(
-  loaded: HTMLImageElement[],
+  loaded: Array<{ img: HTMLImageElement; rotation: WorkspaceMergeRotation }>,
   options: WorkspaceMergeOptions,
 ): { placements: MergePlacement[]; totalW: number; totalH: number } {
   const pad = Math.max(0, options.padding)
   const gap = Math.max(0, options.gap)
+  const align: WorkspaceMergeAlign = options.align ?? 'center'
+  const dims = loaded.map(({ img, rotation }) => {
+    const nw = img.naturalWidth || img.width
+    const nh = img.naturalHeight || img.height
+    return rotation === 90 || rotation === 270
+      ? { img, rotation, w: nh, h: nw }
+      : { img, rotation, w: nw, h: nh }
+  })
 
   if (options.direction === 'horizontal') {
     const targetH = options.normalize === 'match-min'
-      ? Math.min(...loaded.map((i) => i.naturalHeight || i.height))
-      : options.normalize === 'match-max'
-        ? Math.max(...loaded.map((i) => i.naturalHeight || i.height))
-        : 0
+      ? Math.min(...dims.map((d) => d.h))
+      : Math.max(...dims.map((d) => d.h))
     let cursorX = pad
-    let maxH = 0
-    const placements = loaded.map((img) => {
-      const nw = img.naturalWidth || img.width
-      const nh = img.naturalHeight || img.height
-      const h = targetH > 0 ? targetH : nh
-      const w = targetH > 0 ? Math.round((nw / nh) * targetH) : nw
-      const item: MergePlacement = { img, x: cursorX, y: pad, w, h, fit: 'cover' }
+    const placements = dims.map((d) => {
+      const h = options.normalize === 'original' ? d.h : targetH
+      const w = options.normalize === 'original' ? d.w : Math.max(1, Math.round((d.w / d.h) * targetH))
+      const y = pad + resolveCrossOffset(targetH, h, align)
+      const item: MergePlacement = { img: d.img, x: cursorX, y, w, h, fit: 'cover', rotation: d.rotation }
       cursorX += w + gap
-      maxH = Math.max(maxH, h)
       return item
     })
-    return { placements, totalW: cursorX - gap + pad, totalH: maxH + pad * 2 }
+    return { placements, totalW: cursorX - gap + pad, totalH: targetH + pad * 2 }
   }
 
   if (options.direction === 'vertical') {
     const targetW = options.normalize === 'match-min'
-      ? Math.min(...loaded.map((i) => i.naturalWidth || i.width))
-      : options.normalize === 'match-max'
-        ? Math.max(...loaded.map((i) => i.naturalWidth || i.width))
-        : 0
+      ? Math.min(...dims.map((d) => d.w))
+      : Math.max(...dims.map((d) => d.w))
     let cursorY = pad
-    let maxW = 0
-    const placements = loaded.map((img) => {
-      const nw = img.naturalWidth || img.width
-      const nh = img.naturalHeight || img.height
-      const w = targetW > 0 ? targetW : nw
-      const h = targetW > 0 ? Math.round((nh / nw) * targetW) : nh
-      const item: MergePlacement = { img, x: pad, y: cursorY, w, h, fit: 'cover' }
+    const placements = dims.map((d) => {
+      const w = options.normalize === 'original' ? d.w : targetW
+      const h = options.normalize === 'original' ? d.h : Math.max(1, Math.round((d.h / d.w) * targetW))
+      const x = pad + resolveCrossOffset(targetW, w, align)
+      const item: MergePlacement = { img: d.img, x, y: cursorY, w, h, fit: 'cover', rotation: d.rotation }
       cursorY += h + gap
-      maxW = Math.max(maxW, w)
       return item
     })
-    return { placements, totalW: maxW + pad * 2, totalH: cursorY - gap + pad }
+    return { placements, totalW: targetW + pad * 2, totalH: cursorY - gap + pad }
   }
 
-  const cols = Math.max(1, Math.min(6, options.columns))
-  const rows = Math.ceil(loaded.length / cols)
-  const cellW = Math.max(240, Math.min(900, Math.round(loaded[0].naturalWidth || 640)))
+  const cols = Math.max(1, Math.min(6, options.columns, dims.length))
+  const rows = Math.ceil(dims.length / cols)
+  const cellW = Math.max(1, ...dims.map((d) => Math.round(d.w)))
   const cellRatio = options.aspectCell === '1:1'
     ? 1
     : options.aspectCell === '4:3'
       ? 4 / 3
       : options.aspectCell === '3:4'
         ? 3 / 4
-        : (loaded[0].naturalWidth || 4) / (loaded[0].naturalHeight || 3)
-  const cellH = Math.round(cellW / cellRatio)
-  const placements: MergePlacement[] = loaded.map((img, idx) => ({
-    img,
+        : dims.reduce((sum, d) => sum + d.w / d.h, 0) / dims.length
+  const cellH = Math.max(1, Math.round(cellW / cellRatio))
+  const placements: MergePlacement[] = dims.map((d, idx) => ({
+    img: d.img,
     x: pad + (idx % cols) * (cellW + gap),
     y: pad + Math.floor(idx / cols) * (cellH + gap),
     w: cellW,
     h: cellH,
     fit: options.fit,
+    rotation: d.rotation,
   }))
   return {
     placements,
@@ -141,8 +151,15 @@ async function mergeFallback(
   options: WorkspaceMergeOptions,
 ): Promise<WorkspaceBlobOutput> {
   if (images.length === 0) throw new Error('At least one image is required to merge')
-  const loaded = await Promise.all(images.map((item) => loadHtmlImage(item.dataUrl)))
+  const loaded = await Promise.all(
+    images.map(async (item) => ({
+      img: await loadHtmlImage(item.dataUrl),
+      rotation: (item.rotation ?? 0) as WorkspaceMergeRotation,
+    })),
+  )
   const radius = Math.max(0, options.borderRadius)
+  const borderWidth = Math.max(0, options.borderWidth ?? 0)
+  const borderColor = options.borderColor ?? '#ffffff'
   const { placements, totalW, totalH } = computeMergeLayout(loaded, options)
 
   const clamped = clampDimensions(totalW, totalH)
@@ -153,19 +170,69 @@ async function mergeFallback(
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('2D canvas context unavailable')
 
-  fillBackground(ctx, canvas.width, canvas.height, options.background)
+  const isPdf = options.format === 'application/pdf'
+  const bg = (options.format === 'image/jpeg' || isPdf) && options.background === 'transparent'
+    ? '#ffffff'
+    : options.background
+  fillBackground(ctx, canvas.width, canvas.height, bg)
   ctx.scale(scale, scale)
 
   for (const item of placements) {
     ctx.save()
     drawRoundedRectPath(ctx, item.x, item.y, item.w, item.h, radius)
     ctx.clip()
-    drawFittedImage(ctx, item.img, item.x, item.y, item.w, item.h, item.fit)
+    if (item.rotation === 0) {
+      drawFittedImage(ctx, item.img, item.x, item.y, item.w, item.h, item.fit)
+    } else {
+      const cx = item.x + item.w / 2
+      const cy = item.y + item.h / 2
+      const swapped = item.rotation === 90 || item.rotation === 270
+      const dw = swapped ? item.h : item.w
+      const dh = swapped ? item.w : item.h
+      ctx.translate(cx, cy)
+      ctx.rotate((item.rotation * Math.PI) / 180)
+      drawFittedImage(ctx, item.img, -dw / 2, -dh / 2, dw, dh, item.fit)
+    }
     ctx.restore()
+
+    if (borderWidth > 0) {
+      const lw = Math.min(borderWidth, item.w / 2, item.h / 2)
+      const inset = lw / 2
+      if (item.w - lw > 0 && item.h - lw > 0) {
+        ctx.save()
+        drawRoundedRectPath(ctx, item.x + inset, item.y + inset, item.w - lw, item.h - lw, Math.max(0, radius - inset))
+        ctx.strokeStyle = borderColor
+        ctx.lineWidth = lw
+        ctx.stroke()
+        ctx.restore()
+      }
+    }
   }
 
   const ext = extensionForMime(options.format)
-  return finalizeCanvasOutput(canvas, `moklu-merge-${options.direction}.${ext}`, options.format, options.quality)
+  if (options.format === 'application/pdf') {
+    const jpegOut = await finalizeCanvasOutput(
+      canvas,
+      `moklu-merge-${options.direction}.jpg`,
+      'image/jpeg',
+      options.quality,
+    )
+    const jpegBytes = new Uint8Array(await jpegOut.blob.arrayBuffer())
+    const pdfBlob = createSinglePagePdfFromJpeg(jpegBytes, canvas.width, canvas.height)
+    return {
+      blob: pdfBlob,
+      dataUrl: jpegOut.dataUrl,
+      width: canvas.width,
+      height: canvas.height,
+      filename: `moklu-merge-${options.direction}.${ext}`,
+      sizeBytes: pdfBlob.size,
+      mimeType: 'application/pdf',
+      scaleFactor: scale,
+    }
+  }
+
+  const out = await finalizeCanvasOutput(canvas, `moklu-merge-${options.direction}.${ext}`, options.format, options.quality)
+  return { ...out, scaleFactor: scale }
 }
 
 async function splitFallback(

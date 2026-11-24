@@ -25,6 +25,13 @@ export interface RecordedDrawImageCall {
   dw: number
   dh: number
   filter: string
+  rotation: number
+  translation: { x: number; y: number }
+}
+
+export interface RecordedStrokeCall {
+  strokeStyle: string | CanvasGradientLike
+  lineWidth: number
 }
 
 export interface RecordedFillTextCall {
@@ -55,6 +62,7 @@ export interface RecordedCanvas {
   gradients: RecordedGradient[]
   clipCount: number
   strokeCount: number
+  strokes: RecordedStrokeCall[]
   shadowFills: number
   encodedFormat?: string
   encodedQuality?: number
@@ -91,6 +99,7 @@ export function createRecordingCanvasFactory(options?: {
       gradients: [],
       clipCount: 0,
       strokeCount: 0,
+      strokes: [],
       shadowFills: 0,
     }
     canvases.push(record)
@@ -181,6 +190,7 @@ export function createRecordingCanvasFactory(options?: {
       },
       strokeRect() {
         record.strokeCount += 1
+        record.strokes.push({ strokeStyle: state.strokeStyle, lineWidth: state.lineWidth })
       },
       fill() {
         if (state.shadowBlur > 0) {
@@ -189,6 +199,7 @@ export function createRecordingCanvasFactory(options?: {
       },
       stroke() {
         record.strokeCount += 1
+        record.strokes.push({ strokeStyle: state.strokeStyle, lineWidth: state.lineWidth })
       },
       translate(x, y) {
         state.tx += x
@@ -208,7 +219,20 @@ export function createRecordingCanvasFactory(options?: {
         }
       },
       drawImage(image, sx, sy, sw, sh, dx, dy, dw, dh) {
-        record.draws.push({ image, sx, sy, sw, sh, dx, dy, dw, dh, filter: state.filter })
+        record.draws.push({
+          image,
+          sx,
+          sy,
+          sw,
+          sh,
+          dx,
+          dy,
+          dw,
+          dh,
+          filter: state.filter,
+          rotation: state.rotation,
+          translation: { x: state.tx, y: state.ty },
+        })
       },
       fillText(text, x, y) {
         record.texts.push({

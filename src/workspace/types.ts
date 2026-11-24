@@ -13,12 +13,16 @@ export type WorkspaceLocale = 'en' | 'zh' | 'ja' | 'ko'
 export type WorkspaceTheme = ResolvedTheme
 
 export type WorkspaceImageFormat = 'image/png' | 'image/jpeg' | 'image/webp'
+export type WorkspaceMergeFormat = WorkspaceImageFormat | 'application/pdf'
+export type WorkspaceMergeAlign = 'start' | 'center' | 'end'
+export type WorkspaceMergeRotation = 0 | 90 | 180 | 270
 
 export interface WorkspacePreset {
   tool: WorkspaceToolId
   mockupModel?: string
   canvasSize?: string
   mergeDirection?: 'horizontal' | 'vertical' | 'grid'
+  mergeFormat?: WorkspaceMergeFormat
   splitMode?: 'carousel' | 'grid'
   targetFormat?: WorkspaceImageFormat
   resizeMode?: 'resize' | 'crop' | 'pad'
@@ -63,6 +67,7 @@ export interface WorkspaceImageInput {
   sizeBytes: number
   mimeType?: string
   file?: File
+  rotation?: WorkspaceMergeRotation
 }
 
 export interface WorkspaceBlobOutput {
@@ -73,19 +78,24 @@ export interface WorkspaceBlobOutput {
   filename: string
   sizeBytes: number
   mimeType: string
+  /** Uniform scale factor applied when safe canvas bounds (8192px / 64MP) clamp the output (< 1 means downscaled). */
+  scaleFactor?: number
 }
 
 export interface WorkspaceMergeOptions {
   direction: 'horizontal' | 'vertical' | 'grid'
   normalize: 'match-min' | 'match-max' | 'original'
+  align?: WorkspaceMergeAlign
   columns: number
   aspectCell: 'auto' | '1:1' | '4:3' | '3:4'
   fit: 'cover' | 'contain'
   gap: number
   padding: number
   borderRadius: number
+  borderWidth?: number
+  borderColor?: string
   background: string
-  format: WorkspaceImageFormat
+  format: WorkspaceMergeFormat
   quality: number
 }
 

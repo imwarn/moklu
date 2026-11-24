@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on react, WorkspaceTheme from ./types, and getWorkspaceThemeTokens from ./themeTokens
- * [OUTPUT]: exports DropZone, PrivacyBadge, PreviewBusyOverlay, SegmentedControl, SliderField, StudioHandoffButton, and ColorSwatchRow
+ * [OUTPUT]: exports DropZone, PrivacyBadge, PreviewBusyOverlay, SegmentedControl, SliderField, StudioHandoffButton, and ColorSwatchRow (with optional native custom color picker)
  * [POS]: reusable WCAG-compliant accessible UI primitives shared across all 6 Quick Workspace tool panels in src/workspace/tools
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -348,26 +348,54 @@ export interface ColorSwatchOption {
   value: string
 }
 
+function toColorInputHex(value: string, fallback = '#ffffff'): string {
+  const trimmed = value.trim()
+  if (/^#[0-9a-f]{6}$/i.test(trimmed)) return trimmed
+  if (/^#[0-9a-f]{3}$/i.test(trimmed)) {
+    const [, r, g, b] = trimmed
+    return `#${r}${r}${g}${g}${b}${b}`
+  }
+  return fallback
+}
+
 export function ColorSwatchRow({
   theme,
   label,
   value,
   options,
+  allowCustom = false,
+  customLabel = 'Custom color',
   onChange,
 }: {
   theme: WorkspaceTheme
   label: string
   value: string
   options: ColorSwatchOption[]
+  allowCustom?: boolean
+  customLabel?: string
   onChange: (next: string) => void
 }) {
+  const customInputId = useId()
   const tokens = getWorkspaceThemeTokens(theme)
+  const normalizedValue = value.trim().toLowerCase()
+  const isCustomActive =
+    allowCustom &&
+    /^#[0-9a-f]{3}([0-9a-f]{3})?$/i.test(normalizedValue) &&
+    !options.some((opt) => opt.value.trim().toLowerCase() === normalizedValue)
+
   return (
     <div>
-      <span className={`mb-1.5 block text-xs font-semibold ${tokens.textMuted}`}>{label}</span>
+      <div className="mb-1.5 flex items-center justify-between gap-2">
+        <span className={`block text-xs font-semibold ${tokens.textMuted}`}>{label}</span>
+        {isCustomActive && (
+          <span className={`font-mono text-[11px] uppercase tabular-nums ${tokens.textSubtle}`}>
+            {normalizedValue}
+          </span>
+        )}
+      </div>
       <div className="flex flex-wrap items-center gap-2">
         {options.map((swatch) => {
-          const active = value === swatch.value
+          const active = swatch.value.trim().toLowerCase() === normalizedValue
           return (
             <button
               key={swatch.value}
@@ -389,6 +417,40 @@ export function ColorSwatchRow({
             />
           )
         })}
+        {allowCustom && (
+          <label
+            htmlFor={customInputId}
+            title={customLabel}
+            className={`relative inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border transition-transform focus-within:ring-2 focus-within:ring-accent focus-within:ring-offset-1 focus-within:ring-offset-panel ${
+              isCustomActive
+                ? `scale-110 ${tokens.accentRing}`
+                : 'border-border hover:scale-105'
+            }`}
+            style={{
+              background: isCustomActive
+                ? value
+                : 'conic-gradient(from 0deg, #ef4444, #f59e0b, #10b981, #3b82f6, #8b5cf6, #ef4444)',
+            }}
+          >
+            <input
+              id={customInputId}
+              type="color"
+              aria-label={customLabel}
+              data-testid="custom-color-input"
+              value={toColorInputHex(value)}
+              onChange={(e) => onChange(e.target.value)}
+              className="sr-only"
+            />
+            {!isCustomActive && (
+              <span
+                aria-hidden="true"
+                className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-white/95 text-[10px] font-bold leading-none text-zinc-900 shadow-xs"
+              >
+                +
+              </span>
+            )}
+          </label>
+        )}
       </div>
     </div>
   )
