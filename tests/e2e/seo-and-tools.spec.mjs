@@ -400,14 +400,14 @@ test('Localized /zh/studio renders Simplified Chinese Studio UI and switches UI 
   await expect(page.getByLabel('属性侧边栏')).toContainText('属性')
 
   // Switch Studio UI language to Japanese via Toolbar language switcher
-  await page.locator('header button[aria-haspopup="menu"]').click()
+  await page.locator('header button[data-testid="toolbar-lang-btn"]').click()
   await page.getByRole('menuitem', { name: /日本語/ }).click()
   await expect(page).toHaveURL(/\/ja\/studio$/)
   await expect(page.locator('html')).toHaveAttribute('lang', 'ja')
   await expect(page.locator('header')).toContainText('ツール')
 
   // Switch back to English /studio
-  await page.locator('header button[aria-haspopup="menu"]').click()
+  await page.locator('header button[data-testid="toolbar-lang-btn"]').click()
   await page.getByRole('menuitem', { name: /English/ }).click()
   await expect(page).toHaveURL(/\/studio$/)
   await expect(page.locator('header')).toContainText('Quick Design')

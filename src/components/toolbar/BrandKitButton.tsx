@@ -20,9 +20,10 @@ const POPOVER_GAP = 6
 export interface BrandKitButtonProps {
   /** Optional initial open state (defaults to false; useful for deterministic regression tests). */
   defaultOpen?: boolean
+  className?: string
 }
 
-export function BrandKitButton({ defaultOpen = false }: BrandKitButtonProps = {}) {
+export function BrandKitButton({ defaultOpen = false, className = '' }: BrandKitButtonProps = {}) {
   const { t } = useStudioLocale()
   const popoverId = useId()
   const [open, setOpen] = useState(defaultOpen)
@@ -117,7 +118,7 @@ export function BrandKitButton({ defaultOpen = false }: BrandKitButtonProps = {}
   ) : null
 
   return (
-    <div className="relative shrink-0">
+    <div className={`relative shrink-0 ${className}`}>
       <button
         ref={buttonRef}
         type="button"

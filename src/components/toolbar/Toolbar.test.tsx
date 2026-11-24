@@ -142,6 +142,7 @@ describe('Toolbar', () => {
     expect(editorHtml).toContain('aria-label="Help"')
     expect(editorHtml).toContain('aria-label="View on GitHub"')
     expect(editorHtml).toContain('aria-busy="false"')
+    expect(editorHtml).toContain('data-testid="toolbar-lang-btn"')
     expect(editorHtml).toContain('data-testid="toolbar-more-btn"')
     expect(editorHtml).toContain('aria-haspopup="menu"')
     expect(editorHtml).toContain('aria-label="More actions"')
