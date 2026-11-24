@@ -81,7 +81,7 @@ async function comparePngPixels(page, originalBytes, importedBytes) {
 test('live project survives refresh, backs up with assets, restores in a fresh profile, and exports exact PNG', async ({ browser, baseURL }) => {
   test.skip(test.info().project.name !== 'chromium-desktop', 'Stateful reliability scenario runs in isolated Chromium')
   const origin = baseURL || 'https://moklu.app'
-  const studioUrl = new URL('/studio', origin).toString()
+  const studioUrl = new URL('/studio/', origin).toString()
   const context = await browser.newContext({ acceptDownloads: true })
   const page = await context.newPage()
   page.on('dialog', (dialog) => dialog.accept())

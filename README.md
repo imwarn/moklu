@@ -2,9 +2,9 @@
 
 **Local-first browser mockup studio & online image toolkit | 纯本地浏览器截图套壳与在线图片拼接工具箱**
 
-- Live site / 官方网站: [https://moklu.app](https://moklu.app)
-- Chinese hub / 中文首页: [https://moklu.app/zh](https://moklu.app/zh)
-- Online image merger / 在线图片拼接: [https://moklu.app/zh/merge-images](https://moklu.app/zh/merge-images) ([EN](https://moklu.app/merge-images) · [JA](https://moklu.app/ja/merge-images) · [KO](https://moklu.app/ko/merge-images))
+- Live site / 官方网站: [https://moklu.app/](https://moklu.app/)
+- Chinese hub / 中文首页: [https://moklu.app/zh/](https://moklu.app/zh/)
+- Online image merger / 在线图片拼接: [https://moklu.app/zh/merge-images/](https://moklu.app/zh/merge-images/) ([EN](https://moklu.app/merge-images/) · [JA](https://moklu.app/ja/merge-images/) · [KO](https://moklu.app/ko/merge-images/))
 - Source code / 开源仓库: [https://github.com/imwarn/moklu](https://github.com/imwarn/moklu) (MIT License)
 
 ---

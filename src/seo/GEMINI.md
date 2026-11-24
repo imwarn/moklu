@@ -4,7 +4,7 @@
 ## Member list
 
 - `types.ts`: leaf TypeScript contracts for locales, BCP-47 `HtmlLangCode`/`HreflangCode`, tool IDs, 23 route slugs (`19` tool/hub/studio + `merge-photos-to-pdf` + `about`/`privacy`/`terms`), intent presets (incl. `mergeFormat`), route copy, UI labels, and locale bundles
-- `routes.ts`: canonical 23-slug (92-URL) registry, `getHtmlLang` (`zh-CN`) and `getHreflangCode` (`zh-Hans`), `VITE_SITE_URL` base resolution, pathname parser, localized URL builder, hreflang generator, and related-route graph
+- `routes.ts`: canonical 23-slug (92 trailing-slash URL) registry, `getHtmlLang` (`zh-CN`) and `getHreflangCode` (`zh-Hans`), `VITE_SITE_URL` base resolution, pathname parser, trailing-slash localized URL builder, hreflang generator, and related-route graph
 - `locales/en.ts`: English (root `/`) UI dictionary and core/mockup/merge route copy (with 9 Merge FAQs), merging `enTools.ts` and `infoRoutes.ts`
 - `locales/enTools.ts`: English route copy for `merge-photos-to-pdf`, split, compress, resize, and ID-card routes
 - `locales/zh.ts`: Simplified Chinese (`/zh/...`) UI dictionary and core/mockup/merge route copy (精准命中「在线图片拼接」与 9 条拼图 FAQ), merging `zhTools.ts` and `infoRoutes.ts`

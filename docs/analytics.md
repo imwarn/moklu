@@ -30,7 +30,7 @@ Moklu 的响应头真相源在 [`public/_headers`](../public/_headers)，并由 
 2. 点击 **Add a site**，选择已托管在当前账号下的站点 `moklu.app`。
 3. 保持 **Automatic setup（自动配置）** 开启并保存。
 4. 若线上启用了 CSP，确认边缘响应头已同步包含第一节中的两个域名。
-5. 用无痕窗口访问 `https://moklu.app/` 与 `https://moklu.app/zh/merge-images`，打开浏览器 DevTools：
+5. 用无痕窗口访问 `https://moklu.app/` 与 `https://moklu.app/zh/merge-images/`，打开浏览器 DevTools：
    - **Network**：应看到 `beacon.min.js`（或 `/cdn-cgi/rum`）请求返回 `200`/`204`。
    - **Console**：零 `Content-Security-Policy` 拦截报错。
    - 几分钟后回到 Cloudflare Web Analytics 面板确认出现实时访问数据。
