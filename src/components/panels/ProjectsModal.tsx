@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on react, useProjectsStore, useEditorStore, ConfirmDialog, ModalShell, InlineEditableLabel, FileUploadButton, ProjectConflictError, checkImportFileSize, and useStudioLocale/formatMessage/formatRelativeTime from @/i18n
- * [OUTPUT]: exports ProjectsModal local project manager dialog localized across EN/ZH/JA/KO with Intl.RelativeTimeFormat timestamps
+ * [INPUT]: depends on react, useProjectsStore, useEditorStore, ConfirmDialog, ModalShell, InlineEditableLabel, FileUploadButton, ProjectConflictError, checkImportFileSize, markProjectBackedUp from @/components/toolbar/projectBackupStorage, and useStudioLocale/formatMessage/formatRelativeTime from @/i18n
+ * [OUTPUT]: exports ProjectsModal local project manager dialog localized across EN/ZH/JA/KO with .moklu/.json backup export & import and Intl.RelativeTimeFormat timestamps
  * [POS]: project switcher/backup dialog launched from Studio Toolbar inside src/components/panels
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -11,6 +11,7 @@ import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { ModalShell } from '@/components/ui/ModalShell'
 import { InlineEditableLabel } from '@/components/ui/InlineEditableLabel'
 import { FileUploadButton } from '@/components/ui/FileUploadButton'
+import { markProjectBackedUp } from '@/components/toolbar/projectBackupStorage'
 import { ProjectConflictError } from '@/store/storage/types'
 import { checkImportFileSize } from '@/utils/importValidation'
 import { formatMessage, formatRelativeTime, useStudioLocale } from '@/i18n'
@@ -123,10 +124,11 @@ export function ProjectsModal({ open, onClose }: ProjectsModalProps) {
       const slug = name.replace(/[^a-z0-9_-]/gi, '-').toLowerCase() || 'project'
       const a = document.createElement('a')
       a.href = url
-      a.download = `${slug}.json`
+      a.download = `${slug}.moklu`
       a.click()
       a.remove()
       URL.revokeObjectURL(url)
+      markProjectBackedUp(id)
     } catch (err) {
       console.error('[Moklu] Failed to export project', err)
       alert(pm.exportFailedAlert)
@@ -236,7 +238,7 @@ export function ProjectsModal({ open, onClose }: ProjectsModalProps) {
               </button>
               <FileUploadButton
                 ref={importInputRef}
-                accept=".json"
+                accept=".moklu,.json,application/json"
                 onFiles={handleImportFile}
                 className="hidden"
               >{t.common.import}</FileUploadButton>

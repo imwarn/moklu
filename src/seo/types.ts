@@ -1,6 +1,6 @@
 /**
  * [INPUT]: none (leaf domain contract for the SEO, i18n, and SSG subsystem)
- * [OUTPUT]: exports LocaleCode, HtmlLangCode, HreflangCode, ToolId, RouteCategory, InfoPageSlug, RouteSlug, SecondaryToolSlug, RoutePreset, RouteDefinition, ResolvedRoute, HreflangLink, RouteCopy, UiLabels, and LocaleBundle types
+ * [OUTPUT]: exports LocaleCode, HtmlLangCode, HreflangCode, ToolId, RouteCategory, InfoPageSlug, RouteSlug, SecondaryToolSlug, GrowthRouteSlug, RoutePreset, RouteDefinition, ResolvedRoute, HreflangLink, RouteCopy, UiLabels, and LocaleBundle types
  * [POS]: foundational type contract within src/seo, imported by routes.ts, locales/*.ts, i18n.ts, schema.ts, useSeoHead.ts, UI chrome, and prerender-seo.mjs
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -22,16 +22,23 @@ export type RouteSlug =
   | 'studio'
   | 'browser-mockup'
   | 'iphone-mockup'
+  | 'ipad-mockup'
+  | 'watch-mockup'
   | 'device-mockup'
   | 'app-store-screenshots'
+  | 'redact-screenshot'
   | 'merge-images'
   | 'combine-photos-side-by-side'
   | 'stitch-images-vertically'
+  | 'stitch-screenshots'
   | 'photo-collage-grid'
   | 'merge-photos-to-pdf'
   | 'carousel-splitter'
   | 'image-grid-splitter'
   | 'compress-image'
+  | 'compress-image-to-200kb'
+  | 'heic-to-jpg'
+  | 'remove-exif'
   | 'convert-image-format'
   | 'png-to-webp'
   | 'resize-image'
@@ -54,14 +61,30 @@ export type SecondaryToolSlug = Extract<
   | 'id-card-watermark'
 >
 
+export type GrowthRouteSlug = Extract<
+  RouteSlug,
+  | 'ipad-mockup'
+  | 'watch-mockup'
+  | 'stitch-screenshots'
+  | 'heic-to-jpg'
+  | 'remove-exif'
+  | 'compress-image-to-200kb'
+  | 'redact-screenshot'
+>
+
 export interface RoutePreset {
   tool: ToolId
   mockupModel?: string
   canvasSize?: string
   mergeDirection?: 'horizontal' | 'vertical' | 'grid'
   mergeFormat?: 'image/png' | 'image/jpeg' | 'image/webp' | 'application/pdf'
+  removeOverlap?: boolean
+  pdfMode?: 'multipage' | 'single'
   splitMode?: 'carousel' | 'grid'
   targetFormat?: 'image/png' | 'image/jpeg' | 'image/webp'
+  targetSizeKb?: number
+  inspectExif?: boolean
+  enableRedact?: boolean
   resizeMode?: 'resize' | 'crop' | 'pad'
 }
 

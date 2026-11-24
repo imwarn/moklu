@@ -48,6 +48,13 @@ describe('GEO deliverables: llms.txt, native details FAQ, Quick Facts, trust pag
     expect(llms).toContain('在线图片拼接')
     expect(llms).toContain('https://moklu.app/zh/merge-images/')
     expect(llms).toContain('https://moklu.app/merge-photos-to-pdf/')
+    expect(llms).toContain('https://moklu.app/ipad-mockup/')
+    expect(llms).toContain('https://moklu.app/watch-mockup/')
+    expect(llms).toContain('https://moklu.app/stitch-screenshots/')
+    expect(llms).toContain('https://moklu.app/heic-to-jpg/')
+    expect(llms).toContain('https://moklu.app/remove-exif/')
+    expect(llms).toContain('https://moklu.app/compress-image-to-200kb/')
+    expect(llms).toContain('https://moklu.app/redact-screenshot/')
     expect(llms).toContain('https://moklu.app/about/')
     expect(llms).toContain('https://moklu.app/zh/privacy/')
     expect(llms).toContain('https://moklu.app/ja/terms/')
@@ -55,6 +62,11 @@ describe('GEO deliverables: llms.txt, native details FAQ, Quick Facts, trust pag
     expect(llms).toContain('overlap removal')
     expect(llms).toContain('multi-layer handoff')
     expect(llms).toContain('IndexedDB')
+    expect(llms).toContain('Multi-Page A4')
+    expect(llms).toContain('HEIC')
+    expect(llms).toContain('EXIF')
+    expect(llms).toContain('200KB')
+    expect(llms).toContain('13 built-in frames')
     expect(llms).not.toContain('does not auto-remove overlapping scroll regions')
   })
 
@@ -167,7 +179,7 @@ describe('GEO deliverables: llms.txt, native details FAQ, Quick Facts, trust pag
     expect(schemas.webApplication.inLanguage).toBe('zh-CN')
   })
 
-  it('resolves /merge-photos-to-pdf with application/pdf mergeFormat preset across all 4 locales', () => {
+  it('resolves /merge-photos-to-pdf with application/pdf and multipage pdfMode preset across all 4 locales', () => {
     for (const locale of LOCALE_CODES) {
       const route = resolvePathname(
         locale === 'en' ? '/merge-photos-to-pdf' : `/${locale}/merge-photos-to-pdf`,
@@ -176,6 +188,7 @@ describe('GEO deliverables: llms.txt, native details FAQ, Quick Facts, trust pag
       expect(route.tool).toBe('merge')
       expect(route.preset.mergeDirection).toBe('vertical')
       expect(route.preset.mergeFormat).toBe('application/pdf')
+      expect(route.preset.pdfMode).toBe('multipage')
     }
   })
 

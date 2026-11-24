@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on useEditorStore, useAssetStore, useApiKeysStore; translateText AI helpers; ./localization subcomponents; useStudioLocale from @/i18n
- * [OUTPUT]: exports LocalizationView component managing per-project slide content locales without coupling to Studio UI language
+ * [INPUT]: depends on useEditorStore, useAssetStore, useApiKeysStore; translateText AI helpers; ./localization subcomponents (LocaleBar, BulkTranslateBar, KeylessTranslateModal, SlideGroupSection, PromoteLocaleDialog); useStudioLocale from @/i18n
+ * [OUTPUT]: exports LocalizationView component managing per-project slide content locales with both BYOK API and Zero-Key Web AI dual-track bulk translation without coupling to Studio UI language
  * [POS]: localization matrix view within src/pages, embedded in StudioPage when switching to the Localizations tab
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -9,7 +9,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { useEditorStore } from '@/store'
 import { useAssetStore } from '@/store/assets'
 import { useApiKeysStore } from '@/store/apiKeys'
-import type { Layer, LocaleLayerPatch, LocalizationMode, SlideGroup, TextLayer } from '@/types'
+import type { Layer, LocaleContentBatchEntry, LocaleLayerPatch, LocalizationMode, SlideGroup, TextLayer } from '@/types'
 import { effectiveLocalizationMode, getLanguageName } from '@/utils/locale'
 import { translateLayerText, translateGroupTexts } from '@/ai/features/translateText'
 import type { AiAuth } from '@/ai/features/translateText'
@@ -18,6 +18,7 @@ import { collectLocalizableRows, isOverrideComplete, readFileAsDataUrl, buildLoc
 import { cellKey, type CellKey, type CellStatus, type LocalizableRow, type UploadTarget } from './localization/types'
 import { LocaleBar } from './localization/LocaleBar'
 import { BulkTranslateBar } from './localization/BulkTranslateBar'
+import { KeylessTranslateModal } from './localization/KeylessTranslateModal'
 import { SlideGroupSection } from './localization/SlideGroupSection'
 import { PromoteLocaleDialog } from './localization/PromoteLocaleDialog'
 import { useStudioLocale } from '@/i18n'
@@ -119,6 +120,7 @@ export function LocalizationView({ onBack, embedded = false, onPreview }: Locali
   const [isBulkRunning, setIsBulkRunning] = useState(false)
   const [overwriteExisting, setOverwriteExisting] = useState(false)
   const [aiSettingsOpen, setAiSettingsOpen] = useState(false)
+  const [keylessTranslateOpen, setKeylessTranslateOpen] = useState(false)
   // Cancellation flag for the bulk worker pool — a ref so in-flight workers see it
   const bulkCancelRef = useRef(false)
   // Cells where the last AI translation could not preserve rich-text formatting
@@ -290,7 +292,11 @@ export function LocalizationView({ onBack, embedded = false, onPreview }: Locali
   const handleBulkTranslate = useCallback(async () => {
     const apiKey = getActiveKey()
     const model = getActiveModel()
-    if (!apiKey || isBulkRunning) return
+    if (isBulkRunning) return
+    if (!apiKey) {
+      setKeylessTranslateOpen(true)
+      return
+    }
 
     const nonDefaultLocales = locales.filter((l) => l !== defaultLocale)
     const auth: AiAuth = { provider, apiKey, model, baseUrl: getActiveBaseUrl() }
@@ -478,6 +484,31 @@ export function LocalizationView({ onBack, embedded = false, onPreview }: Locali
     setShowDefaultLocalePicker(false)
   }, [promoteLocaleToDefault, promoteTarget])
 
+  const handleCommitKeylessBatch = useCallback(
+    (entries: LocaleContentBatchEntry[], formattingLostKeys: CellKey[]) => {
+      if (entries.length === 0) return
+      setLocaleContentBatch(entries)
+      const lostSet = new Set(formattingLostKeys)
+      setLostFormattingCells((prev) => {
+        const next = new Set(prev)
+        for (const entry of entries) {
+          const key = cellKey(entry.layerId, entry.locale)
+          if (lostSet.has(key)) next.add(key)
+          else next.delete(key)
+        }
+        return next
+      })
+      setCellStatus((prev) => {
+        const next = new Map(prev)
+        for (const entry of entries) {
+          next.set(cellKey(entry.layerId, entry.locale), 'done')
+        }
+        return next
+      })
+    },
+    [setLocaleContentBatch],
+  )
+
   const nonDefaultLocales = locales.filter((l) => l !== defaultLocale)
   const hasApiKey = Boolean(getActiveKey())
 
@@ -500,6 +531,18 @@ export function LocalizationView({ onBack, embedded = false, onPreview }: Locali
     <div className={`relative overflow-hidden bg-surface text-zinc-100 ${embedded ? 'h-full w-full' : 'h-screen w-screen'}`}>
       {/* AI Settings modal — reachable from no-key states without leaving the view */}
       <ApiKeysModal open={aiSettingsOpen} onClose={() => setAiSettingsOpen(false)} />
+      <KeylessTranslateModal
+        open={keylessTranslateOpen}
+        onClose={() => setKeylessTranslateOpen(false)}
+        rows={allRows}
+        defaultLocale={defaultLocale}
+        nonDefaultLocales={nonDefaultLocales}
+        overwriteExisting={overwriteExisting}
+        hasApiKey={hasApiKey}
+        onOpenAiSettings={() => setAiSettingsOpen(true)}
+        onRunDirectBulkTranslate={() => { void handleBulkTranslate() }}
+        onCommitBatch={handleCommitKeylessBatch}
+      />
       <PromoteLocaleDialog
         open={Boolean(promoteTarget && promotionPreview)}
         locale={promoteTarget}
@@ -545,6 +588,7 @@ export function LocalizationView({ onBack, embedded = false, onPreview }: Locali
           onBulkTranslate={handleBulkTranslate}
           bulkCancelRef={bulkCancelRef}
           onOpenAiSettings={() => setAiSettingsOpen(true)}
+          onOpenKeylessTranslate={() => setKeylessTranslateOpen(true)}
         />
 
         {/* ── Table ── */}

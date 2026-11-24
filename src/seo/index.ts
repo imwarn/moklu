@@ -13,6 +13,8 @@ export type {
   RouteCategory,
   InfoPageSlug,
   RouteSlug,
+  SecondaryToolSlug,
+  GrowthRouteSlug,
   RoutePreset,
   RouteDefinition,
   ResolvedRoute,

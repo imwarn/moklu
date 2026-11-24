@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on react RefObject and useStudioLocale/formatMessage from @/i18n
- * [OUTPUT]: exports BulkTranslateBar bulk AI translation toolbar localized across EN/ZH/JA/KO
+ * [OUTPUT]: exports BulkTranslateBar bulk AI translation toolbar supporting both BYOK API mode and Zero-Key copy/paste mode across EN/ZH/JA/KO
  * [POS]: bulk translation control bar within src/pages/localization
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -17,6 +17,7 @@ export interface BulkTranslateBarProps {
   onBulkTranslate: () => void
   bulkCancelRef: RefObject<boolean>
   onOpenAiSettings: () => void
+  onOpenKeylessTranslate?: () => void
 }
 
 export function BulkTranslateBar({
@@ -29,11 +30,14 @@ export function BulkTranslateBar({
   onBulkTranslate,
   bulkCancelRef,
   onOpenAiSettings,
+  onOpenKeylessTranslate,
 }: BulkTranslateBarProps) {
   const { t } = useStudioLocale()
   const tl = t.modals.localization
 
   if (nonDefaultLocales.length === 0) return null
+
+  const canRunBulk = !isBulkRunning && bulkEligibleCount > 0
 
   return (
     <section className="border-b border-white/6 bg-[#111118]/70 px-8 py-3 backdrop-blur-xl shrink-0">
@@ -57,24 +61,36 @@ export function BulkTranslateBar({
 
         <button
           type="button"
-          onClick={onBulkTranslate}
-          disabled={!hasApiKey || isBulkRunning || bulkEligibleCount === 0}
+          data-testid="bulk-translate-btn"
+          onClick={hasApiKey ? onBulkTranslate : (onOpenKeylessTranslate ?? onBulkTranslate)}
+          disabled={!canRunBulk}
           className={`rounded-lg border px-4 py-1.5 text-xs font-medium transition ${
-            !hasApiKey
-              ? 'border-white/8 text-[#4a4a5a] cursor-not-allowed'
-              : isBulkRunning
-                ? 'border-accent/30 text-accent-text cursor-wait'
-                : bulkEligibleCount === 0
-                  ? 'border-white/8 text-[#4a4a5a] cursor-not-allowed'
-                  : 'border-accent/50 bg-accent-soft text-accent-text hover:bg-accent/20 hover:text-white'
+            isBulkRunning
+              ? 'border-accent/30 text-accent-text cursor-wait'
+              : bulkEligibleCount === 0
+                ? 'border-white/8 text-[#4a4a5a] cursor-not-allowed'
+                : 'border-accent/50 bg-accent-soft text-accent-text hover:bg-accent/20 hover:text-white'
           }`}
-          title={!hasApiKey ? tl.configureApiKeyTitle : undefined}
         >
           {isBulkRunning
             ? tl.translatingStatus
             : formatMessage(nonDefaultLocales.length === 1 ? tl.translateAllOne : tl.translateAllOther, {
                 count: nonDefaultLocales.length,
               })}
+        </button>
+
+        <button
+          type="button"
+          data-testid="open-keyless-translate-btn"
+          onClick={onOpenKeylessTranslate ?? onBulkTranslate}
+          disabled={!canRunBulk}
+          className={`rounded-lg border px-3.5 py-1.5 text-xs font-medium transition ${
+            !canRunBulk
+              ? 'border-white/8 text-[#4a4a5a] cursor-not-allowed'
+              : 'border-white/15 bg-white/[0.04] text-[#d6d6e4] hover:border-accent/50 hover:bg-white/[0.08] hover:text-white'
+          }`}
+        >
+          {tl.copyPasteTranslateBtn}
         </button>
 
         {!hasApiKey && (

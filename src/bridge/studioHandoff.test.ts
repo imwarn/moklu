@@ -1,17 +1,19 @@
 /**
- * [INPUT]: depends on vitest; depends on stageImagesIntoStudio from ./studioHandoff; depends on useEditorStore from @/store; depends on useAssetStore from @/store/assets; depends on BASE_CANVAS_FORMAT from @/utils/canvasFormats; depends on QUICK_THEMES from @/utils/quickDesign; depends on BackgroundLayer, ImageLayer, and PhoneLayer from @/types
- * [OUTPUT]: verifies mockup, canvas, carousel, and multi-layer collage handoffs (including >4096px uniform scaling, rotation, cornerRadius, solid/gradient/transparent backgrounds), user style/fit/scale/chrome preservation, asset registration, non-destructive preservation of existing Studio slides, and empty-payload safety
+ * [INPUT]: depends on vitest; depends on renderRedactionCropOnCanvas, stageImagesIntoStudio, and CanvasLike from ./studioHandoff; depends on useEditorStore from @/store; depends on useAssetStore from @/store/assets; depends on BASE_CANVAS_FORMAT from @/utils/canvasFormats; depends on QUICK_THEMES from @/utils/quickDesign; depends on getPhoneSpec from @/assets/mockups/specs; depends on calcScreenshotLayout from @/components/canvas/PhoneNode.geometry; depends on BackgroundLayer, ImageLayer, PhoneLayer, and ShapeLayer from @/types
+ * [OUTPUT]: verifies mockup, canvas, carousel, multi-layer collage, and non-destructive blur/pixelate/spotlight redaction handoffs, offscreen pixelation canvas smoothing disablement, user style/fit/scale/chrome preservation, asset registration, non-destructive preservation of existing Studio slides, and empty-payload safety
  * [POS]: Unit test suite for src/bridge/studioHandoff
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
-import { beforeEach, describe, expect, it } from 'vitest'
-import type { BackgroundLayer, ImageLayer, PhoneLayer } from '@/types'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { BackgroundLayer, ImageLayer, PhoneLayer, ShapeLayer } from '@/types'
+import { getPhoneSpec } from '@/assets/mockups/specs'
+import { calcScreenshotLayout } from '@/components/canvas/PhoneNode.geometry'
 import { useEditorStore } from '@/store'
 import { useAssetStore } from '@/store/assets'
 import { BASE_CANVAS_FORMAT } from '@/utils/canvasFormats'
 import { QUICK_THEMES } from '@/utils/quickDesign'
-import { stageImagesIntoStudio } from './studioHandoff'
+import { renderRedactionCropOnCanvas, stageImagesIntoStudio, type CanvasLike } from './studioHandoff'
 
 const TINY_PNG =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
@@ -388,5 +390,135 @@ describe('stageImagesIntoStudio', () => {
     const group = state.project.slideGroups.find((g) => g.id === state.activeSlideGroupId)!
     expect(group.layers).toHaveLength(2)
     expect(group.layers[1].type).toBe('image')
+  })
+
+  it('stages non-destructive blur, pixelate, and spotlight layers above an unmodified PhoneLayer', () => {
+    stageImagesIntoStudio({
+      mode: 'mockup',
+      mockupModel: 'browser-chrome',
+      slideWidth: 1600,
+      slideHeight: 900,
+      screenshotFit: 'contain',
+      scaleFactor: 0.9,
+      images: [{ dataUrl: TINY_PNG, name: 'dashboard.png', width: 1200, height: 800 }],
+      redactions: [
+        { id: 'r-blur', kind: 'blur', x: 0.1, y: 0.2, width: 0.3, height: 0.2, intensity: 14 },
+        { id: 'r-pix', kind: 'pixelate', x: 0.5, y: 0.6, width: 0.25, height: 0.2, intensity: 10 },
+        { id: 'r-spot', kind: 'spotlight', x: 0.25, y: 0.25, width: 0.4, height: 0.3, intensity: 1.25 },
+      ],
+    })
+
+    const state = useEditorStore.getState()
+    const group = state.project.slideGroups.find((g) => g.id === state.activeSlideGroupId)!
+    const phone = group.layers[1] as PhoneLayer
+    // Base screenshot remains 100% unmodified
+    expect(phone.type).toBe('phone')
+    expect(useAssetStore.getState().getAsset(phone.screenshotPath!)).toBe(TINY_PNG)
+
+    // Verify exact screen + contain coordinate math
+    const spec = getPhoneSpec('browser-chrome')
+    const screenX = phone.x + spec.screen.x * phone.scale
+    const screenY = phone.y + spec.screen.y * phone.scale
+    const shotLayout = calcScreenshotLayout(1200, 800, spec.screen.width, spec.screen.height, 'contain', 0, 0)
+    const imgX = screenX + shotLayout.x * phone.scale
+    const imgY = screenY + shotLayout.y * phone.scale
+    const imgW = shotLayout.width * phone.scale
+    const imgH = shotLayout.height * phone.scale
+
+    const overlays = group.layers.slice(2)
+    const masks = overlays.filter((l): l is ShapeLayer => l.type === 'shape' && l.name.startsWith('Spotlight Mask'))
+    expect(masks).toHaveLength(4)
+    for (const mask of masks) {
+      expect(mask.fill).toBe('#000000')
+      expect(mask.opacity).toBe(0.42)
+      expect(mask.locked).toBe(false)
+    }
+
+    const blurLayer = overlays.find((l): l is ImageLayer => l.type === 'image' && l.name === 'Blur Redaction')!
+    expect(blurLayer).toBeDefined()
+    expect(blurLayer.blur).toBe(14)
+    expect(blurLayer.cornerRadius).toBe(8)
+    expect(blurLayer.x).toBeCloseTo(imgX + 0.1 * imgW, 1)
+    expect(blurLayer.y).toBeCloseTo(imgY + 0.2 * imgH, 1)
+    expect(blurLayer.width).toBeCloseTo(0.3 * imgW, 1)
+    expect(blurLayer.height).toBeCloseTo(0.2 * imgH, 1)
+    expect(blurLayer.src).not.toBe(phone.screenshotPath)
+    expect(useAssetStore.getState().getAsset(blurLayer.src)).toBeTruthy()
+
+    const pixLayer = overlays.find((l): l is ImageLayer => l.type === 'image' && l.name === 'Pixelate Redaction')!
+    expect(pixLayer).toBeDefined()
+    expect(pixLayer.cornerRadius).toBe(6)
+    expect(pixLayer.x).toBeCloseTo(imgX + 0.5 * imgW, 1)
+    expect(pixLayer.y).toBeCloseTo(imgY + 0.6 * imgH, 1)
+
+    const spotLayer = overlays.find((l): l is ImageLayer => l.type === 'image' && l.name === 'Spotlight Focus')!
+    expect(spotLayer).toBeDefined()
+    expect(spotLayer.cornerRadius).toBe(12)
+    expect(spotLayer.shadow).toEqual({ color: '#000000', blur: 24, opacity: 0.38, offsetX: 0, offsetY: 8 })
+    // intensity > 1 applies 1.25x zoom centered on the spotlight rect
+    const expectedBaseW = 0.4 * imgW
+    const expectedBaseH = 0.3 * imgH
+    expect(spotLayer.width).toBeCloseTo(expectedBaseW * 1.25, 1)
+    expect(spotLayer.height).toBeCloseTo(expectedBaseH * 1.25, 1)
+  })
+
+  it('supports redactions in canvas mode and clips cover-mode overflow to screen bounds', () => {
+    stageImagesIntoStudio({
+      mode: 'canvas',
+      slideWidth: 1000,
+      slideHeight: 800,
+      images: [{ dataUrl: TINY_PNG, name: 'plain.png', width: 1000, height: 800 }],
+      redactions: [
+        { id: 'c-spot', kind: 'spotlight', x: 0.2, y: 0.2, width: 0.3, height: 0.3, intensity: 1 },
+      ],
+    })
+    const state = useEditorStore.getState()
+    const group = state.project.slideGroups.find((g) => g.id === state.activeSlideGroupId)!
+    const baseImg = group.layers[1] as ImageLayer
+    const spotFocus = group.layers.find((l): l is ImageLayer => l.type === 'image' && l.name === 'Spotlight Focus')!
+    // intensity === 1 keeps crisp 1x size
+    expect(spotFocus.width).toBeCloseTo(baseImg.width * 0.3, 1)
+    expect(spotFocus.height).toBeCloseTo(baseImg.height * 0.3, 1)
+    expect(spotFocus.x).toBeCloseTo(baseImg.x + baseImg.width * 0.2, 1)
+    expect(spotFocus.y).toBeCloseTo(baseImg.y + baseImg.height * 0.2, 1)
+  })
+
+  it('renders offscreen pixelate crops with imageSmoothingEnabled = false and block-derived downscaling', () => {
+    const created: Array<{
+      width: number
+      height: number
+      ctx: { imageSmoothingEnabled: boolean; drawImage: ReturnType<typeof vi.fn> }
+    }> = []
+    const createCanvas = (width: number, height: number): CanvasLike => {
+      const ctx = { imageSmoothingEnabled: true, drawImage: vi.fn() }
+      created.push({ width, height, ctx })
+      return {
+        width,
+        height,
+        getContext: () => ctx as unknown as CanvasRenderingContext2D,
+        toDataURL: () => 'data:image/png;base64,PIXELATED',
+      }
+    }
+
+    const result = renderRedactionCropOnCanvas(
+      {} as CanvasImageSource,
+      1000,
+      500,
+      { x: 0.1, y: 0.2, width: 0.4, height: 0.4 },
+      'pixelate',
+      10,
+      createCanvas,
+    )
+
+    expect(result).toBe('data:image/png;base64,PIXELATED')
+    expect(created).toHaveLength(2)
+    // Out canvas: 400 x 200; tiny canvas with blockSize 10: 40 x 20
+    expect(created[0].width).toBe(400)
+    expect(created[0].height).toBe(200)
+    expect(created[1].width).toBe(40)
+    expect(created[1].height).toBe(20)
+    expect(created[0].ctx.imageSmoothingEnabled).toBe(false)
+    expect(created[1].ctx.drawImage).toHaveBeenCalledWith(expect.anything(), 100, 100, 400, 200, 0, 0, 40, 20)
+    expect(created[0].ctx.drawImage).toHaveBeenCalledWith(expect.anything(), 0, 0, 40, 20, 0, 0, 400, 200)
   })
 })
