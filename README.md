@@ -1,12 +1,69 @@
 # Moklu
 
-**Beautiful mockups, made simple.**
+**Local-first browser mockup studio & online image toolkit | 纯本地浏览器截图套壳与在线图片拼接工具箱**
 
-Moklu is an open-source screenshot and mockup studio. Start with a quick, editable design for a browser or device screenshot, then fine-tune every layer in a Konva-powered advanced editor.
+- Live site / 官方网站: [https://moklu.app](https://moklu.app)
+- Chinese hub / 中文首页: [https://moklu.app/zh](https://moklu.app/zh)
+- Online image merger / 在线图片拼接: [https://moklu.app/zh/merge-images](https://moklu.app/zh/merge-images) ([EN](https://moklu.app/merge-images) · [JA](https://moklu.app/ja/merge-images) · [KO](https://moklu.app/ko/merge-images))
+- Source code / 开源仓库: [https://github.com/imwarn/moklu](https://github.com/imwarn/moklu) (MIT License)
 
-> **Status:** active pre-1.0 development. v0.1–v0.8 milestones are merged into main; v0.9 JSON import hardening is under review. This project is **not yet certified as commercial-release ready**. See the [development plan](./docs/development-plan.md) and [benchmark plan](./docs/benchmark-plan.md).
+---
 
-## Quick start
+## English
+
+Moklu is an open-source, 100% browser-local visual workbench at **[https://moklu.app](https://moklu.app)**. Every image operation runs directly inside your browser tab via HTML5 Canvas with zero server uploads, zero account walls, and zero forced watermarks on standard exports.
+
+### Complete Feature Matrix
+
+| Tool | Dedicated Routes | Key Capabilities | Output & Limits |
+| --- | --- | --- | --- |
+| **Online Image Merger** | `/merge-images`, `/combine-photos-side-by-side`, `/stitch-images-vertically`, `/photo-collage-grid`, `/merge-photos-to-pdf` | Horizontal, vertical, and 2–6 column grid (`cover` / `contain`, `1:1`, `4:3`, `3:4`, `auto`); `match-min`, `match-max`, `original` (`start` / `center` / `end` alignment); drag-and-drop reorder, Reverse order, per-image 90° rotation; gap (`0–64px`), padding (`0–80px`), corner radius (`0–48px`), per-image borders (`0–24px`), custom color picker | PNG, WebP, JPEG, single-page PDF 1.4 (`50%–100%` quality), 1-click Copy to Clipboard; 8192px / 64MP auto-scaled ceiling |
+| **Screenshot Mockups** | `/`, `/browser-mockup`, `/iphone-mockup`, `/device-mockup`, `/app-store-screenshots` | Chrome, Safari, and minimal browser windows; iPhone 16 Pro, Pixel 9, and App Store 9:16 templates; custom padding, shadows, and light/dark themes | High-res PNG + 1-click handoff to Moklu Studio |
+| **Carousel & Grid Splitter** | `/carousel-splitter`, `/image-grid-splitter` | Seamless swipeable panorama slices (`4:5`, `3:4`, `1:1`) and custom matrix splits (`1–6` rows × `1–6` cols) with live cut-line overlay | Numbered PNG slices bundled as 1-click local ZIP |
+| **Batch Compressor & Converter** | `/compress-image`, `/convert-image-format`, `/png-to-webp` | Client-side PNG, JPEG, and WebP compression and conversion with quality slider, optional max-width scaling, and before/after byte counters | Individual files or 1-click local ZIP |
+| **Resize, Crop & Border Pad** | `/resize-image`, `/crop-image`, `/add-border-to-photo` | Exact pixel or `%` batch resizing, social ratio cropping (`1:1`, `4:5`, `3:4`, `16:9`), and uncropped gallery border padding | PNG, WebP, JPEG, or batch ZIP |
+| **Offline ID Card Watermark** | `/id-card-watermark` | ISO/IEC 7810 ID-1 exact physical scale (`85.6 × 53.98 mm`) on A4 with customizable diagonal anti-fraud watermark text, angle, opacity, and density | Print-ready A4 PNG, 100% offline under strict CSP |
+| **Moklu Studio** | `/studio` | Konva-powered multi-layer canvas editor with device/browser frames, brand kits, typography, shapes, templates, multi-slide App Store layouts, and localization | PNG / multi-slide exports + Playwright headless CLI |
+
+### Privacy & Explicit Capability Boundaries
+
+- **Zero server uploads**: Every quick tool executes in browser RAM using HTML5 Canvas 2D. Disconnect Wi-Fi after loading any tool page and it still works end to end.
+- **Explicit boundaries**:
+  - Single-page PDF export packages the merged image sheet into one PDF 1.4 page rather than merging multi-page PDF documents.
+  - Vertical stitching joins images cleanly edge to edge without auto-removing overlapping scroll regions.
+  - Canvas outputs enforce an `8192px / 64MP` safety ceiling with automatic proportional scaling and a visible scaled badge.
+- **Trust & compliance pages**: `/about`, `/privacy`, `/terms` (available in EN, ZH, JA, KO) and `/llms.txt`.
+
+---
+
+## 简体中文
+
+Moklu（**[https://moklu.app](https://moklu.app)**）是一款开源、100% 浏览器本地运行的截图套壳与在线图片处理工具箱。全部像素处理均基于本机 HTML5 Canvas 完成，不上传任何服务器，免登录注册，基础高清导出零水印。
+
+### 完整功能一览
+
+| 工具模块 | 专题页面 | 核心能力 | 导出与安全边界 |
+| --- | --- | --- | --- |
+| **在线图片拼接** | `/zh/merge-images`、`/zh/combine-photos-side-by-side`、`/zh/stitch-images-vertically`、`/zh/photo-collage-grid`、`/zh/merge-photos-to-pdf` | 横向并排、竖向长图、2–6 列宫格（`cover` 铺满 / `contain` 完整、`1:1`/`4:3`/`3:4`/自动）；按最小/最大/原尺寸对齐（支持靠顶/左、居中、靠底/右）；拖拽排序、一键反转顺序、单图 90° 旋转；间距（`0–64px`）、外边距（`0–80px`）、圆角（`0–48px`）、单图描边边框（`0–24px`）与自定义取色器 | PNG、WebP、JPEG、单页 PDF 1.4（`50%–100%` 质量滑块）、一键复制到剪贴板；8192px / 64MP 安全上限自动等比缩放并提示 |
+| **截图套壳与样机** | `/zh`、`/zh/browser-mockup`、`/zh/iphone-mockup`、`/zh/device-mockup`、`/zh/app-store-screenshots` | Chrome / Safari / 极简浏览器窗口、iPhone 16 Pro、Pixel 9 与应用商店 9:16 竖屏样机；浅深色边框、阴影与背景一键切换 | 高清 PNG 导出，支持一键转入 Studio 多图层精修 |
+| **轮播与九宫格切图** | `/zh/carousel-splitter`、`/zh/image-grid-splitter` | 小红书 `3:4` / Instagram `4:5` / `1:1` 无缝滑屏轮播切图，以及 `1–6` 行 × `1–6` 列自由宫格切图，实时叠加切割线 | 按序编号 PNG，本地一键打包 ZIP |
+| **批量压缩与格式转换** | `/zh/compress-image`、`/zh/convert-image-format`、`/zh/png-to-webp` | PNG / JPEG / WebP 本地批量压缩与互转，提供质量滑块、最大宽度限制及压缩前后体积实时对比 | 单张下载或批量本地 ZIP 打包 |
+| **改尺寸、裁剪与加白边** | `/zh/resize-image`、`/zh/crop-image`、`/zh/add-border-to-photo` | 像素与百分比批量缩放、社媒比例裁剪，以及不裁剪原画面的留白加白边与圆角投影 | PNG / WebP / JPEG 或批量 ZIP |
+| **纯离线身份证水印** | `/zh/id-card-watermark` | 严格按 ISO/IEC 7810 ID-1 物理尺寸（`85.6 × 53.98 mm`）排版至 A4 画布，自定义斜向防盗用途水印 | 打印级高清 A4 PNG，严格 CSP 保护，断网可用 |
+| **Moklu Studio** | `/zh/studio` | 基于 Konva 的多图层画布编辑器，支持品牌色板、排版标注、模板复用、多页应用商店套图与多语言本地化 | 多画布高分辨率导出 + Playwright 无头 CLI |
+
+### 隐私架构与能力边界
+
+- **100% 本地零上传**：所有快速工具均在浏览器内存与 Canvas 2D 中执行，可在 DevTools Network 面板核验零上传，断网同样可用。
+- **清晰透明的能力边界**：
+  - PDF 导出用于将拼接成品封装为标准单页 PDF 1.4 文件，不用于多页 PDF 文档合并。
+  - 竖向长图按边缘顺序拼接，不包含自动去除重复滚动区域或状态栏功能。
+  - 拼图画布设置 `8192px / 64MP` 安全上限，超限时自动等比缩放并在界面明确提示。
+- **信任与站点说明**：内置四语 `/about`、`/privacy`、`/terms` 与 `/llms.txt`。
+
+---
+
+## Quick Start & Development / 本地开发与构建
 
 Requires Node.js 22+ and npm.
 
@@ -15,90 +72,27 @@ npm ci
 npm run dev
 ```
 
-Open the Vite URL printed in your terminal (normally `http://localhost:5173`).
-
-1. Select **Quick Design** from the toolbar.
-2. Choose a canvas ratio, theme and browser/device frame. Applying a new theme retains the main screenshot.
-3. Click the mockup layer and upload your screenshot in the right properties panel.
-4. Use **PNG** in the toolbar to export the active canvas at its original dimensions.
-5. Use the existing **Templates** and editing controls for multi-slide App Store layouts.
-
-## Features inherited from PixelDeck
-
-Layer-based canvas editing, draggable SVG device frames, text and shapes, project persistence, reusable templates, multiple canvases, localized content, multi-format exports, and a Playwright-based CLI.
-
-## Architecture
-
-React 19 + TypeScript + Vite 8 + Konva 10 + Zustand. All basic editing works locally in your browser. No account or backend is required for the first release.
-
-## Original project and license
-
-Moklu is based on **[PixelDeck](https://github.com/Pr0xS/PixelDeck)** by PixelDeck contributors, licensed under MIT. The repository retains PixelDeck's original `LICENSE` file and copyright notice. New Moklu browser art and quick workflow are original additions.
-
-[Screenshot Studio](https://github.com/opennookorg/screenshot-studio) and [Shots.so](https://shots.so) serve as workflow inspiration; this repository does not include their code.
-
-## v0.9 project and template import safeguards
-
-Project/Template JSON is size-bounded and checked for layer structure, unsafe URI schemes, oversized images, excessive nesting, duplicate canvas-layer IDs and unsupported schema versions before being imported. Projects are staged under new IDs and failures trigger best-effort restoration of the previous active project. Low-level storage failures may still require manual recovery; this is **not** a security certification or a fully atomic database transaction.
-
-## Engineering roadmap & benchmarks
-
-- [Development plan: v0.1 → v1.0 commercial release](./docs/development-plan.md)
-- [Benchmark plan and reproducible measurement criteria](./docs/benchmark-plan.md)
-- [Release checklist](./docs/release-checklist.md)
-- [Engineering docs index](./docs/README.md)
-
-### Screenshot framing (v0.8)
-
-Quick Design supports 9:16 Story and **Cover**, **Contain**, **Stretch** screenshot framing, consistent between the lightweight preview and editable output. Cover crops to fill the screen, Contain shows the entire image (possibly with letterboxing), and Stretch fills without cropping (may distort the image).
-
-## Development
+Verification and production SSG build (generates all 92 localized HTML routes, `sitemap.xml`, `robots.txt`, and `llms.txt`):
 
 ```bash
-npm run lint
 npm run typecheck
+npm run lint
 npm test
 npm run build
-
-# Optional CPU-only microbenchmarks; NOT a substitute for browser E2E
-npm run bench:core
 ```
 
-## v0.2 screenshot-first workflow
+Additional engineering documentation:
+- [Engineering docs index](./docs/README.md)
+- [Development plan](./docs/development-plan.md)
+- [Benchmark plan](./docs/benchmark-plan.md)
+- [Release checklist](./docs/release-checklist.md)
 
-- The toolbar's **Replace Screenshot** button updates the primary screenshot slot without changing the existing frame, background, text or artboard.
-- The **Templates** gallery now offers **Use on current canvas** as well as the original **Add slides to project** action. The first suitable template slide is scaled to the active artboard, and the primary screenshot is rebound to the imported style.
-- In the gallery, applying a style can replace text and decorations; use **Canvas Size** for non-destructive aspect-ratio adjustments.
-- Screenshot uploads use distinct asset IDs so two images named `screenshot.png` do not overwrite each other in project storage.
-- Template slots are an optional field on editable phone layers (`primary-screenshot` / `secondary-screenshot`), allowing backward-compatible template JSON and future multi-slot workflows.
+## Architecture & Attribution / 技术栈与开源致谢
 
-## v0.4 granular style transfer
+- **Stack**: React 19 + TypeScript 6 + Vite 8 + Tailwind CSS 4 + Geist (self-hosted, OFL-1.1) + Konva 10 + Zustand 5 + JSZip 3 + Vitest 4 + Playwright.
+- **License & Notices**: MIT License (see [`LICENSE`](./LICENSE) and [`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md)).
+- **Credit / 致谢**:
+  - Moklu Studio is built on the MIT-licensed open-source project **[PixelDeck](https://github.com/Pr0xS/PixelDeck)**, retaining its original copyright and MIT license notice, combined with original Moklu quick image tools, browser frames, commercial foundation, and multilingual SSG/GEO pages.
+  - Studio 编辑器基于 MIT 协议的开源项目 **[PixelDeck](https://github.com/Pr0xS/PixelDeck)**，保留其原有版权与 MIT 许可声明，并由 Moklu 独立新增纯本地六大图片快速工具、浏览器样机与多语言 SSG/GEO 架构。
 
-With **Style only · keep content** selected in Templates, individually enable or disable **Background**, **Frame effects**, and **Text style**. Unticked categories keep their existing style properties. At least one category must be selected. No option ever replaces the uploaded screenshot, any user-defined text, or artwork geometry.
-
-## v0.3 template appearance options
-
-The Templates gallery offers two deliberate ways to apply a style to an existing canvas:
-
-- **Use template layout** (the original v0.2 behavior): recompose the active slide using the selected template and keep its main screenshot.
-- **Style only · keep content**: copy the template background colors, frame shadow/border and text typography while preserving every existing screenshot, text string, image, group, position and layer ID.
-
-The original **+ Add slides to project** still works. Style-only does not change canvas dimensions or source device model, and does not remove user-uploaded background images.
-
-## v0.7 live mockup preview
-
-Quick Design now renders a responsive preview **before** applying a design. The preview reacts to screenshot uploads, frame choice, background styles and canvas dimensions. It reads the exact same mockup specifications and SVG artwork as the Konva editor and reuses the existing uploaded image where available. Preview geometry does not mutate your editable project; the final editor and PNG export remain the source of truth for effects, text and pixel-accurate output.
-
-## v0.6 quick-start UX
-
-Quick Design now accepts **drag and drop** screenshots as well as normal file selection. The selected file gets a local, disposable thumbnail preview and immediate format/size validation before applying. Existing screenshots are explicitly recognized and retained. The responsive dialog scrolls when the screen is short; users can create a blank mockup without uploading an image. The editor still handles final layout adjustments and PNG export. Files and previews are handled locally in the browser, without uploading to a server.
-
-## v0.5 browser frame customization
-
-Browser mockups can now display an editable window title, address label, light/dark appearance, and a show/hide address toggle directly in device properties. The SVG chrome is hollow over the screenshot viewport, rather than an opaque overlay. Window text is XML-escaped before conversion to an SVG image and is never used to fetch or navigate to a web address. Existing projects with no browser options keep sensible defaults. Chrome, Safari and Minimal remain interchangeable without affecting the uploaded screenshot.
-
-## Roadmap
-
-The **maintained roadmap** is in [docs/development-plan.md](./docs/development-plan.md). Historical milestones v0.1–v0.8 are merged; current priorities are framing fidelity, data import safety, end-to-end export verification and GA release engineering.
-
-Website: [moklu.app](https://moklu.app).
+Website: [https://moklu.app](https://moklu.app)

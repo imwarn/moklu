@@ -1,13 +1,13 @@
 /**
- * [INPUT]: depends on react, zustand useShallow, @dnd-kit/core, @dnd-kit/sortable, useEditorStore from @/store, layer row/asset/context subcomponents, and useStudioLocale from @/i18n
- * [OUTPUT]: exports LayersPanel component with localized Insert tools, Assets section, and sortable Layers tree
+ * [INPUT]: depends on react, zustand useShallow, @dnd-kit/core, @dnd-kit/sortable, useEditorStore from @/store, layer row/asset/context subcomponents, StudioIcons from @/components/ui/StudioIcons, and useStudioLocale from @/i18n
+ * [OUTPUT]: exports LayersPanel component with localized SVG-icon Insert tools, Assets section, and sortable Layers tree
  * [POS]: left sidebar panel of StudioPage inside src/components/panels
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, type ReactNode } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useEditorStore } from '@/store'
-import type { GroupLayer } from '@/types'
+import type { GroupLayer, Layer } from '@/types'
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors, KeyboardSensor,
   DragOverlay,
@@ -17,7 +17,18 @@ import {
   SortableContext, sortableKeyboardCoordinates,
   verticalListSortingStrategy, arrayMove,
 } from '@dnd-kit/sortable'
-import { LAYER_ICON, type ContextMenu } from './layers/constants'
+import {
+  ChipIcon,
+  ImageIcon,
+  LockIcon,
+  PaletteIcon,
+  SmartphoneIcon,
+  SmileIcon,
+  SquareIcon,
+  TagIcon,
+  TypeIcon,
+} from '@/components/ui/StudioIcons'
+import type { ContextMenu } from './layers/constants'
 import { SortableLayer, SortableGroup, DragPreview } from './layers/SortableLayerRow'
 import { AssetsSection } from './layers/AssetsSection'
 import { LayerContextMenu } from './layers/LayerContextMenu'
@@ -258,17 +269,17 @@ export function LayersPanel() {
     }
   }
 
-  // DragOverlay: find the label + icon for the item being dragged
-  const dragOverlayInfo = (() => {
+  // DragOverlay: find the label + layer type for the item being dragged
+  const dragOverlayInfo: { label: string; type: Layer['type'] } | null = (() => {
     if (!activeDragId) return null
     // Check top-level
     const topLevel = contentLayers.find((l) => l.id === activeDragId)
-    if (topLevel) return { label: topLevel.name, icon: LAYER_ICON[topLevel.type] }
+    if (topLevel) return { label: topLevel.name, type: topLevel.type }
     // Check children
     for (const l of contentLayers) {
       if (l.type === 'group') {
         const child = (l as GroupLayer).children.find((c) => c.id === activeDragId)
-        if (child) return { label: child.name, icon: LAYER_ICON[child.type] }
+        if (child) return { label: child.name, type: child.type }
       }
     }
     return null
@@ -287,14 +298,14 @@ export function LayersPanel() {
     else if (key === 'brand') addBrand()
     else if (key === 'image') imageInputRef.current?.click()
   }
-  const insertTools = [
-    { key: 'phone', icon: '▣', label: t.layers.tools.phone },
-    { key: 'text', icon: 'T', label: t.layers.tools.text },
-    { key: 'shape', icon: '▭', label: t.layers.tools.shape },
-    { key: 'emoji', icon: '😀', label: t.layers.tools.emoji },
-    { key: 'chip', icon: '◉', label: t.layers.tools.chip },
-    { key: 'brand', icon: '🏷', label: t.layers.tools.brand },
-    { key: 'image', icon: '🖼', label: t.layers.tools.image },
+  const insertTools: Array<{ key: string; icon: ReactNode; label: string }> = [
+    { key: 'phone', icon: <SmartphoneIcon size={16} />, label: t.layers.tools.phone },
+    { key: 'text', icon: <TypeIcon size={16} />, label: t.layers.tools.text },
+    { key: 'shape', icon: <SquareIcon size={16} />, label: t.layers.tools.shape },
+    { key: 'emoji', icon: <SmileIcon size={16} />, label: t.layers.tools.emoji },
+    { key: 'chip', icon: <ChipIcon size={16} />, label: t.layers.tools.chip },
+    { key: 'brand', icon: <TagIcon size={16} />, label: t.layers.tools.brand },
+    { key: 'image', icon: <ImageIcon size={16} />, label: t.layers.tools.image },
   ]
 
   return (
@@ -403,7 +414,7 @@ export function LayersPanel() {
 
           <DragOverlay dropAnimation={null}>
             {dragOverlayInfo && (
-              <DragPreview label={dragOverlayInfo.label} icon={dragOverlayInfo.icon} />
+              <DragPreview label={dragOverlayInfo.label} type={dragOverlayInfo.type} />
             )}
           </DragOverlay>
         </DndContext>
@@ -425,11 +436,15 @@ export function LayersPanel() {
               className="w-5 h-5 flex items-center justify-center text-xs rounded hover:bg-[rgba(255,255,255,0.08)] shrink-0"
               style={{ color: backgroundLayer.visible ? '#e8e8f0' : '#3a3a4a' }}
             >{backgroundLayer.visible ? '◉' : '○'}</button>
-            <span className="text-xs shrink-0" style={{ color: '#6b6b7a' }}>🎨</span>
+            <span className="flex h-4 w-4 shrink-0 items-center justify-center" style={{ color: '#9494a8' }} aria-hidden="true">
+              <PaletteIcon size={13} />
+            </span>
             <span className="flex-1 text-xs truncate" style={{ color: selection?.layerId === backgroundLayer.id ? '#e8e8f0' : '#b0b0c4' }}>
               {backgroundLayer.name}
             </span>
-            <span className="shrink-0 text-xs" style={{ color: '#3a3a4a' }} title={t.layers.backgroundLockedTitle}>🔒</span>
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center" style={{ color: '#6b6b7a' }} title={t.layers.backgroundLockedTitle}>
+              <LockIcon size={12} />
+            </span>
           </div>
         )}
       </div>

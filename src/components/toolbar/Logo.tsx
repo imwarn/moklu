@@ -4,8 +4,13 @@
  * [POS]: brand identity mark in src/components/toolbar; rendered by Toolbar and reused at enlarged scale inside AppLoadingScreen
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
+export interface LogoProps {
+  /** Collapse the wordmark below 640px so compact phone toolbars keep primary CTAs unobstructed. */
+  compactOnMobile?: boolean
+}
+
 /** Moklu brand — Nested Mockup Frame mark (32×32 geometric grid, zero gradients). */
-export function Logo() {
+export function Logo({ compactOnMobile = false }: LogoProps = {}) {
   return (
     <div className="flex shrink-0 select-none items-center gap-2 text-[#F4F4F5]" aria-label="Moklu Studio">
       <svg width="26" height="26" viewBox="0 0 32 32" fill="none" aria-hidden="true">
@@ -13,8 +18,8 @@ export function Logo() {
         <rect fill="var(--color-accent)" x="12" y="2" width="18" height="18" rx="4" />
         <rect fill="var(--color-accent-fg)" x="18" y="6" width="6" height="2" rx="1" />
       </svg>
-      <span className="text-sm font-bold tracking-tight text-[#F4F4F5]">Moklu</span>
-      <span className="hidden text-[10px] font-medium tracking-wide text-muted min-[1536px]:inline">STUDIO</span>
+      <span className={`${compactOnMobile ? 'hidden min-[640px]:inline ' : ''}text-sm font-bold tracking-tight text-[#F4F4F5]`}>Moklu</span>
+      <span className="hidden text-[10px] font-medium tracking-wide text-muted min-[1680px]:inline">STUDIO</span>
     </div>
   )
 }

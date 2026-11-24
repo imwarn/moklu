@@ -327,7 +327,7 @@ export function PreviewModal({
                         }}
                       >
                         <div
-                          className="overflow-hidden rounded-2xl border transition-all duration-200 group-hover/slide:scale-[1.02] group-hover/slide:border-accent/65"
+                          className="overflow-hidden rounded-2xl border transition-[transform,border-color] duration-200 group-hover/slide:scale-[1.02] group-hover/slide:border-accent/65"
                           style={{
                             width: slideW,
                             height: SLIDE_H,

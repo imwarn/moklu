@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on ./types, ./canvasHelpers, ./mergeEngine, ./splitEngine, ./compressEngine, ./transformEngine, and ./idCardEngine
- * [OUTPUT]: re-exports all client-side image processing engines, helpers, constants, and TypeScript interfaces
+ * [INPUT]: depends on ./types, ./canvasHelpers, ./pdfHelper, ./mergeEngine, ./splitEngine, ./compressEngine, ./transformEngine, and ./idCardEngine
+ * [OUTPUT]: re-exports all client-side image processing engines, PDF wrapper, helpers, constants, and TypeScript interfaces
  * [POS]: sole public barrel entry point of src/tools; imported by workspace tools and integration adapters
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -34,12 +34,16 @@ export type {
   ImageInputSource,
   LinearGradientFill,
   LoadedImageItem,
+  MergeAlign,
   MergeLayout,
+  MergeLayoutItem,
   MergeMode,
   MergeNormalizeMode,
   MergeOptions,
+  MergeOutputFormat,
   MergePlacement,
   MergeResult,
+  MergeRotation,
   NormalizedCropRect,
   ObjectFitMode,
   Rect,
@@ -84,6 +88,12 @@ export {
 } from './canvasHelpers'
 
 export { computeMergeLayout, mergeImages } from './mergeEngine'
+
+export {
+  buildSinglePagePdfBytes,
+  createSinglePagePdfFromJpeg,
+  type PdfPageOptions,
+} from './pdfHelper'
 
 export {
   CAROUSEL_PRESET_SIZES,

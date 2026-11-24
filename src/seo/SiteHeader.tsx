@@ -1,5 +1,5 @@
 /**
- * [INPUT]: depends on useEffect, useRef, useState from react; depends on ResolvedRoute from ./types.ts; depends on PRIMARY_TOOL_SLUGS and buildLocalizedPath from ./routes.ts; depends on SUPPORTED_LOCALES and getUiLabels from ./i18n.ts; depends on NAV_TOOL_ORDER, handleSpaLinkClick, and isToolNavActive from ./navHelpers.ts
+ * [INPUT]: depends on useEffect, useRef, useState from react; depends on ResolvedRoute from ./types.ts; depends on PRIMARY_TOOL_SLUGS, buildLocalizedPath, and getHreflangCode from ./routes.ts; depends on SUPPORTED_LOCALES and getUiLabels from ./i18n.ts; depends on NAV_TOOL_ORDER, handleSpaLinkClick, and isToolNavActive from ./navHelpers.ts
  * [OUTPUT]: exports SiteHeader component and SiteHeaderProps type
  * [POS]: top-level semantic site navigation bar within src/seo, rendering skip-to-content link, crawlable tool category nav, accessible mobile drawer, 4-locale switcher, theme toggle, Pro CTA, and Studio link
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
@@ -7,7 +7,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import type { ResolvedRoute } from './types.ts'
-import { PRIMARY_TOOL_SLUGS, buildLocalizedPath } from './routes.ts'
+import { PRIMARY_TOOL_SLUGS, buildLocalizedPath, getHreflangCode } from './routes.ts'
 import { SUPPORTED_LOCALES, getUiLabels } from './i18n.ts'
 import { NAV_TOOL_ORDER, handleSpaLinkClick, isToolNavActive } from './navHelpers.ts'
 
@@ -145,7 +145,7 @@ export function SiteHeader({
                   href={href}
                   aria-current={isActive ? 'page' : undefined}
                   onClick={(event) => handleSpaLinkClick(event, href, onNavigate)}
-                  className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                  className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                     isActive
                       ? 'bg-accent-soft text-accent-text'
                       : isDark
@@ -203,7 +203,7 @@ export function SiteHeader({
                     <a
                       key={item.code}
                       href={href}
-                      hrefLang={item.code}
+                      hrefLang={getHreflangCode(item.code)}
                       role="menuitem"
                       aria-current={active ? 'true' : undefined}
                       onClick={(event) => {
@@ -273,9 +273,26 @@ export function SiteHeader({
             <button
               type="button"
               onClick={onOpenProModal}
-              className={`hidden h-9 items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:inline-flex ${proBtnToneCls}`}
+              className={`hidden h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-3 text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:inline-flex ${proBtnToneCls}`}
             >
-              <span aria-hidden="true" className="inline-block h-1.5 w-1.5 rounded-full bg-current" />
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                className="h-3.5 w-3.5 shrink-0"
+              >
+                {isPro ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.5 8.5 6.5 11.5 12.5 5" />
+                ) : (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M8 2.25 9.6 6.4 13.75 8 9.6 9.6 8 13.75 6.4 9.6 2.25 8 6.4 6.4 8 2.25Z"
+                  />
+                )}
+              </svg>
               <span>{isPro ? ui.proActive : ui.proUpgrade}</span>
             </button>
           )}
@@ -287,7 +304,7 @@ export function SiteHeader({
               setMobileOpen(false)
               handleSpaLinkClick(event, studioHref, onNavigate)
             }}
-            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-accent-strong px-3.5 text-xs font-semibold text-accent-fg shadow-[0_1px_2px_rgba(24,24,27,0.1)] transition-all hover:brightness-95 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg bg-accent-strong px-3.5 text-xs font-semibold text-accent-fg shadow-[0_1px_2px_rgba(24,24,27,0.1)] transition-[filter,transform] hover:brightness-95 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             <span className="hidden sm:inline">{ui.openStudio}</span>
             <span className="sm:hidden">{ui.openStudioShort}</span>
@@ -362,9 +379,26 @@ export function SiteHeader({
                 setMobileOpen(false)
                 onOpenProModal()
               }}
-              className={`mt-2.5 flex w-full items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:hidden ${proBtnToneCls}`}
+              className={`mt-2.5 flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-lg border px-3 py-2 text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:hidden ${proBtnToneCls}`}
             >
-              <span aria-hidden="true" className="inline-block h-1.5 w-1.5 rounded-full bg-current" />
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                className="h-3.5 w-3.5 shrink-0"
+              >
+                {isPro ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.5 8.5 6.5 11.5 12.5 5" />
+                ) : (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M8 2.25 9.6 6.4 13.75 8 9.6 9.6 8 13.75 6.4 9.6 2.25 8 6.4 6.4 8 2.25Z"
+                  />
+                )}
+              </svg>
               <span>{isPro ? ui.proActive : ui.proUpgrade}</span>
             </button>
           )}

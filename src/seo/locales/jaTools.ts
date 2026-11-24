@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on RouteCopy and SecondaryToolSlug types from ../types.ts
- * [OUTPUT]: exports JA_TOOL_ROUTES containing Japanese copy for split, compress, resize, and ID-card routes
+ * [OUTPUT]: exports JA_TOOL_ROUTES containing Japanese copy for merge-photos-to-pdf, split, compress, resize, and ID-card routes
  * [POS]: secondary route-copy chunk for ja within src/seo/locales, merged into JA_LOCALE by ./ja.ts to keep every file <= 800 lines
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -8,9 +8,65 @@
 import type { RouteCopy, SecondaryToolSlug } from '../types.ts'
 
 export const JA_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
+  'merge-photos-to-pdf': {
+    navLabel: '複数画像を PDF 化',
+    title: '複数画像を 1 ページ PDF に結合（無料・完全ローカル）| Moklu',
+    metaDescription:
+      '領収書・写真・スクリーンショットを縦結合・横並び・2〜6 列グリッドで 1 枚にまとめ、標準単ページ PDF 1.4 としてブラウザ内で即出力。送信ゼロ・透かしなし。',
+    badge: '単ページ PDF 1.4 · サーバー送信ゼロ',
+    h1: '複数写真を 1 枚の単ページ PDF に結合',
+    subtitle:
+      '領収書、書類写真、画面キャプチャを縦・横・2〜6 列グリッドに整列し、ドラッグ並び替え・90° 回転・枠線・画質調整を行ってローカルで単ページ PDF 1.4 出力します。',
+    steps: [
+      {
+        title: '画像を追加して順序を整える',
+        description: 'ドロップや Cmd/Ctrl+V で画像を追加し、サムネイルのドラッグ並び替え、順序反転、個別 90° 回転を行います。',
+      },
+      {
+        title: 'レイアウト・枠線・PDF 画質を調整',
+        description: '縦・横・2〜6 列グリッド（cover / contain）を選び、間隔・余白・枠線と画質スライダー（50%〜100%、既定 92%）を設定します。',
+      },
+      {
+        title: 'ローカルで単ページ PDF 1.4 を保存',
+        description: 'HTML5 Canvas から直接 PDF 1.4 を生成して保存。サーバーへのアップロードや透かしは一切ありません。',
+      },
+    ],
+    highlights: [
+      {
+        title: '外部送信ゼロのローカル PDF 生成',
+        description: '経費領収書や社内資料の写真も端末ブラウザのメモリ内だけで PDF 1.4 化されます。',
+      },
+      {
+        title: '透過背景を自動で白地合成',
+        description: '透過 PNG を PDF や JPEG へ書き出す際は自動で白背景を適用し、印刷時の黒潰れを防ぎます。',
+      },
+      {
+        title: '自由なグリッド＆画質コントロール',
+        description: '2〜6 列グリッド、0〜24px の個別枠線、カスタムカラー、画質スライダーで用途に合わせて調整できます。',
+      },
+    ],
+    faqs: [
+      {
+        question: '書き出されるのは単ページ PDF ですか？複数ページ PDF ですか？',
+        answer: '結合した 1 枚のシートを格納した標準の単ページ PDF 1.4 を生成します。既存の複数ページ PDF 文書を結合するツールではありません。',
+      },
+      {
+        question: 'PDF の画質やファイルサイズは調整できますか？',
+        answer: 'はい。PDF 出力を選ぶと 50%〜100%（初期値 92%）の画質スライダーが表示され、鮮明さと容量を自在に調整できます。',
+      },
+      {
+        question: '透過 PNG を PDF に変換すると背景が黒くなりませんか？',
+        answer: 'なりません。PDF および JPEG 書き出し時は透過領域が自動的に白背景へ合成されます。',
+      },
+      {
+        question: '領収書や書類の写真がサーバーに送られることはありますか？',
+        answer: '一切ありません。配置計算から PDF 1.4 バイナリ生成まですべてブラウザ内でオフライン完結します。',
+      },
+    ],
+  },
   'carousel-splitter': {
     navLabel: 'カルーセル分割',
-    title: 'Instagram / SNS シームレス・カルーセルパノラマ分割 — Moklu',
+    title: 'Instagram / SNS シームレス・カルーセルパノラマ分割 | Moklu',
     metaDescription:
       '横長パノラマやワイド画像を 4:5・3:4・1:1 の継ぎ目ないスワイプ用カルーセル画像（2〜10 枚）に分割し ZIP 一括出力。完全ブラウザ内処理。',
     badge: '継ぎ目ゼロのスワイプ分割',
@@ -66,7 +122,7 @@ export const JA_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'image-grid-splitter': {
     navLabel: 'グリッド分割',
-    title: '無料 9 分割・グリッド画像分割ツール（3×3 / 自由行列）— Moklu',
+    title: '無料 9 分割・グリッド画像分割ツール（3×3 / 自由行列）| Moklu',
     metaDescription:
       '1 枚の画像を 3×3 の 9 分割、2×2、または任意の行×列マトリクスへ正確に分割し、連番 ZIP でローカル保存。サーバー送信ゼロ。',
     badge: '3×3 九分割・カスタム行列',
@@ -122,7 +178,7 @@ export const JA_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'compress-image': {
     navLabel: '画像圧縮',
-    title: '無料ローカル画像一括圧縮ツール（PNG / JPEG / WebP）— Moklu',
+    title: '無料ローカル画像一括圧縮ツール（PNG / JPEG / WebP）| Moklu',
     metaDescription:
       'PNG・JPEG・WebP 画像をブラウザ内で一括軽量化。圧縮前後の容量と削減率をリアルタイム表示し ZIP 保存。サーバーへのアップロード不要。',
     badge: 'ローカル一括圧縮 · 削減率表示',
@@ -178,7 +234,7 @@ export const JA_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'convert-image-format': {
     navLabel: '形式変換',
-    title: '無料ローカル画像形式一括変換（WebP / PNG / JPEG）— Moklu',
+    title: '無料ローカル画像形式一括変換（WebP / PNG / JPEG）| Moklu',
     metaDescription:
       'WebP→PNG、PNG→JPEG、JPEG→WebP などの形式変換をブラウザ内で一括実行。正しい拡張子付与＆ZIP 出力、アップロード一切不要。',
     badge: 'PNG · WebP · JPEG 一括変換',
@@ -234,7 +290,7 @@ export const JA_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'png-to-webp': {
     navLabel: 'PNG → WebP',
-    title: 'PNG から WebP へ一括変換（透過保持・無料ローカル）— Moklu',
+    title: 'PNG から WebP へ一括変換（透過保持・無料ローカル）| Moklu',
     metaDescription:
       '透過 PNG アイコンやスクショをアルファチャンネル保持のまま軽量 WebP へ一括変換。容量削減率を確認し ZIP 保存。アップロード不要。',
     badge: '透過保持 · Web 表示高速化',
@@ -290,7 +346,7 @@ export const JA_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'resize-image': {
     navLabel: 'リサイズ',
-    title: '無料ローカル画像一括リサイズ（ピクセル指定・％縮小）— Moklu',
+    title: '無料ローカル画像一括リサイズ（ピクセル指定・％縮小）| Moklu',
     metaDescription:
       '縦横比をロックしたままピクセル指定や％倍率で画像を一括リサイズ。高画質スムージング＆ZIP 出力。100% ブラウザ内処理。',
     badge: 'ピクセル指定 · ％倍率 · 一括処理',
@@ -346,7 +402,7 @@ export const JA_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'crop-image': {
     navLabel: 'トリミング',
-    title: '無料画像トリミング・切り抜き（1:1 / 4:5 / 16:9 比率プリセット）— Moklu',
+    title: '無料画像トリミング・切り抜き（1:1 / 4:5 / 16:9 比率プリセット）| Moklu',
     metaDescription:
       'SNS やサムネイル向けの 1:1、4:5、3:4、16:9、9:16 比率で写真やスクショを精密にトリミング。完全ローカル処理で画質劣化なし。',
     badge: 'SNS・Web 黄金比トリミング',
@@ -402,7 +458,7 @@ export const JA_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'add-border-to-photo': {
     navLabel: '白枠・余白追加',
-    title: '写真に白枠・余白を追加（切り抜きなしで SNS 比率対応）— Moklu',
+    title: '写真に白枠・余白を追加（切り抜きなしで SNS 比率対応）| Moklu',
     metaDescription:
       '横長写真を切らずに 1:1 や 4:5 に収める白枠・カラー枠・グラデーション余白追加ツール。角丸や影にも対応。100% ブラウザ内ローカル処理。',
     badge: '切り抜きなし白枠＆余白パディング',
@@ -458,7 +514,7 @@ export const JA_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'id-card-watermark': {
     navLabel: '身分証 A4 透かし',
-    title: '完全オフライン身分証 A4 両面配置＆不正利用防止透かし作成 — Moklu',
+    title: '完全オフライン身分証 A4 両面配置＆不正利用防止透かし作成 | Moklu',
     metaDescription:
       '運転免許証やマイナンバーカード等の表裏を実寸比（85.6×54mm）で 300 DPI A4 用紙に配置し、用途限定透かしを挿入。完全ブラウザ完結・サーバー送信ゼロ。',
     badge: '完全オフライン · 300 DPI A4 · 不正防止透かし',

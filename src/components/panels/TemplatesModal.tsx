@@ -229,7 +229,7 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
                 display: 'flex',
                 alignItems: 'center',
                 gap: 5,
-                transition: 'all 0.15s',
+                transition: 'color 0.15s, background-color 0.15s, border-color 0.15s',
               }}
               onMouseEnter={(e) => {
                 if (!exportOpen) {

@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on canvas & geometry helpers from ./canvasHelpers and Merge* types from ./types
- * [OUTPUT]: exports computeMergeLayout and mergeImages for horizontal, vertical, and grid collages
+ * [INPUT]: depends on canvas & geometry helpers from ./canvasHelpers, single-page PDF wrapper from ./pdfHelper, and Merge* types from ./types
+ * [OUTPUT]: exports computeMergeLayout and mergeImages for horizontal, vertical, and grid collages with cross-axis alignment, per-item 90deg rotation, per-image border strokes, and PNG/JPEG/WebP/PDF export
  * [POS]: image stitching and collage composition engine within src/tools
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -16,15 +16,21 @@ import {
   fillBackground,
   get2dContext,
   sanitizeFilenameStem,
+  traceRoundedRectPath,
 } from './canvasHelpers'
+import { createSinglePagePdfFromJpeg } from './pdfHelper'
 import type {
-  Dimensions,
   GridCellAspect,
   LoadedImageItem,
+  MergeAlign,
   MergeLayout,
+  MergeLayoutItem,
   MergeOptions,
+  MergeOutputFormat,
   MergePlacement,
   MergeResult,
+  MergeRotation,
+  Rect,
 } from './types'
 
 const GRID_ASPECT_RATIOS: Record<Exclude<GridCellAspect, 'auto'>, number> = {
@@ -33,7 +39,51 @@ const GRID_ASPECT_RATIOS: Record<Exclude<GridCellAspect, 'auto'>, number> = {
   '3:4': 3 / 4,
 }
 
-function scaleRect(rect: { x: number; y: number; width: number; height: number }, factor: number) {
+function normalizeRotation(raw?: number): MergeRotation {
+  if (!raw) return 0
+  const mod = ((Math.round(raw / 90) * 90) % 360 + 360) % 360
+  if (mod === 90 || mod === 180 || mod === 270) return mod
+  return 0
+}
+
+function getEffectiveDimensions(srcW: number, srcH: number, rotation: MergeRotation): { width: number; height: number } {
+  return rotation === 90 || rotation === 270
+    ? { width: srcH, height: srcW }
+    : { width: srcW, height: srcH }
+}
+
+/**
+ * Map a source crop rect computed in rotated visual image coordinates back into
+ * the original unrotated source image coordinate space.
+ */
+function mapRotatedSourceRect(
+  rotatedRect: Rect,
+  origWidth: number,
+  origHeight: number,
+  rotation: MergeRotation,
+): Rect {
+  const { x: rx, y: ry, width: rw, height: rh } = rotatedRect
+  switch (rotation) {
+    case 90:
+      return { x: ry, y: origHeight - (rx + rw), width: rh, height: rw }
+    case 180:
+      return { x: origWidth - (rx + rw), y: origHeight - (ry + rh), width: rw, height: rh }
+    case 270:
+      return { x: origWidth - (ry + rh), y: rx, width: rh, height: rw }
+    case 0:
+    default:
+      return rotatedRect
+  }
+}
+
+function resolveCrossOffset(containerSpan: number, itemSpan: number, align: MergeAlign): number {
+  const slack = containerSpan - itemSpan
+  if (align === 'start') return 0
+  if (align === 'end') return slack
+  return slack / 2
+}
+
+function scaleRect(rect: Rect, factor: number): Rect {
   return {
     x: rect.x * factor,
     y: rect.y * factor,
@@ -42,39 +92,50 @@ function scaleRect(rect: { x: number; y: number; width: number; height: number }
   }
 }
 
+function resolveItemMetrics(
+  items: ReadonlyArray<MergeLayoutItem>,
+  itemRotations?: ReadonlyArray<MergeRotation>,
+): Array<{ origW: number; origH: number; effW: number; effH: number; rotation: MergeRotation }> {
+  return items.map((item, idx) => {
+    const origW = Math.max(1, item.width)
+    const origH = Math.max(1, item.height)
+    const rotation = normalizeRotation(itemRotations?.[idx] ?? item.rotation)
+    const eff = getEffectiveDimensions(origW, origH, rotation)
+    return { origW, origH, effW: eff.width, effH: eff.height, rotation }
+  })
+}
+
 function computeHorizontalRawLayout(
-  items: ReadonlyArray<Dimensions>,
+  metrics: ReadonlyArray<{ origW: number; origH: number; effW: number; effH: number; rotation: MergeRotation }>,
   normalize: 'match-min' | 'match-max' | 'original',
+  align: MergeAlign,
   gap: number,
   padding: number,
   borderRadius: number,
+  borderWidth: number,
 ): { rawWidth: number; rawHeight: number; placements: MergePlacement[] } {
-  const heights = items.map((item) => Math.max(1, item.height))
-  const targetHeight =
-    normalize === 'match-min'
-      ? Math.min(...heights)
-      : normalize === 'match-max'
-        ? Math.max(...heights)
-        : Math.max(...heights)
+  const heights = metrics.map((m) => m.effH)
+  const targetHeight = normalize === 'match-min' ? Math.min(...heights) : Math.max(...heights)
 
   const placements: MergePlacement[] = []
   let cursorX = padding
 
-  for (let i = 0; i < items.length; i += 1) {
-    const srcW = Math.max(1, items[i].width)
-    const srcH = Math.max(1, items[i].height)
-    const drawH = normalize === 'original' ? srcH : targetHeight
-    const drawW = normalize === 'original' ? srcW : Math.max(1, Math.round(srcW * (drawH / srcH)))
-    const drawY = padding + (targetHeight - drawH) / 2
+  for (let i = 0; i < metrics.length; i += 1) {
+    const { origW, origH, effW, effH, rotation } = metrics[i]
+    const drawH = normalize === 'original' ? effH : targetHeight
+    const drawW = normalize === 'original' ? effW : Math.max(1, Math.round(effW * (drawH / effH)))
+    const drawY = padding + resolveCrossOffset(targetHeight, drawH, align)
 
     placements.push({
       index: i,
-      sourceRect: { x: 0, y: 0, width: srcW, height: srcH },
+      sourceRect: { x: 0, y: 0, width: origW, height: origH },
       destRect: { x: cursorX, y: drawY, width: drawW, height: drawH },
       radius: borderRadius,
+      rotation,
+      borderWidth,
     })
 
-    cursorX += drawW + (i < items.length - 1 ? gap : 0)
+    cursorX += drawW + (i < metrics.length - 1 ? gap : 0)
   }
 
   return {
@@ -85,38 +146,36 @@ function computeHorizontalRawLayout(
 }
 
 function computeVerticalRawLayout(
-  items: ReadonlyArray<Dimensions>,
+  metrics: ReadonlyArray<{ origW: number; origH: number; effW: number; effH: number; rotation: MergeRotation }>,
   normalize: 'match-min' | 'match-max' | 'original',
+  align: MergeAlign,
   gap: number,
   padding: number,
   borderRadius: number,
+  borderWidth: number,
 ): { rawWidth: number; rawHeight: number; placements: MergePlacement[] } {
-  const widths = items.map((item) => Math.max(1, item.width))
-  const targetWidth =
-    normalize === 'match-min'
-      ? Math.min(...widths)
-      : normalize === 'match-max'
-        ? Math.max(...widths)
-        : Math.max(...widths)
+  const widths = metrics.map((m) => m.effW)
+  const targetWidth = normalize === 'match-min' ? Math.min(...widths) : Math.max(...widths)
 
   const placements: MergePlacement[] = []
   let cursorY = padding
 
-  for (let i = 0; i < items.length; i += 1) {
-    const srcW = Math.max(1, items[i].width)
-    const srcH = Math.max(1, items[i].height)
-    const drawW = normalize === 'original' ? srcW : targetWidth
-    const drawH = normalize === 'original' ? srcH : Math.max(1, Math.round(srcH * (drawW / srcW)))
-    const drawX = padding + (targetWidth - drawW) / 2
+  for (let i = 0; i < metrics.length; i += 1) {
+    const { origW, origH, effW, effH, rotation } = metrics[i]
+    const drawW = normalize === 'original' ? effW : targetWidth
+    const drawH = normalize === 'original' ? effH : Math.max(1, Math.round(effH * (drawW / effW)))
+    const drawX = padding + resolveCrossOffset(targetWidth, drawW, align)
 
     placements.push({
       index: i,
-      sourceRect: { x: 0, y: 0, width: srcW, height: srcH },
+      sourceRect: { x: 0, y: 0, width: origW, height: origH },
       destRect: { x: drawX, y: cursorY, width: drawW, height: drawH },
       radius: borderRadius,
+      rotation,
+      borderWidth,
     })
 
-    cursorY += drawH + (i < items.length - 1 ? gap : 0)
+    cursorY += drawH + (i < metrics.length - 1 ? gap : 0)
   }
 
   return {
@@ -127,31 +186,32 @@ function computeVerticalRawLayout(
 }
 
 function computeGridRawLayout(
-  items: ReadonlyArray<Dimensions>,
+  metrics: ReadonlyArray<{ origW: number; origH: number; effW: number; effH: number; rotation: MergeRotation }>,
   columns: number,
   aspectCell: GridCellAspect,
   fit: 'cover' | 'contain',
   gap: number,
   padding: number,
   borderRadius: number,
+  borderWidth: number,
 ): { rawWidth: number; rawHeight: number; placements: MergePlacement[] } {
   const clampedCols = Math.round(clampNumber(columns, 2, 6))
-  const effectiveCols = Math.max(1, Math.min(clampedCols, items.length))
-  const rows = Math.ceil(items.length / effectiveCols)
+  const effectiveCols = Math.max(1, Math.min(clampedCols, metrics.length))
+  const rows = Math.ceil(metrics.length / effectiveCols)
 
-  const cellWidth = Math.max(1, ...items.map((item) => Math.round(item.width)))
+  const cellWidth = Math.max(1, ...metrics.map((m) => Math.round(m.effW)))
   let cellHeight: number
   if (aspectCell === 'auto') {
     const avgAspect =
-      items.reduce((sum, item) => sum + Math.max(1, item.width) / Math.max(1, item.height), 0) /
-      items.length
+      metrics.reduce((sum, m) => sum + m.effW / m.effH, 0) / metrics.length
     cellHeight = Math.max(1, Math.round(cellWidth / avgAspect))
   } else {
     cellHeight = Math.max(1, Math.round(cellWidth / GRID_ASPECT_RATIOS[aspectCell]))
   }
 
   const placements: MergePlacement[] = []
-  for (let i = 0; i < items.length; i += 1) {
+  for (let i = 0; i < metrics.length; i += 1) {
+    const { origW, origH, effW, effH, rotation } = metrics[i]
     const row = Math.floor(i / effectiveCols)
     const col = i % effectiveCols
     const cellBox = {
@@ -161,18 +221,16 @@ function computeGridRawLayout(
       height: cellHeight,
     }
 
-    const { sourceRect, destRect } = computeObjectFitRects(
-      items[i].width,
-      items[i].height,
-      cellBox,
-      fit,
-    )
+    const { sourceRect: rotatedSourceRect, destRect } = computeObjectFitRects(effW, effH, cellBox, fit)
+    const sourceRect = mapRotatedSourceRect(rotatedSourceRect, origW, origH, rotation)
 
     placements.push({
       index: i,
       sourceRect,
       destRect,
       radius: borderRadius,
+      rotation,
+      borderWidth,
     })
   }
 
@@ -187,7 +245,7 @@ function computeGridRawLayout(
  * Uniformly scales output and all placements when exceeding safe 8192px / 64MP canvas bounds.
  */
 export function computeMergeLayout(
-  items: ReadonlyArray<Dimensions>,
+  items: ReadonlyArray<MergeLayoutItem>,
   options: MergeOptions,
 ): MergeLayout {
   if (items.length === 0) {
@@ -197,25 +255,29 @@ export function computeMergeLayout(
   const gap = Math.max(0, options.gap ?? 16)
   const padding = Math.max(0, options.padding ?? 24)
   const borderRadius = Math.max(0, options.borderRadius ?? 0)
+  const borderWidth = Math.max(0, options.borderWidth ?? 0)
   const normalize = options.normalize ?? 'match-max'
+  const align: MergeAlign = options.align ?? 'center'
+  const metrics = resolveItemMetrics(items, options.itemRotations)
 
   let raw: { rawWidth: number; rawHeight: number; placements: MergePlacement[] }
   switch (options.mode) {
     case 'horizontal':
-      raw = computeHorizontalRawLayout(items, normalize, gap, padding, borderRadius)
+      raw = computeHorizontalRawLayout(metrics, normalize, align, gap, padding, borderRadius, borderWidth)
       break
     case 'vertical':
-      raw = computeVerticalRawLayout(items, normalize, gap, padding, borderRadius)
+      raw = computeVerticalRawLayout(metrics, normalize, align, gap, padding, borderRadius, borderWidth)
       break
     case 'grid':
       raw = computeGridRawLayout(
-        items,
+        metrics,
         options.columns ?? 2,
         options.aspectCell ?? 'auto',
         options.fit ?? 'cover',
         gap,
         padding,
         borderRadius,
+        borderWidth,
       )
       break
   }
@@ -232,12 +294,18 @@ export function computeMergeLayout(
       sourceRect: placement.sourceRect,
       destRect: scaleRect(placement.destRect, scale),
       radius: placement.radius * scale,
+      rotation: placement.rotation,
+      borderWidth: placement.borderWidth * scale,
     })),
   }
 }
 
+function extensionForMergeFormat(format: MergeOutputFormat): string {
+  return format === 'application/pdf' ? 'pdf' : extensionForFormat(format)
+}
+
 /**
- * Compose multiple loaded images onto a single client-side HTML5 Canvas and export as Blob.
+ * Compose multiple loaded images onto a single client-side HTML5 Canvas and export as PNG, JPEG, WebP, or single-page PDF.
  */
 export async function mergeImages(
   items: ReadonlyArray<LoadedImageItem>,
@@ -247,39 +315,101 @@ export async function mergeImages(
     throw new Error('At least one image is required to merge.')
   }
 
-  const format = options.format ?? 'image/png'
+  const format: MergeOutputFormat = options.format ?? 'image/png'
+  const isPdf = format === 'application/pdf'
   const layout = computeMergeLayout(items, options)
   const canvas = createCanvas(layout.width, layout.height, options.createCanvas)
   const ctx = get2dContext(canvas)
 
-  const opaqueFallback = format === 'image/jpeg' ? '#ffffff' : undefined
+  const opaqueFallback = format === 'image/jpeg' || isPdf ? '#ffffff' : undefined
   fillBackground(ctx, layout.width, layout.height, options.background ?? '#ffffff', opaqueFallback)
+
+  const borderColor = options.borderColor ?? '#ffffff'
 
   for (const placement of layout.placements) {
     const item = items[placement.index]
-    const { sourceRect, destRect, radius } = placement
+    const { sourceRect, destRect, radius, rotation, borderWidth } = placement
     ctx.save()
     if (radius > 0) {
       clipRoundedRect(ctx, destRect.x, destRect.y, destRect.width, destRect.height, radius)
     }
-    ctx.drawImage(
-      item.source,
-      sourceRect.x,
-      sourceRect.y,
-      sourceRect.width,
-      sourceRect.height,
-      destRect.x,
-      destRect.y,
-      destRect.width,
-      destRect.height,
-    )
+    if (rotation === 0) {
+      ctx.drawImage(
+        item.source,
+        sourceRect.x,
+        sourceRect.y,
+        sourceRect.width,
+        sourceRect.height,
+        destRect.x,
+        destRect.y,
+        destRect.width,
+        destRect.height,
+      )
+    } else {
+      const cx = destRect.x + destRect.width / 2
+      const cy = destRect.y + destRect.height / 2
+      const swapped = rotation === 90 || rotation === 270
+      const drawW = swapped ? destRect.height : destRect.width
+      const drawH = swapped ? destRect.width : destRect.height
+      ctx.translate(cx, cy)
+      ctx.rotate((rotation * Math.PI) / 180)
+      ctx.drawImage(
+        item.source,
+        sourceRect.x,
+        sourceRect.y,
+        sourceRect.width,
+        sourceRect.height,
+        -drawW / 2,
+        -drawH / 2,
+        drawW,
+        drawH,
+      )
+    }
     ctx.restore()
+
+    if (borderWidth > 0) {
+      const lw = Math.min(borderWidth, destRect.width / 2, destRect.height / 2)
+      const inset = lw / 2
+      const innerW = destRect.width - lw
+      const innerH = destRect.height - lw
+      if (innerW > 0 && innerH > 0) {
+        ctx.save()
+        traceRoundedRectPath(
+          ctx,
+          destRect.x + inset,
+          destRect.y + inset,
+          innerW,
+          innerH,
+          Math.max(0, radius - inset),
+        )
+        ctx.strokeStyle = borderColor
+        ctx.lineWidth = lw
+        ctx.stroke()
+        ctx.restore()
+      }
+    }
+  }
+
+  const stem = sanitizeFilenameStem(options.filename ?? `merged-${options.mode}`, 'merged')
+  const filename = `${stem}.${extensionForMergeFormat(format)}`
+
+  if (isPdf) {
+    const jpegBlob = await canvasToBlob(canvas, 'image/jpeg', options.quality)
+    const jpegBytes = new Uint8Array(await jpegBlob.arrayBuffer())
+    const pdfBlob = createSinglePagePdfFromJpeg(jpegBytes, layout.width, layout.height)
+    return {
+      blob: pdfBlob,
+      previewBlob: jpegBlob,
+      width: layout.width,
+      height: layout.height,
+      format,
+      bytes: pdfBlob.size,
+      filename,
+      layout,
+    }
   }
 
   const blob = await canvasToBlob(canvas, format, options.quality)
-  const stem = sanitizeFilenameStem(options.filename ?? `merged-${options.mode}`, 'merged')
-  const filename = `${stem}.${extensionForFormat(format)}`
-
   return {
     blob,
     width: layout.width,

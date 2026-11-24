@@ -1,14 +1,17 @@
 /**
- * [INPUT]: depends on types, routes, i18n, schema, useSeoHead, SiteHeader, SeoLandingSections, and SiteFooter within src/seo
- * [OUTPUT]: re-exports the complete public SEO, i18n, schema, head-management, and UI chrome API for src/App.tsx and src/pages/*
+ * [INPUT]: depends on types, routes, i18n, schema, useSeoHead, quickFacts, InfoPageContent, SiteHeader, SeoLandingSections, and SiteFooter within src/seo
+ * [OUTPUT]: re-exports the complete public SEO, i18n, schema, head-management, Quick Facts, trust info page, and UI chrome API for src/App.tsx and src/pages/*
  * [POS]: sole external entry barrel for the src/seo module
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
 export type {
   LocaleCode,
+  HtmlLangCode,
+  HreflangCode,
   ToolId,
   RouteCategory,
+  InfoPageSlug,
   RouteSlug,
   RoutePreset,
   RouteDefinition,
@@ -30,7 +33,10 @@ export {
   ROUTE_DEFINITIONS,
   ROUTE_SLUGS,
   TOOL_ROUTE_DEFINITIONS,
+  INFO_ROUTE_DEFINITIONS,
   ALL_ROUTES,
+  getHtmlLang,
+  getHreflangCode,
   isLocaleCode,
   isRouteSlug,
   getSiteUrl,
@@ -52,6 +58,11 @@ export {
 } from './i18n.ts'
 
 export type {
+  ApplicationCategory,
+  OrganizationSchema,
+  WebSiteSchema,
+  BreadcrumbListSchema,
+  WebPageSchema,
   WebApplicationSchema,
   HowToSchema,
   FaqPageSchema,
@@ -59,6 +70,12 @@ export type {
 } from './schema.ts'
 
 export {
+  MOKLU_GITHUB_URL,
+  resolveApplicationCategory,
+  buildOrganizationSchema,
+  buildWebSiteSchema,
+  buildBreadcrumbListSchema,
+  buildWebPageSchema,
   buildWebApplicationSchema,
   buildHowToSchema,
   buildFaqPageSchema,
@@ -68,6 +85,12 @@ export {
 } from './schema.ts'
 
 export { applySeoHead, useSeoHead } from './useSeoHead.ts'
+
+export type { QuickFactItem, ToolQuickFacts } from './quickFacts.ts'
+export { getToolQuickFacts } from './quickFacts.ts'
+
+export type { InfoPageContentProps } from './InfoPageContent.tsx'
+export { InfoPageContent } from './InfoPageContent.tsx'
 
 export type { SiteHeaderProps } from './SiteHeader.tsx'
 export { SiteHeader } from './SiteHeader.tsx'

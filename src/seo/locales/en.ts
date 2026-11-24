@@ -1,12 +1,13 @@
 /**
- * [INPUT]: depends on LocaleBundle type from ../types.ts; depends on EN_TOOL_ROUTES from ./enTools.ts
- * [OUTPUT]: exports EN_LOCALE complete English UI labels and 19 intent-specific route copy entries
+ * [INPUT]: depends on LocaleBundle type from ../types.ts; depends on EN_TOOL_ROUTES from ./enTools.ts and INFO_PAGE_ROUTES from ./infoRoutes.ts
+ * [OUTPUT]: exports EN_LOCALE complete English UI labels and 23 intent/info route copy entries
  * [POS]: default (root `/`) English language pack within src/seo/locales, loaded by src/seo/i18n.ts
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
 import type { LocaleBundle } from '../types.ts'
 import { EN_TOOL_ROUTES } from './enTools.ts'
+import { INFO_PAGE_ROUTES } from './infoRoutes.ts'
 
 export const EN_LOCALE: LocaleBundle = {
   code: 'en',
@@ -39,9 +40,9 @@ export const EN_LOCALE: LocaleBundle = {
       'id-card': 'ID Card',
     },
     dropzoneTitle: 'Drop images here or paste from clipboard',
-    dropzoneSubtitle: '100% local in your browser — nothing is uploaded to any server',
+    dropzoneSubtitle: '100% local in your browser. Nothing is uploaded to any server.',
     privacyBadge: '100% Browser-Local · Zero Server Uploads',
-    privacyBannerTitle: 'Private by architecture — your pixels never leave this device',
+    privacyBannerTitle: 'Private by architecture: your pixels never leave this device',
     privacyBannerDescription:
       'Every frame render, stitch, crop, compression pass, and ID watermark runs directly on HTML5 Canvas inside your browser tab. Disconnect Wi-Fi and every tool still works.',
     privacyProofPoints: [
@@ -61,9 +62,9 @@ export const EN_LOCALE: LocaleBundle = {
     faqSubheading: 'Answers about local privacy, output quality, supported formats, and Studio editing.',
     studioBannerTitle: 'Need custom typography, callouts, or multi-slide campaigns?',
     studioBannerDescription:
-      'Send your current composition straight into Moklu Studio — our full Konva multi-layer canvas editor with shadows, gradients, annotations, and batch localization.',
-    studioBannerAction: 'Launch Moklu Studio',
-    studioBannerProAction: 'Explore Moklu Pro',
+      'Send your current composition straight into Moklu Studio, our full Konva multi-layer canvas editor with shadows, gradients, annotations, and batch localization.',
+    studioBannerAction: 'Open Studio',
+    studioBannerProAction: 'Moklu Pro',
     footerDescription:
       'Open-source, local-first screenshot mockup studio and browser image toolkit. Zero tracking, zero server uploads.',
     footerGroups: {
@@ -80,13 +81,13 @@ export const EN_LOCALE: LocaleBundle = {
   routes: {
     '': {
       navLabel: 'Home Hub',
-      title: 'Moklu — Free Local Screenshot Mockup & Image Toolkit',
+      title: 'Moklu | Free Local Screenshot Mockup & Image Toolkit',
       metaDescription:
         'Beautify browser & iPhone screenshots, merge photos, split carousels, compress WebP, and watermark ID cards 100% locally in your browser. Zero uploads.',
       badge: '100% Local · Zero Server Uploads',
       h1: 'Screenshot Mockups & Local Image Tools in One Tab',
       subtitle:
-        'Drop or paste any screenshot to frame it in Chrome or iPhone 16 Pro, stitch photos, split carousels, compress images, or prepare watermarked A4 ID sheets — all processed locally with 1-click handoff to Moklu Studio.',
+        'Drop or paste any screenshot to frame it in Chrome or iPhone 16 Pro, stitch photos, split carousels, compress images, or prepare watermarked A4 ID sheets, all processed locally with 1-click handoff to Moklu Studio.',
       steps: [
         {
           title: 'Pick a tool or paste an image',
@@ -136,7 +137,7 @@ export const EN_LOCALE: LocaleBundle = {
     },
     studio: {
       navLabel: 'Moklu Studio',
-      title: 'Moklu Studio — Multi-Layer Screenshot & Mockup Canvas Editor',
+      title: 'Moklu Studio | Multi-Layer Screenshot & Mockup Canvas Editor',
       metaDescription:
         'Full browser-based multi-layer mockup canvas for product launches, App Store sets, browser frames, callouts, gradients, and multi-language localization.',
       badge: 'Full Multi-Layer Canvas Editor',
@@ -192,13 +193,13 @@ export const EN_LOCALE: LocaleBundle = {
     },
     'browser-mockup': {
       navLabel: 'Browser Mockup',
-      title: 'Free Browser Mockup Generator (Chrome & Safari) — Moklu',
+      title: 'Free Browser Mockup Generator (Chrome & Safari) | Moklu',
       metaDescription:
         'Wrap web app screenshots in crisp Chrome, Safari, or minimal window frames with custom gradients and shadows. 100% browser-local, zero uploads.',
       badge: 'Chrome & Safari Window Frames',
       h1: 'Browser Mockup Generator for Web Apps & SaaS',
       subtitle:
-        'Frame website or dashboard screenshots inside clean Chrome, Safari, or minimal macOS browser chrome with balanced padding and soft studio shadows — locally in your browser.',
+        'Frame website or dashboard screenshots inside clean Chrome, Safari, or minimal macOS browser chrome with balanced padding and soft studio shadows, locally in your browser.',
       steps: [
         {
           title: 'Paste or drop a web screenshot',
@@ -248,7 +249,7 @@ export const EN_LOCALE: LocaleBundle = {
     },
     'iphone-mockup': {
       navLabel: 'iPhone Mockup',
-      title: 'Free iPhone 16 Pro Mockup Generator Online — Moklu',
+      title: 'Free iPhone 16 Pro Mockup Generator Online | Moklu',
       metaDescription:
         'Place mobile app screenshots inside a crisp iPhone 16 Pro bezel with studio gradients and drop shadows. 100% browser-local with 1-click Studio editing.',
       badge: 'iPhone 16 Pro Titanium Bezel',
@@ -258,7 +259,7 @@ export const EN_LOCALE: LocaleBundle = {
       steps: [
         {
           title: 'Upload or paste an iOS screen capture',
-          description: 'Drop a simulator capture or device screenshot into the iPhone frame slot — or load the demo screen to preview immediately.',
+          description: 'Drop a simulator capture or device screenshot into the iPhone frame slot, or load the demo screen to preview immediately.',
         },
         {
           title: 'Tune backdrop, ratio, and screen fit',
@@ -290,7 +291,7 @@ export const EN_LOCALE: LocaleBundle = {
         },
         {
           question: 'Can I place two iPhones side by side or tilt the device?',
-          answer: 'Yes — click Open in Studio to duplicate the iPhone layer, rotate frames, and compose multi-device hero shots.',
+          answer: 'Yes. Click Open in Studio to duplicate the iPhone layer, rotate frames, and compose multi-device hero shots.',
         },
         {
           question: 'Does the iPhone mockup add a watermark?',
@@ -304,13 +305,13 @@ export const EN_LOCALE: LocaleBundle = {
     },
     'device-mockup': {
       navLabel: 'Device Mockup',
-      title: 'Free Multi-Device Mockup Generator (Android, Pixel & Web) — Moklu',
+      title: 'Free Multi-Device Mockup Generator (Android, Pixel & Web) | Moklu',
       metaDescription:
         'Generate clean Google Pixel 9, iPhone, and desktop browser mockups in seconds. 100% client-side rendering with custom gradients and Studio handoff.',
       badge: 'Pixel 9, iPhone & Browser Frames',
       h1: 'Multi-Device Mockup Generator for Cross-Platform Apps',
       subtitle:
-        'Present Android, iOS, and responsive web screenshots inside unified hardware and browser frames with consistent lighting — processed locally on your machine.',
+        'Present Android, iOS, and responsive web screenshots inside unified hardware and browser frames with consistent lighting, processed locally on your machine.',
       steps: [
         {
           title: 'Drop your Android, iOS, or web screenshot',
@@ -336,7 +337,7 @@ export const EN_LOCALE: LocaleBundle = {
         },
         {
           title: 'Fast Client-Side Canvas',
-          description: 'No server rendering wait queues — swap frames and preview updates at 60fps right in your browser.',
+          description: 'No server rendering wait queues. Swap frames and preview updates at 60fps right in your browser.',
         },
       ],
       faqs: [
@@ -360,7 +361,7 @@ export const EN_LOCALE: LocaleBundle = {
     },
     'app-store-screenshots': {
       navLabel: 'App Store Screenshots',
-      title: 'App Store & Google Play Screenshot Generator (9:16) — Moklu',
+      title: 'App Store & Google Play Screenshot Generator (9:16) | Moklu',
       metaDescription:
         'Design high-converting 9:16 App Store and Google Play screenshots with iPhone 16 Pro frames, studio backgrounds, and 1-click multi-slide Studio handoff.',
       badge: '9:16 Store Listing Preset',
@@ -398,7 +399,7 @@ export const EN_LOCALE: LocaleBundle = {
       faqs: [
         {
           question: 'How do I add bold marketing headlines above the iPhone frame?',
-          answer: 'Click Open in Studio right from the workspace — your framed screenshot loads into our multi-layer editor where you can add headlines, badges, and multiple slides.',
+          answer: 'Click Open in Studio right from the workspace. Your framed screenshot loads into our multi-layer editor where you can add headlines, badges, and multiple slides.',
         },
         {
           question: 'Does this work for both Apple App Store and Google Play?',
@@ -416,63 +417,83 @@ export const EN_LOCALE: LocaleBundle = {
     },
     'merge-images': {
       navLabel: 'Merge Images',
-      title: 'Merge Images Online Free — Side-by-Side, Vertical & Grid | Moklu',
+      title: 'Merge Images Online Free | Side-by-Side, Vertical, Grid & PDF | Moklu',
       metaDescription:
-        'Combine multiple photos or screenshots horizontally, vertically, or in a clean grid collage. 100% browser-local processing with custom gaps and borders.',
-      badge: 'Horizontal · Vertical · Grid',
-      h1: 'Merge Multiple Images Locally in Seconds',
+        'Combine multiple photos or screenshots horizontally, vertically, or in a 2 to 6 column grid collage and export PNG, WebP, JPEG, clipboard image, or single-page PDF 100% locally.',
+      badge: 'Horizontal · Vertical · 2–6 Col Grid · PDF',
+      h1: 'Merge Images Online Free',
       subtitle:
-        'Drop or paste two or more screenshots and combine them side-by-side, stacked vertically, or in a balanced grid with custom spacing, rounded corners, and zero uploads.',
+        'Drop or paste two or more photos to combine them horizontally, vertically, or in a 2 to 6 column grid with cover/contain fit, drag-and-drop reorder, per-image borders, custom colors, clipboard copy, and single-page PDF export.',
       steps: [
         {
-          title: 'Add and reorder your images',
-          description: 'Select multiple files or paste screenshots sequentially, then arrange them in the exact order you want.',
+          title: 'Add, drag-reorder, or rotate your images',
+          description: 'Drop files or paste with Cmd/Ctrl+V, drag thumbnails to reorder (or use arrow buttons and Reverse), and rotate any image 90 degrees clockwise.',
         },
         {
-          title: 'Pick merge layout and spacing',
-          description: 'Switch between horizontal, vertical, or grid layouts and tune gap width, outer padding, corner radius, and background.',
+          title: 'Pick layout, alignment, borders, and background',
+          description: 'Switch between horizontal, vertical, or 2 to 6 column grid (cover/contain), set gap (0 to 64px), padding (0 to 80px), radius (0 to 48px), per-image borders (0 to 24px), and custom background colors.',
         },
         {
-          title: 'Export combined PNG or WebP',
-          description: 'Download the merged high-resolution image locally, or open it in Moklu Studio for arrows and comparison labels.',
+          title: 'Copy to clipboard or export PNG, WebP, JPEG, or PDF',
+          description: 'Copy the merged PNG in one click, download PNG, WebP, JPEG, or single-page PDF 1.4 with quality control (50% to 100%), or open in Moklu Studio.',
         },
       ],
       highlights: [
         {
-          title: 'Automatic Size Alignment',
-          description: 'Normalize mismatched image heights or widths cleanly so merged panels sit flush without awkward gaps.',
+          title: 'Horizontal, Vertical & 2–6 Column Grid',
+          description: 'Align mixed resolutions via match-min, match-max, or original mode with start/center/end alignment, plus cover or contain grid cell fitting.',
         },
         {
-          title: 'Rounded Corners & Clean Padding',
-          description: 'Add subtle corner rounding and neutral or gradient backdrops for presentation-grade visuals.',
+          title: 'Drag-and-Drop Reorder, Rotation & Borders',
+          description: 'Reorder thumbnails visually, reverse sequence in one click, rotate individual photos 90 degrees, and tune borders and custom background colors.',
         },
         {
-          title: '100% Private Local Stitching',
-          description: 'Merge personal photos, financial chats, or internal UI comparisons strictly inside your browser memory.',
+          title: 'Clipboard Copy & Single-Page PDF Export',
+          description: 'Paste merged results directly into chat apps or save crisp PNG, WebP, JPEG, and single-page PDF 1.4 files 100% locally with zero uploads.',
         },
       ],
       faqs: [
         {
-          question: 'How many images can I merge at once?',
-          answer: 'You can add multiple images in one batch; Moklu automatically clamps extreme canvas dimensions safely so your browser stays responsive.',
+          question: 'Which merge layouts and grid options does Moklu support?',
+          answer: 'Moklu supports horizontal side-by-side, vertical long stitching, and 2 to 6 column grid collages. Grid mode includes 1:1, 4:3, 3:4, and auto cell aspect ratios plus both cover (crop-to-fill) and contain (full uncropped) fitting.',
         },
         {
-          question: 'What happens if my images have different resolutions?',
-          answer: 'Moklu normalizes heights in horizontal mode and widths in vertical mode so mixed-size screenshots line up seamlessly.',
+          question: 'How does Moklu align photos with different resolutions?',
+          answer: 'In horizontal and vertical modes, choose match-min (default), match-max, or original size. In original mode, align images to start (top/left), center (default), or end (bottom/right).',
         },
         {
-          question: 'Can I add "Before" and "After" text labels to merged photos?',
-          answer: 'Yes. After merging, click Open in Studio to place crisp badges, divider lines, and captions on top.',
+          question: 'Can I drag-and-drop reorder, reverse order, or rotate a single image?',
+          answer: 'Yes. Drag thumbnails directly to reorder (accessible left/right arrow buttons are also kept), click Reverse to flip the whole batch order, or rotate any individual photo 90 degrees clockwise.',
         },
         {
-          question: 'Are merged photos uploaded to cloud storage?',
-          answer: 'Never. All pixel composition happens on a local HTML5 Canvas in your browser.',
+          question: 'What spacing, border, corner radius, and background controls are available?',
+          answer: 'Adjust gap (0 to 64px), outer padding (0 to 80px), corner radius (0 to 48px), and per-image stroke borders (0 to 24px with preset swatches or a custom color picker). Canvas background supports presets, gradients, transparency, and a custom color picker.',
+        },
+        {
+          question: 'Which export formats and quality settings are supported?',
+          answer: 'Export as PNG, WebP, JPEG, or single-page PDF 1.4. JPEG, WebP, and PDF include a quality slider from 50% to 100% (default 92%), and transparent backgrounds automatically fill with white on JPEG and PDF.',
+        },
+        {
+          question: 'Can I copy the merged image directly to my clipboard?',
+          answer: 'Yes. Click Copy to Clipboard to place a lossless PNG of the merged result straight onto your system clipboard for instant pasting into Slack, WeChat, Feishu, Notion, or email.',
+        },
+        {
+          question: 'How many images can I merge and what is the resolution ceiling?',
+          answer: 'There is no fixed image count limit. To protect browser stability, the output canvas enforces an 8192px / 64MP safety ceiling; if exceeded, Moklu scales down proportionally and shows a scaled notice beside the preview dimensions.',
+        },
+        {
+          question: 'Does vertical stitching automatically remove overlapping screenshot headers?',
+          answer: 'No. Moklu stitches images cleanly edge-to-edge without automatically cropping overlapping scroll regions or repeated status bars, keeping every source pixel predictable.',
+        },
+        {
+          question: 'Can I merge photos on mobile or add headlines and arrows afterwards?',
+          answer: 'Yes. Everything runs locally in desktop and mobile browsers with zero server uploads. Click Open in Studio to place headlines, callout arrows, badges, and shadows over your merged output.',
         },
       ],
     },
     'combine-photos-side-by-side': {
       navLabel: 'Side-by-Side Photos',
-      title: 'Combine Photos Side by Side Free (Before & After) — Moklu',
+      title: 'Combine Photos Side by Side Free (Before & After) | Moklu',
       metaDescription:
         'Join 2 or more photos horizontally side-by-side with matched heights, custom gaps, and rounded corners. 100% local in your browser with zero uploads.',
       badge: 'Horizontal Comparison Preset',
@@ -522,19 +543,19 @@ export const EN_LOCALE: LocaleBundle = {
         },
         {
           question: 'Is this safe for private personal before-and-after photos?',
-          answer: 'Yes. Processing runs 100% offline in your browser tab — nothing is ever sent to a server.',
+          answer: 'Yes. Processing runs 100% offline in your browser tab, and nothing is ever sent to a server.',
         },
       ],
     },
     'stitch-images-vertically': {
       navLabel: 'Stitch Vertically',
-      title: 'Stitch Screenshots Vertically into One Long Image — Moklu',
+      title: 'Stitch Screenshots Vertically into One Long Image | Moklu',
       metaDescription:
         'Combine multiple mobile screenshots, chat logs, or web captures into one seamless vertical long image locally in your browser. Zero uploads.',
       badge: 'Vertical Long-Screenshot Mode',
       h1: 'Stitch Images Vertically into a Long Screenshot',
       subtitle:
-        'Stack chat logs, receipt captures, full-page mobile views, or tutorial steps top-to-bottom with matched widths and zero-gap seamless stitching — 100% locally.',
+        'Stack chat logs, receipt captures, full-page mobile views, or tutorial steps top-to-bottom with matched widths and zero-gap seamless stitching, 100% locally.',
       steps: [
         {
           title: 'Load screenshots in reading order',
@@ -584,7 +605,7 @@ export const EN_LOCALE: LocaleBundle = {
     },
     'photo-collage-grid': {
       navLabel: 'Photo Collage Grid',
-      title: 'Free Photo Collage Grid Maker (2×2, 3×3 & Custom) — Moklu',
+      title: 'Free Photo Collage Grid Maker (2×2, 3×3 & Custom) | Moklu',
       metaDescription:
         'Arrange photos into clean 2×2, 3×3, or custom column collage grids with adjustable gaps, aspect ratios, and rounded corners. 100% browser-local.',
       badge: 'Custom Column Grid Layout',
@@ -639,5 +660,6 @@ export const EN_LOCALE: LocaleBundle = {
       ],
     },
     ...EN_TOOL_ROUTES,
+    ...INFO_PAGE_ROUTES.en,
   },
 }

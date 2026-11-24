@@ -52,7 +52,7 @@ export function HelpModal({ open, onClose }: HelpModalProps) {
         borderColor: 'var(--color-border)',
         boxShadow: '0 32px 100px rgba(0,0,0,0.65)',
       }}
-      closeButtonClassName="absolute top-4 right-4 z-10 text-muted hover:text-[#e8e8f0] transition-all text-base w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[rgba(255,255,255,0.07)]"
+      closeButtonClassName="absolute top-4 right-4 z-10 text-muted hover:text-[#e8e8f0] transition-colors text-base w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[rgba(255,255,255,0.07)]"
       header={(
         <header className="relative shrink-0 overflow-hidden border-b border-[rgba(255,255,255,0.07)] px-5 py-4 sm:px-6">
           <div className="relative flex items-center gap-3 pr-10">
@@ -108,7 +108,7 @@ export function HelpModal({ open, onClose }: HelpModalProps) {
                           type="button"
                           onClick={() => selectSection(section.id)}
                           aria-current={isActive ? 'page' : undefined}
-                          className={`group relative flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left text-[11px] transition-all ${
+                          className={`group relative flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left text-[11px] transition-colors ${
                             isActive
                               ? 'bg-accent-soft text-accent-text'
                               : 'text-muted hover:bg-[rgba(255,255,255,0.04)] hover:text-[#d1d1dc]'

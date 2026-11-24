@@ -143,13 +143,23 @@ export interface ZipFileEntry {
 
 export type MergeMode = 'horizontal' | 'vertical' | 'grid'
 export type MergeNormalizeMode = 'match-min' | 'match-max' | 'original'
+export type MergeAlign = 'start' | 'center' | 'end'
+export type MergeRotation = 0 | 90 | 180 | 270
+export type MergeOutputFormat = ImageFormat | 'application/pdf'
 export type GridCellAspect = 'auto' | '1:1' | '4:3' | '3:4'
 export type ObjectFitMode = 'cover' | 'contain'
+
+export interface MergeLayoutItem extends Dimensions {
+  /** Clockwise quarter-turn rotation applied before layout sizing and rendering. */
+  rotation?: MergeRotation
+}
 
 export interface MergeOptions extends EngineRuntimeOptions {
   mode: MergeMode
   /** Height normalization in horizontal mode or width normalization in vertical mode. */
   normalize?: MergeNormalizeMode
+  /** Cross-axis alignment when normalize === 'original' (horizontal: top/middle/bottom, vertical: left/center/right). */
+  align?: MergeAlign
   /** Grid column count (clamped to 2..6). Used only when mode === 'grid'. */
   columns?: number
   /** Grid cell aspect ratio. Used only when mode === 'grid'. */
@@ -159,8 +169,14 @@ export interface MergeOptions extends EngineRuntimeOptions {
   gap?: number
   padding?: number
   borderRadius?: number
+  /** Per-image border stroke width in pixels (0 disables border). */
+  borderWidth?: number
+  /** Per-image border stroke color (CSS color string). */
+  borderColor?: string
+  /** Optional per-item clockwise rotation overrides indexed alongside items. */
+  itemRotations?: ReadonlyArray<MergeRotation>
   background?: BackgroundFill
-  format?: ImageFormat
+  format?: MergeOutputFormat
   quality?: number
   maxDimension?: number
   filename?: string
@@ -171,6 +187,8 @@ export interface MergePlacement {
   sourceRect: Rect
   destRect: Rect
   radius: number
+  rotation: MergeRotation
+  borderWidth: number
 }
 
 export interface MergeLayout extends Dimensions {
@@ -180,9 +198,11 @@ export interface MergeLayout extends Dimensions {
 
 export interface MergeResult {
   blob: Blob
+  /** Raster JPEG preview blob populated when format === 'application/pdf' for <img> preview and clipboard export. */
+  previewBlob?: Blob
   width: number
   height: number
-  format: ImageFormat
+  format: MergeOutputFormat
   bytes: number
   filename: string
   layout: MergeLayout

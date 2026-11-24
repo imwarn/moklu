@@ -43,7 +43,7 @@ const DEFAULT_PRICING_COPY: Record<PricingLocale, ResolvedPricingLabels> = {
     freePlanTagline: 'Local-first tools for daily screenshots, image utilities, and Studio editing.',
     freeFeatures: [
       'All 6 browser tools (Mockup, Merge, Split, Compress, Resize, ID Watermark)',
-      '100% local processing — images never leave your browser',
+      '100% local processing: images never leave your browser',
       'Clean 2K PNG/WebP/JPEG exports with zero watermarks',
       'Full Konva Studio multi-layer editor & single-slide exports',
     ],
@@ -133,7 +133,7 @@ const DEFAULT_PRICING_COPY: Record<PricingLocale, ResolvedPricingLabels> = {
     freePlanTagline: '일상 스크린샷 목업, 이미지 유틸리티 및 Studio 편집을 위한 로컬 우선 도구.',
     freeFeatures: [
       '6가지 브라우저 도구 전체 (목업, 합치기, 분할, 압축, 리사이즈, 신분증 워터마크)',
-      '100% 브라우저 로컬 처리 — 이미지가 서버로 전송되지 않습니다',
+      '100% 브라우저 로컬 처리, 이미지가 서버로 전송되지 않습니다',
       '워터마크 없는 2K PNG/WebP/JPEG 내보내기',
       'Konva Studio 멀티 레이어 편집 및 단일 슬라이드 내보내기',
     ],

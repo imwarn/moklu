@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on RouteCopy and SecondaryToolSlug types from ../types.ts
- * [OUTPUT]: exports KO_TOOL_ROUTES containing Korean copy for split, compress, resize, and ID-card routes
+ * [OUTPUT]: exports KO_TOOL_ROUTES containing Korean copy for merge-photos-to-pdf, split, compress, resize, and ID-card routes
  * [POS]: secondary route-copy chunk for ko within src/seo/locales, merged into KO_LOCALE by ./ko.ts to keep every file <= 800 lines
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -8,9 +8,65 @@
 import type { RouteCopy, SecondaryToolSlug } from '../types.ts'
 
 export const KO_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
+  'merge-photos-to-pdf': {
+    navLabel: '사진 합쳐 PDF 저장',
+    title: '여러 사진 한 페이지 PDF로 합치기 (무료·로컬) | Moklu',
+    metaDescription:
+      '영수증, 사진, 스크린샷을 세로·가로·2~6열 그리드로 한 장에 배치해 표준 단일 페이지 PDF 1.4로 즉시 저장. 서버 업로드 제로, 워터마크 없음.',
+    badge: '단일 페이지 PDF 1.4 · 업로드 제로',
+    h1: '여러 사진을 한 장의 단일 페이지 PDF로 합치기',
+    subtitle:
+      '영수증, 스캔 사진, 캡처 화면을 세로·가로·2~6열 그리드로 정리하고 드래그 정렬, 90° 회전, 개별 테두리, 품질 슬라이더를 맞춰 브라우저에서 바로 단일 페이지 PDF 1.4로 내보내세요.',
+    steps: [
+      {
+        title: '사진을 추가하고 순서 정렬',
+        description: '파일을 끌어놓거나 Cmd/Ctrl+V로 붙여넣은 뒤 썸네일 드래그 정렬, 순서 뒤집기, 개별 90° 회전을 적용하세요.',
+      },
+      {
+        title: '레이아웃, 테두리 및 PDF 품질 설정',
+        description: '세로·가로·2~6열 그리드(cover/contain)를 고르고 간격, 여백, 개별 테두리, 품질 슬라이더(50%~100%, 기본 92%)를 조절합니다.',
+      },
+      {
+        title: '로컬 단일 페이지 PDF 1.4 다운로드',
+        description: 'HTML5 Canvas에서 바로 표준 PDF 1.4 파일을 생성해 저장하며 서버 전송이나 워터마크가 없습니다.',
+      },
+    ],
+    highlights: [
+      {
+        title: '서버 업로드 없는 로컬 PDF 1.4 생성',
+        description: '영수증이나 문서 사진도 기기 브라우저 메모리 안에서만 처리되어 안전합니다.',
+      },
+      {
+        title: '투명 배경 자동 흰색 처리',
+        description: '투명 PNG를 PDF 또는 JPEG로 저장할 때 자동으로 깔끔한 흰색 배경을 채워 인쇄 오류를 방지합니다.',
+      },
+      {
+        title: '그리드·회전·테두리 맞춤 제어',
+        description: '2~6열 그리드, 0~24px 개별 테두리, 커스텀 색상 선택기, 품질 조절로 제출용 문서를 정교하게 맞춥니다.',
+      },
+    ],
+    faqs: [
+      {
+        question: '단일 페이지 PDF인가요, 여러 페이지 PDF 병합인가요?',
+        answer: '합쳐진 이미지를 한 장에 담은 표준 단일 페이지 PDF 1.4를 생성합니다. 기존 다중 페이지 PDF 문서를 합치는 도구가 아니라 여러 사진을 한 장의 인쇄용 PDF로 정리할 때 적합합니다.',
+      },
+      {
+        question: '내보내는 PDF의 화질과 용량을 조절할 수 있나요?',
+        answer: '네. PDF 형식을 선택하면 50%~100%(기본 92%) 품질 슬라이더가 나타나 선명도와 파일 크기를 쉽게 조절할 수 있습니다.',
+      },
+      {
+        question: '투명 배경 PNG를 PDF로 저장하면 검게 변하나요?',
+        answer: '아니요. PDF와 JPEG 내보내기 시 투명 배경은 자동으로 흰색 시트로 합성됩니다.',
+      },
+      {
+        question: '영수증이나 서류 사진이 서버로 업로드되나요?',
+        answer: '전혀 업로드되지 않습니다. 레이아웃 합성과 PDF 1.4 인코딩 모두 브라우저 탭 안에서 100% 오프라인으로 처리됩니다.',
+      },
+    ],
+  },
   'carousel-splitter': {
     navLabel: '캐러셀 분할',
-    title: '인스타그램·SNS 심리스 캐러셀 파노라마 분할기 — Moklu',
+    title: '인스타그램·SNS 심리스 캐러셀 파노라마 분할기 | Moklu',
     metaDescription:
       '넓은 파노라마나 와이드 디자인을 끊김 없는 4:5, 3:4, 1:1 스와이프 캐러셀 슬라이드(2~10장)로 분할하고 ZIP 일괄 저장. 100% 브라우저 로컬 처리.',
     badge: '끊김 없는 스와이프 캐러셀 분할',
@@ -66,7 +122,7 @@ export const KO_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'image-grid-splitter': {
     navLabel: '9분할·그리드 자르기',
-    title: '무료 9분할 이미지 자르기 (인스타 3×3 & 맞춤 행×열) — Moklu',
+    title: '무료 9분할 이미지 자르기 (인스타 3×3 & 맞춤 행×열) | Moklu',
     metaDescription:
       '한 장의 이미지를 3×3 인스타 9분할, 2×2, 또는 원하는 행×열 그리드로 정확히 자르고 순서별 ZIP으로 저장하세요. 100% 브라우저 로컬 처리.',
     badge: '3×3 구궁격 · 맞춤 행×열 분할',
@@ -122,7 +178,7 @@ export const KO_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'compress-image': {
     navLabel: '이미지 압축',
-    title: '무료 로컬 이미지 일괄 압축 (PNG · JPEG · WebP) — Moklu',
+    title: '무료 로컬 이미지 일괄 압축 (PNG · JPEG · WebP) | Moklu',
     metaDescription:
       '브라우저에서 PNG, JPEG, WebP 용량을 한 번에 줄이고 파일별 KB 절감률을 실시간 확인한 뒤 ZIP으로 저장하세요. 서버 업로드 제로.',
     badge: '로컬 일괄 압축 · 실시간 용량 절감',
@@ -178,7 +234,7 @@ export const KO_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'convert-image-format': {
     navLabel: '포맷 변환',
-    title: '무료 로컬 이미지 포맷 일괄 변환 (PNG · JPEG · WebP) — Moklu',
+    title: '무료 로컬 이미지 포맷 일괄 변환 (PNG · JPEG · WebP) | Moklu',
     metaDescription:
       'WebP→PNG, PNG→JPEG, JPEG→WebP 변환을 브라우저에서 일괄 처리하고 올바른 확장자와 함께 ZIP 저장하세요. 서버 업로드 없음.',
     badge: 'PNG · WebP · JPEG 일괄 변환',
@@ -234,7 +290,7 @@ export const KO_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'png-to-webp': {
     navLabel: 'PNG → WebP',
-    title: 'PNG를 WebP로 무료 일괄 변환 (투명 배경 유지 · 로컬) — Moklu',
+    title: 'PNG를 WebP로 무료 일괄 변환 (투명 배경 유지 · 로컬) | Moklu',
     metaDescription:
       '투명 배경을 유지한 채 PNG 스크린샷과 아이콘을 가벼운 WebP로 브라우저에서 일괄 변환하세요. 실시간 용량 절감 표시, 서버 업로드 없음.',
     badge: '투명 배경 유지 · 웹 성능 최적화',
@@ -290,7 +346,7 @@ export const KO_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'resize-image': {
     navLabel: '크기 조절',
-    title: '무료 로컬 이미지 일괄 리사이즈 (픽셀 · % 배율) — Moklu',
+    title: '무료 로컬 이미지 일괄 리사이즈 (픽셀 · % 배율) | Moklu',
     metaDescription:
       '가로세로 비율을 고정한 채 정확한 픽셀 또는 % 배율로 이미지를 일괄 리사이즈하세요. 고품질 보간 및 ZIP 저장, 100% 브라우저 로컬 처리.',
     badge: '정확한 픽셀 · % 배율 · 일괄',
@@ -346,7 +402,7 @@ export const KO_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'crop-image': {
     navLabel: '이미지 자르기',
-    title: '무료 이미지 자르기 — SNS 비율 프리셋 (1:1 · 4:5 · 16:9) | Moklu',
+    title: '무료 이미지 자르기: SNS 비율 프리셋 (1:1 · 4:5 · 16:9) | Moklu',
     metaDescription:
       '사진과 스크린샷을 1:1, 4:5, 3:4, 16:9, 9:16 비율로 브라우저에서 정밀하게 자르세요. 원본 화질 유지, 서버 업로드 제로.',
     badge: 'SNS · 웹 황금 비율 자르기',
@@ -402,7 +458,7 @@ export const KO_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'add-border-to-photo': {
     navLabel: '테두리·흰 여백 추가',
-    title: '사진 흰 테두리 추가 & 크롭 없이 SNS 비율 맞추기 — Moklu',
+    title: '사진 흰 테두리 추가 & 크롭 없이 SNS 비율 맞추기 | Moklu',
     metaDescription:
       '가로 사진을 자르지 않고 1:1, 4:5, 3:4 비율에 맞추는 흰색·컬러·그라디언트 테두리 추가 도구. 둥근 모서리와 그림자 지원, 100% 브라우저 로컬 처리.',
     badge: '노크롭 흰 테두리 & 비율 패딩',
@@ -458,7 +514,7 @@ export const KO_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'id-card-watermark': {
     navLabel: '신분증 워터마크',
-    title: '오프라인 신분증 앞뒷면 A4 배치 & 도용 방지 워터마크 — Moklu',
+    title: '오프라인 신분증 앞뒷면 A4 배치 & 도용 방지 워터마크 | Moklu',
     metaDescription:
       '주민등록증·운전면허증 앞뒷면을 실제 카드 크기(85.6×54mm)로 300 DPI A4 용지에 배치하고 용도 한정 워터마크를 삽입하세요. 100% 오프라인 브라우저 로컬 처리.',
     badge: '100% 오프라인 · 300 DPI A4 · 도용 방지',

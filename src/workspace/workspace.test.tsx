@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on node:fs, node:path, vitest, react, react-dom/server, jszip, QuickDesignPreview, QuickWorkspace, batchHelpers, ResizePreviewStage, CompressPreviewModal, getWorkspaceStrings, getWorkspaceThemeTokens, canvasUtils, and workspace types
- * [OUTPUT]: Vitest suite validating all 6 Quick Workspace tools, 4 locales, light/dark violet tokens, roving tabIndex, label bindings, busy overlay, QuickDesignPreview scaleFactor, preset propagation, multi-image Resize filmstrip UX, Compress preview modal, demo generators, and dynamic ZIP packing
+ * [OUTPUT]: Vitest suite validating all 6 Quick Workspace tools, 4 locales, light/dark Neutral Zinc + Signal Orange tokens, roving tabIndex, label bindings, busy overlay, QuickDesignPreview scaleFactor, MergeQuickTool controls/PDF preset, preset propagation, multi-image Resize filmstrip UX, Compress preview modal, demo generators, and dynamic ZIP packing
  * [POS]: automated verification suite for src/workspace
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -453,6 +453,43 @@ describe('workspace i18n and utilities', () => {
       for (const themeLabel of Object.values(dict.mockup.themes)) {
         expect(themeLabel.trim().length).toBeGreaterThan(0)
       }
+      for (const mergeLabel of Object.values(dict.merge)) {
+        expect(mergeLabel.trim().length).toBeGreaterThan(0)
+      }
+      expect(dict.common.copyImage.trim().length).toBeGreaterThan(0)
+      expect(dict.common.downloadPdf.trim().length).toBeGreaterThan(0)
+      expect(dict.common.customColor.trim().length).toBeGreaterThan(0)
     }
+  })
+
+  it('renders MergeQuickTool upgraded controls: 2-6 grid columns, contain fit, custom color picker, border, clipboard copy, and PDF preset', () => {
+    const gridHtml = renderToStaticMarkup(
+      <QuickWorkspace
+        preset={{ tool: 'merge', mergeDirection: 'grid' }}
+        locale="en"
+        theme="light"
+        onOpenInStudio={vi.fn()}
+      />,
+    )
+    expect(gridHtml).toContain('max="6"')
+    expect(gridHtml).toContain('Cell Fit')
+    expect(gridHtml).toContain('Cover')
+    expect(gridHtml).toContain('Contain')
+    expect(gridHtml).toContain('Image Border')
+    expect(gridHtml).toContain('data-testid="custom-color-input"')
+    expect(gridHtml).toContain('data-testid="merge-copy-image"')
+    expect(gridHtml).toContain('>PDF<')
+
+    const pdfHtml = renderToStaticMarkup(
+      <QuickWorkspace
+        preset={{ tool: 'merge', mergeDirection: 'vertical', mergeFormat: 'application/pdf' }}
+        locale="zh"
+        theme="dark"
+        onOpenInStudio={vi.fn()}
+      />,
+    )
+    expect(pdfHtml).toContain('下载 PDF')
+    expect(pdfHtml).toContain('压缩质量')
+    expect(pdfHtml).toContain('复制图片')
   })
 })

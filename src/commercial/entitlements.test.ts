@@ -115,8 +115,12 @@ describe('commercial entitlements', () => {
       const copy = resolvePricingLabels(locale)
       expect(copy.title.length).toBeGreaterThan(0)
       expect(copy.freeFeatures.length).toBeGreaterThanOrEqual(3)
+      for (const line of [copy.title, copy.subtitle, copy.freePlanTagline, copy.proPlanTagline, copy.footerNote, ...copy.freeFeatures]) {
+        expect(line).not.toContain('—')
+      }
       for (const feature of PRO_FEATURES) {
         expect(copy.proFeatureLabels[feature].length).toBeGreaterThan(0)
+        expect(copy.proFeatureLabels[feature]).not.toContain('—')
       }
     }
 
@@ -150,6 +154,9 @@ describe('commercial entitlements', () => {
     expect(lightHtml).toContain('text-zinc-900')
     expect(lightHtml).toContain('bg-accent-soft')
     expect(lightHtml).not.toContain('#141417')
+    expect(lightHtml).not.toContain('✦')
+    expect(lightHtml).not.toContain('transition-all')
+    expect(lightHtml).toContain('<svg')
 
     const darkHtml = renderToStaticMarkup(
       createElement(PricingModal, {

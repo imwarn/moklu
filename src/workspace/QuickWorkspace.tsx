@@ -143,6 +143,7 @@ export function QuickWorkspace({
     preset.mockupModel ?? '',
     preset.canvasSize ?? '',
     preset.mergeDirection ?? '',
+    preset.mergeFormat ?? '',
     preset.splitMode ?? '',
     preset.targetFormat ?? '',
     preset.resizeMode ?? '',
@@ -188,7 +189,7 @@ export function QuickWorkspace({
                 tabIndex={selected ? 0 : -1}
                 onClick={() => selectTool(toolId)}
                 onKeyDown={(e) => handleTabKeyDown(e, idx)}
-                className={`inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-all ${tokens.focusRing} ${
+                className={`inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-[color,background-color,box-shadow] ${tokens.focusRing} ${
                   selected ? tokens.tabActive : tokens.tabIdle
                 }`}
               >
