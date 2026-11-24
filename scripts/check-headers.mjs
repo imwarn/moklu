@@ -1,10 +1,10 @@
 /**
- * [INPUT]: depends on node:fs/promises and node:fs; reads public/_headers, src/ai/providers.ts, and src/ai/client.ts
- * [OUTPUT]: CLI verifier exiting non-zero when required security headers, Cloudflare Web Analytics / AI provider CSP allowlists, or cache rules drift
- * [POS]: mechanical CSP and response-header consistency gate inside scripts/
+ * [INPUT]: depends on node:fs/promises and node:fs; reads public/_headers, public/healthz.txt, public/healthz/index.html, src/ai/providers.ts, and src/ai/client.ts
+ * [OUTPUT]: CLI verifier exiting non-zero when required security headers, Cloudflare Web Analytics / AI provider CSP allowlists, healthcheck assets, or cache rules drift
+ * [POS]: mechanical CSP, healthcheck, and response-header consistency gate inside scripts/
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
-import { readFile } from 'node:fs/promises'
+import { readFile, stat } from 'node:fs/promises'
 import { readFileSync } from 'node:fs'
 
 /**
@@ -133,6 +133,30 @@ const assetCache = cacheFor('/assets/*') ?? cacheFor('/*')
 if (!assetCache || !/immutable/.test(assetCache)) {
   failures.push(`/assets/* must be immutable, got: ${assetCache ?? '(none)'}`)
 }
+
+// Healthcheck endpoints: lightweight static files must exist and never be cached.
+const HEALTHCHECK_PATTERNS = ['/healthz.txt', '/healthz', '/healthz/', '/healthz/index.html']
+for (const pattern of HEALTHCHECK_PATTERNS) {
+  const hcCache = cacheFor(pattern)
+  if (!hcCache || !/\bno-store\b/.test(hcCache)) {
+    failures.push(`${pattern} must set Cache-Control: no-store, got: ${hcCache ?? '(none)'}`)
+  }
+}
+
+const HEALTHCHECK_FILES = ['public/healthz.txt', 'public/healthz/index.html']
+for (const filePath of HEALTHCHECK_FILES) {
+  try {
+    const info = await stat(filePath)
+    if (!info.isFile() || info.size === 0) {
+      failures.push(`${filePath} must be a non-empty static healthcheck file`)
+    } else if (info.size > 256) {
+      failures.push(`${filePath} should stay lightweight (<= 256 bytes), got ${info.size} bytes`)
+    }
+  } catch {
+    failures.push(`missing required healthcheck asset: ${filePath}`)
+  }
+}
+notes.push(`healthcheck no-store verified for ${HEALTHCHECK_PATTERNS.length} paths and ${HEALTHCHECK_FILES.length} static files`)
 
 const report = {
   cspDirectives: csp ? csp.split(';').map((s) => s.trim()).filter(Boolean).length : 0,

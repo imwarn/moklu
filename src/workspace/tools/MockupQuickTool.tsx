@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on react, QuickDesignPreview from @/components/panels/QuickDesignPreview, QUICK_MOCKUPS/QUICK_SIZES/QUICK_THEMES from @/utils/quickDesign, browser chrome defaults from @/assets/mockups/browser, canvas utilities from ../canvasUtils, UI primitives from ../uiPrimitives, theme tokens from ../themeTokens, and strings from ../i18n
- * [OUTPUT]: exports MockupQuickTool component for instant above-the-fold screenshot beautification and full-style Studio handoff
+ * [INPUT]: depends on react, QuickDesignPreview from @/components/panels/QuickDesignPreview, QUICK_MOCKUPS/QUICK_SIZES/QUICK_THEMES from @/utils/quickDesign, browser chrome defaults from @/assets/mockups/browser, canvas utilities from ../canvasUtils, draftStorage from ../draftStorage, useToolDraft from ../useToolDraft, UI primitives from ../uiPrimitives, theme tokens from ../themeTokens, and strings from ../i18n
+ * [OUTPUT]: exports MockupQuickTool component for instant above-the-fold screenshot beautification, local IndexedDB draft auto-save (excluding built-in demos), and full-style Studio handoff
  * [POS]: primary mockup tool panel inside src/workspace/tools; reuses QuickDesignPreview and quickDesign constants
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -23,16 +23,31 @@ import {
   renderMockupCanvasToPng,
   triggerBlobDownload,
 } from '../canvasUtils'
+import { deserializeDraftImages, type WorkspaceToolDraft } from '../draftStorage'
 import { getWorkspaceStrings } from '../i18n'
 import { getWorkspaceThemeTokens } from '../themeTokens'
 import type { WorkspaceImageInput, WorkspaceToolPanelProps } from '../types'
 import {
+  DraftStatusBar,
   DropZone,
   PreviewBusyOverlay,
   SegmentedControl,
   SliderField,
   StudioHandoffButton,
 } from '../uiPrimitives'
+import { useToolDraft } from '../useToolDraft'
+
+interface MockupDraftSettings {
+  mockup: QuickMockup
+  sizeKey: QuickSize
+  customWidth: number
+  customHeight: number
+  quickTheme: QuickTheme
+  fit: QuickScreenshotFit
+  scalePercent: number
+  browserTitle: string
+  browserAddress: string
+}
 
 const MIN_CANVAS_PX = 240
 const MAX_CANVAS_PX = 4096
@@ -88,6 +103,60 @@ export function MockupQuickTool({
   )
   const [isExporting, setIsExporting] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
+
+  const draftImages = useMemo(() => (screenshot ? [screenshot] : []), [screenshot])
+  const draftSettings = useMemo<MockupDraftSettings>(
+    () => ({
+      mockup,
+      sizeKey,
+      customWidth,
+      customHeight,
+      quickTheme,
+      fit,
+      scalePercent,
+      browserTitle,
+      browserAddress,
+    }),
+    [mockup, sizeKey, customWidth, customHeight, quickTheme, fit, scalePercent, browserTitle, browserAddress],
+  )
+
+  const handleRestoreDraft = useCallback((draft: WorkspaceToolDraft<MockupDraftSettings>) => {
+    const restored = deserializeDraftImages(draft.images)
+    if (restored[0]) setScreenshot(restored[0])
+    const cfg = draft.settings
+    if (QUICK_MOCKUPS.some((m) => m.id === cfg.mockup)) setMockup(cfg.mockup)
+    if (cfg.sizeKey && cfg.sizeKey in QUICK_SIZES) setSizeKey(cfg.sizeKey)
+    if (typeof cfg.customWidth === 'number' && Number.isFinite(cfg.customWidth)) {
+      const w = clampCanvasPx(cfg.customWidth, QUICK_SIZES[initialSize].width)
+      setCustomWidth(w)
+      setWidthDraft(String(w))
+    }
+    if (typeof cfg.customHeight === 'number' && Number.isFinite(cfg.customHeight)) {
+      const h = clampCanvasPx(cfg.customHeight, QUICK_SIZES[initialSize].height)
+      setCustomHeight(h)
+      setHeightDraft(String(h))
+    }
+    if (cfg.quickTheme && cfg.quickTheme in QUICK_THEMES) setQuickTheme(cfg.quickTheme)
+    if (cfg.fit === 'cover' || cfg.fit === 'contain' || cfg.fit === 'fill') setFit(cfg.fit)
+    if (typeof cfg.scalePercent === 'number' && Number.isFinite(cfg.scalePercent)) {
+      setScalePercent(Math.max(70, Math.min(115, Math.round(cfg.scalePercent))))
+    }
+    if (typeof cfg.browserTitle === 'string') setBrowserTitle(cfg.browserTitle)
+    if (typeof cfg.browserAddress === 'string') setBrowserAddress(cfg.browserAddress)
+  }, [initialSize])
+
+  const { hasDraft, clearDraft } = useToolDraft<MockupDraftSettings>({
+    toolId: 'mockup',
+    images: draftImages,
+    settings: draftSettings,
+    onRestore: handleRestoreDraft,
+  })
+
+  const handleClearDraft = () => {
+    void clearDraft()
+    const variant = initialMockup.startsWith('browser-') ? 'saas' : 'mobile'
+    setScreenshot(createDemoImageInput(variant, 'moklu-demo-screenshot.svg'))
+  }
 
   const browserChrome = useMemo<BrowserChromeOptions | undefined>(() => {
     if (!isBrowserModel(mockup)) return undefined
@@ -251,6 +320,16 @@ export function MockupQuickTool({
               onFiles={handleFiles}
             />
           </div>
+
+          {hasDraft && (
+            <DraftStatusBar
+              theme={theme}
+              toolId="mockup"
+              savedLabel={s.common.draftSaved}
+              clearLabel={s.common.clearDraft}
+              onClear={handleClearDraft}
+            />
+          )}
         </div>
       </div>
 

@@ -60,6 +60,8 @@ export const KO: WorkspaceStrings = {
     decodeError: '이미지를 불러올 수 없습니다. 파일 형식을 확인해 주세요.',
     exportError: '내보내기에 실패했습니다. 다시 시도해 주세요.',
     zipError: 'ZIP 압축 파일 생성에 실패했습니다. 다시 시도해 주세요.',
+    draftSaved: '로컬 초안 자동 저장됨',
+    clearDraft: '초안 지우기',
   },
   swatches: {
     white: '화이트',
@@ -126,6 +128,9 @@ export const KO: WorkspaceStrings = {
     rotate90: '90° 회전',
     dragToReorder: '드래그해 순서 변경',
     scaledNotice: '안전 해상도로 자동 축소됨',
+    removeOverlapLabel: '스마트 중복 제거 (긴 스크린샷)',
+    removeOverlapHint: '스크롤 중복 영역과 고정 상·하단 바를 브라우저에서 자동 제거합니다.',
+    overlapTrimmedLabel: '중복 제거',
     addMore: '이미지 추가',
     loadDemoSet: '3장 데모 불러오기',
     itemsCount: '장',

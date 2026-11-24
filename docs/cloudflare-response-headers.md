@@ -79,9 +79,9 @@ the base URL is correct and allows direct browser requests (CORS)...
 
 ### 先确认各层职责
 
-Moklu 的 Coolify Resource 是 **Application / Nixpacks / SPA**，由应用容器内的静态服务器提供文件；外部 HTTPS / 域名转发由 Coolify 的反向代理以及可能存在的 Cloudflare 负责。**不要把下面的任何 nginx `server { listen 443 ssl; }` 配置直接粘贴到 Coolify 默认反向代理**，也不要修改 Coolify 管理的宿主机 nginx/Traefik 配置。
+Moklu 的 Coolify Resource 为 **Application / Railpack（或历史 Nixpacks）/ SPA**，由应用容器内的静态服务器（Railpack 默认 Caddy，或 Coolify Static/SPA 管线生成的 Nginx）提供文件；外部 HTTPS / 域名转发由 Coolify 的反向代理以及可能存在的 Cloudflare 负责。**不要把下面的任何 nginx `server { listen 443 ssl; }` 配置直接粘贴到 Coolify 默认反向代理**，也不要修改 Coolify 管理的宿主机 nginx/Traefik 配置。
 
-`public/_headers` 只是 **Cloudflare Pages / Netlify 格式的配置源文件**，适用于本地 `scripts/serve-headers.mjs` 预演；Coolify 默认的 Nixpacks 静态服务器、Cloudflare 的普通代理 DNS 记录**都不会自动读取它**。PR 合并或重新部署 Moklu **不等于线上安全响应头生效**。
+`public/_headers` 只是 **Cloudflare Pages / Netlify 格式的配置源文件**，适用于本地 `scripts/serve-headers.mjs` 预演；Coolify 默认的 Railpack/Nixpacks 静态服务器、Cloudflare 的普通代理 DNS 记录**都不会自动读取它**。PR 合并或重新部署 Moklu **不等于线上安全响应头生效**。
 
 ### 阶段 A：合并 / 部署 UI 修复，先不强制 CSP
 
@@ -121,6 +121,7 @@ Moklu 的 Coolify Resource 是 **Application / Nixpacks / SPA**，由应用容�
 | 路径 | 目标响应 |
 | --- | --- |
 | `/` 和 `/index.html` | `Cache-Control: no-cache, no-store, must-revalidate`，HTML 不做过期的边缘缓存 |
+| `/healthz.txt`、`/healthz`、`/healthz/`、`/healthz/index.html` | `Cache-Control: no-store`，轻量健康检查端点禁止任何代理/CDN 缓存 |
 | `/assets/*`（带内容哈希） | `Cache-Control: public, max-age=31536000, immutable` |
 | `/logo.svg` 等不带哈希的素材 | 短 TTL，如 `max-age=3600` |
 
@@ -224,3 +225,133 @@ const gitHash = process.env.SOURCE_COMMIT?.slice(0, 7)
 ```
 
 这样 `curl -s https://moklu.app/version.json` 就能确认线上版本，不用开浏览器点弹窗。
+
+---
+
+## 六、Coolify 迁移指南：从 Nixpacks 无缝切换到 Railpack（消除废弃警告）
+
+Nixpacks 已进入维护/废弃阶段，仓库根目录已提供经过官方 Schema（`https://schema.railpack.com`）校验的 `railpack.json`，支持在 Coolify 中零代码修改直接切换至 **Railpack**：
+
+```json
+{
+  "$schema": "https://schema.railpack.com",
+  "provider": "node",
+  "packages": {
+    "node": "22"
+  },
+  "steps": {
+    "build": {
+      "commands": [
+        "npm run build"
+      ]
+    }
+  },
+  "deploy": {
+    "aptPackages": [
+      "...",
+      "curl"
+    ]
+  }
+}
+```
+
+### 设计说明
+
+1. **`provider: "node"` + `packages.node: "22"`**：显式锁定 Node Provider 与 Node 22（与 `.nvmrc` 保持一致），避免仓库根目录存在 `index.html` 与 `public/` 时被误判为跳过构建的纯静态站点。
+2. **`steps.build.commands: ["npm run build"]`**：完整执行 `tsc -b && vite build && node scripts/prerender-seo.mjs`，在 `dist/` 中产出全部 92 条多语言预渲染目录（`dist/<route>/index.html`）、`dist/index.html`、`dist/sitemap.xml`、`dist/robots.txt`、`dist/llms.txt` 及轻量健康检查文件（`dist/healthz.txt`、`dist/healthz/index.html`）。不覆写 `steps.build.inputs`，保留 Railpack 自动生成的依赖安装与源码输入层。
+3. **`deploy.aptPackages: ["...", "curl"]`**：使用 `"..."` 保留 Railpack 默认运行期依赖，同时在运行期 Debian 容器中附带 `curl`，确保 Coolify 容器内 HTTP Healthcheck 不会因缺少 `curl`/`wget` 而误报 `unhealthy`。
+4. **保持零配置 Caddy 稳健性（不提交自定义根 `Caddyfile` / `Staticfile`）**：
+   - Railpack 识别 `vite.config.ts` 与 `vite build`（且无 `start` 脚本）后，会自动以 Vite SPA 模式启用内置 Caddy 服务托管 `dist/`，其内置 `try_files` 既可直接返回 92 条预渲染目录的 `index.html`（HTTP 200），又可对未知前端路由回退至 `/index.html`。
+   - 若提交自定义根 `Caddyfile`，会将配置硬耦合到 Railpack 内部工作目录布局与端口环境变量，且在 Coolify Static/Nginx 模式下不生效；因此保持零配置模板最稳健。
+
+### 分步切换操作
+
+1. 打开 `Coolify Dashboard -> Application -> General`。
+2. 在 **Build Pack** 下拉菜单中，将 `Nixpacks` 改为 **`Railpack`**。
+3. 按你当前的部署模式核对构建管线参数（两种模式二选一，保持与现有路由一致即可）：
+   - **模式 A：纯 Railpack SPA（推荐，内置 Caddy）**
+     - 保持 `Is it a static site?` 关闭（或 `Site type` 保持 Railpack 默认托管）。
+     - 若某些旧版 Coolify / Railpack 未自动识别输出目录，可在 `Coolify Dashboard -> Application -> Environment Variables` 增加 `RAILPACK_SPA_OUTPUT_DIR=dist` 显式锁定 SPA 模式。
+     - **Ports Exposes**：与 Railpack 容器监听端口一致（默认 `80` 或容器注入的 `PORT`）。
+   - **模式 B：Coolify Static / SPA 管线（内置 Nginx）**
+     - 将 `Site type` 设为 `SPA`（或开启 `Is it a static site?`）。
+     - **Publish Directory** 设为 `/dist`。
+     - **Ports Exposes** 保持 `80`。
+4. 保持 `Install Command` / `Build Command` 留空（由 `railpack.json` 自动接管 `npm ci` 与 `npm run build`），避免面板覆写与仓库配置漂移。
+5. 点击 **Save**，随后执行 **Redeploy**（首次切换建议勾选 **Force Rebuild without Cache**，彻底清理旧 Nixpacks 缓存层）。
+6. 观察构建日志：确认使用 Node 22、执行 `npm run build` 并输出 `routesWritten: 92`，Nixpacks 废弃警告消失。
+
+### 无尾斜杠重定向 `http://` scheme 说明
+
+Moklu 已将全部站内链接、`<link rel="canonical">`、`hreflang` 与 `sitemap.xml` 统一为带尾斜杠格式（如 `/en/`、`/zh/`、`/ja/`、`/ko/`），正常访问不会触发目录补斜杠重定向。
+
+若用户手动访问无尾斜杠路径（例如 `/zh`）且观察到源站返回 `Location: http://moklu.app/zh/`（降级为 `http://`）：
+
+- **原因**：位于 HTTPS 反向代理（Traefik / Cloudflare）后的静态服务器以明文 HTTP 监听容器内部端口；Nginx 默认 `absolute_redirect on` 会按内部 HTTP 协议拼出绝对 URL。
+- **处理方式**：
+  - 使用 **模式 A（Railpack 内置 Caddy）** 时，由 Railpack 内置模板托管静态目录与 `try_files`，无需手工维护 `Caddyfile`。
+  - 使用 **模式 B（Coolify Static / Nginx）** 时，可在 `Coolify Dashboard -> Application -> General -> Custom Nginx Configuration` 的 `server { ... }` 块中加入：
+    ```nginx
+    absolute_redirect off;
+    port_in_redirect off;
+    ```
+    使目录重定向返回相对路径 `Location: /zh/`，浏览器与代理会自动保持 `https://`。
+
+### 切换后验证清单
+
+```bash
+# 1. 首页与多语言预渲染路由均直接返回 200
+curl -sSI https://moklu.app/
+curl -sSI https://moklu.app/zh/
+curl -sSI https://moklu.app/en/tools/merge-images/
+
+# 2. 健康检查端点返回 200 且内容为 ok
+curl -sSi https://moklu.app/healthz.txt
+curl -sSi https://moklu.app/healthz/
+
+# 3. 未知前端路由回退 SPA index.html（返回 200）
+curl -sSI https://moklu.app/studio/unknown-check
+```
+
+---
+
+## 七、在 Coolify 开启 HTTP Healthcheck（消除 No healthcheck 警告）
+
+仓库已在 `public/` 内置两个零依赖、极轻量的静态健康检查端点（构建后自动复制到 `dist/`）：
+
+- `/healthz.txt`：纯文本 `ok\n`（3 字节，`Content-Type: text/plain; charset=utf-8`）
+- `/healthz/`（`public/healthz/index.html`）：最小 HTML5 文档（35 字节，`Content-Type: text/html; charset=utf-8`）
+
+两者在 `public/_headers` 中均显式声明 `Cache-Control: no-store`，并由 `scripts/check-headers.mjs` 在 CI 阶段机械校验。
+
+### 分步配置（Coolify Dashboard）
+
+1. 打开 `Coolify Dashboard -> Application -> Healthcheck`。
+2. 打开 **Enable Healthcheck** 开关，按以下参数填写：
+
+| 配置项 | 推荐值 | 说明 |
+| --- | --- | --- |
+| **Method / Check Type** | `HTTP`（`GET`） | 使用容器内 HTTP 探测，开启后 Coolify/Traefik 会自动启用健康就绪门禁与零停机滚动发布 |
+| **Scheme** | `http` | 探测走容器内部回环地址，TLS 由外层 Traefik / Cloudflare 终止 |
+| **Host** | `localhost` | 容器内回环主机名（保持默认即可） |
+| **Port** | 留空（或与容器暴露端口一致，如 `80`） | 留空时 Coolify 默认使用第一个暴露端口；纯 Railpack 模式若自定义了 `PORT` 环境变量，请与之保持一致 |
+| **Path** | `/healthz.txt` | 首选（仅 3 字节纯文本，零解析开销）；也可使用 `/healthz/` 或 `/` 作为备选 |
+| **Return Code** | `200` | 预期 HTTP 状态码 |
+| **Response Text**（可选） | `ok` | 进一步校验响应体内容，防止误把错误页当作健康 |
+| **Interval** | `30`（秒） | 探测间隔，15–30 秒均可 |
+| **Timeout** | `5`（秒） | 单次探测超时 |
+| **Retries** | `3` | 连续失败次数阈值 |
+| **Start Period** | `15`（秒） | 容器启动宽限期 |
+
+3. 点击 **Save** 并执行 **Redeploy**。
+4. 部署完成后在 `Coolify Dashboard -> Application -> General` 确认状态变为 **Running (healthy)**，且 `No healthcheck` 警告消失。
+
+### 排查与注意事项
+
+- **容器内必须有 `curl` 或 `wget`**：Coolify 的 HTTP Healthcheck 在**应用容器内部**执行。本仓库 `railpack.json` 已通过 `deploy.aptPackages: ["...", "curl"]` 预装 `curl`；若使用自定义镜像或出现误报 `unhealthy`，可在 `Coolify Dashboard -> Application -> Terminal` 中直接验证：
+  ```bash
+  command -v curl || command -v wget
+  curl -fsS http://localhost:80/healthz.txt
+  ```
+  （若容器监听了自定义 `PORT`，请将 `80` 替换为实际端口。）
+- **Cloudflare 边缘缓存排除**：如果线上通过 Cloudflare Cache Rules 缓存静态资源，建议为 `/healthz.txt` 与 `/healthz/*` 配置 **Bypass cache**（与 `public/_headers` 中的 `Cache-Control: no-store` 保持一致），确保外部拨测同样命中实时响应。

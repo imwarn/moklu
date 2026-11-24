@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on node:fs/promises, node:assert/strict, node:path, and built dist/ output
+ * [OUTPUT]: verifies dist/index.html and non-empty JS/CSS bundles and prints JSON summary to stdout
+ * [POS]: Post-build release smoke gate in scripts/ invoked by release verification workflows
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { readFile, readdir, stat } from 'node:fs/promises'
 import assert from 'node:assert/strict'
 import path from 'node:path'

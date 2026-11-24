@@ -482,12 +482,12 @@ export const EN_LOCALE: LocaleBundle = {
           answer: 'There is no fixed image count limit. To protect browser stability, the output canvas enforces an 8192px / 64MP safety ceiling; if exceeded, Moklu scales down proportionally and shows a scaled notice beside the preview dimensions.',
         },
         {
-          question: 'Does vertical stitching automatically remove overlapping screenshot headers?',
-          answer: 'No. Moklu stitches images cleanly edge-to-edge without automatically cropping overlapping scroll regions or repeated status bars, keeping every source pixel predictable.',
+          question: 'Does vertical stitching automatically remove overlapping scroll regions or repeated status bars?',
+          answer: 'Yes, optionally. By default Moklu stitches images edge-to-edge so every source pixel stays predictable, and in vertical mode you can enable smart long-screenshot overlap removal and fixed top/bottom bar trimming powered by 100% local pixel matching.',
         },
         {
-          question: 'Can I merge photos on mobile or add headlines and arrows afterwards?',
-          answer: 'Yes. Everything runs locally in desktop and mobile browsers with zero server uploads. Click Open in Studio to place headlines, callout arrows, badges, and shadows over your merged output.',
+          question: 'Can I merge photos on mobile, edit layers in Studio, or keep drafts across refreshes?',
+          answer: 'Yes. Everything runs locally in desktop and mobile browsers with zero server uploads, and Quick Workspace automatically saves user drafts in local browser IndexedDB. Click Open in Studio for lossless multi-layer handoff so you can adjust each photo independently or add headlines, callout arrows, and shadows.',
         },
       ],
     },
@@ -563,7 +563,7 @@ export const EN_LOCALE: LocaleBundle = {
         },
         {
           title: 'Set seamless zero-gap or spaced cards',
-          description: 'Use 0px gap for continuous scrolling chats, or add padding and rounded corners for step-by-step guides.',
+          description: 'Use 0px gap with optional smart overlap removal and fixed top/bottom bar trimming for continuous scrolling chats, or add padding and rounded corners for step-by-step guides.',
         },
         {
           title: 'Export one crisp vertical image',
@@ -587,7 +587,7 @@ export const EN_LOCALE: LocaleBundle = {
       faqs: [
         {
           question: 'How do I remove lines between stitched screenshots?',
-          answer: 'Set both Gap and Outer Padding to 0px and corner radius to 0px for a completely flush continuous long image.',
+          answer: 'Set Gap, Outer Padding, and corner radius to 0px for a flush continuous long image, and optionally enable smart overlap removal and fixed top/bottom bar trimming to strip repeated scroll areas locally.',
         },
         {
           question: 'Can I stitch desktop and mobile screenshots together?',

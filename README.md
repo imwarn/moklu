@@ -17,7 +17,7 @@ Moklu is an open-source, 100% browser-local visual workbench at **[https://moklu
 
 | Tool | Dedicated Routes | Key Capabilities | Output & Limits |
 | --- | --- | --- | --- |
-| **Online Image Merger** | `/merge-images`, `/combine-photos-side-by-side`, `/stitch-images-vertically`, `/photo-collage-grid`, `/merge-photos-to-pdf` | Horizontal, vertical, and 2–6 column grid (`cover` / `contain`, `1:1`, `4:3`, `3:4`, `auto`); `match-min`, `match-max`, `original` (`start` / `center` / `end` alignment); drag-and-drop reorder, Reverse order, per-image 90° rotation; gap (`0–64px`), padding (`0–80px`), corner radius (`0–48px`), per-image borders (`0–24px`), custom color picker | PNG, WebP, JPEG, single-page PDF 1.4 (`50%–100%` quality), 1-click Copy to Clipboard; 8192px / 64MP auto-scaled ceiling |
+| **Online Image Merger** | `/merge-images`, `/combine-photos-side-by-side`, `/stitch-images-vertically`, `/photo-collage-grid`, `/merge-photos-to-pdf` | Horizontal, vertical (with optional 100% local pixel-matching smart long-screenshot overlap removal & fixed top/bottom bar trimming), and 2–6 column grid (`cover` / `contain`, `1:1`, `4:3`, `3:4`, `auto`); `match-min`, `match-max`, `original` (`start` / `center` / `end` alignment); drag-and-drop reorder, Reverse order, per-image 90° rotation; gap (`0–64px`), padding (`0–80px`), corner radius (`0–48px`), per-image borders (`0–24px`), custom color picker, local IndexedDB draft autosave | PNG, WebP, JPEG, single-page PDF 1.4 (`50%–100%` quality), 1-click Copy to Clipboard, lossless multi-layer Studio handoff; 8192px / 64MP auto-scaled ceiling |
 | **Screenshot Mockups** | `/`, `/browser-mockup`, `/iphone-mockup`, `/device-mockup`, `/app-store-screenshots` | Chrome, Safari, and minimal browser windows; iPhone 16 Pro, Pixel 9, and App Store 9:16 templates; custom padding, shadows, and light/dark themes | High-res PNG + 1-click handoff to Moklu Studio |
 | **Carousel & Grid Splitter** | `/carousel-splitter`, `/image-grid-splitter` | Seamless swipeable panorama slices (`4:5`, `3:4`, `1:1`) and custom matrix splits (`1–6` rows × `1–6` cols) with live cut-line overlay | Numbered PNG slices bundled as 1-click local ZIP |
 | **Batch Compressor & Converter** | `/compress-image`, `/convert-image-format`, `/png-to-webp` | Client-side PNG, JPEG, and WebP compression and conversion with quality slider, optional max-width scaling, and before/after byte counters | Individual files or 1-click local ZIP |
@@ -30,7 +30,7 @@ Moklu is an open-source, 100% browser-local visual workbench at **[https://moklu
 - **Zero server uploads**: Every quick tool executes in browser RAM using HTML5 Canvas 2D. Disconnect Wi-Fi after loading any tool page and it still works end to end.
 - **Explicit boundaries**:
   - Single-page PDF export packages the merged image sheet into one PDF 1.4 page rather than merging multi-page PDF documents.
-  - Vertical stitching joins images cleanly edge to edge without auto-removing overlapping scroll regions.
+  - Vertical stitching defaults to clean edge-to-edge joining and provides optional smart long-screenshot overlap removal and fixed top/bottom bar trimming via 100% local pixel matching, plus lossless multi-layer handoff to Moklu Studio for further editing and local browser IndexedDB draft autosave.
   - Canvas outputs enforce an `8192px / 64MP` safety ceiling with automatic proportional scaling and a visible scaled badge.
 - **Trust & compliance pages**: `/about`, `/privacy`, `/terms` (available in EN, ZH, JA, KO) and `/llms.txt`.
 
@@ -44,7 +44,7 @@ Moklu（**[https://moklu.app](https://moklu.app)**）是一款开源、100% 浏�
 
 | 工具模块 | 专题页面 | 核心能力 | 导出与安全边界 |
 | --- | --- | --- | --- |
-| **在线图片拼接** | `/zh/merge-images`、`/zh/combine-photos-side-by-side`、`/zh/stitch-images-vertically`、`/zh/photo-collage-grid`、`/zh/merge-photos-to-pdf` | 横向并排、竖向长图、2–6 列宫格（`cover` 铺满 / `contain` 完整、`1:1`/`4:3`/`3:4`/自动）；按最小/最大/原尺寸对齐（支持靠顶/左、居中、靠底/右）；拖拽排序、一键反转顺序、单图 90° 旋转；间距（`0–64px`）、外边距（`0–80px`）、圆角（`0–48px`）、单图描边边框（`0–24px`）与自定义取色器 | PNG、WebP、JPEG、单页 PDF 1.4（`50%–100%` 质量滑块）、一键复制到剪贴板；8192px / 64MP 安全上限自动等比缩放并提示 |
+| **在线图片拼接** | `/zh/merge-images`、`/zh/combine-photos-side-by-side`、`/zh/stitch-images-vertically`、`/zh/photo-collage-grid`、`/zh/merge-photos-to-pdf` | 横向并排、竖向长图（可选纯本地像素匹配智能去重叠与固定顶/底栏裁剪）、2–6 列宫格（`cover` 铺满 / `contain` 完整、`1:1`/`4:3`/`3:4`/自动）；按最小/最大/原尺寸对齐（支持靠顶/左、居中、靠底/右）；拖拽排序、一键反转顺序、单图 90° 旋转；间距（`0–64px`）、外边距（`0–80px`）、圆角（`0–48px`）、单图描边边框（`0–24px`）、自定义取色器与本地 IndexedDB 草稿自动保存 | PNG、WebP、JPEG、单页 PDF 1.4（`50%–100%` 质量滑块）、一键复制到剪贴板、多图层无损移交 Studio；8192px / 64MP 安全上限自动等比缩放并提示 |
 | **截图套壳与样机** | `/zh`、`/zh/browser-mockup`、`/zh/iphone-mockup`、`/zh/device-mockup`、`/zh/app-store-screenshots` | Chrome / Safari / 极简浏览器窗口、iPhone 16 Pro、Pixel 9 与应用商店 9:16 竖屏样机；浅深色边框、阴影与背景一键切换 | 高清 PNG 导出，支持一键转入 Studio 多图层精修 |
 | **轮播与九宫格切图** | `/zh/carousel-splitter`、`/zh/image-grid-splitter` | 小红书 `3:4` / Instagram `4:5` / `1:1` 无缝滑屏轮播切图，以及 `1–6` 行 × `1–6` 列自由宫格切图，实时叠加切割线 | 按序编号 PNG，本地一键打包 ZIP |
 | **批量压缩与格式转换** | `/zh/compress-image`、`/zh/convert-image-format`、`/zh/png-to-webp` | PNG / JPEG / WebP 本地批量压缩与互转，提供质量滑块、最大宽度限制及压缩前后体积实时对比 | 单张下载或批量本地 ZIP 打包 |
@@ -57,7 +57,7 @@ Moklu（**[https://moklu.app](https://moklu.app)**）是一款开源、100% 浏�
 - **100% 本地零上传**：所有快速工具均在浏览器内存与 Canvas 2D 中执行，可在 DevTools Network 面板核验零上传，断网同样可用。
 - **清晰透明的能力边界**：
   - PDF 导出用于将拼接成品封装为标准单页 PDF 1.4 文件，不用于多页 PDF 文档合并。
-  - 竖向长图按边缘顺序拼接，不包含自动去除重复滚动区域或状态栏功能。
+  - 竖向拼接提供可选的智能长截图去重叠与固定顶/底栏裁剪（纯本地像素匹配），支持拼图多图层无损移交 Studio 二次编辑与本地 IndexedDB 草稿自动保存。
   - 拼图画布设置 `8192px / 64MP` 安全上限，超限时自动等比缩放并在界面明确提示。
 - **信任与站点说明**：内置四语 `/about`、`/privacy`、`/terms` 与 `/llms.txt`。
 
