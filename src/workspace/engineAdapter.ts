@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on src/tools barrel (loadImageItem, disposeImageItems, mergeImages, splitImage, compressImages, transformImages, composeIdCardSheet, packBlobsToZip, sanitizeFilenameStem, extensionForFormat) and src/workspace/types (WorkspaceEngines and option/output contracts)
- * [OUTPUT]: exports parseBackgroundFill, formatSuffixedFilename, and createToolsWorkspaceEngines adapting src/tools pure canvas engines to the WorkspaceEngines DIP contract with guaranteed LoadedImageItem disposal
+ * [OUTPUT]: exports parseBackgroundFill, formatSuffixedFilename, and createToolsWorkspaceEngines adapting src/tools pure canvas engines (including seam overrides, multipage PDF, target-KB compression, and EXIF/original metadata passthrough) to the WorkspaceEngines DIP contract with guaranteed LoadedImageItem disposal
  * [POS]: concrete integration adapter inside src/workspace; bridges UI panels in src/workspace/tools to the tested pure-canvas engines in src/tools
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -179,17 +179,31 @@ export function createToolsWorkspaceEngines(): WorkspaceEngines {
           format: options.format,
           quality: options.quality,
           removeOverlap: options.removeOverlap,
+          seamOverlapOverrides: options.seamOverlapOverrides,
+          pdfMode: options.pdfMode,
+          pdfPageSize: options.pdfPageSize,
+          pdfOrientation: options.pdfOrientation,
+          pdfMargin: options.pdfMargin,
           filename: `moklu-merged.${ext}`,
         })
         const base = await toBlobOutput(result.blob, result.width, result.height, result.filename, result.format, {
           previewBlob: result.previewBlob,
           scaleFactor: result.layout.scaleFactor,
         })
+        const rawSeams = result.layout.seams ?? result.seams
+        const seams = rawSeams?.map((seam) => ({
+          index: seam.index,
+          autoOverlapPx: seam.autoOverlapPx,
+          appliedOverlapPx: seam.appliedOverlapPx,
+          fixedTopPx: seam.fixedTopPx,
+          fixedBottomPx: seam.fixedBottomPx,
+        }))
         const layout: WorkspaceMergeLayout = {
           width: result.layout.width,
           height: result.layout.height,
           scaleFactor: result.layout.scaleFactor,
           overlapRemovedPx: result.layout.overlapRemovedPx ?? 0,
+          ...(seams ? { seams } : {}),
           placements: result.layout.placements.map((p) => ({
             index: p.index,
             sourceRect: { ...p.sourceRect },
@@ -250,6 +264,8 @@ export function createToolsWorkspaceEngines(): WorkspaceEngines {
           quality: options.quality,
           maxWidth: options.maxWidth,
           maxHeight: options.maxHeight,
+          targetBytes: options.targetBytes,
+          preserveOriginalDimensions: options.preserveOriginalDimensions,
           includeZip: false,
         })
 
@@ -276,6 +292,13 @@ export function createToolsWorkspaceEngines(): WorkspaceEngines {
               originalBytes,
               outputBytes: item.outputBytes,
               savedRatio,
+              ...(source?.dataUrl !== undefined ? { originalDataUrl: source.dataUrl } : {}),
+              originalWidth: item.originalWidth ?? source?.width ?? item.width,
+              originalHeight: item.originalHeight ?? source?.height ?? item.height,
+              ...(item.targetBytesMet !== undefined ? { targetBytesMet: item.targetBytesMet } : {}),
+              ...(item.autoDownscaled !== undefined ? { autoDownscaled: item.autoDownscaled } : {}),
+              ...(item.appliedQuality !== undefined ? { appliedQuality: item.appliedQuality } : {}),
+              ...(source?.exif !== undefined ? { exif: source.exif } : {}),
             }
           }),
         )

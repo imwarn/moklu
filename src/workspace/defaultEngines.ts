@@ -1,10 +1,15 @@
 /**
- * [INPUT]: depends on dynamic jszip import, createSinglePagePdfFromJpeg from @/tools/pdfHelper, canvas helpers from ./canvasUtils, and workspace engine types from ./types
- * [OUTPUT]: exports createDefaultWorkspaceEngines providing standalone browser-native merge (PNG/JPEG/WebP/PDF, rotation, borders, cross-axis alignment), split, compress, transform, idCard, and on-demand packZip implementations
+ * [INPUT]: depends on dynamic jszip import, applySeamOverlapOverrides, createMultiPagePdfFromJpegs, and createSinglePagePdfFromJpeg from @/tools, canvas helpers from ./canvasUtils, and workspace engine types from ./types
+ * [OUTPUT]: exports createDefaultWorkspaceEngines providing standalone browser-native merge (PNG/JPEG/WebP/single-or-multipage PDF, seam overrides, rotation, borders, cross-axis alignment), split, compress (quality slider & target-KB binary search with auto-downscale and EXIF/original passthrough), transform, idCard, and on-demand packZip implementations
  * [POS]: default DIP fallback implementation for QuickWorkspace when concrete src/tools engines are not injected
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
-import { createSinglePagePdfFromJpeg } from '@/tools/pdfHelper'
+import {
+  applySeamOverlapOverrides,
+  createMultiPagePdfFromJpegs,
+  createSinglePagePdfFromJpeg,
+  type MultiPagePdfPageInput,
+} from '@/tools'
 import {
   clampDimensions,
   drawFittedImage,
@@ -29,6 +34,7 @@ import type {
   WorkspaceMergeOutput,
   WorkspaceMergePlacement,
   WorkspaceMergeRotation,
+  WorkspaceMergeSeamInfo,
   WorkspaceRect,
   WorkspaceSplitOptions,
   WorkspaceSplitResult,
@@ -49,24 +55,11 @@ interface MergePlacement {
   destRect: WorkspaceRect
 }
 
-function mapRotatedSourceRect(
-  rotatedRect: WorkspaceRect,
-  origWidth: number,
-  origHeight: number,
-  rotation: WorkspaceMergeRotation,
-): WorkspaceRect {
-  const { x: rx, y: ry, width: rw, height: rh } = rotatedRect
-  switch (rotation) {
-    case 90:
-      return { x: ry, y: origHeight - (rx + rw), width: rh, height: rw }
-    case 180:
-      return { x: origWidth - (rx + rw), y: origHeight - (ry + rh), width: rw, height: rh }
-    case 270:
-      return { x: origWidth - (ry + rh), y: rx, width: rh, height: rw }
-    case 0:
-    default:
-      return rotatedRect
-  }
+function mapRotatedSourceRect(r: WorkspaceRect, origW: number, origH: number, rotation: WorkspaceMergeRotation): WorkspaceRect {
+  if (rotation === 90) return { x: r.y, y: origH - (r.x + r.width), width: r.height, height: r.width }
+  if (rotation === 180) return { x: origW - (r.x + r.width), y: origH - (r.y + r.height), width: r.width, height: r.height }
+  if (rotation === 270) return { x: origW - (r.y + r.height), y: r.x, width: r.height, height: r.width }
+  return r
 }
 
 function computeCellFitRects(
@@ -78,37 +71,18 @@ function computeCellFitRects(
   const srcRatio = effW / Math.max(1, effH)
   const dstRatio = box.width / Math.max(1, box.height)
   if (fit === 'cover') {
-    let sx = 0
-    let sy = 0
-    let cropW = effW
-    let cropH = effH
-    if (srcRatio > dstRatio) {
-      cropW = effH * dstRatio
-      sx = (effW - cropW) / 2
-    } else {
-      cropH = effW / dstRatio
-      sy = (effH - cropH) / 2
-    }
+    const cropW = srcRatio > dstRatio ? effH * dstRatio : effW
+    const cropH = srcRatio > dstRatio ? effH : effW / dstRatio
     return {
-      rotatedSourceRect: { x: sx, y: sy, width: cropW, height: cropH },
+      rotatedSourceRect: { x: (effW - cropW) / 2, y: (effH - cropH) / 2, width: cropW, height: cropH },
       destRect: box,
     }
   }
-  let rw = box.width
-  let rh = box.height
-  if (srcRatio > dstRatio) {
-    rh = box.width / srcRatio
-  } else {
-    rw = box.height * srcRatio
-  }
+  const rw = srcRatio > dstRatio ? box.width : box.height * srcRatio
+  const rh = srcRatio > dstRatio ? box.width / srcRatio : box.height
   return {
     rotatedSourceRect: { x: 0, y: 0, width: effW, height: effH },
-    destRect: {
-      x: box.x + (box.width - rw) / 2,
-      y: box.y + (box.height - rh) / 2,
-      width: rw,
-      height: rh,
-    },
+    destRect: { x: box.x + (box.width - rw) / 2, y: box.y + (box.height - rh) / 2, width: rw, height: rh },
   }
 }
 
@@ -131,6 +105,15 @@ function aspectRatioValue(aspect: WorkspaceAspectPreset): number | null {
   }
 }
 
+function createCanvas2d(width: number, height: number): { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D } {
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('2D canvas context unavailable')
+  return { canvas, ctx }
+}
+
 async function packZipFallback(files: Array<{ filename: string; blob: Blob }>): Promise<Blob> {
   const { default: JSZip } = await import('jszip')
   const zip = new JSZip()
@@ -145,7 +128,13 @@ async function packZipFallback(files: Array<{ filename: string; blob: Blob }>): 
 function computeMergeLayout(
   loaded: Array<{ img: HTMLImageElement; rotation: WorkspaceMergeRotation }>,
   options: WorkspaceMergeOptions,
-): { placements: MergePlacement[]; totalW: number; totalH: number } {
+): {
+  placements: MergePlacement[]
+  totalW: number
+  totalH: number
+  rawOverlapRemovedPx: number
+  seams?: WorkspaceMergeSeamInfo[]
+} {
   const pad = Math.max(0, options.padding)
   const gap = Math.max(0, options.gap)
   const align: WorkspaceMergeAlign = options.align ?? 'center'
@@ -182,19 +171,38 @@ function computeMergeLayout(
       cursorX += w + gap
       return item
     })
-    return { placements, totalW: cursorX - gap + pad, totalH: targetH + pad * 2 }
+    return { placements, totalW: cursorX - gap + pad, totalH: targetH + pad * 2, rawOverlapRemovedPx: 0 }
   }
 
   if (options.direction === 'vertical') {
     const targetW = options.normalize === 'match-min'
       ? Math.min(...dims.map((d) => d.w))
       : Math.max(...dims.map((d) => d.w))
+    const seamPlan =
+      dims.length >= 2
+        ? applySeamOverlapOverrides(
+            dims.map((d) => d.h),
+            undefined,
+            undefined,
+            options.seamOverlapOverrides,
+          )
+        : undefined
     let cursorY = pad
-    const placements = dims.map((d) => {
+    let rawOverlapRemovedPx = 0
+    const placements = dims.map((d, idx) => {
+      const trimTop = seamPlan?.trims[idx]?.trimTop ?? 0
+      const trimBottom = seamPlan?.trims[idx]?.trimBottom ?? 0
+      const keptH = Math.max(1, d.h - trimTop - trimBottom)
       const w = options.normalize === 'original' ? d.w : targetW
-      const h = options.normalize === 'original' ? d.h : Math.max(1, Math.round((d.h / d.w) * targetW))
+      const fullH = options.normalize === 'original' ? d.h : Math.max(1, Math.round((d.h / d.w) * targetW))
+      const h = trimTop === 0 && trimBottom === 0 ? fullH : Math.max(1, Math.round((keptH / d.w) * w))
+      rawOverlapRemovedPx += Math.max(0, fullH - h)
       const x = pad + resolveCrossOffset(targetW, w, align)
       const destRect: WorkspaceRect = { x, y: cursorY, width: w, height: h }
+      const sourceRect =
+        trimTop === 0 && trimBottom === 0
+          ? { x: 0, y: 0, width: d.origW, height: d.origH }
+          : mapRotatedSourceRect({ x: 0, y: trimTop, width: d.w, height: keptH }, d.origW, d.origH, d.rotation)
       const item: MergePlacement = {
         index: d.index,
         img: d.img,
@@ -204,13 +212,19 @@ function computeMergeLayout(
         h,
         fit: 'cover',
         rotation: d.rotation,
-        sourceRect: { x: 0, y: 0, width: d.origW, height: d.origH },
+        sourceRect,
         destRect,
       }
       cursorY += h + gap
       return item
     })
-    return { placements, totalW: targetW + pad * 2, totalH: cursorY - gap + pad }
+    return {
+      placements,
+      totalW: targetW + pad * 2,
+      totalH: cursorY - gap + pad,
+      rawOverlapRemovedPx,
+      seams: seamPlan?.seams,
+    }
   }
 
   const cols = Math.max(1, Math.min(6, options.columns, dims.length))
@@ -250,7 +264,24 @@ function computeMergeLayout(
     placements,
     totalW: pad * 2 + cols * cellW + (cols - 1) * gap,
     totalH: pad * 2 + rows * cellH + (rows - 1) * gap,
+    rawOverlapRemovedPx: 0,
   }
+}
+
+function drawMergePlacement(ctx: CanvasRenderingContext2D, item: MergePlacement): void {
+  const { sourceRect: sr, rotation } = item
+  if (rotation === 0) {
+    ctx.drawImage(item.img, sr.x, sr.y, sr.width, sr.height, item.x, item.y, item.w, item.h)
+    return
+  }
+  const cx = item.x + item.w / 2
+  const cy = item.y + item.h / 2
+  const swapped = rotation === 90 || rotation === 270
+  const dw = swapped ? item.h : item.w
+  const dh = swapped ? item.w : item.h
+  ctx.translate(cx, cy)
+  ctx.rotate((rotation * Math.PI) / 180)
+  ctx.drawImage(item.img, sr.x, sr.y, sr.width, sr.height, -dw / 2, -dh / 2, dw, dh)
 }
 
 async function mergeFallback(
@@ -267,20 +298,91 @@ async function mergeFallback(
   const radius = Math.max(0, options.borderRadius)
   const borderWidth = Math.max(0, options.borderWidth ?? 0)
   const borderColor = options.borderColor ?? '#ffffff'
-  const { placements, totalW, totalH } = computeMergeLayout(loaded, options)
+  const { placements, totalW, totalH, rawOverlapRemovedPx, seams } = computeMergeLayout(loaded, options)
 
   const clamped = clampDimensions(totalW, totalH)
   const scale = Math.min(clamped.width / Math.max(1, totalW), clamped.height / Math.max(1, totalH), 1)
-  const canvas = document.createElement('canvas')
-  canvas.width = Math.max(1, Math.round(totalW * scale))
-  canvas.height = Math.max(1, Math.round(totalH * scale))
-  const ctx = canvas.getContext('2d')
-  if (!ctx) throw new Error('2D canvas context unavailable')
+  const scaledPlacements: WorkspaceMergePlacement[] = placements.map((item) => ({
+    index: item.index,
+    sourceRect: item.sourceRect,
+    destRect: {
+      x: item.destRect.x * scale,
+      y: item.destRect.y * scale,
+      width: item.destRect.width * scale,
+      height: item.destRect.height * scale,
+    },
+    radius: radius * scale,
+    rotation: item.rotation,
+    borderWidth: borderWidth * scale,
+  }))
+  const layout: WorkspaceMergeLayout = {
+    width: Math.max(1, Math.round(totalW * scale)),
+    height: Math.max(1, Math.round(totalH * scale)),
+    scaleFactor: scale,
+    placements: scaledPlacements,
+    overlapRemovedPx: rawOverlapRemovedPx > 0 ? Math.max(1, Math.round(rawOverlapRemovedPx * scale)) : 0,
+    ...(seams ? { seams } : {}),
+  }
 
+  const ext = extensionForMime(options.format)
   const isPdf = options.format === 'application/pdf'
   const bg = (options.format === 'image/jpeg' || isPdf) && options.background === 'transparent'
     ? '#ffffff'
     : options.background
+
+  if (isPdf && options.pdfMode === 'multipage') {
+    const pages: MultiPagePdfPageInput[] = []
+    let previewDataUrl = ''
+    for (let i = 0; i < loaded.length; i += 1) {
+      const { img, rotation } = loaded[i]
+      const nw = img.naturalWidth || img.width
+      const nh = img.naturalHeight || img.height
+      const effW = rotation === 90 || rotation === 270 ? nh : nw
+      const effH = rotation === 90 || rotation === 270 ? nw : nh
+      const pageDims = clampDimensions(effW, effH)
+      const { canvas: pageCanvas, ctx: pctx } = createCanvas2d(pageDims.width, pageDims.height)
+      fillBackground(pctx, pageCanvas.width, pageCanvas.height, bg)
+      pctx.save()
+      drawMergePlacement(pctx, {
+        index: i,
+        img,
+        x: 0,
+        y: 0,
+        w: pageCanvas.width,
+        h: pageCanvas.height,
+        fit: 'contain',
+        rotation,
+        sourceRect: { x: 0, y: 0, width: nw, height: nh },
+        destRect: { x: 0, y: 0, width: pageCanvas.width, height: pageCanvas.height },
+      })
+      pctx.restore()
+      const jpegOut = await finalizeCanvasOutput(pageCanvas, `page-${i + 1}.jpg`, 'image/jpeg', options.quality)
+      if (!previewDataUrl) previewDataUrl = jpegOut.dataUrl
+      pages.push({
+        jpegBytes: new Uint8Array(await jpegOut.blob.arrayBuffer()),
+        pixelWidth: pageCanvas.width,
+        pixelHeight: pageCanvas.height,
+      })
+    }
+    const pdfBlob = createMultiPagePdfFromJpegs(pages, {
+      pageSize: options.pdfPageSize,
+      orientation: options.pdfOrientation,
+      margin: options.pdfMargin,
+    })
+    return {
+      blob: pdfBlob,
+      dataUrl: previewDataUrl,
+      width: layout.width,
+      height: layout.height,
+      filename: `moklu-merge-${options.direction}.${ext}`,
+      sizeBytes: pdfBlob.size,
+      mimeType: 'application/pdf',
+      scaleFactor: scale,
+      layout,
+    }
+  }
+
+  const { canvas, ctx } = createCanvas2d(layout.width, layout.height)
   fillBackground(ctx, canvas.width, canvas.height, bg)
   ctx.scale(scale, scale)
 
@@ -288,18 +390,7 @@ async function mergeFallback(
     ctx.save()
     drawRoundedRectPath(ctx, item.x, item.y, item.w, item.h, radius)
     ctx.clip()
-    if (item.rotation === 0) {
-      drawFittedImage(ctx, item.img, item.x, item.y, item.w, item.h, item.fit)
-    } else {
-      const cx = item.x + item.w / 2
-      const cy = item.y + item.h / 2
-      const swapped = item.rotation === 90 || item.rotation === 270
-      const dw = swapped ? item.h : item.w
-      const dh = swapped ? item.w : item.h
-      ctx.translate(cx, cy)
-      ctx.rotate((item.rotation * Math.PI) / 180)
-      drawFittedImage(ctx, item.img, -dw / 2, -dh / 2, dw, dh, item.fit)
-    }
+    drawMergePlacement(ctx, item)
     ctx.restore()
 
     if (borderWidth > 0) {
@@ -316,37 +407,9 @@ async function mergeFallback(
     }
   }
 
-  const scaledPlacements: WorkspaceMergePlacement[] = placements.map((item) => ({
-    index: item.index,
-    sourceRect: item.sourceRect,
-    destRect: {
-      x: item.destRect.x * scale,
-      y: item.destRect.y * scale,
-      width: item.destRect.width * scale,
-      height: item.destRect.height * scale,
-    },
-    radius: radius * scale,
-    rotation: item.rotation,
-    borderWidth: borderWidth * scale,
-  }))
-  const layout: WorkspaceMergeLayout = {
-    width: canvas.width,
-    height: canvas.height,
-    scaleFactor: scale,
-    placements: scaledPlacements,
-    overlapRemovedPx: 0,
-  }
-
-  const ext = extensionForMime(options.format)
   if (options.format === 'application/pdf') {
-    const jpegOut = await finalizeCanvasOutput(
-      canvas,
-      `moklu-merge-${options.direction}.jpg`,
-      'image/jpeg',
-      options.quality,
-    )
-    const jpegBytes = new Uint8Array(await jpegOut.blob.arrayBuffer())
-    const pdfBlob = createSinglePagePdfFromJpeg(jpegBytes, canvas.width, canvas.height)
+    const jpegOut = await finalizeCanvasOutput(canvas, `moklu-merge-${options.direction}.jpg`, 'image/jpeg', options.quality)
+    const pdfBlob = createSinglePagePdfFromJpeg(new Uint8Array(await jpegOut.blob.arrayBuffer()), canvas.width, canvas.height)
     return {
       blob: pdfBlob,
       dataUrl: jpegOut.dataUrl,
@@ -385,29 +448,16 @@ async function splitFallback(
           ? { w: 1080, h: 1080 }
           : { w: Math.max(1, Math.round(sw / count)), h: sh }
 
-    const panoCanvas = document.createElement('canvas')
     const panoClamped = clampDimensions(slideDims.w * count, slideDims.h)
     const finalSlideW = Math.max(1, Math.floor(panoClamped.width / count))
     const finalSlideH = panoClamped.height
-    panoCanvas.width = finalSlideW * count
-    panoCanvas.height = finalSlideH
-    const panoCtx = panoCanvas.getContext('2d')
-    if (!panoCtx) throw new Error('2D canvas context unavailable')
+    const { canvas: panoCanvas, ctx: panoCtx } = createCanvas2d(finalSlideW * count, finalSlideH)
     drawFittedImage(panoCtx, img, 0, 0, panoCanvas.width, panoCanvas.height, 'cover')
 
     for (let i = 0; i < count; i += 1) {
-      const sliceCanvas = document.createElement('canvas')
-      sliceCanvas.width = finalSlideW
-      sliceCanvas.height = finalSlideH
-      const sctx = sliceCanvas.getContext('2d')
-      if (!sctx) throw new Error('2D canvas context unavailable')
+      const { canvas: sliceCanvas, ctx: sctx } = createCanvas2d(finalSlideW, finalSlideH)
       sctx.drawImage(panoCanvas, i * finalSlideW, 0, finalSlideW, finalSlideH, 0, 0, finalSlideW, finalSlideH)
-      const out = await finalizeCanvasOutput(
-        sliceCanvas,
-        `${base}-slide-${String(i + 1).padStart(2, '0')}.${ext}`,
-        options.format,
-        options.quality,
-      )
+      const out = await finalizeCanvasOutput(sliceCanvas, `${base}-slide-${String(i + 1).padStart(2, '0')}.${ext}`, options.format, options.quality)
       slices.push({ ...out, index: i, row: 0, col: i })
     }
   } else {
@@ -418,18 +468,9 @@ async function splitFallback(
     let index = 0
     for (let r = 0; r < rows; r += 1) {
       for (let c = 0; c < cols; c += 1) {
-        const sliceCanvas = document.createElement('canvas')
-        sliceCanvas.width = cellW
-        sliceCanvas.height = cellH
-        const sctx = sliceCanvas.getContext('2d')
-        if (!sctx) throw new Error('2D canvas context unavailable')
+        const { canvas: sliceCanvas, ctx: sctx } = createCanvas2d(cellW, cellH)
         sctx.drawImage(img, c * cellW, r * cellH, cellW, cellH, 0, 0, cellW, cellH)
-        const out = await finalizeCanvasOutput(
-          sliceCanvas,
-          `${base}-r${r + 1}-c${c + 1}.${ext}`,
-          options.format,
-          options.quality,
-        )
+        const out = await finalizeCanvasOutput(sliceCanvas, `${base}-r${r + 1}-c${c + 1}.${ext}`, options.format, options.quality)
         slices.push({ ...out, index, row: r, col: c })
         index += 1
       }
@@ -440,39 +481,96 @@ async function splitFallback(
   return { slices, zipBlob }
 }
 
+function renderCompressedCanvas(img: HTMLImageElement, w: number, h: number, format: WorkspaceCompressOptions['format']): HTMLCanvasElement {
+  const { canvas, ctx } = createCanvas2d(w, h)
+  if (format === 'image/jpeg') {
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(0, 0, w, h)
+  }
+  ctx.drawImage(img, 0, 0, w, h)
+  return canvas
+}
+
 async function compressFallback(
   images: WorkspaceImageInput[],
   options: WorkspaceCompressOptions,
 ): Promise<WorkspaceCompressItem[]> {
   const ext = extensionForMime(options.format)
+  const targetBytes = options.targetBytes && options.targetBytes > 0 ? Math.floor(options.targetBytes) : undefined
+  const isLossy = options.format === 'image/webp' || options.format === 'image/jpeg'
   const results: WorkspaceCompressItem[] = []
   for (const item of images) {
     const img = await loadHtmlImage(item.dataUrl)
-    let w = img.naturalWidth || img.width
-    let h = img.naturalHeight || img.height
+    const origW = img.naturalWidth || img.width
+    const origH = img.naturalHeight || img.height
+    let w = origW
+    let h = origH
     if (options.maxWidth && options.maxWidth > 0 && w > options.maxWidth) {
-      const ratio = options.maxWidth / w
-      w = Math.round(w * ratio)
-      h = Math.max(1, Math.round(h * ratio))
+      h = Math.max(1, Math.round(h * (options.maxWidth / w)))
+      w = options.maxWidth
     }
     if (options.maxHeight && options.maxHeight > 0 && h > options.maxHeight) {
-      const ratio = options.maxHeight / h
-      h = Math.round(h * ratio)
-      w = Math.max(1, Math.round(w * ratio))
+      w = Math.max(1, Math.round(w * (options.maxHeight / h)))
+      h = options.maxHeight
     }
-    const clamped = clampDimensions(w, h)
-    const canvas = document.createElement('canvas')
-    canvas.width = clamped.width
-    canvas.height = clamped.height
-    const ctx = canvas.getContext('2d')
-    if (!ctx) throw new Error('2D canvas context unavailable')
-    if (options.format === 'image/jpeg') {
-      ctx.fillStyle = '#ffffff'
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
-    }
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+    const baseDims = clampDimensions(w, h)
     const filename = `${stripExtension(item.name) || 'image'}-compressed.${ext}`
-    const out = await finalizeCanvasOutput(canvas, filename, options.format, options.quality)
+    let out: WorkspaceBlobOutput
+    let targetBytesMet: boolean | undefined
+    let autoDownscaled: boolean | undefined
+    let appliedQuality: number | undefined
+
+    if (targetBytes !== undefined && isLossy) {
+      let curW = baseDims.width
+      let curH = baseDims.height
+      let scale = 1
+      autoDownscaled = false
+      const searchQuality = async (cw: number, ch: number) => {
+        const canvas = renderCompressedCanvas(img, cw, ch, options.format)
+        let lo = 0.05
+        let hi = 0.98
+        let bestUnder: { out: WorkspaceBlobOutput; q: number } | null = null
+        let smallest: { out: WorkspaceBlobOutput; q: number } | null = null
+        for (let i = 0; i < 7; i += 1) {
+          const mid = (lo + hi) / 2
+          const candidate = await finalizeCanvasOutput(canvas, filename, options.format, mid)
+          if (!smallest || candidate.sizeBytes < smallest.out.sizeBytes) smallest = { out: candidate, q: mid }
+          if (candidate.sizeBytes <= targetBytes) {
+            bestUnder = { out: candidate, q: mid }
+            lo = mid
+          } else {
+            hi = mid
+          }
+        }
+        return bestUnder ? { ...bestUnder, met: true } : { ...(smallest as { out: WorkspaceBlobOutput; q: number }), met: false }
+      }
+      let attempt = await searchQuality(curW, curH)
+      if (!attempt.met && !options.preserveOriginalDimensions && curW > 320) {
+        for (let step = 0; step < 4 && !attempt.met; step += 1) {
+          const ratio = attempt.out.sizeBytes > 0 ? Math.sqrt(targetBytes / attempt.out.sizeBytes) * 0.92 : 0.8
+          scale *= Math.min(0.8, ratio)
+          const nextW = Math.max(320, Math.round(baseDims.width * scale))
+          if (nextW >= curW) break
+          curW = nextW
+          curH = Math.max(1, Math.round(baseDims.height * (nextW / baseDims.width)))
+          autoDownscaled = true
+          attempt = await searchQuality(curW, curH)
+          if (curW <= 320) break
+        }
+      }
+      out = attempt.out
+      targetBytesMet = attempt.met
+      appliedQuality = Math.round(attempt.q * 1000) / 1000
+    } else {
+      const canvas = renderCompressedCanvas(img, baseDims.width, baseDims.height, options.format)
+      out = await finalizeCanvasOutput(canvas, filename, options.format, options.quality)
+      appliedQuality = isLossy ? options.quality : undefined
+      if (targetBytes !== undefined) {
+        targetBytesMet = out.sizeBytes <= targetBytes
+        autoDownscaled = false
+      }
+    }
+
     const savedRatio = item.sizeBytes > 0 ? (item.sizeBytes - out.sizeBytes) / item.sizeBytes : 0
     results.push({
       ...out,
@@ -481,6 +579,13 @@ async function compressFallback(
       originalBytes: item.sizeBytes,
       outputBytes: out.sizeBytes,
       savedRatio,
+      originalDataUrl: item.dataUrl,
+      originalWidth: origW,
+      originalHeight: origH,
+      ...(targetBytesMet !== undefined ? { targetBytesMet } : {}),
+      ...(autoDownscaled !== undefined ? { autoDownscaled } : {}),
+      ...(appliedQuality !== undefined ? { appliedQuality } : {}),
+      ...(item.exif !== undefined ? { exif: item.exif } : {}),
     })
   }
   return results
@@ -502,58 +607,25 @@ async function transformFallback(
     if (options.mode === 'resize') {
       const targetW = options.scale && options.scale > 0
         ? Math.max(1, Math.round(sw * options.scale))
-        : options.width && options.width > 0
-          ? options.width
-          : sw
+        : options.width && options.width > 0 ? options.width : sw
       const targetH = options.scale && options.scale > 0
         ? Math.max(1, Math.round(sh * options.scale))
-        : options.height && options.height > 0
-          ? options.height
-          : Math.max(1, Math.round((sh / sw) * targetW))
+        : options.height && options.height > 0 ? options.height : Math.max(1, Math.round((sh / sw) * targetW))
       const clamped = clampDimensions(targetW, targetH)
-      const canvas = document.createElement('canvas')
-      canvas.width = clamped.width
-      canvas.height = clamped.height
-      const ctx = canvas.getContext('2d')
-      if (!ctx) throw new Error('2D canvas context unavailable')
+      const { canvas, ctx } = createCanvas2d(clamped.width, clamped.height)
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-      outputs.push(
-        await finalizeCanvasOutput(
-          canvas,
-          `${stripExtension(item.name) || 'image'}-${canvas.width}x${canvas.height}.${ext}`,
-          options.format,
-          options.quality,
-        ),
-      )
+      outputs.push(await finalizeCanvasOutput(canvas, `${stripExtension(item.name) || 'image'}-${canvas.width}x${canvas.height}.${ext}`, options.format, options.quality))
       continue
     }
 
     if (options.mode === 'crop') {
       const ratio = targetAspect ?? sw / sh
-      let cropW = sw
-      let cropH = sh
-      if (sw / sh > ratio) {
-        cropW = Math.max(1, Math.round(sh * ratio))
-      } else {
-        cropH = Math.max(1, Math.round(sw / ratio))
-      }
-      const sx = Math.round((sw - cropW) / 2)
-      const sy = Math.round((sh - cropH) / 2)
+      const cropW = sw / sh > ratio ? Math.max(1, Math.round(sh * ratio)) : sw
+      const cropH = sw / sh > ratio ? sh : Math.max(1, Math.round(sw / ratio))
       const clamped = clampDimensions(cropW, cropH)
-      const canvas = document.createElement('canvas')
-      canvas.width = clamped.width
-      canvas.height = clamped.height
-      const ctx = canvas.getContext('2d')
-      if (!ctx) throw new Error('2D canvas context unavailable')
-      ctx.drawImage(img, sx, sy, cropW, cropH, 0, 0, canvas.width, canvas.height)
-      outputs.push(
-        await finalizeCanvasOutput(
-          canvas,
-          `${stripExtension(item.name) || 'image'}-crop.${ext}`,
-          options.format,
-          options.quality,
-        ),
-      )
+      const { canvas, ctx } = createCanvas2d(clamped.width, clamped.height)
+      ctx.drawImage(img, Math.round((sw - cropW) / 2), Math.round((sh - cropH) / 2), cropW, cropH, 0, 0, canvas.width, canvas.height)
+      outputs.push(await finalizeCanvasOutput(canvas, `${stripExtension(item.name) || 'image'}-crop.${ext}`, options.format, options.quality))
       continue
     }
 
@@ -561,19 +633,12 @@ async function transformFallback(
     let outW = sw + border * 2
     let outH = sh + border * 2
     if (targetAspect) {
-      if (outW / outH > targetAspect) {
-        outH = Math.round(outW / targetAspect)
-      } else {
-        outW = Math.round(outH * targetAspect)
-      }
+      if (outW / outH > targetAspect) outH = Math.round(outW / targetAspect)
+      else outW = Math.round(outH * targetAspect)
     }
     const clamped = clampDimensions(outW, outH)
     const scale = Math.min(clamped.width / outW, clamped.height / outH, 1)
-    const canvas = document.createElement('canvas')
-    canvas.width = Math.max(1, Math.round(outW * scale))
-    canvas.height = Math.max(1, Math.round(outH * scale))
-    const ctx = canvas.getContext('2d')
-    if (!ctx) throw new Error('2D canvas context unavailable')
+    const { canvas, ctx } = createCanvas2d(Math.max(1, Math.round(outW * scale)), Math.max(1, Math.round(outH * scale)))
     fillBackground(ctx, canvas.width, canvas.height, options.background)
 
     const drawW = Math.round(sw * scale)
@@ -599,14 +664,7 @@ async function transformFallback(
     ctx.drawImage(img, dx, dy, drawW, drawH)
     ctx.restore()
 
-    outputs.push(
-      await finalizeCanvasOutput(
-        canvas,
-        `${stripExtension(item.name) || 'image'}-framed.${ext}`,
-        options.format,
-        options.quality,
-      ),
-    )
+    outputs.push(await finalizeCanvasOutput(canvas, `${stripExtension(item.name) || 'image'}-framed.${ext}`, options.format, options.quality))
   }
   return outputs
 }
@@ -626,13 +684,7 @@ async function idCardFallback(
   const cardX = Math.round((width - cardW) / 2)
   const firstY = Math.round((height - (cardH * 2 + cardGap)) / 2)
   const secondY = firstY + cardH + cardGap
-
-  const canvas = document.createElement('canvas')
-  canvas.width = width
-  canvas.height = height
-  const ctx = canvas.getContext('2d')
-  if (!ctx) throw new Error('2D canvas context unavailable')
-
+  const { canvas, ctx } = createCanvas2d(width, height)
   ctx.fillStyle = '#ffffff'
   ctx.fillRect(0, 0, width, height)
 
