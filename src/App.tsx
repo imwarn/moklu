@@ -1,7 +1,7 @@
 /**
- * [INPUT]: depends on react (lazy, Suspense, useCallback, useEffect, useState), resolvePathname/buildLocalizedPath/useSeoHead from @/seo, ChunkErrorBoundary from @/components/common/ChunkErrorBoundary, ToolLandingPage from @/pages/ToolLandingPage, and lazy-loaded StudioPage from @/pages/StudioPage
- * [OUTPUT]: exports default App SPA router mapping '/' and 18 localized SEO tool slugs to ToolLandingPage and '/studio' (plus '/<locale>/studio') to lazy-loaded StudioPage wrapped in ChunkErrorBoundary
- * [POS]: root router shell of src/; ensures landing routes render instantaneously without loading Konva or triggering the Studio splash screen
+ * [INPUT]: depends on react (lazy, Suspense, useCallback, useEffect, useState), resolvePathname/buildLocalizedPath/useSeoHead from @/seo, ChunkErrorBoundary from @/components/common/ChunkErrorBoundary, ToolLandingPage from @/pages/ToolLandingPage, lazy-loaded StudioPage from @/pages/StudioPage, and Studio-only dynamic import of @/utils/fonts
+ * [OUTPUT]: exports default App SPA router mapping '/' and localized SEO tool slugs to ToolLandingPage and '/studio' (plus '/<locale>/studio') to lazy-loaded StudioPage wrapped in ChunkErrorBoundary
+ * [POS]: root router shell of src/; ensures landing routes render instantaneously without loading Konva, Studio stores, or editor font sheets
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 import { Suspense, lazy, useCallback, useEffect, useState } from 'react'
@@ -27,6 +27,11 @@ function StudioRouteShell({
 }) {
   useSeoHead(route)
   const homeHref = buildLocalizedPath(route.locale, '')
+
+  useEffect(() => {
+    void import('@/utils/fonts').then((m) => m.loadGoogleFonts())
+  }, [])
+
   return (
     <ChunkErrorBoundary
       locale={route.locale}

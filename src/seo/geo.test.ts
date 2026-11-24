@@ -52,6 +52,10 @@ describe('GEO deliverables: llms.txt, native details FAQ, Quick Facts, trust pag
     expect(llms).toContain('https://moklu.app/zh/privacy/')
     expect(llms).toContain('https://moklu.app/ja/terms/')
     expect(llms).toContain(MOKLU_GITHUB_URL)
+    expect(llms).toContain('overlap removal')
+    expect(llms).toContain('multi-layer handoff')
+    expect(llms).toContain('IndexedDB')
+    expect(llms).not.toContain('does not auto-remove overlapping scroll regions')
   })
 
   it('renders native <details>/<summary> FAQs with 100% of answers in SSG HTML and 8-10 FAQs on merge-images across all 4 locales', () => {
@@ -96,6 +100,16 @@ describe('GEO deliverables: llms.txt, native details FAQ, Quick Facts, trust pag
       const quickFacts = getToolQuickFacts(locale, route)
       expect(quickFacts.facts.length).toBeGreaterThanOrEqual(5)
       expect(quickFacts.boundaries.length).toBeGreaterThanOrEqual(2)
+      for (const value of [
+        quickFacts.heading,
+        quickFacts.subheading,
+        quickFacts.boundariesHeading,
+        ...quickFacts.facts.flatMap((f) => [f.label, f.value]),
+        ...quickFacts.boundaries,
+      ]) {
+        expect(value, `QuickFacts (${locale}) contains em-dash: ${value}`).not.toContain('—')
+      }
+      expect(quickFacts.boundaries.join(' ')).toContain('IndexedDB')
 
       const html = renderToStaticMarkup(
         createElement(SeoLandingSections, {
@@ -180,6 +194,10 @@ describe('GEO deliverables: llms.txt, native details FAQ, Quick Facts, trust pag
     expect(readme).not.toContain('—')
     expect(readme).toContain('https://moklu.app')
     expect(readme).toContain('在线图片拼接')
+    expect(readme).toContain('智能长截图去重叠')
+    expect(readme).toContain('IndexedDB')
+    expect(readme).not.toContain('不包含自动去除重复滚动区域')
+    expect(readme).not.toContain('without auto-removing overlapping scroll regions')
     expect(readme).toContain('## English')
     expect(readme).toContain('## 简体中文')
     expect(readme).toContain('https://github.com/Pr0xS/PixelDeck')
