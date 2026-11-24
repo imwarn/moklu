@@ -1,17 +1,26 @@
 /**
- * [INPUT]: depends on nanoid from nanoid, BackgroundLayer, Layer, PhoneLayer, and PhoneModel from @/types, and getPhoneSpec from @/assets/mockups/specs
- * [OUTPUT]: exports QuickSize, QuickScreenshotFit, QuickTheme, QuickMockup, QUICK_SIZES, QUICK_THEMES, QUICK_MOCKUPS, getQuickMockupPlacement, and makeQuickLayers
- * [POS]: Quick Workspace mockup size/theme/device preset registry and layer builder in src/utils; consumed by quickPreview, MockupQuickTool, and Studio handoff
+ * [INPUT]: depends on nanoid from nanoid; depends on BackgroundLayer, Layer, PhoneLayer, and PhoneModel from @/types; depends on getPhoneSpec from @/assets/mockups/specs; depends on getMockupCategory and MockupCategory from @/assets/mockups/registry
+ * [OUTPUT]: exports QuickSize, QuickScreenshotFit, QuickTheme, QuickMockup, MockupCategory, QuickMockupOption, QUICK_SIZES, QUICK_THEMES, QUICK_MOCKUP_CATEGORIES, QUICK_MOCKUPS, getQuickMockupsByCategory, getQuickMockupPlacement, and makeQuickLayers
+ * [POS]: Quick Workspace mockup size/theme/device preset registry (all 13 device & browser models) and layer builder in src/utils; consumed by quickPreview, QuickDesignModal, MockupQuickTool, and Studio handoff
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 import { nanoid } from 'nanoid'
 import type { BackgroundLayer, Layer, PhoneLayer, PhoneModel } from '@/types'
 import { getPhoneSpec } from '@/assets/mockups/specs'
+import { getMockupCategory, type MockupCategory } from '@/assets/mockups/registry'
+
+export type { MockupCategory }
 
 export type QuickSize = 'wide' | 'landscape' | 'square' | 'portrait' | 'story'
 export type QuickScreenshotFit = PhoneLayer['screenshotFit']
 export type QuickTheme = 'aurora' | 'midnight' | 'warm'
-export type QuickMockup = Extract<PhoneModel, 'browser-chrome' | 'browser-safari' | 'browser-minimal' | 'iphone-16-pro' | 'pixel-9'>
+export type QuickMockup = PhoneModel
+
+export interface QuickMockupOption {
+  id: QuickMockup
+  label: string
+  category: MockupCategory
+}
 
 export const QUICK_SIZES: Record<QuickSize, { label: string; width: number; height: number }> = {
   wide: { label: '16:9 · Widescreen', width: 1600, height: 900 },
@@ -27,21 +36,48 @@ export const QUICK_THEMES: Record<QuickTheme, { label: string; top: string; bott
   warm: { label: 'Warm Paper', top: '#f9e7da', bottom: '#e9c9ad', glow: '#fff4d5' },
 }
 
-export const QUICK_MOCKUPS: { id: QuickMockup; label: string }[] = [
-  { id: 'browser-chrome', label: 'Chrome Browser' },
-  { id: 'browser-safari', label: 'Safari Browser' },
-  { id: 'browser-minimal', label: 'Minimal Window' },
-  { id: 'iphone-16-pro', label: 'iPhone 16 Pro' },
-  { id: 'pixel-9', label: 'Google Pixel 9' },
+export const QUICK_MOCKUP_CATEGORIES: readonly MockupCategory[] = [
+  'browser',
+  'phone',
+  'tablet',
+  'watch',
+  'screen',
 ]
 
-/** Fit a mockup inside an arbitrary independent canvas, without platform-format projection. */
+export const QUICK_MOCKUPS: QuickMockupOption[] = [
+  { id: 'browser-chrome', label: 'Chrome Browser', category: 'browser' },
+  { id: 'browser-safari', label: 'Safari Browser', category: 'browser' },
+  { id: 'browser-minimal', label: 'Minimal Window', category: 'browser' },
+  { id: 'iphone-16-pro', label: 'iPhone 16 Pro', category: 'phone' },
+  { id: 'iphone-16-pro-plain', label: 'iPhone 16 Pro (No Island)', category: 'phone' },
+  { id: 'pixel-9', label: 'Google Pixel 9', category: 'phone' },
+  { id: 'pixel-9-plain', label: 'Pixel 9 (No Camera)', category: 'phone' },
+  { id: 'ipad-13', label: 'iPad', category: 'tablet' },
+  { id: 'android-tablet', label: 'Android Tablet', category: 'tablet' },
+  { id: 'apple-watch', label: 'Apple Watch', category: 'watch' },
+  { id: 'wear-os', label: 'Wear OS', category: 'watch' },
+  { id: 'screen-16-9', label: 'Frameless 16:9', category: 'screen' },
+  { id: 'screen-16-10', label: 'Frameless 16:10', category: 'screen' },
+]
+
+export function getQuickMockupsByCategory(category: MockupCategory): QuickMockupOption[] {
+  return QUICK_MOCKUPS.filter((item) => item.category === category)
+}
+
+const CATEGORY_FIT_POLICY: Record<MockupCategory, { fitWidth: number; fitHeight: number; maxScale: number }> = {
+  browser: { fitWidth: 0.85, fitHeight: 0.75, maxScale: 1.5 },
+  phone: { fitWidth: 0.66, fitHeight: 0.78, maxScale: 1.5 },
+  tablet: { fitWidth: 0.76, fitHeight: 0.8, maxScale: 1.8 },
+  watch: { fitWidth: 0.56, fitHeight: 0.64, maxScale: 1.4 },
+  screen: { fitWidth: 0.86, fitHeight: 0.8, maxScale: 1.5 },
+}
+
+/** Fit any device or browser mockup cleanly inside an arbitrary canvas without platform-format projection. */
 export function getQuickMockupPlacement(model: QuickMockup, width: number, height: number) {
   const spec = getPhoneSpec(model)
-  const isBrowser = model.startsWith('browser-')
-  const fitWidth = isBrowser ? 0.85 : 0.66
-  const fitHeight = isBrowser ? 0.75 : 0.78
-  const scale = Math.min(width * fitWidth / spec.frameWidth, height * fitHeight / spec.frameHeight, 1.5)
+  const category = getMockupCategory(model)
+  const { fitWidth, fitHeight, maxScale } = CATEGORY_FIT_POLICY[category]
+  const scale = Math.min((width * fitWidth) / spec.frameWidth, (height * fitHeight) / spec.frameHeight, maxScale)
   return {
     scale,
     x: Math.round((width - spec.frameWidth * scale) / 2),
@@ -67,6 +103,7 @@ export function makeQuickLayers(
   const oldMockup = oldLayers.find((layer): layer is PhoneLayer => layer.type === 'phone')
   const oldImage = oldLayers.find((layer) => layer.type === 'image')
   const isBrowser = mockup.startsWith('browser-')
+  const spec = getPhoneSpec(mockup)
   const placement = getQuickMockupPlacement(mockup, width, height)
 
   const background: BackgroundLayer = {
@@ -103,7 +140,7 @@ export function makeQuickLayers(
     screenshotFit,
     screenshotOffsetX: 0,
     screenshotOffsetY: 0,
-    showStatusBar: !isBrowser,
+    showStatusBar: spec.statusBar.height > 0 && !isBrowser,
     ...(oldMockup?.localeContent ? { localeContent: oldMockup.localeContent } : {}),
     shadow: {
       color: '#111827',

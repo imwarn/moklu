@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on react, getMockupSvg from @/assets/mockups/registry, getPhoneSpec from @/assets/mockups/specs, BrowserChromeOptions from @/types, QUICK_THEMES and quick types from @/utils/quickDesign, and preview geometry helpers from @/utils/quickPreview
- * [OUTPUT]: exports QuickDesignPreview and QuickDesignPreviewProps rendering a live SVG mockup preview with optional scaleFactor support
+ * [OUTPUT]: exports QuickDesignPreview and QuickDesignPreviewProps rendering a live SVG mockup preview with modal (step header + disclaimer) and workspace (clean responsive stage) variants
  * [POS]: shared lightweight mockup preview component in src/components/panels; used by Studio QuickDesignModal and Quick Workspace MockupQuickTool
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -20,6 +20,7 @@ export interface QuickDesignPreviewProps {
   screenshotFit?: QuickScreenshotFit
   scaleFactor?: number
   browserChrome?: BrowserChromeOptions
+  variant?: 'modal' | 'workspace'
 }
 
 export function QuickDesignPreview({
@@ -31,6 +32,7 @@ export function QuickDesignPreview({
   screenshotFit = 'cover',
   scaleFactor = 1,
   browserChrome,
+  variant = 'modal',
 }: QuickDesignPreviewProps) {
   const uid = useId().replace(/:/g, '')
   const bgId = `moklu-quick-bg-${uid}`
@@ -67,7 +69,74 @@ export function QuickDesignPreview({
     height: spec.screen.height,
     radius: spec.screen.cornerRadius,
   }
-  const isBrowser = mockup.startsWith('browser-')
+  const placeholderFontSize = Math.max(20, Math.min(44, Math.round(Math.min(screen.width, screen.height) * 0.055)))
+
+  const stage = (
+    <div
+      className={
+        variant === 'workspace'
+          ? 'flex h-[280px] sm:h-[340px] items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-[#111119] p-3'
+          : 'flex h-[225px] items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-[#111119] p-3'
+      }
+    >
+      <svg
+        role="img"
+        aria-label={`Preview of ${mockup} on a ${safeWidth} by ${safeHeight} canvas`}
+        viewBox={`0 0 ${safeWidth} ${safeHeight}`}
+        preserveAspectRatio="xMidYMid meet"
+        className="h-full w-full"
+      >
+        <defs>
+          <linearGradient id={bgId} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor={palette.top} />
+            <stop offset="100%" stopColor={palette.bottom} />
+          </linearGradient>
+          <radialGradient id={glowId}>
+            <stop offset="0%" stopColor={palette.glow} stopOpacity="0.55" />
+            <stop offset="100%" stopColor={palette.glow} stopOpacity="0" />
+          </radialGradient>
+          <filter id={shadowId} x="-30%" y="-30%" width="160%" height="170%">
+            <feDropShadow dx="0" dy="17" stdDeviation="22" floodColor="#131526" floodOpacity={theme === 'midnight' ? '0.5' : '0.23'} />
+          </filter>
+          <clipPath id={clipId} clipPathUnits="userSpaceOnUse">
+            <rect x={screen.x} y={screen.y} width={screen.width} height={screen.height} rx={screen.radius} />
+          </clipPath>
+        </defs>
+        <rect width={safeWidth} height={safeHeight} fill={`url(#${bgId})`} />
+        <ellipse cx={safeWidth * 0.6} cy={safeHeight * 0.38}
+          rx={safeWidth * 0.46} ry={safeHeight * 0.48} fill={`url(#${glowId})`} />
+        <g
+          transform={`translate(${effectiveFrameX} ${effectiveFrameY}) scale(${effectiveScale})`}
+          filter={`url(#${shadowId})`}
+        >
+          <rect x={screen.x} y={screen.y} width={screen.width} height={screen.height}
+            rx={screen.radius} fill="#151923" />
+          <g clipPath={`url(#${clipId})`}>
+            {screenshotSrc ? (
+              <image href={screenshotSrc}
+                x={screen.x} y={screen.y} width={screen.width} height={screen.height}
+                preserveAspectRatio={screenshotPreserveAspectRatio(screenshotFit)} />
+            ) : (
+              <>
+                <rect x={screen.x} y={screen.y} width={screen.width} height={screen.height}
+                  fill="#252a39" />
+                <text x={screen.x + screen.width / 2} y={screen.y + screen.height / 2}
+                  fontFamily="Arial, sans-serif" fontSize={placeholderFontSize}
+                  textAnchor="middle" fill="#a7b0c7">
+                  Add screenshot
+                </text>
+              </>
+            )}
+          </g>
+          <image href={svgImageSrc} x={0} y={0} width={spec.frameWidth} height={spec.frameHeight} />
+        </g>
+      </svg>
+    </div>
+  )
+
+  if (variant === 'workspace') {
+    return stage
+  }
 
   return (
     <section aria-label="Quick Design live preview" className="mt-5 rounded-xl border border-white/10 bg-white/[0.025] p-3">
@@ -77,60 +146,7 @@ export function QuickDesignPreview({
           {dimsValid ? `${width} × ${height}` : 'Invalid canvas size'}
         </span>
       </div>
-      <div className="flex h-[225px] items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-[#111119] p-3">
-        <svg
-          role="img"
-          aria-label={`Preview of ${mockup} on a ${safeWidth} by ${safeHeight} canvas`}
-          viewBox={`0 0 ${safeWidth} ${safeHeight}`}
-          preserveAspectRatio="xMidYMid meet"
-          className="h-full w-full"
-        >
-          <defs>
-            <linearGradient id={bgId} x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor={palette.top} />
-              <stop offset="100%" stopColor={palette.bottom} />
-            </linearGradient>
-            <radialGradient id={glowId}>
-              <stop offset="0%" stopColor={palette.glow} stopOpacity="0.55" />
-              <stop offset="100%" stopColor={palette.glow} stopOpacity="0" />
-            </radialGradient>
-            <filter id={shadowId} x="-30%" y="-30%" width="160%" height="170%">
-              <feDropShadow dx="0" dy="17" stdDeviation="22" floodColor="#131526" floodOpacity={theme === 'midnight' ? '0.5' : '0.23'} />
-            </filter>
-            <clipPath id={clipId} clipPathUnits="userSpaceOnUse">
-              <rect x={screen.x} y={screen.y} width={screen.width} height={screen.height} rx={screen.radius} />
-            </clipPath>
-          </defs>
-          <rect width={safeWidth} height={safeHeight} fill={`url(#${bgId})`} />
-          <ellipse cx={safeWidth * 0.6} cy={safeHeight * 0.38}
-            rx={safeWidth * 0.46} ry={safeHeight * 0.48} fill={`url(#${glowId})`} />
-          <g
-            transform={`translate(${effectiveFrameX} ${effectiveFrameY}) scale(${effectiveScale})`}
-            filter={`url(#${shadowId})`}
-          >
-            <rect x={screen.x} y={screen.y} width={screen.width} height={screen.height}
-              rx={screen.radius} fill="#151923" />
-            <g clipPath={`url(#${clipId})`}>
-              {screenshotSrc ? (
-                <image href={screenshotSrc}
-                  x={screen.x} y={screen.y} width={screen.width} height={screen.height}
-                  preserveAspectRatio={screenshotPreserveAspectRatio(screenshotFit)} />
-              ) : (
-                <>
-                  <rect x={screen.x} y={screen.y} width={screen.width} height={screen.height}
-                    fill="#252a39" />
-                  <text x={screen.x + screen.width / 2} y={screen.y + screen.height / 2}
-                    fontFamily="Arial, sans-serif" fontSize={isBrowser ? 28 : 22}
-                    textAnchor="middle" fill="#a7b0c7">
-                    Add screenshot
-                  </text>
-                </>
-              )}
-            </g>
-            <image href={svgImageSrc} x={0} y={0} width={spec.frameWidth} height={spec.frameHeight} />
-          </g>
-        </svg>
-      </div>
+      {stage}
       <p className="mt-2 text-[11px] leading-4 text-[#9194a9]">
         Updates as you choose a frame, size or style. This is a lightweight preview; use the editor for pixel-accurate adjustments and export.
       </p>

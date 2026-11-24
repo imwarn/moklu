@@ -73,6 +73,8 @@ export interface StudioDictionary {
     exportError: string
     saving: string
     saved: string
+    backupReminderLabel: string
+    backupReminderTitle: string
     undoTitle: string
     redoTitle: string
     groupLayers: string
@@ -671,6 +673,24 @@ export interface StudioDictionary {
       translateAllOne: string
       translateAllOther: string
       noApiKeyCta: string
+      copyPasteTranslateBtn: string
+      keylessModalTitle: string
+      keylessByokHeading: string
+      keylessByokDesc: string
+      keylessByokConfigureBtn: string
+      keylessByokRunNowBtn: string
+      keylessZeroKeyHeading: string
+      keylessZeroKeyDesc: string
+      keylessStep1Btn: string
+      keylessCopiedBadge: string
+      keylessStep2Label: string
+      keylessTextareaPlaceholder: string
+      keylessApplyBtn: string
+      keylessApplyIdleBtn: string
+      keylessPreviewReady: string
+      keylessFormattingWarn: string
+      keylessParseError: string
+      keylessNoPending: string
       stop: string
       modeAuto: string
       modeAutoTitle: string
