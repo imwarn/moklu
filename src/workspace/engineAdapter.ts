@@ -178,6 +178,7 @@ export function createToolsWorkspaceEngines(): WorkspaceEngines {
           background: parseBackgroundFill(options.background),
           format: options.format,
           quality: options.quality,
+          removeOverlap: options.removeOverlap,
           filename: `moklu-merged.${ext}`,
         })
         const base = await toBlobOutput(result.blob, result.width, result.height, result.filename, result.format, {
@@ -188,6 +189,7 @@ export function createToolsWorkspaceEngines(): WorkspaceEngines {
           width: result.layout.width,
           height: result.layout.height,
           scaleFactor: result.layout.scaleFactor,
+          overlapRemovedPx: result.layout.overlapRemovedPx ?? 0,
           placements: result.layout.placements.map((p) => ({
             index: p.index,
             sourceRect: { ...p.sourceRect },

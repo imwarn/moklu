@@ -219,6 +219,7 @@ describe('createToolsWorkspaceEngines', () => {
         width: 2000,
         height: 1500,
         scaleFactor: 0.5,
+        overlapRemovedPx: 180,
         placements: [
           {
             index: 0,
@@ -239,7 +240,7 @@ describe('createToolsWorkspaceEngines', () => {
         { ...SAMPLE_INPUT, id: 'b', rotation: 270 },
       ],
       {
-        direction: 'horizontal',
+        direction: 'vertical',
         normalize: 'original',
         align: 'end',
         columns: 4,
@@ -253,6 +254,7 @@ describe('createToolsWorkspaceEngines', () => {
         background: '#f8fafc',
         format: 'application/pdf',
         quality: 0.88,
+        removeOverlap: true,
       },
     )
 
@@ -264,6 +266,7 @@ describe('createToolsWorkspaceEngines', () => {
     expect(passed.borderColor).toBe('#111827')
     expect(passed.itemRotations).toEqual([90, 270])
     expect(passed.format).toBe('application/pdf')
+    expect(passed.removeOverlap).toBe(true)
     expect(passed.filename).toBe('moklu-merged.pdf')
 
     expect(out.mimeType).toBe('application/pdf')
@@ -274,6 +277,7 @@ describe('createToolsWorkspaceEngines', () => {
       width: 2000,
       height: 1500,
       scaleFactor: 0.5,
+      overlapRemovedPx: 180,
       placements: [
         {
           index: 0,
