@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on RouteCopy and SecondaryToolSlug types from ../types.ts
- * [OUTPUT]: exports ZH_TOOL_ROUTES containing Simplified Chinese copy for split, compress, resize, and ID-card routes
+ * [OUTPUT]: exports ZH_TOOL_ROUTES containing Simplified Chinese copy for merge-photos-to-pdf, split, compress, resize, and ID-card routes
  * [POS]: secondary route-copy chunk for zh within src/seo/locales, merged into ZH_LOCALE by ./zh.ts to keep every file <= 800 lines
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -8,9 +8,65 @@
 import type { RouteCopy, SecondaryToolSlug } from '../types.ts'
 
 export const ZH_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
+  'merge-photos-to-pdf': {
+    navLabel: '多图拼接转 PDF',
+    title: '在线多图拼接导出单页 PDF（纯本地零上传）| Moklu',
+    metaDescription:
+      '将多张照片、发票报销单或截图按竖向、横向或 2–6 列宫格排在一张画面上，直接导出标准单页 PDF 1.4 文件。100% 浏览器本地生成，无水印。',
+    badge: '单页 PDF 1.4 · 零上传本地生成',
+    h1: '多张图片拼接并导出为单页 PDF',
+    subtitle:
+      '把发票、合同照片、课件截图按竖向长图、横向并排或 2–6 列宫格整齐排布，支持拖拽调序、90° 旋转、单图边框与质量滑块，在浏览器内直接生成单页 PDF 1.4 文件。',
+    steps: [
+      {
+        title: '添加照片并拖拽排好顺序',
+        description: '批量拖入或 Cmd/Ctrl+V 粘贴图片，支持缩略图拖拽排序、一键反转顺序和单图顺时针 90° 旋转。',
+      },
+      {
+        title: '设置布局、边框与 PDF 质量',
+        description: '选择竖向、横向或 2–6 列宫格（支持 cover/contain），调节间距、外边距、单图描边边框与 50%–100% 导出质量（默认 92%）。',
+      },
+      {
+        title: '本地导出单页 PDF 1.4',
+        description: '直接由本地 HTML5 Canvas 封装为标准单页 PDF 文件下载，不经过服务器，也不添加水印。',
+      },
+    ],
+    highlights: [
+      {
+        title: '零上传本地封装 PDF 1.4',
+        description: '报销发票、扫描件和个人证件照全程留在本机浏览器内存中，断网同样可用。',
+      },
+      {
+        title: '透明底自动转纯净白底',
+        description: '导出 PDF 或 JPEG 时，透明背景自动铺设纯白画布，避免打印出现黑底异常。',
+      },
+      {
+        title: '灵活排版与可控体积',
+        description: '支持 2–6 列宫格、自定义取色器与 50%–100% 质量调节，清晰度与体积自由平衡。',
+      },
+    ],
+    faqs: [
+      {
+        question: '导出的是单页 PDF 还是多页 PDF？',
+        answer: 'Moklu 将拼好的整张大图封装为标准单页 PDF 1.4 文件，适合多张发票、证明或截图拼成一页打印提交，不支持合并已有多个多页 PDF 文档。',
+      },
+      {
+        question: '可以调节导出 PDF 的画质和文件体积吗？',
+        answer: '可以。选择 PDF 格式后界面会显示 50%–100% 质量滑块（默认 92%），可在文字清晰度与邮件/系统上传体积上限之间自由取舍。',
+      },
+      {
+        question: '透明背景的 PNG 拼图转 PDF 会变黑吗？',
+        answer: '不会。导出 PDF 或 JPEG 时，Moklu 会自动将透明区域转为纯白背景，确保打印与阅览效果干净清晰。',
+      },
+      {
+        question: '把发票或合同拼成 PDF 会上传到云端吗？',
+        answer: '绝对不会。整个拼接与 PDF 1.4 封装过程 100% 在你的浏览器本地内存中完成，零网络上传。',
+      },
+    ],
+  },
   'carousel-splitter': {
     navLabel: '轮播无缝切图',
-    title: '小红书 / Instagram 无缝轮播全景切图工具 — Moklu',
+    title: '小红书 / Instagram 无缝轮播全景切图工具 | Moklu',
     metaDescription:
       '把宽幅全景图或长横幅一键切分成 2-10 张小红书 3:4、Instagram 4:5 或 1:1 无缝滑动轮播图，本地打包 ZIP 下载，零上传。',
     badge: '小红书 3:4 · IG 4:5 无缝滑屏',
@@ -66,7 +122,7 @@ export const ZH_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'image-grid-splitter': {
     navLabel: '九宫格切图',
-    title: '免费九宫格切图工具（朋友圈 3×3 / 自定义行列切图）— Moklu',
+    title: '免费九宫格切图工具（朋友圈 3×3 / 自定义行列切图）| Moklu',
     metaDescription:
       '一键将单张图片切分为微信朋友圈 3×3 九宫格、2×2 四宫格或任意行列矩阵，实时预览切线，纯本地一键打包 ZIP 下载。',
     badge: '朋友圈 3×3 九宫格切图',
@@ -122,7 +178,7 @@ export const ZH_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'compress-image': {
     navLabel: '图片压缩',
-    title: '免费纯本地批量图片压缩工具（PNG / JPEG / WebP）— Moklu',
+    title: '免费纯本地批量图片压缩工具（PNG / JPEG / WebP）| Moklu',
     metaDescription:
       '纯浏览器本地批量压缩 PNG、JPEG、WebP 图片，实时显示压缩前后体积与节省比例，支持限宽缩放与 ZIP 打包，绝不上传服务器。',
     badge: '批量本地压缩 · 实时体积对比',
@@ -178,7 +234,7 @@ export const ZH_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'convert-image-format': {
     navLabel: '格式转换',
-    title: '免费本地批量图片格式转换（WebP / PNG / JPEG 互转）— Moklu',
+    title: '免费本地批量图片格式转换（WebP / PNG / JPEG 互转）| Moklu',
     metaDescription:
       '在浏览器本地批量将 WebP 转 PNG、PNG 转 JPEG 或转 WebP，自动修正后缀名并支持 ZIP 批量导出，无需上传任何图片。',
     badge: 'PNG · WebP · JPEG 本地互转',
@@ -234,7 +290,7 @@ export const ZH_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'png-to-webp': {
     navLabel: 'PNG 转 WebP',
-    title: 'PNG 转 WebP 在线批量转换工具（保留透明背景 · 纯本地）— Moklu',
+    title: 'PNG 转 WebP 在线批量转换工具（保留透明背景 · 纯本地）| Moklu',
     metaDescription:
       '浏览器本地批量将 PNG 截图与透明图标转为轻量 WebP，完整保留透明通道并实时对比体积节省，无需上传服务器。',
     badge: '前端与 SEO 提速利器',
@@ -290,7 +346,7 @@ export const ZH_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'resize-image': {
     navLabel: '图片缩放',
-    title: '免费本地批量图片改尺寸工具（像素 / 百分比缩放）— Moklu',
+    title: '免费本地批量图片改尺寸工具（像素 / 百分比缩放）| Moklu',
     metaDescription:
       '按精确像素宽高或百分比批量缩放图片尺寸，支持锁定纵横比防变形与 ZIP 打包导出，100% 浏览器本地处理不上传。',
     badge: '精确像素 · 百分比 · 锁定比例',
@@ -346,7 +402,7 @@ export const ZH_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'crop-image': {
     navLabel: '图片裁剪',
-    title: '免费在线图片裁剪工具（1:1 / 4:5 / 3:4 / 16:9 比例预设）— Moklu',
+    title: '免费在线图片裁剪工具（1:1 / 4:5 / 3:4 / 16:9 比例预设）| Moklu',
     metaDescription:
       '一键按 1:1 头像、3:4 小红书、4:5 IG、16:9 封面或 9:16 竖屏精确裁剪照片与截图，100% 浏览器本地无损导出。',
     badge: '全平台黄金比例裁剪',
@@ -402,7 +458,7 @@ export const ZH_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'add-border-to-photo': {
     navLabel: '照片加白边',
-    title: '照片加白边与留白补全比例工具（不裁剪发小红书 / IG）— Moklu',
+    title: '照片加白边与留白补全比例工具（不裁剪发小红书 / IG）| Moklu',
     metaDescription:
       '为横屏或竖屏照片一键添加精致白边、纯色或渐变边框，自动补全 1:1 / 3:4 / 4:5 比例不裁剪画面，支持圆角与投影，100% 浏览器本地处理。',
     badge: '无裁剪加白边 · 拍立得画框感',
@@ -458,7 +514,7 @@ export const ZH_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'id-card-watermark': {
     navLabel: '身份证 A4 水印',
-    title: '纯离线身份证正反面 A4 排版与防盗水印工具 — Moklu',
+    title: '纯离线身份证正反面 A4 排版与防盗水印工具 | Moklu',
     metaDescription:
       '身份证正反面照片一键按 1:1 真实物理尺寸排入 300 DPI A4 打印纸，添加自定义防盗用斜纹水印与黑白复印效果。100% 纯浏览器本地离线运行，绝不上传。',
     badge: '100% 离线 · 300 DPI A4 · 防盗水印',

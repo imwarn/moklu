@@ -1,12 +1,12 @@
 /**
- * [INPUT]: depends on MouseEvent from react; depends on ResolvedRoute, RouteSlug, and ToolId from ./types.ts
- * [OUTPUT]: exports isModifiedClick, handleSpaLinkClick, isToolNavActive, NAV_TOOL_ORDER, and FOOTER_LINK_GROUPS
+ * [INPUT]: depends on MouseEvent from react; depends on InfoPageSlug, ResolvedRoute, RouteSlug, and ToolId from ./types.ts
+ * [OUTPUT]: exports isModifiedClick, handleSpaLinkClick, isToolNavActive, NAV_TOOL_ORDER, FOOTER_LINK_GROUPS, and INFO_ROUTE_SLUGS
  * [POS]: shared navigation event, active-state, and grouping helper within src/seo, preventing duplicated link-handling logic across SiteHeader, SeoLandingSections, and SiteFooter
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
 import type { MouseEvent } from 'react'
-import type { ResolvedRoute, RouteSlug, ToolId } from './types.ts'
+import type { InfoPageSlug, ResolvedRoute, RouteSlug, ToolId } from './types.ts'
 
 export const NAV_TOOL_ORDER: readonly ToolId[] = [
   'mockup',
@@ -16,6 +16,8 @@ export const NAV_TOOL_ORDER: readonly ToolId[] = [
   'resize',
   'id-card',
 ] as const
+
+export const INFO_ROUTE_SLUGS: readonly InfoPageSlug[] = ['about', 'privacy', 'terms'] as const
 
 export const FOOTER_LINK_GROUPS: {
   mockups: readonly RouteSlug[]
@@ -34,6 +36,7 @@ export const FOOTER_LINK_GROUPS: {
     'combine-photos-side-by-side',
     'stitch-images-vertically',
     'photo-collage-grid',
+    'merge-photos-to-pdf',
     'carousel-splitter',
     'image-grid-splitter',
   ],
@@ -74,11 +77,12 @@ export function handleSpaLinkClick(
 }
 
 export function isToolNavActive(
-  route: Pick<ResolvedRoute, 'isStudio' | 'slug' | 'tool'>,
+  route: Pick<ResolvedRoute, 'isStudio' | 'slug' | 'tool'> & { isInfoPage?: boolean },
   toolId: ToolId,
 ): boolean {
   return (
     !route.isStudio &&
+    !route.isInfoPage &&
     ((route.slug === '' && toolId === 'mockup') ||
       (route.slug !== '' && route.tool === toolId))
   )

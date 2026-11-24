@@ -1,7 +1,7 @@
 /**
- * [INPUT]: depends on react, src/seo (SiteHeader, SeoLandingSections, SiteFooter, useSeoHead, getRouteCopy, buildLocalizedPath, ResolvedRoute), src/workspace (QuickWorkspace, StudioHandoffPayload), src/workspace/engineAdapter (createToolsWorkspaceEngines), src/bridge/studioHandoff (stageImagesIntoStudioAfterBootstrap), src/commercial (PricingModal, isEffectivePro, useEntitlementStore), src/theme/themeStore (applyDocumentTheme, useThemeStore), and PhoneModel from @/types
- * [OUTPUT]: exports ToolLandingPage component rendering the zero-splash above-the-fold QuickWorkspace, localized SEO sections, adaptive Light/Dark chrome, PricingModal, and Studio handoff
- * [POS]: primary landing page in src/pages; serves '/' and all 18 SEO tool routes across en/zh/ja/ko without loading Konva
+ * [INPUT]: depends on react, src/seo (InfoPageContent, SiteHeader, SeoLandingSections, SiteFooter, useSeoHead, getRouteCopy, buildLocalizedPath, ResolvedRoute), src/workspace (QuickWorkspace, StudioHandoffPayload), src/workspace/engineAdapter (createToolsWorkspaceEngines), src/bridge/studioHandoff (stageImagesIntoStudioAfterBootstrap), src/commercial (PricingModal, isEffectivePro, useEntitlementStore), src/theme/themeStore (applyDocumentTheme, useThemeStore), and PhoneModel from @/types
+ * [OUTPUT]: exports ToolLandingPage component rendering the zero-splash above-the-fold QuickWorkspace (or editorial InfoPageContent on /about, /privacy, /terms), localized SEO sections, adaptive Light/Dark chrome, PricingModal, and Studio handoff
+ * [POS]: primary landing page in src/pages; serves '/', all SEO tool routes, and /about, /privacy, /terms across en/zh/ja/ko without loading Konva
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -9,6 +9,7 @@ import { stageImagesIntoStudioAfterBootstrap } from '@/bridge/studioHandoff'
 import { isEffectivePro, useEntitlementStore } from '@/commercial/entitlements'
 import { PricingModal } from '@/commercial/PricingModal'
 import {
+  InfoPageContent,
   SeoLandingSections,
   SiteFooter,
   SiteHeader,
@@ -98,7 +99,7 @@ export function ToolLandingPage({ route, onNavigate }: ToolLandingPageProps) {
     <div
       data-testid="tool-landing-page"
       data-theme={resolvedTheme}
-      className={`min-h-screen flex flex-col bg-surface transition-colors ${
+      className={`min-h-[100dvh] flex flex-col bg-surface transition-colors ${
         isDark ? 'text-zinc-100' : 'text-zinc-950'
       }`}
     >
@@ -112,46 +113,56 @@ export function ToolLandingPage({ route, onNavigate }: ToolLandingPageProps) {
       />
 
       <main id="main-content" tabIndex={-1} className="flex-1 focus:outline-none">
-        {/* Compact Above-the-Fold Hero + Instant 6-Tool Workspace */}
-        <section className="mx-auto max-w-7xl px-4 pt-6 pb-8 sm:px-6 lg:px-8">
-          <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <div className="max-w-3xl space-y-1.5">
-              <span
-                className="inline-flex items-center rounded-full border border-accent/30 bg-accent-soft px-2.5 py-0.5 text-[11px] font-semibold tracking-wide text-accent-text"
-              >
-                {copy.badge}
-              </span>
-              <h1
-                className={`text-2xl font-bold tracking-tight sm:text-3xl ${
-                  isDark ? 'text-zinc-50' : 'text-zinc-950'
-                }`}
-              >
-                {copy.h1}
-              </h1>
-              <p className="text-sm text-muted sm:text-base">
-                {copy.subtitle}
-              </p>
-            </div>
-          </div>
-
-          <QuickWorkspace
-            key={route.slug}
-            preset={route.preset}
-            locale={route.locale}
+        {route.isInfoPage ? (
+          <InfoPageContent
+            route={route}
             theme={resolvedTheme}
-            engines={engines}
-            onOpenInStudio={handleOpenInStudio}
-            onOpenProModal={() => setPricingOpen(true)}
+            onNavigate={onNavigate}
           />
-        </section>
+        ) : (
+          <>
+            {/* Compact Above-the-Fold Hero + Instant 6-Tool Workspace */}
+            <section className="mx-auto max-w-7xl px-4 pt-6 pb-8 sm:px-6 lg:px-8">
+              <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                <div className="max-w-3xl space-y-1.5">
+                  <span
+                    className="inline-flex items-center rounded-full border border-accent/30 bg-accent-soft px-2.5 py-0.5 text-[11px] font-semibold tracking-wide text-accent-text"
+                  >
+                    {copy.badge}
+                  </span>
+                  <h1
+                    className={`text-2xl font-bold tracking-tight sm:text-3xl ${
+                      isDark ? 'text-zinc-50' : 'text-zinc-950'
+                    }`}
+                  >
+                    {copy.h1}
+                  </h1>
+                  <p className="text-sm text-muted sm:text-base">
+                    {copy.subtitle}
+                  </p>
+                </div>
+              </div>
 
-        <SeoLandingSections
-          route={route}
-          theme={resolvedTheme}
-          onNavigate={onNavigate}
-          onOpenProModal={() => setPricingOpen(true)}
-          isPro={isPro}
-        />
+              <QuickWorkspace
+                key={route.slug}
+                preset={route.preset}
+                locale={route.locale}
+                theme={resolvedTheme}
+                engines={engines}
+                onOpenInStudio={handleOpenInStudio}
+                onOpenProModal={() => setPricingOpen(true)}
+              />
+            </section>
+
+            <SeoLandingSections
+              route={route}
+              theme={resolvedTheme}
+              onNavigate={onNavigate}
+              onOpenProModal={() => setPricingOpen(true)}
+              isPro={isPro}
+            />
+          </>
+        )}
       </main>
 
       <SiteFooter

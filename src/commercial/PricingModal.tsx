@@ -140,9 +140,16 @@ export function PricingModal({
             >
               {copy.freeFeatures.map((item) => (
                 <li key={item} className="flex items-start gap-2.5">
-                  <span aria-hidden="true" className="mt-0.5 text-success">
-                    ✓
-                  </span>
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    className="mt-0.5 h-4 w-4 shrink-0 text-success"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.5 8.5 6.5 11.5 12.5 5" />
+                  </svg>
                   <span>{item}</span>
                 </li>
               ))}
@@ -151,7 +158,7 @@ export function PricingModal({
           <button
             type="button"
             onClick={onClose}
-            className={`mt-6 w-full rounded-lg border border-border px-4 py-2.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:scale-[0.98] ${
+            className={`mt-6 w-full whitespace-nowrap rounded-lg border border-border px-4 py-2.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:scale-[0.98] ${
               isLight
                 ? 'bg-panel text-zinc-900 hover:bg-zinc-100'
                 : 'bg-zinc-900 text-zinc-100 hover:bg-zinc-800'
@@ -197,9 +204,20 @@ export function PricingModal({
                       highlighted ? 'bg-accent-soft ring-1 ring-accent/40' : ''
                     }`}
                   >
-                    <span aria-hidden="true" className="mt-0.5 text-accent-text">
-                      ✦
-                    </span>
+                    <svg
+                      aria-hidden="true"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.75"
+                      className="mt-0.5 h-4 w-4 shrink-0 text-accent-text"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M8 2.25 9.6 6.4 13.75 8 9.6 9.6 8 13.75 6.4 9.6 2.25 8 6.4 6.4 8 2.25Z"
+                      />
+                    </svg>
                     <span>{copy.proFeatureLabels[feature]}</span>
                   </li>
                 )
@@ -210,7 +228,7 @@ export function PricingModal({
             type="button"
             onClick={handleProAction}
             aria-pressed={!onUpgradeClick ? proPreviewEnabled : undefined}
-            className="mt-6 w-full rounded-lg bg-accent-strong px-4 py-2.5 text-sm font-semibold text-accent-fg transition-all hover:brightness-95 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="mt-6 w-full whitespace-nowrap rounded-lg bg-accent-strong px-4 py-2.5 text-sm font-semibold text-accent-fg transition-[filter,transform] hover:brightness-95 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             {proPreviewEnabled ? copy.proPreviewDisableCta : copy.proPreviewEnableCta}
           </button>

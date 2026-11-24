@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on node:fs/promises, node:path, node:url, vite (build); depends on ALL_ROUTES and getSiteUrl from ../src/seo/routes.ts; depends on getRouteRelativeHtmlPath, renderRouteHtml, generateSitemapXml, and generateRobotsTxt from ../src/seo/ssg.ts; builds temporary SSR bundle from ../src/seo/ssrEntry.ts
- * [OUTPUT]: exports getRouteOutputPath and prerenderSeoDist; runs as post-build CLI writing 76 static localized index.html pages with full React-rendered markup, sitemap.xml, and robots.txt into dist/
+ * [INPUT]: depends on node:fs/promises, node:path, node:url, vite (build); depends on ALL_ROUTES and getSiteUrl from ../src/seo/routes.ts; depends on getRouteRelativeHtmlPath, renderRouteHtml, generateSitemapXml, generateRobotsTxt, and generateLlmsTxt from ../src/seo/ssg.ts; builds temporary SSR bundle from ../src/seo/ssrEntry.ts
+ * [OUTPUT]: exports getRouteOutputPath and prerenderSeoDist; runs as post-build CLI writing 92 static localized index.html pages with full React-rendered markup, sitemap.xml, robots.txt, and llms.txt into dist/
  * [POS]: post-build Node ESM SSG runner in scripts/, invoked after `vite build` to materialize zero-FOUC static HTML via react-dom/server renderToString
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -11,6 +11,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { build as viteBuild } from 'vite'
 import { ALL_ROUTES, getSiteUrl } from '../src/seo/routes.ts'
 import {
+  generateLlmsTxt,
   generateRobotsTxt,
   generateSitemapXml,
   getRouteRelativeHtmlPath,
@@ -92,6 +93,9 @@ export async function prerenderSeoDist({
     const robotsPath = path.join(distDir, 'robots.txt')
     await writeFile(robotsPath, generateRobotsTxt(normalizedBase), 'utf8')
 
+    const llmsPath = path.join(distDir, 'llms.txt')
+    await writeFile(llmsPath, generateLlmsTxt(normalizedBase), 'utf8')
+
     return {
       ok: true,
       siteUrl: normalizedBase,
@@ -99,6 +103,7 @@ export async function prerenderSeoDist({
       sitemapUrls: ALL_ROUTES.length,
       sitemapPath,
       robotsPath,
+      llmsPath,
     }
   } finally {
     if (compiled) {

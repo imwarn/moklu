@@ -1,24 +1,29 @@
 /**
- * [INPUT]: depends on ResolvedRoute from ./types.ts; depends on ALL_ROUTES, buildCanonicalUrl, buildLocalizedPath, getHreflangLinks, and getSiteUrl from ./routes.ts; depends on getOgLocale, getRouteCopy, and getUiLabels from ./i18n.ts; depends on buildRouteSchemaList and serializeJsonLd from ./schema.ts
- * [OUTPUT]: exports escapeHtml, getRouteRelativeHtmlPath, renderStudioSkeleton, renderRouteHtml, generateSitemapXml, and generateRobotsTxt
- * [POS]: pure, Node-agnostic SSG HTML/XML string generator within src/seo, executed at build time by scripts/prerender-seo.mjs with rendered React markup and unit-tested by src/seo/seo.test.ts
+ * [INPUT]: depends on ResolvedRoute and RouteSlug from ./types.ts; depends on ALL_ROUTES, INFO_ROUTE_DEFINITIONS, LOCALE_CODES, TOOL_ROUTE_DEFINITIONS, buildCanonicalUrl, buildLocalizedPath, getHreflangLinks, getHtmlLang, and getSiteUrl from ./routes.ts; depends on getLocaleBundle, getOgLocale, getRouteCopy, and getUiLabels from ./i18n.ts; depends on MOKLU_GITHUB_URL, buildRouteSchemaList, and serializeJsonLd from ./schema.ts
+ * [OUTPUT]: exports escapeHtml, getRouteRelativeHtmlPath, renderStudioSkeleton, renderRouteHtml, generateSitemapXml, generateRobotsTxt, and generateLlmsTxt
+ * [POS]: pure, Node-agnostic SSG HTML/XML/Markdown string generator within src/seo, executed at build time by scripts/prerender-seo.mjs with rendered React markup and unit-tested by src/seo/seo.test.ts and src/seo/geo.test.ts
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
-import type { ResolvedRoute } from './types.ts'
+import type { ResolvedRoute, RouteSlug } from './types.ts'
 import {
   ALL_ROUTES,
+  INFO_ROUTE_DEFINITIONS,
+  LOCALE_CODES,
+  TOOL_ROUTE_DEFINITIONS,
   buildCanonicalUrl,
   buildLocalizedPath,
   getHreflangLinks,
+  getHtmlLang,
   getSiteUrl,
 } from './routes.ts'
 import {
+  getLocaleBundle,
   getOgLocale,
   getRouteCopy,
   getUiLabels,
 } from './i18n.ts'
-import { buildRouteSchemaList, serializeJsonLd } from './schema.ts'
+import { MOKLU_GITHUB_URL, buildRouteSchemaList, serializeJsonLd } from './schema.ts'
 
 export function escapeHtml(value: string): string {
   return value
@@ -47,7 +52,7 @@ export function renderStudioSkeleton(route: ResolvedRoute): string {
   const homeHref = buildLocalizedPath(route.locale, '')
 
   return [
-    '<div data-testid="studio-ssg-skeleton" class="w-screen h-screen flex flex-col overflow-hidden bg-surface text-zinc-100">',
+    '<div data-testid="studio-ssg-skeleton" class="w-screen h-[100dvh] flex flex-col overflow-hidden bg-surface text-zinc-100">',
     '  <header class="flex h-12 shrink-0 items-center justify-between gap-2 border-b border-border bg-panel px-3">',
     '    <div class="flex items-center gap-3">',
     `      <a href="${escapeHtml(homeHref)}" class="inline-flex shrink-0 items-center gap-1 rounded-md border border-border px-2 py-1 text-xs font-medium text-zinc-300">← Tools</a>`,
@@ -125,7 +130,7 @@ export function renderRouteHtml(
   const surfaceAttr = route.isStudio ? 'studio' : 'workspace'
   let html = templateHtml.replace(
     /<html\b[^>]*>/i,
-    `<html lang="${escapeHtml(route.locale)}" data-theme="${themeAttr}" data-surface="${surfaceAttr}">`,
+    `<html lang="${escapeHtml(getHtmlLang(route.locale))}" data-theme="${themeAttr}" data-surface="${surfaceAttr}">`,
   )
 
   html = stripManagedHeadTags(html)
@@ -192,4 +197,51 @@ export function generateRobotsTxt(siteUrl?: string): string {
     `Sitemap: ${base}/sitemap.xml`,
     '',
   ].join('\n')
+}
+
+export function generateLlmsTxt(siteUrl?: string): string {
+  const base = getSiteUrl(siteUrl)
+  const coreSlugs: readonly RouteSlug[] = [
+    '',
+    ...TOOL_ROUTE_DEFINITIONS.map((def) => def.slug),
+    'studio',
+  ]
+  const infoSlugs: readonly RouteSlug[] = INFO_ROUTE_DEFINITIONS.map((def) => def.slug)
+
+  const lines: string[] = [
+    '# Moklu',
+    '',
+    `> Moklu (${base}/) is an open-source, 100% browser-local screenshot mockup studio and online image toolkit supporting English, Simplified Chinese (在线图片拼接 / 截图套壳), Japanese, and Korean. Every image operation runs directly in client-side HTML5 Canvas with zero server uploads and zero forced watermarks.`,
+    '',
+    '## Core Capabilities & Boundaries',
+    '',
+    '- Privacy architecture: 100% client-side HTML5 Canvas processing; zero image bytes leave the user device; works offline once loaded.',
+    '- Pricing & watermarks: All six core browser tools and standard exports are free with zero watermarks.',
+    '- Online Image Merger (在线图片拼接): Horizontal side-by-side, vertical long stitching, and 2 to 6 column grid layouts (cover/contain fit, 1:1 / 4:3 / 3:4 / auto ratios), match-min / match-max / original (start/center/end) alignment, drag-and-drop reorder, Reverse order, per-image 90-degree rotation, gap (0 to 64px), padding (0 to 80px), radius (0 to 48px), per-image borders (0 to 24px), custom color picker, 1-click Copy to Clipboard (PNG), and PNG / WebP / JPEG / single-page PDF 1.4 export (50% to 100% quality).',
+    '- Screenshot Mockups & Studio: Chrome, Safari, Minimal browser frames, iPhone 16 Pro, Pixel 9, App Store 9:16 layouts, plus 1-click handoff to Moklu Studio (Konva multi-layer canvas editor).',
+    '- Carousel & Grid Splitter, Local Batch Compressor/Converter (PNG/JPEG/WebP), Resizer/Cropper/Border Pad, and Offline ID Card A4 Watermark Maker (ISO/IEC 7810 ID-1 physical scale).',
+    '- Explicit boundaries: No fixed photo count limit, with an 8192px / 64MP canvas safety ceiling (auto-scaled with visible UI notice). PDF export creates a single-page PDF 1.4 image sheet rather than merging multi-page PDF documents. Vertical stitching does not auto-remove overlapping scroll regions.',
+    `- Open-source repository: ${MOKLU_GITHUB_URL} (MIT License)`,
+    `- Sitemap: ${base}/sitemap.xml`,
+    '',
+  ]
+
+  for (const locale of LOCALE_CODES) {
+    const bundle = getLocaleBundle(locale)
+    lines.push(`## ${bundle.nativeName} (${getHtmlLang(locale)})`)
+    lines.push('')
+    for (const slug of coreSlugs) {
+      const copy = getRouteCopy(locale, slug)
+      const url = buildCanonicalUrl(locale, slug, base)
+      lines.push(`- [${copy.navLabel}](${url}): ${copy.metaDescription}`)
+    }
+    for (const slug of infoSlugs) {
+      const copy = getRouteCopy(locale, slug)
+      const url = buildCanonicalUrl(locale, slug, base)
+      lines.push(`- [${copy.navLabel}](${url}): ${copy.metaDescription}`)
+    }
+    lines.push('')
+  }
+
+  return `${lines.join('\n').trimEnd()}\n`
 }
