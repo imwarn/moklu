@@ -1,6 +1,11 @@
+/**
+ * [INPUT]: depends on node:fs/promises and node:fs; reads public/_headers, src/ai/providers.ts, and src/ai/client.ts
+ * [OUTPUT]: CLI verifier exiting non-zero when required security headers, Cloudflare Web Analytics / AI provider CSP allowlists, or cache rules drift
+ * [POS]: mechanical CSP and response-header consistency gate inside scripts/
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { readFile } from 'node:fs/promises'
 import { readFileSync } from 'node:fs'
-import { globSync } from 'node:fs'
 
 /**
  * Verifies that the CSP in public/_headers is consistent with what the app
@@ -58,6 +63,7 @@ if (!csp) {
 
   // Evidence from the codebase, not guesses.
   assertAllows('script-src', "'self'")        // hashed bundles only, no inline/eval
+  assertAllows('script-src', 'https://static.cloudflareinsights.com') // Cloudflare Web Analytics beacon script
   assertAllows('style-src', "'unsafe-inline'") // 33 components use React style props
   assertAllows('style-src', 'https://fonts.googleapis.com') // src/utils/fonts.ts injects <link>
   assertAllows('font-src', 'https://fonts.gstatic.com')
@@ -65,6 +71,7 @@ if (!csp) {
   assertAllows('img-src', 'data:')            // screenshots are embedded as data URLs
   assertAllows('img-src', 'blob:')            // object URLs for previews
   assertAllows('media-src', 'blob:')
+  assertAllows('connect-src', 'https://cloudflareinsights.com') // Cloudflare Web Analytics beacon endpoint
 
   // Provider base URLs that the app calls directly from the browser.
   const providersFile = readFileSync('src/ai/providers.ts', 'utf8')
@@ -100,6 +107,9 @@ if (!csp) {
 
   if (directives['script-src']?.includes("'unsafe-eval'")) {
     failures.push("script-src allows 'unsafe-eval' but the bundle contains no eval/new Function")
+  }
+  if (directives['script-src']?.includes("'unsafe-inline'")) {
+    failures.push("script-src allows 'unsafe-inline' but the app and Cloudflare beacon load external scripts only")
   }
   if (!directives['frame-ancestors']?.includes("'none'")) {
     notes.push("frame-ancestors is not 'none'; X-Frame-Options: DENY still applies")

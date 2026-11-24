@@ -27,14 +27,14 @@ CSP 最怕照抄模板。下面每一条都有仓库里的实测依据：
 
 | 指令 | 取值 | 为什么必须是这个 |
 | --- | --- | --- |
-| `script-src 'self'` | 只用 hashed bundle | `index.html` 无内联 `<script>`；全仓库 `grep 'eval(\|new Function('` 为 0 → **不需要** `'unsafe-inline'` / `'unsafe-eval'` |
+| `script-src 'self' https://static.cloudflareinsights.com` | hashed bundle + Cloudflare Web Analytics beacon | `index.html` 无内联 `<script>`，全仓库 `grep 'eval(\|new Function('` 为 0 → **不需要** `'unsafe-inline'` / `'unsafe-eval'`；仅额外放行无 cookie 的 Cloudflare Web Analytics 外部脚本（`beacon.min.js`） |
 | `style-src ... 'unsafe-inline'` | 必须加 | 33 个组件用 React `style={{...}}`（行内 style 属性受 `style-src` 管辖） |
 | `style-src ... fonts.googleapis.com` | 必须加 | `src/utils/fonts.ts:186,207` 在**运行时**动态注入 `<link rel=stylesheet href="https://fonts.googleapis.com/...">` |
 | `font-src ... fonts.gstatic.com` | 必须加 | 字体文件由 gstatic 提供 |
 | `font-src ... data:` | 必须加 | `loadUploadedFont` 从 data URL 注册用户上传字体 |
 | `img-src data: blob:` | 必须加 | 截图以 data URL 存储；预览用 `URL.createObjectURL` |
 | `worker-src blob:` | 保险 | Konva/打包链路可能起 blob worker |
-| `connect-src` 三个 AI 域 | 必须加 | `src/ai/providers.ts` 定义 `api.openai.com` / `openrouter.ai` / `generativelanguage.googleapis.com`，**由浏览器直连** |
+| `connect-src` 三个 AI 域 + `https://cloudflareinsights.com` | 必须加 | `src/ai/providers.ts` 定义 `api.openai.com` / `openrouter.ai` / `generativelanguage.googleapis.com` 由浏览器直连；`cloudflareinsights.com` 用于 Cloudflare Web Analytics beacon 上报 |
 | `object-src 'none'` | 收紧 | 无插件内容 |
 | `frame-ancestors 'none'` | 收紧 | 与 `X-Frame-Options: DENY` 一致 |
 
@@ -104,6 +104,15 @@ Moklu 的 Coolify Resource 是 **Application / Nixpacks / SPA**，由应用容�
 注意：不要同时在 Cloudflare 和 Coolify 源站设置互相冲突的 CSP；多个 CSP 响应头会同时被浏览器执行，不是“后者覆盖前者”。
 
 **不使用 Cloudflare Transform Rules 时：** 需要通过 Coolify 的 Dockerfile / 自定义构建配置，让**应用容器内**的 nginx 在 HTTP `80` 端口附加安全头；HTTPS 终止仍由 Coolify 反向代理处理。应保留实际正在运行的 SPA `try_files ... /index.html` 路由，以及现有 `root` 和代理端口。不要直接照抄示例中的 `/var/www/moklu/dist` 或假设存在 `/etc/nginx/snippets/moklu-headers.conf`。如果想用 `include`，必须在镜像里**先创建**对应片段文件，并在带 `add_header` 的每个 `location` 中包含它（nginx 的 `add_header` 存在继承陷阱）。修改后在容器中执行 `nginx -t`，再进行部署/重启；不要直接修改 Coolify 管理的宿主代理。
+
+#### 接入 Cloudflare Web Analytics 时的边缘头同步要求
+
+启用 Cloudflare Web Analytics（详见 [`docs/analytics.md`](./analytics.md)）后，无论是通过 Cloudflare Dashboard **自动注入**还是构建期环境变量 `VITE_CF_BEACON_TOKEN` **手动注入**，都必须确保线上实际生效的 `Content-Security-Policy`（Cloudflare Transform Rules 或 Coolify 应用容器 nginx）同步包含最小放行集合：
+
+- `script-src` 增加 `https://static.cloudflareinsights.com`（允许加载外部 `beacon.min.js`，不需要放宽 `'unsafe-inline'`）
+- `connect-src` 增加 `https://cloudflareinsights.com`（允许浏览器发送 RUM / PV beacon 请求；若为同域 `/cdn-cgi/rum`，已由 `'self'` 放行）
+
+> 提示：修改 `public/_headers` 后，Coolify / Cloudflare 不会自动同步到线上边缘规则。若线上已启用严格 CSP，请务必同步更新 Cloudflare **Modify Response Header**（或容器 nginx）中的 `Content-Security-Policy` 值，再用 `curl -sSI https://moklu.app/` 与浏览器 DevTools 确认零 `securitypolicyviolation`。
 
 ### 阶段 C：缓存与 HSTS
 
