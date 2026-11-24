@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on vite (defineConfig, loadEnv, Plugin), @vitejs/plugin-react, @tailwindcss/vite, node:path, node:child_process, and node:module; reads GITHUB_PAGES and optional VITE_CF_BEACON_TOKEN env vars
- * [OUTPUT]: exports Vite build configuration with @ alias, git/version defines, and conditional Cloudflare Web Analytics beacon injection when VITE_CF_BEACON_TOKEN is set
+ * [OUTPUT]: exports Vite build configuration with @ alias (using import.meta.dirname), git/version defines, conditional Cloudflare Web Analytics beacon injection, and client-only Rolldown codeSplitting isolating React, Konva, and DnD vendor chunks
  * [POS]: root Vite bundler configuration powering dev, production client builds, and temporary SSR prerender builds
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -45,7 +45,7 @@ function cloudflareWebAnalyticsPlugin(token: string): Plugin {
   }
 }
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ mode, isSsrBuild }) => {
   const env = loadEnv(mode, process.cwd(), 'VITE_')
   const cfBeaconToken = (env.VITE_CF_BEACON_TOKEN ?? process.env.VITE_CF_BEACON_TOKEN ?? '').trim()
 
@@ -58,13 +58,38 @@ export default defineConfig(({ mode }) => {
     plugins: [react(), tailwindcss(), cloudflareWebAnalyticsPlugin(cfBeaconToken)],
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, './src'),
+        '@': path.resolve(import.meta.dirname, './src'),
       },
     },
     build: {
-      // The main chunk includes Konva + react-konva (~400kB), which is unavoidable
-      // for a canvas editor. All other code-splitting opportunities have been taken.
       chunkSizeWarningLimit: 800,
+      ...(isSsrBuild
+        ? {}
+        : {
+            rolldownOptions: {
+              output: {
+                codeSplitting: {
+                  groups: [
+                    {
+                      name: 'vendor-react',
+                      test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/,
+                      priority: 40,
+                    },
+                    {
+                      name: 'vendor-konva',
+                      test: /node_modules[\\/](konva|react-konva|react-reconciler|use-image)[\\/]/,
+                      priority: 30,
+                    },
+                    {
+                      name: 'vendor-dnd',
+                      test: /node_modules[\\/]@dnd-kit[\\/]/,
+                      priority: 20,
+                    },
+                  ],
+                },
+              },
+            },
+          }),
     },
   }
 })

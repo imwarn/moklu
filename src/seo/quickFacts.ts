@@ -67,16 +67,16 @@ const QUICK_FACTS_BY_LOCALE: Record<
       merge: {
         facts: [
           { label: 'Processing', value: '100% browser-local HTML5 Canvas (zero uploads)' },
-          { label: 'Layouts', value: 'Horizontal, Vertical, and 2–6 column Grid (cover / contain)' },
+          { label: 'Layouts', value: 'Horizontal, Vertical (with optional smart scroll-overlap & fixed top/bottom bar trim), and 2–6 column Grid (cover / contain)' },
           { label: 'Alignment', value: 'match-min (default), match-max, original (start / center / end)' },
-          { label: 'Ordering & edits', value: 'Drag-and-drop reorder, Reverse, 90° rotate, 0–24px borders, custom colors' },
-          { label: 'Outputs', value: 'PNG, WebP, JPEG, single-page PDF 1.4 (50%–100% quality), Copy to Clipboard' },
+          { label: 'Ordering & edits', value: 'Drag-and-drop reorder, Reverse, 90° rotate, 0–24px borders, custom colors, local IndexedDB draft autosave' },
+          { label: 'Outputs', value: 'PNG, WebP, JPEG, single-page PDF 1.4 (50%–100% quality), Copy to Clipboard, lossless multi-layer Studio handoff' },
           { label: 'Limits', value: 'No fixed image count cap; 8192px / 64MP auto-scaled ceiling' },
         ],
         boundaries: [
-          'Vertical stitching joins images cleanly edge-to-edge and does not auto-remove overlapping scroll regions or repeated status bars.',
+          'Vertical stitching defaults to exact edge-to-edge joining and provides optional smart long-screenshot overlap removal and fixed top/bottom bar trimming via 100% local pixel matching (unmatched or flat-color frames stay intact).',
           'PDF export creates a single-page PDF 1.4 image sheet rather than merging multi-page PDF files; transparent backgrounds turn white in JPEG/PDF.',
-          'For freeform overlapping layers, callout arrows, or text labels, use 1-click handoff to Moklu Studio.',
+          'Supports lossless multi-layer handoff to Moklu Studio for further layer editing and local browser IndexedDB draft autosave (excluding built-in demo images).',
         ],
       },
       split: {
@@ -173,16 +173,16 @@ const QUICK_FACTS_BY_LOCALE: Record<
       merge: {
         facts: [
           { label: '处理方式', value: '100% 浏览器本地 HTML5 Canvas（零上传）' },
-          { label: '布局模式', value: '横向并排、竖向长图、2–6 列宫格（支持 cover / contain）' },
+          { label: '布局模式', value: '横向并排、竖向长图（可选智能去重叠与固定顶/底栏裁剪）、2–6 列宫格（支持 cover / contain）' },
           { label: '对齐方式', value: '按最小对齐（默认）、按最大对齐、原尺寸（靠顶/左 · 居中 · 靠底/右）' },
-          { label: '排序与微调', value: '拖拽排序、一键反转、单图 90° 旋转、0–24px 描边边框、自定义取色器' },
-          { label: '导出与复制', value: 'PNG / WebP / JPEG / 单页 PDF 1.4（50%–100% 质量）+ 一键复制剪贴板' },
+          { label: '排序与微调', value: '拖拽排序、一键反转、单图 90° 旋转、0–24px 描边边框、自定义取色器、本地 IndexedDB 草稿自动保存' },
+          { label: '导出与复制', value: 'PNG / WebP / JPEG / 单页 PDF 1.4（50%–100% 质量）、一键复制剪贴板、拼图多图层无损移交 Studio' },
           { label: '张数与上限', value: '无固定张数限制；8192px / 64MP 安全上限，超限自动等比缩放并提示' },
         ],
         boundaries: [
-          '竖向长图按边缘整齐拼接，不包含自动识别并裁去重复滚动区域或状态栏的功能。',
+          '竖向拼接提供可选的智能长截图去重叠与固定顶/底栏裁剪（纯本地像素匹配，无明显重叠或纯色画面自动安全保留原图）。',
           'PDF 导出生成单页 PDF 1.4 图片文件（非多页 PDF 合并）；导出 JPEG/PDF 时透明底自动转为白底。',
-          '如需自由叠放图层、添加标注箭头或标题文案，可一键转入 Moklu Studio。',
+          '支持拼图多图层无损移交 Moklu Studio 二次编辑（独立保留各图位置、圆角与旋转），并支持本地 IndexedDB 草稿自动保存。',
         ],
       },
       split: {
@@ -279,16 +279,16 @@ const QUICK_FACTS_BY_LOCALE: Record<
       merge: {
         facts: [
           { label: '処理方式', value: '100% ブラウザ内 HTML5 Canvas（送信ゼロ）' },
-          { label: 'レイアウト', value: '横並び、縦結合、2〜6 列グリッド（cover / contain 対応）' },
+          { label: 'レイアウト', value: '横並び、縦結合（任意のスマート重複除去＆固定上下バー切り抜き対応）、2〜6 列グリッド（cover / contain 対応）' },
           { label: 'サイズ揃え', value: '最小揃え（初期値）、最大揃え、原寸（先頭・中央・末尾揃え）' },
-          { label: '並び替え・装飾', value: 'ドラッグ並び替え、順序反転、90° 回転、0〜24px 枠線、カラーピッカー' },
-          { label: '出力・コピー', value: 'PNG / WebP / JPEG / 単ページ PDF 1.4（画質 50%〜100%）+ クリップボードコピー' },
+          { label: '並び替え・装飾', value: 'ドラッグ並び替え、順序反転、90° 回転、0〜24px 枠線、カラーピッカー、ローカル IndexedDB 下書き自動保存' },
+          { label: '出力・コピー', value: 'PNG / WebP / JPEG / 単ページ PDF 1.4（画質 50%〜100%）、クリップボードコピー、多層 Studio 無劣化引き継ぎ' },
           { label: '上限仕様', value: '枚数固定上限なし；8192px / 64MP 超過時は自動縮小＆通知' },
         ],
         boundaries: [
-          '縦長結合では重複スクロール領域やステータスバーの自動削除は行わず、元画像を正確に連結します。',
+          '縦結合は標準で元画像を正確に連結し、任意で 100% ローカルのピクセル照合によるスマート長尺スクショ重複除去と固定トップ/ボトムバー切り抜きを利用できます。',
           'PDF 出力は結合画像を 1 ページに収める単ページ PDF 1.4 仕様です（JPEG/PDF の透過領域は自動で白地合成）。',
-          '自由配置や矢印・見出しテキスト追加はワンクリックで Moklu Studio へ引き継げます。',
+          '結合した複数画像を独立レイヤーのまま無劣化で Moklu Studio へ引き継いで再編集でき、作業状態はローカル IndexedDB 下書きに自動保存されます。',
         ],
       },
       split: {
@@ -385,16 +385,16 @@ const QUICK_FACTS_BY_LOCALE: Record<
       merge: {
         facts: [
           { label: '처리 방식', value: '100% 브라우저 로컬 HTML5 Canvas (업로드 제로)' },
-          { label: '레이아웃', value: '가로, 세로, 2~6열 그리드 (cover / contain 전환)' },
+          { label: '레이아웃', value: '가로, 세로(선택형 스마트 스크롤 겹침 제거 및 고정 상·하단 바 자르기 지원), 2~6열 그리드 (cover / contain 전환)' },
           { label: '크기 정렬', value: '최소 맞춤(기본), 최대 맞춤, 원본(시작 / 가운데 / 끝 정렬)' },
-          { label: '정렬 및 스타일', value: '드래그 정렬, 순서 뒤집기, 90° 회전, 0~24px 테두리, 커스텀 색상 선택기' },
-          { label: '출력 및 복사', value: 'PNG / WebP / JPEG / 단일 페이지 PDF 1.4 (품질 50%~100%) + 클립보드 복사' },
+          { label: '정렬 및 스타일', value: '드래그 정렬, 순서 뒤집기, 90° 회전, 0~24px 테두리, 커스텀 색상 선택기, 로컬 IndexedDB 초안 자동 저장' },
+          { label: '출력 및 복사', value: 'PNG / WebP / JPEG / 단일 페이지 PDF 1.4 (품질 50%~100%), 클립보드 복사, 멀티 레이어 무손실 Studio 연동' },
           { label: '한도 안내', value: '고정 장수 제한 없음; 8192px / 64MP 초과 시 자동 축소 및 알림' },
         ],
         boundaries: [
-          '세로 이어붙이기는 겹치는 스크롤 영역이나 상태바를 자동 삭제하지 않으며 원본 픽셀을 예측 가능하게 연결합니다.',
+          '세로 이어붙이기는 기본적으로 원본 가장자리를 그대로 연결하며, 100% 로컬 픽셀 매칭 기반의 선택형 스마트 긴 스크린샷 겹침 제거와 고정 상·하단 바 자르기를 제공합니다.',
           'PDF 내보내기는 합쳐진 이미지를 한 장에 담은 단일 페이지 PDF 1.4를 생성합니다 (JPEG/PDF 투명 배경은 자동 흰색 처리).',
-          '자유 레이어 배치, 화살표 강조, 헤드라인 추가는 원클릭으로 Moklu Studio에서 이어서 편집하세요.',
+          '병합 이미지를 독립 멀티 레이어 그대로 무손실 Moklu Studio로 넘겨 2차 편집할 수 있으며, 작업 상태는 브라우저 로컬 IndexedDB 초안으로 자동 저장됩니다.',
         ],
       },
       split: {
