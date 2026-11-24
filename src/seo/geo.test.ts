@@ -196,7 +196,9 @@ describe('GEO deliverables: llms.txt, native details FAQ, Quick Facts, trust pag
     expect(notices).toContain('konva')
     expect(notices).toContain('@dnd-kit/core')
     expect(notices).toContain('jszip')
-    expect(notices).toContain('public/icons.svg')
+    expect(notices).not.toContain('public/icons.svg')
+    expect(notices).not.toContain('待确认')
+    expect(notices).toContain('布局数据，作者署名 PixelDeck')
     expect(notices).toContain('src/assets/mockups/browser.ts')
 
     for (const locale of LOCALE_CODES) {
