@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on @dnd-kit/sortable, @dnd-kit/utilities, Layer/GroupLayer types, InlineEditableLabel, studioTokens from @/components/ui/studioTokens, and LAYER_ICON/ItemData from ./constants
- * [OUTPUT]: exports SortableLayer, SortableChild, SortableGroup, DragPreview, and prop interfaces (SortableLayerProps, SortableChildProps, SortableGroupProps) with keyboard focus-within, touch visibility, ARIA state, and AA contrast
+ * [INPUT]: depends on @dnd-kit/sortable, @dnd-kit/utilities, Layer/GroupLayer types, InlineEditableLabel, studioTokens from @/components/ui/studioTokens, StudioIcons (LayerTypeIcon, GroupIcon, LockIcon, UnlockIcon), and ItemData from ./constants
+ * [OUTPUT]: exports SortableLayer, SortableChild, SortableGroup, DragPreview, and prop interfaces (SortableLayerProps, SortableChildProps, SortableGroupProps) with SVG icons, keyboard focus-within, touch visibility, ARIA state, and AA contrast
  * [POS]: sortable layer tree row components inside src/components/panels/layers rendered by LayersPanel
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -9,7 +9,8 @@ import { CSS } from '@dnd-kit/utilities'
 import type { Layer, GroupLayer } from '@/types'
 import { InlineEditableLabel } from '@/components/ui/InlineEditableLabel'
 import { STUDIO_COLORS, STUDIO_TEXT_MUTED_CLS } from '@/components/ui/studioTokens'
-import { LAYER_ICON, type ItemData } from './constants'
+import { GroupIcon, LayerTypeIcon, LockIcon, UnlockIcon } from '@/components/ui/StudioIcons'
+import type { ItemData } from './constants'
 
 const ROW_ACTION_VISIBILITY_CLS =
   'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity'
@@ -76,7 +77,9 @@ export function SortableLayer({
         style={{ color: layer.visible ? STUDIO_COLORS.textPrimary : STUDIO_COLORS.textSubtle }}
       ><span aria-hidden="true">{layer.visible ? '◉' : '○'}</span></button>
 
-      <span className="text-xs shrink-0" style={{ color: STUDIO_COLORS.textMuted }} aria-hidden="true">{LAYER_ICON[layer.type]}</span>
+      <span className="flex h-4 w-4 shrink-0 items-center justify-center" style={{ color: STUDIO_COLORS.textMuted }} aria-hidden="true">
+        <LayerTypeIcon type={layer.type} size={13} />
+      </span>
 
       <InlineEditableLabel
         value={layer.name}
@@ -90,9 +93,9 @@ export function SortableLayer({
         aria-label={layer.locked ? `Unlock ${layer.name}` : `Lock ${layer.name}`}
         aria-pressed={layer.locked}
         onClick={(e) => { e.stopPropagation(); onLockToggle(layer.id, !layer.locked) }}
-        className={`w-5 h-5 flex items-center justify-center text-xs rounded hover:bg-[rgba(255,255,255,0.08)] shrink-0 ${lockVisibilityCls} ${ACTION_FOCUS_CLS}`}
+        className={`w-5 h-5 flex items-center justify-center rounded hover:bg-[rgba(255,255,255,0.08)] shrink-0 ${lockVisibilityCls} ${ACTION_FOCUS_CLS}`}
         style={{ color: layer.locked ? STUDIO_COLORS.textPrimary : STUDIO_COLORS.textMuted }}
-      ><span aria-hidden="true">{layer.locked ? '🔒' : '🔓'}</span></button>
+      >{layer.locked ? <LockIcon size={12} /> : <UnlockIcon size={12} />}</button>
 
       <button
         type="button"
@@ -144,8 +147,8 @@ export function SortableChild({ child, groupId, isSelected, onSelect, onRename }
         onClick={(e) => e.stopPropagation()}
       ><span aria-hidden="true">⠿</span></button>
 
-      <span className="text-xs shrink-0 w-4 text-center text-[#9494a8]" aria-hidden="true">
-        {LAYER_ICON[child.type] ?? '◯'}
+      <span className="flex h-4 w-4 shrink-0 items-center justify-center text-[#9494a8]" aria-hidden="true">
+        <LayerTypeIcon type={child.type} size={12} />
       </span>
       <InlineEditableLabel
         value={child.name}
@@ -243,7 +246,9 @@ export function SortableGroup({
           style={{ transition: 'transform 0.15s', transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}
         ><span aria-hidden="true">▼</span></button>
 
-        <span className="text-xs shrink-0 text-accent-text" aria-hidden="true">▥</span>
+        <span className="flex h-4 w-4 shrink-0 items-center justify-center text-accent-text" aria-hidden="true">
+          <GroupIcon size={13} />
+        </span>
 
         <InlineEditableLabel
           value={layer.name}
@@ -261,9 +266,9 @@ export function SortableGroup({
           aria-label={layer.locked ? `Unlock ${layer.name}` : `Lock ${layer.name}`}
           aria-pressed={layer.locked}
           onClick={(e) => { e.stopPropagation(); onLockToggle(layer.id, !layer.locked) }}
-          className={`w-5 h-5 flex items-center justify-center text-xs rounded hover:bg-[rgba(255,255,255,0.08)] shrink-0 ${lockVisibilityCls} ${ACTION_FOCUS_CLS}`}
+          className={`w-5 h-5 flex items-center justify-center rounded hover:bg-[rgba(255,255,255,0.08)] shrink-0 ${lockVisibilityCls} ${ACTION_FOCUS_CLS}`}
           style={{ color: layer.locked ? STUDIO_COLORS.textPrimary : STUDIO_COLORS.textMuted }}
-        ><span aria-hidden="true">{layer.locked ? '🔒' : '🔓'}</span></button>
+        >{layer.locked ? <LockIcon size={12} /> : <UnlockIcon size={12} />}</button>
 
         <button
           type="button"
@@ -304,11 +309,13 @@ export function SortableGroup({
 
 // ─── Drag preview (shown in DragOverlay) ─────────────────────────────────────
 
-export function DragPreview({ label, icon }: { label: string; icon: string }) {
+export function DragPreview({ label, type }: { label: string; type: Layer['type'] }) {
   return (
     <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg shadow-2xl border text-xs"
       style={{ background: 'var(--color-panel)', borderColor: 'color-mix(in srgb, var(--color-accent) 45%, transparent)', color: STUDIO_COLORS.textPrimary, pointerEvents: 'none', minWidth: 120 }}>
-      <span style={{ color: 'var(--color-accent)' }} aria-hidden="true">{icon}</span>
+      <span className="flex items-center" style={{ color: 'var(--color-accent)' }} aria-hidden="true">
+        <LayerTypeIcon type={type} size={13} />
+      </span>
       <span className="truncate">{label}</span>
     </div>
   )

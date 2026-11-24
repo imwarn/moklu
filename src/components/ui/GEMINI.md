@@ -11,6 +11,7 @@ Accessible, zero-business-logic Studio UI primitives, dark-surface contrast toke
 - `NumberInput.tsx`: Numeric HTML input wrapper (`NumberInput`) emitting parsed numeric and raw string values via `onValueChange`.
 - `panelA11y.test.tsx`: Vitest accessibility suite verifying ARIA roles, keyboard interactions, and AA contrast tokens across Studio UI primitives and panels.
 - `SegmentedControl.tsx`: Accessible segmented option toggle (`SegmentedControl`, `SegmentedOption`) with WCAG AA inactive contrast.
+- `StudioIcons.tsx`: Zero-dependency monochrome SVG icon components for Studio Toolbar, Insert panel, and Layers tree plus `LayerTypeIcon` dispatcher.
 - `studioTokens.ts`: Single source of truth for Studio dark-surface color constants (`STUDIO_COLORS`) and static Tailwind utility class strings (`STUDIO_TEXT_MUTED_CLS`, `STUDIO_TEXT_SUBTLE_CLS`, `STUDIO_LABEL_CLS`, `STUDIO_SECTION_LABEL_CLS`, `STUDIO_SUBTLE_SECTION_LABEL_CLS`).
 - `ToggleSwitch.tsx`: Boolean toggle primitive (`ToggleSwitch`) rendering either an ARIA `role="switch"` button or a native checkbox variant.
 
