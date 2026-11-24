@@ -181,5 +181,29 @@ describe('GEO deliverables: llms.txt, native details FAQ, Quick Facts, trust pag
     expect(readme).toContain('在线图片拼接')
     expect(readme).toContain('## English')
     expect(readme).toContain('## 简体中文')
+    expect(readme).toContain('https://github.com/Pr0xS/PixelDeck')
+    expect(readme).toContain('THIRD_PARTY_NOTICES.md')
+
+    const license = await readFile(path.resolve('LICENSE'), 'utf8')
+    expect(license).toContain('Copyright (c) 2025-2026 PixelDeck contributors')
+    expect(license).toContain('Copyright (c) 2026 Moklu contributors')
+    expect(license).toContain('Permission is hereby granted, free of charge')
+
+    const notices = await readFile(path.resolve('THIRD_PARTY_NOTICES.md'), 'utf8')
+    expect(notices).not.toContain('—')
+    expect(notices).toContain('https://github.com/Pr0xS/PixelDeck')
+    expect(notices).toContain('OFL-1.1')
+    expect(notices).toContain('konva')
+    expect(notices).toContain('@dnd-kit/core')
+    expect(notices).toContain('jszip')
+    expect(notices).toContain('public/icons.svg')
+    expect(notices).toContain('src/assets/mockups/browser.ts')
+
+    for (const locale of LOCALE_CODES) {
+      const aboutRoute = resolvePathname(locale === 'en' ? '/about' : `/${locale}/about`)
+      const aboutMarkup = renderRouteMarkup(aboutRoute)
+      expect(aboutMarkup).toContain('https://github.com/Pr0xS/PixelDeck')
+      expect(aboutMarkup).toContain('https://github.com/imwarn/moklu')
+    }
   })
 })

@@ -89,7 +89,10 @@ Additional engineering documentation:
 
 ## Architecture & Attribution / 技术栈与开源致谢
 
-- **Stack**: React 19 + TypeScript 6 + Vite 8 + Tailwind CSS 4 + Geist (self-hosted) + Konva 10 + Zustand 5 + JSZip 3 + Vitest 4 + Playwright.
-- **License**: MIT. Moklu is based on **[PixelDeck](https://github.com/Pr0xS/PixelDeck)** by PixelDeck contributors, retaining its original `LICENSE` and copyright notice, with original Moklu quick image tools, browser frames, commercial foundation, and multilingual SSG/GEO architecture.
+- **Stack**: React 19 + TypeScript 6 + Vite 8 + Tailwind CSS 4 + Geist (self-hosted, OFL-1.1) + Konva 10 + Zustand 5 + JSZip 3 + Vitest 4 + Playwright.
+- **License & Notices**: MIT License (see [`LICENSE`](./LICENSE) and [`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md)).
+- **Credit / 致谢**:
+  - Moklu Studio is built on the MIT-licensed open-source project **[PixelDeck](https://github.com/Pr0xS/PixelDeck)**, retaining its original copyright and MIT license notice, combined with original Moklu quick image tools, browser frames, commercial foundation, and multilingual SSG/GEO pages.
+  - Studio 编辑器基于 MIT 协议的开源项目 **[PixelDeck](https://github.com/Pr0xS/PixelDeck)**，保留其原有版权与 MIT 许可声明，并由 Moklu 独立新增纯本地六大图片快速工具、浏览器样机与多语言 SSG/GEO 架构。
 
 Website: [https://moklu.app](https://moklu.app)

@@ -130,6 +130,19 @@ export function InfoPageContent({
           <p className={`text-sm ${mutedCls}`}>
             https://github.com/imwarn/moklu
           </p>
+          {doc.pixelDeckCreditLabel && (
+            <p className={`pt-1 text-xs leading-relaxed ${mutedCls}`}>
+              {doc.pixelDeckCreditLabel}:{' '}
+              <a
+                href="https://github.com/Pr0xS/PixelDeck"
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-accent-text underline decoration-accent/40 underline-offset-2 hover:decoration-accent"
+              >
+                github.com/Pr0xS/PixelDeck ↗
+              </a>
+            </p>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-2.5">
           <a

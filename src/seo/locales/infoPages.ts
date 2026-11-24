@@ -20,6 +20,7 @@ export interface InfoPageDocument {
   sections: readonly InfoPageSection[]
   githubCtaLabel: string
   backToToolsLabel: string
+  pixelDeckCreditLabel?: string
 }
 
 const INFO_DOCUMENTS: Record<LocaleCode, Record<InfoPageSlug, InfoPageDocument>> = {
@@ -31,6 +32,7 @@ const INFO_DOCUMENTS: Record<LocaleCode, Record<InfoPageSlug, InfoPageDocument>>
       updatedDate: '2026-11-24',
       githubCtaLabel: 'Inspect source on GitHub',
       backToToolsLabel: 'Back to all tools',
+      pixelDeckCreditLabel: 'Moklu Studio is built on the MIT-licensed open-source project PixelDeck',
       sections: [
         {
           heading: 'What Moklu does',
@@ -50,7 +52,7 @@ const INFO_DOCUMENTS: Record<LocaleCode, Record<InfoPageSlug, InfoPageDocument>>
         },
         {
           heading: 'Open-source governance & identity',
-          body: 'Moklu (moklu.app) is developed openly at https://github.com/imwarn/moklu under the MIT license, originating from PixelDeck with original Moklu browser frames, quick tools, and multilingual SSG pages. It is an independent developer tool and is unrelated to any third-party gaming domains.',
+          body: 'Moklu (moklu.app) is publicly open source at https://github.com/imwarn/moklu under the MIT license so anyone can inspect and audit the code. Moklu Studio is built on the MIT-licensed open-source project PixelDeck (https://github.com/Pr0xS/PixelDeck), combined with original Moklu quick image tools, browser frames, and multilingual SSG pages. Moklu is an independent developer tool and is unrelated to any third-party gaming domains.',
         },
       ],
     },
@@ -111,6 +113,7 @@ const INFO_DOCUMENTS: Record<LocaleCode, Record<InfoPageSlug, InfoPageDocument>>
       updatedDate: '2026-11-24',
       githubCtaLabel: '前往 GitHub 审阅源码',
       backToToolsLabel: '返回全部工具',
+      pixelDeckCreditLabel: 'Studio 编辑器基于 MIT 协议的开源项目 PixelDeck',
       sections: [
         {
           heading: 'Moklu 提供哪些核心能力',
@@ -129,8 +132,8 @@ const INFO_DOCUMENTS: Record<LocaleCode, Record<InfoPageSlug, InfoPageDocument>>
           body: '所有快速工具都在浏览器内存与 HTML5 Canvas 2D 中执行，没有云端图片上传接口，也没有服务器排队等待。加载页面后即使断开网络，依然可以完成全部本地处理。',
         },
         {
-          heading: '开源治理与品牌说明',
-          body: 'Moklu（moklu.app）在 https://github.com/imwarn/moklu 基于 MIT 协议开源，衍生自 PixelDeck 并新增了全套 Moklu 本地图片工具、浏览器样机与多语言 SSG 页面。Moklu 是独立的开源视觉工具，与任何同名第三方游戏站点无关。',
+          heading: '开源治理与致谢',
+          body: 'Moklu（moklu.app）在 https://github.com/imwarn/moklu 以 MIT 协议完全公开开源，所有本地处理引擎与 CSP 配置均可直接审阅。Studio 编辑器基于 MIT 协议的开源项目 PixelDeck（https://github.com/Pr0xS/PixelDeck），并由 Moklu 新增了全套纯本地图片快速工具、浏览器样机与多语言 SSG 页面。Moklu 是独立的开源视觉工具，与任何同名第三方游戏站点无关。',
         },
       ],
     },
@@ -191,6 +194,7 @@ const INFO_DOCUMENTS: Record<LocaleCode, Record<InfoPageSlug, InfoPageDocument>>
       updatedDate: '2026-11-24',
       githubCtaLabel: 'GitHub でソースを確認',
       backToToolsLabel: '全ツール一覧へ戻る',
+      pixelDeckCreditLabel: 'Studio エディタは MIT ライセンスのオープンソースプロジェクト PixelDeck をベースにしています',
       sections: [
         {
           heading: 'Moklu でできること',
@@ -209,8 +213,8 @@ const INFO_DOCUMENTS: Record<LocaleCode, Record<InfoPageSlug, InfoPageDocument>>
           body: 'すべてのクイックツールはブラウザの RAM と HTML5 Canvas 2D 上で実行されます。画像送信 API は存在せず、ページ表示後はオフラインでも動作します。',
         },
         {
-          heading: 'オープンソースと識別情報',
-          body: 'Moklu（moklu.app）は https://github.com/imwarn/moklu で MIT ライセンスのもと公開されている独立した開発者向け画像ツールです。',
+          heading: 'オープンソースとクレジット',
+          body: 'Moklu（moklu.app）は https://github.com/imwarn/moklu にて MIT ライセンスで公開されており、誰でもソースコードとローカル処理の実装を監査できます。Studio エディタは MIT ライセンスのオープンソースプロジェクト PixelDeck（https://github.com/Pr0xS/PixelDeck）をベースに、Moklu 独自の高速ローカル画像ツールとブラウザ枠・多言語 SSG ページを組み合わせて構築されています。',
         },
       ],
     },
@@ -271,6 +275,7 @@ const INFO_DOCUMENTS: Record<LocaleCode, Record<InfoPageSlug, InfoPageDocument>>
       updatedDate: '2026-11-24',
       githubCtaLabel: 'GitHub에서 소스코드 보기',
       backToToolsLabel: '전체 도구로 돌아가기',
+      pixelDeckCreditLabel: 'Studio 에디터는 MIT 라이선스의 오픈소스 프로젝트 PixelDeck을 기반으로 합니다',
       sections: [
         {
           heading: 'Moklu가 제공하는 핵심 도구',
@@ -289,8 +294,8 @@ const INFO_DOCUMENTS: Record<LocaleCode, Record<InfoPageSlug, InfoPageDocument>>
           body: '모든 빠른 도구는 브라우저 메모리와 HTML5 Canvas 2D에서 실행됩니다. 백엔드 업로드 서버가 없으며, 페이지를 연 뒤 오프라인 상태에서도 정상 작동합니다.',
         },
         {
-          heading: '오픈소스 거버넌스',
-          body: 'Moklu(moklu.app)는 https://github.com/imwarn/moklu 에서 MIT 라이선스로 공개 개발되는 독립 이미지 도구입니다.',
+          heading: '오픈소스 거버넌스 및 크레딧',
+          body: 'Moklu(moklu.app)는 https://github.com/imwarn/moklu 에서 MIT 라이선스로 공개되어 누구나 코드와 로컬 처리 구조를 감사할 수 있습니다. Studio 에디터는 MIT 라이선스의 오픈소스 프로젝트 PixelDeck(https://github.com/Pr0xS/PixelDeck)을 기반으로 하며, Moklu 고유의 로컬 이미지 도구와 브라우저 목업·다국어 SSG 페이지를 더해 구축했습니다.',
         },
       ],
     },
