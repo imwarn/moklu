@@ -291,4 +291,111 @@ describe('createToolsWorkspaceEngines', () => {
     })
     expect(mockTools.disposeImageItems).toHaveBeenCalledTimes(1)
   })
+
+  it('forwards seamOverlapOverrides and multipage PDF options to mergeImages and maps layout.seams', async () => {
+    const pdfBlob = new Blob(['%PDF-1.4'], { type: 'application/pdf' })
+    const previewBlob = new Blob(['page-1'], { type: 'image/jpeg' })
+    mockTools.mergeImages.mockResolvedValue({
+      blob: pdfBlob,
+      previewBlob,
+      width: 1200,
+      height: 1800,
+      format: 'application/pdf',
+      bytes: pdfBlob.size,
+      filename: 'moklu-merged.pdf',
+      layout: {
+        width: 1200,
+        height: 1800,
+        scaleFactor: 1,
+        overlapRemovedPx: 240,
+        seams: [
+          { index: 0, autoOverlapPx: 220, appliedOverlapPx: 240, fixedTopPx: 44, fixedBottomPx: 32 },
+        ],
+        placements: [],
+      },
+    })
+
+    const engines = createToolsWorkspaceEngines()
+    const out = await engines.merge([SAMPLE_INPUT, { ...SAMPLE_INPUT, id: 'img-2' }], {
+      direction: 'vertical',
+      normalize: 'match-min',
+      columns: 2,
+      aspectCell: '1:1',
+      fit: 'cover',
+      gap: 0,
+      padding: 0,
+      borderRadius: 0,
+      background: '#ffffff',
+      format: 'application/pdf',
+      quality: 0.92,
+      removeOverlap: true,
+      seamOverlapOverrides: { 0: 240 },
+      pdfMode: 'multipage',
+      pdfPageSize: 'a4',
+      pdfOrientation: 'landscape',
+      pdfMargin: 'none',
+    })
+
+    const passed = mockTools.mergeImages.mock.calls[0][1]
+    expect(passed.seamOverlapOverrides).toEqual({ 0: 240 })
+    expect(passed.pdfMode).toBe('multipage')
+    expect(passed.pdfPageSize).toBe('a4')
+    expect(passed.pdfOrientation).toBe('landscape')
+    expect(passed.pdfMargin).toBe('none')
+    expect(out.layout?.seams).toEqual([
+      { index: 0, autoOverlapPx: 220, appliedOverlapPx: 240, fixedTopPx: 44, fixedBottomPx: 32 },
+    ])
+  })
+
+  it('forwards targetBytes and preserveOriginalDimensions to compressImages and maps original/target/EXIF metadata', async () => {
+    const sampleExif = {
+      hasExif: true,
+      hasSensitiveData: true,
+      tagCount: 5,
+      make: 'Apple',
+      model: 'iPhone 16 Pro',
+      gps: { latitude: 37.7749, longitude: -122.4194 },
+    }
+    mockTools.compressImages.mockResolvedValue({
+      items: [
+        {
+          id: 'c-target',
+          originalName: 'photo.jpg',
+          originalBytes: 4_200_000,
+          outputBytes: 186_000,
+          originalWidth: 4032,
+          originalHeight: 3024,
+          width: 1920,
+          height: 1440,
+          blob: new Blob(['compressed'], { type: 'image/webp' }),
+          format: 'image/webp',
+          targetBytesMet: true,
+          autoDownscaled: true,
+          appliedQuality: 0.72,
+        },
+      ],
+    })
+
+    const engines = createToolsWorkspaceEngines()
+    const items = await engines.compress(
+      [{ ...SAMPLE_INPUT, name: 'photo.jpg', sizeBytes: 4_200_000, exif: sampleExif }],
+      {
+        format: 'image/webp',
+        quality: 0.82,
+        targetBytes: 204_800,
+        preserveOriginalDimensions: false,
+      },
+    )
+
+    const passed = mockTools.compressImages.mock.calls[0][1]
+    expect(passed.targetBytes).toBe(204_800)
+    expect(passed.preserveOriginalDimensions).toBe(false)
+    expect(items[0].originalDataUrl).toBe(SAMPLE_INPUT.dataUrl)
+    expect(items[0].originalWidth).toBe(4032)
+    expect(items[0].originalHeight).toBe(3024)
+    expect(items[0].targetBytesMet).toBe(true)
+    expect(items[0].autoDownscaled).toBe(true)
+    expect(items[0].appliedQuality).toBe(0.72)
+    expect(items[0].exif).toEqual(sampleExif)
+  })
 })
