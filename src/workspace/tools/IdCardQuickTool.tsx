@@ -1,11 +1,12 @@
 /**
- * [INPUT]: depends on react, canvasUtils from ../canvasUtils, strings from ../i18n, themeTokens from ../themeTokens, UI primitives from ../uiPrimitives, useDebouncedValue from ../useDebouncedValue, and WorkspaceToolPanelProps from ../types
- * [OUTPUT]: exports IdCardQuickTool component for offline A4 front+back ID card sheet layout and debounced anti-fraud watermarking
+ * [INPUT]: depends on react, canvasUtils from ../canvasUtils, draftStorage from ../draftStorage, useToolDraft from ../useToolDraft, strings from ../i18n, themeTokens from ../themeTokens, UI primitives from ../uiPrimitives, useDebouncedValue from ../useDebouncedValue, and WorkspaceToolPanelProps from ../types
+ * [OUTPUT]: exports IdCardQuickTool component for offline A4 front+back ID card sheet layout, local IndexedDB draft auto-save (excluding sample mock IDs), and debounced anti-fraud watermarking
  * [POS]: privacy-first ID card watermark tool panel inside src/workspace/tools; delegates A4 rendering to injected engines.idCard
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 import { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import { createDemoImageInput, formatBytes, readFileAsImageInput, triggerBlobDownload } from '../canvasUtils'
+import { deserializeDraftImages, type WorkspaceToolDraft } from '../draftStorage'
 import { getWorkspaceStrings } from '../i18n'
 import { getWorkspaceThemeTokens } from '../themeTokens'
 import type {
@@ -14,8 +15,22 @@ import type {
   WorkspaceImageInput,
   WorkspaceToolPanelProps,
 } from '../types'
-import { ColorSwatchRow, DropZone, PreviewBusyOverlay, SegmentedControl, SliderField } from '../uiPrimitives'
+import { ColorSwatchRow, DraftStatusBar, DropZone, PreviewBusyOverlay, SegmentedControl, SliderField } from '../uiPrimitives'
 import { useDebouncedValue } from '../useDebouncedValue'
+import { useToolDraft } from '../useToolDraft'
+
+interface IdCardDraftSettings {
+  frontId: string | null
+  backId: string | null
+  customWatermark: string | null
+  watermarkMode: WorkspaceIdCardOptions['watermarkMode']
+  opacityPercent: number
+  angle: number
+  fontSize: number
+  color: string
+  dpi: '150' | '300'
+  grayscale: boolean
+}
 
 export function IdCardQuickTool({
   locale,
@@ -50,6 +65,74 @@ export function IdCardQuickTool({
   const [sheet, setSheet] = useState<WorkspaceBlobOutput | null>(null)
   const [rendering, setRendering] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const draftImages = useMemo(() => {
+    const list: WorkspaceImageInput[] = []
+    if (front) list.push(front)
+    if (back) list.push(back)
+    return list
+  }, [front, back])
+
+  const draftSettings = useMemo<IdCardDraftSettings>(
+    () => ({
+      frontId: front && !front.isDemo ? front.id : null,
+      backId: back && !back.isDemo ? back.id : null,
+      customWatermark,
+      watermarkMode,
+      opacityPercent,
+      angle,
+      fontSize,
+      color,
+      dpi,
+      grayscale,
+    }),
+    [front, back, customWatermark, watermarkMode, opacityPercent, angle, fontSize, color, dpi, grayscale],
+  )
+
+  const handleRestoreDraft = useCallback((draft: WorkspaceToolDraft<IdCardDraftSettings>) => {
+    const restored = deserializeDraftImages(draft.images)
+    const cfg = draft.settings
+    if (cfg.frontId) {
+      const matchedFront = restored.find((img) => img.id === cfg.frontId) ?? null
+      if (matchedFront) setFront(matchedFront)
+    }
+    if (cfg.backId) {
+      const matchedBack = restored.find((img) => img.id === cfg.backId) ?? null
+      if (matchedBack) setBack(matchedBack)
+    }
+    if (typeof cfg.customWatermark === 'string' || cfg.customWatermark === null) {
+      setCustomWatermark(cfg.customWatermark)
+    }
+    if (cfg.watermarkMode === 'tiled' || cfg.watermarkMode === 'across-card') {
+      setWatermarkMode(cfg.watermarkMode)
+    }
+    if (typeof cfg.opacityPercent === 'number' && Number.isFinite(cfg.opacityPercent)) {
+      setOpacityPercent(Math.max(8, Math.min(75, Math.round(cfg.opacityPercent))))
+    }
+    if (typeof cfg.angle === 'number' && Number.isFinite(cfg.angle)) {
+      setAngle(Math.max(-60, Math.min(60, Math.round(cfg.angle))))
+    }
+    if (typeof cfg.fontSize === 'number' && Number.isFinite(cfg.fontSize)) {
+      setFontSize(Math.max(16, Math.min(56, Math.round(cfg.fontSize))))
+    }
+    if (typeof cfg.color === 'string' && cfg.color) setColor(cfg.color)
+    if (cfg.dpi === '150' || cfg.dpi === '300') setDpi(cfg.dpi)
+    if (typeof cfg.grayscale === 'boolean') setGrayscale(cfg.grayscale)
+  }, [])
+
+  const { hasDraft, clearDraft } = useToolDraft<IdCardDraftSettings>({
+    toolId: 'id-card',
+    images: draftImages,
+    settings: draftSettings,
+    onRestore: handleRestoreDraft,
+  })
+
+  const handleClearDraft = () => {
+    setFront(null)
+    setBack(null)
+    setSheet(null)
+    void clearDraft()
+  }
 
   const watermarkText = customWatermark ?? s.idCard.defaultWatermark
 
@@ -260,6 +343,15 @@ export function IdCardQuickTool({
                 <p className={`text-xs ${tokens.textSubtle}`}>{s.common.emptyPreview}</p>
               )}
             </div>
+            {hasDraft && (
+              <DraftStatusBar
+                theme={theme}
+                toolId="id-card"
+                savedLabel={s.common.draftSaved}
+                clearLabel={s.common.clearDraft}
+                onClear={handleClearDraft}
+              />
+            )}
           </div>
         </div>
 

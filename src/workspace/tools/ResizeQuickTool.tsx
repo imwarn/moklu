@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on react, batchHelpers from ../batchHelpers, canvasUtils from ../canvasUtils, strings from ../i18n, themeTokens from ../themeTokens, UI primitives from ../uiPrimitives, useDebouncedValue from ../useDebouncedValue, and WorkspaceToolPanelProps from ../types
- * [OUTPUT]: exports ResizePreviewStage and ResizeQuickTool for multi-image Resize (px or scale %), Crop, and non-crop Border & Pad workflows with filmstrip preview switcher, debounced transforms, error-handled ZIP export, and full-batch Studio handoff
+ * [INPUT]: depends on react, batchHelpers from ../batchHelpers, canvasUtils from ../canvasUtils, draftStorage from ../draftStorage, useToolDraft from ../useToolDraft, strings from ../i18n, themeTokens from ../themeTokens, UI primitives from ../uiPrimitives, useDebouncedValue from ../useDebouncedValue, and WorkspaceToolPanelProps from ../types
+ * [OUTPUT]: exports ResizePreviewStage and ResizeQuickTool for multi-image Resize (px or scale %), Crop, and non-crop Border & Pad workflows with filmstrip preview switcher, debounced transforms, local IndexedDB draft auto-save, error-handled ZIP export, and full-batch Studio handoff
  * [POS]: resize, crop, and border-pad panel inside src/workspace/tools; delegates rendering to injected engines.transform
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -12,6 +12,7 @@ import {
   stepBatchIndex,
 } from '../batchHelpers'
 import { createDemoImageInput, formatBytes, readFileAsImageInput, triggerBlobDownload } from '../canvasUtils'
+import { deserializeDraftImages, type WorkspaceToolDraft } from '../draftStorage'
 import { getWorkspaceStrings } from '../i18n'
 import { getWorkspaceThemeTokens } from '../themeTokens'
 import type {
@@ -25,6 +26,7 @@ import type {
 } from '../types'
 import {
   ColorSwatchRow,
+  DraftStatusBar,
   DropZone,
   PreviewBusyOverlay,
   SegmentedControl,
@@ -32,6 +34,21 @@ import {
   StudioHandoffButton,
 } from '../uiPrimitives'
 import { useDebouncedValue } from '../useDebouncedValue'
+import { useToolDraft } from '../useToolDraft'
+
+interface ResizeDraftSettings {
+  mode: WorkspaceTransformOptions['mode']
+  resizeBy: 'pixels' | 'scale'
+  scalePercent: number
+  aspectRatio: WorkspaceAspectPreset
+  widthPx: number
+  heightPx: number
+  lockAspect: boolean
+  borderPx: number
+  borderRadius: number
+  background: string
+  shadow: boolean
+}
 
 const MIN_RESIZE_PX = 16
 const MAX_RESIZE_PX = 8192
@@ -288,6 +305,70 @@ export function ResizeQuickTool({
   const [zipping, setZipping] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const draftSettings = useMemo<ResizeDraftSettings>(
+    () => ({
+      mode,
+      resizeBy,
+      scalePercent,
+      aspectRatio,
+      widthPx,
+      heightPx,
+      lockAspect,
+      borderPx,
+      borderRadius,
+      background,
+      shadow,
+    }),
+    [mode, resizeBy, scalePercent, aspectRatio, widthPx, heightPx, lockAspect, borderPx, borderRadius, background, shadow],
+  )
+
+  const handleRestoreDraft = useCallback((draft: WorkspaceToolDraft<ResizeDraftSettings>) => {
+    const restored = deserializeDraftImages(draft.images)
+    if (restored.length > 0) {
+      setImages(restored)
+      setSelectedIndex(0)
+    }
+    const cfg = draft.settings
+    if (cfg.mode === 'resize' || cfg.mode === 'crop' || cfg.mode === 'pad') setMode(cfg.mode)
+    if (cfg.resizeBy === 'pixels' || cfg.resizeBy === 'scale') setResizeBy(cfg.resizeBy)
+    if (typeof cfg.scalePercent === 'number' && Number.isFinite(cfg.scalePercent)) {
+      setScalePercent(Math.max(10, Math.min(200, Math.round(cfg.scalePercent))))
+    }
+    if (
+      cfg.aspectRatio === 'free' ||
+      cfg.aspectRatio === '1:1' ||
+      cfg.aspectRatio === '4:5' ||
+      cfg.aspectRatio === '3:4' ||
+      cfg.aspectRatio === '16:9' ||
+      cfg.aspectRatio === '9:16' ||
+      cfg.aspectRatio === '3:2'
+    ) {
+      setAspectRatio(cfg.aspectRatio)
+    }
+    if (typeof cfg.widthPx === 'number' && Number.isFinite(cfg.widthPx)) {
+      const w = clampResizePx(cfg.widthPx, 1200)
+      setWidthPx(w)
+      setWidthDraft(String(w))
+    }
+    if (typeof cfg.heightPx === 'number' && Number.isFinite(cfg.heightPx)) {
+      const h = clampResizePx(cfg.heightPx, 1200)
+      setHeightPx(h)
+      setHeightDraft(String(h))
+    }
+    if (typeof cfg.lockAspect === 'boolean') setLockAspect(cfg.lockAspect)
+    if (typeof cfg.borderPx === 'number' && Number.isFinite(cfg.borderPx)) setBorderPx(cfg.borderPx)
+    if (typeof cfg.borderRadius === 'number' && Number.isFinite(cfg.borderRadius)) setBorderRadius(cfg.borderRadius)
+    if (typeof cfg.background === 'string' && cfg.background) setBackground(cfg.background)
+    if (typeof cfg.shadow === 'boolean') setShadow(cfg.shadow)
+  }, [])
+
+  const { hasDraft, clearDraft } = useToolDraft<ResizeDraftSettings>({
+    toolId: 'resize',
+    images,
+    settings: draftSettings,
+    onRestore: handleRestoreDraft,
+  })
+
   const debouncedScalePercent = useDebouncedValue(scalePercent)
   const debouncedWidthPx = useDebouncedValue(widthPx)
   const debouncedHeightPx = useDebouncedValue(heightPx)
@@ -396,6 +477,7 @@ export function ResizeQuickTool({
     setImages([])
     setOutputs([])
     setSelectedIndex(0)
+    void clearDraft()
   }
 
   useEffect(() => {
@@ -499,6 +581,15 @@ export function ResizeQuickTool({
           onLoadDemo={handleLoadDemo}
           onFiles={handleFiles}
         />
+        {hasDraft && (
+          <DraftStatusBar
+            theme={theme}
+            toolId="resize"
+            savedLabel={s.common.draftSaved}
+            clearLabel={s.common.clearDraft}
+            onClear={handleClearAll}
+          />
+        )}
       </div>
 
       {/* Right: Resize / Crop / Border Controls */}

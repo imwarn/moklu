@@ -215,7 +215,22 @@ describe('createToolsWorkspaceEngines', () => {
       format: 'application/pdf',
       bytes: pdfBlob.size,
       filename: 'moklu-merged.pdf',
-      layout: { width: 2000, height: 1500, scaleFactor: 0.5, placements: [] },
+      layout: {
+        width: 2000,
+        height: 1500,
+        scaleFactor: 0.5,
+        overlapRemovedPx: 180,
+        placements: [
+          {
+            index: 0,
+            sourceRect: { x: 0, y: 0, width: 1600, height: 900 },
+            destRect: { x: 10, y: 10, width: 450, height: 800 },
+            radius: 4,
+            rotation: 90,
+            borderWidth: 2,
+          },
+        ],
+      },
     })
 
     const engines = createToolsWorkspaceEngines()
@@ -225,7 +240,7 @@ describe('createToolsWorkspaceEngines', () => {
         { ...SAMPLE_INPUT, id: 'b', rotation: 270 },
       ],
       {
-        direction: 'horizontal',
+        direction: 'vertical',
         normalize: 'original',
         align: 'end',
         columns: 4,
@@ -239,6 +254,7 @@ describe('createToolsWorkspaceEngines', () => {
         background: '#f8fafc',
         format: 'application/pdf',
         quality: 0.88,
+        removeOverlap: true,
       },
     )
 
@@ -250,12 +266,29 @@ describe('createToolsWorkspaceEngines', () => {
     expect(passed.borderColor).toBe('#111827')
     expect(passed.itemRotations).toEqual([90, 270])
     expect(passed.format).toBe('application/pdf')
+    expect(passed.removeOverlap).toBe(true)
     expect(passed.filename).toBe('moklu-merged.pdf')
 
     expect(out.mimeType).toBe('application/pdf')
     expect(out.blob).toBe(pdfBlob)
     expect(out.dataUrl).toContain('data:image/jpeg;base64,')
     expect(out.scaleFactor).toBe(0.5)
+    expect(out.layout).toEqual({
+      width: 2000,
+      height: 1500,
+      scaleFactor: 0.5,
+      overlapRemovedPx: 180,
+      placements: [
+        {
+          index: 0,
+          sourceRect: { x: 0, y: 0, width: 1600, height: 900 },
+          destRect: { x: 10, y: 10, width: 450, height: 800 },
+          radius: 4,
+          rotation: 90,
+          borderWidth: 2,
+        },
+      ],
+    })
     expect(mockTools.disposeImageItems).toHaveBeenCalledTimes(1)
   })
 })

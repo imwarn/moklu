@@ -1,7 +1,7 @@
 /**
- * [INPUT]: depends on react, @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities, canvasUtils from ../canvasUtils, strings from ../i18n, themeTokens from ../themeTokens, UI primitives from ../uiPrimitives, useDebouncedValue from ../useDebouncedValue, and workspace types from ../types
- * [OUTPUT]: exports MergeQuickTool component for horizontal, vertical, and 2..6-col grid multi-image stitching with drag-and-drop reordering, reverse order, 90deg per-item rotation, cross-axis alignment, per-image border, custom color picker, quality slider, clipboard copy, and single-page PDF export
- * [POS]: merge and collage tool panel inside src/workspace/tools; delegates canvas composition to injected engines.merge
+ * [INPUT]: depends on react, @dnd-kit/core, @dnd-kit/sortable, SortableMergeThumb from ./SortableMergeThumb, canvasUtils from ../canvasUtils, deserializeDraftImages from ../draftStorage, buildMergeStudioHandoff from ../mergeHandoff, strings from ../i18n, themeTokens from ../themeTokens, UI primitives from ../uiPrimitives, useDebouncedValue from ../useDebouncedValue, useToolDraft from ../useToolDraft, and workspace types from ../types
+ * [OUTPUT]: exports MergeQuickTool component for horizontal, vertical (with optional smart long-screenshot overlap removal), and 2..6-col grid multi-image stitching with drag-and-drop reordering, 90deg per-item rotation, borders, clipboard copy, PDF export, local IndexedDB draft auto-save, and multi-layer Studio handoff
+ * [POS]: merge and collage tool panel inside src/workspace/tools; delegates canvas composition to injected engines.merge and multi-layer Studio handoff to buildMergeStudioHandoff
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 import {
@@ -16,9 +16,7 @@ import {
   SortableContext,
   arrayMove,
   horizontalListSortingStrategy,
-  useSortable,
 } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   copyImageToClipboard,
@@ -27,19 +25,22 @@ import {
   readFileAsImageInput,
   triggerBlobDownload,
 } from '../canvasUtils'
+import { deserializeDraftImages, type WorkspaceToolDraft } from '../draftStorage'
 import { getWorkspaceStrings } from '../i18n'
-import { getWorkspaceThemeTokens, type WorkspaceThemeTokens } from '../themeTokens'
+import { buildMergeStudioHandoff } from '../mergeHandoff'
+import { getWorkspaceThemeTokens } from '../themeTokens'
 import type {
-  WorkspaceBlobOutput,
   WorkspaceImageInput,
   WorkspaceMergeAlign,
   WorkspaceMergeFormat,
   WorkspaceMergeOptions,
+  WorkspaceMergeOutput,
   WorkspaceMergeRotation,
   WorkspaceToolPanelProps,
 } from '../types'
 import {
   ColorSwatchRow,
+  DraftStatusBar,
   DropZone,
   PreviewBusyOverlay,
   SegmentedControl,
@@ -47,6 +48,26 @@ import {
   StudioHandoffButton,
 } from '../uiPrimitives'
 import { useDebouncedValue } from '../useDebouncedValue'
+import { useToolDraft } from '../useToolDraft'
+import { SortableMergeThumb } from './SortableMergeThumb'
+
+interface MergeDraftSettings {
+  direction: WorkspaceMergeOptions['direction']
+  normalize: WorkspaceMergeOptions['normalize']
+  align: WorkspaceMergeAlign
+  columns: number
+  aspectCell: WorkspaceMergeOptions['aspectCell']
+  fit: WorkspaceMergeOptions['fit']
+  gap: number
+  padding: number
+  borderRadius: number
+  borderWidth: number
+  borderColor: string
+  background: string
+  format: WorkspaceMergeFormat
+  qualityPercent: number
+  removeOverlap: boolean
+}
 
 function nextQuarterTurn(current?: WorkspaceMergeRotation): WorkspaceMergeRotation {
   switch (current ?? 0) {
@@ -55,132 +76,6 @@ function nextQuarterTurn(current?: WorkspaceMergeRotation): WorkspaceMergeRotati
     case 180: return 270
     case 270: return 0
   }
-}
-
-interface SortableMergeThumbProps {
-  item: WorkspaceImageInput
-  index: number
-  total: number
-  tokens: WorkspaceThemeTokens
-  labels: {
-    moveLeft: string
-    moveRight: string
-    rotate90: string
-    remove: string
-  }
-  onMove: (index: number, delta: -1 | 1) => void
-  onRotate: (id: string) => void
-  onRemove: (id: string) => void
-}
-
-function SortableMergeThumb({
-  item,
-  index,
-  total,
-  tokens,
-  labels,
-  onMove,
-  onRotate,
-  onRemove,
-}: SortableMergeThumbProps) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: item.id,
-  })
-  const rotation = item.rotation ?? 0
-
-  return (
-    <li
-      ref={setNodeRef}
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-      }}
-      data-testid={`merge-thumb-${index}`}
-      className={`flex shrink-0 items-center gap-2 rounded-xl border p-1.5 ${tokens.card} ${
-        isDragging ? 'z-20 opacity-85 shadow-md ring-2 ring-accent/40' : ''
-      }`}
-    >
-      <div
-        {...attributes}
-        {...listeners}
-        className="relative flex cursor-grab touch-none items-center gap-1.5 active:cursor-grabbing"
-      >
-        <svg
-          viewBox="0 0 12 20"
-          className={`h-4 w-2.5 shrink-0 opacity-50 ${tokens.textSubtle}`}
-          fill="currentColor"
-          aria-hidden="true"
-        >
-          <circle cx="3" cy="5" r="1.2" />
-          <circle cx="9" cy="5" r="1.2" />
-          <circle cx="3" cy="10" r="1.2" />
-          <circle cx="9" cy="10" r="1.2" />
-          <circle cx="3" cy="15" r="1.2" />
-          <circle cx="9" cy="15" r="1.2" />
-        </svg>
-        <div className="relative h-12 w-12 overflow-hidden rounded-lg bg-black/5">
-          <img
-            src={item.dataUrl}
-            alt={item.name}
-            style={rotation ? { transform: `rotate(${rotation}deg)` } : undefined}
-            className="h-full w-full object-cover transition-transform"
-          />
-          {rotation !== 0 && (
-            <span className="absolute bottom-0.5 right-0.5 rounded bg-zinc-900/80 px-1 text-[9px] font-bold tabular-nums text-white">
-              {rotation}°
-            </span>
-          )}
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <span className={`max-w-[120px] truncate text-[11px] font-medium ${tokens.text}`}>
-          {index + 1}. {item.name}
-        </span>
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            aria-label={`${labels.moveLeft}: ${item.name}`}
-            disabled={index === 0}
-            onClick={() => onMove(index, -1)}
-            className={`inline-flex h-7 min-w-7 items-center justify-center rounded-md border px-1.5 text-xs transition-colors disabled:opacity-30 ${tokens.focusRing} ${tokens.pillIdle}`}
-          >
-            ←
-          </button>
-          <button
-            type="button"
-            aria-label={`${labels.moveRight}: ${item.name}`}
-            disabled={index === total - 1}
-            onClick={() => onMove(index, 1)}
-            className={`inline-flex h-7 min-w-7 items-center justify-center rounded-md border px-1.5 text-xs transition-colors disabled:opacity-30 ${tokens.focusRing} ${tokens.pillIdle}`}
-          >
-            →
-          </button>
-          <button
-            type="button"
-            title={labels.rotate90}
-            aria-label={`${labels.rotate90}: ${item.name}`}
-            data-testid={`merge-rotate-${index}`}
-            onClick={() => onRotate(item.id)}
-            className={`inline-flex h-7 min-w-7 items-center justify-center rounded-md border px-1.5 text-xs transition-colors ${tokens.focusRing} ${tokens.pillIdle}`}
-          >
-            <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
-              <path d="M12.5 8a4.5 4.5 0 1 1-1.3-3.2" strokeLinecap="round" />
-              <path d="M12.5 2.8v2.6H9.9" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
-          <button
-            type="button"
-            aria-label={`${labels.remove}: ${item.name}`}
-            onClick={() => onRemove(item.id)}
-            className={`inline-flex h-7 min-w-7 items-center justify-center rounded-md border px-1.5 text-xs font-semibold transition-colors ${tokens.focusRing} ${tokens.dangerGhost}`}
-          >
-            ×
-          </button>
-        </div>
-      </div>
-    </li>
-  )
 }
 
 export function MergeQuickTool({
@@ -234,11 +129,103 @@ export function MergeQuickTool({
     preset.mergeFormat ?? preset.targetFormat ?? 'image/png',
   )
   const [qualityPercent, setQualityPercent] = useState<number>(92)
-  const [result, setResult] = useState<WorkspaceBlobOutput | null>(null)
+  const [removeOverlap, setRemoveOverlap] = useState<boolean>(false)
+  const [result, setResult] = useState<WorkspaceMergeOutput | null>(null)
   const [rendering, setRendering] = useState(false)
+  const [handingOff, setHandingOff] = useState(false)
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const copyTimerRef = useRef<number | null>(null)
+
+  const draftSettings = useMemo<MergeDraftSettings>(
+    () => ({
+      direction,
+      normalize,
+      align,
+      columns,
+      aspectCell,
+      fit,
+      gap,
+      padding,
+      borderRadius,
+      borderWidth,
+      borderColor,
+      background,
+      format,
+      qualityPercent,
+      removeOverlap,
+    }),
+    [
+      direction,
+      normalize,
+      align,
+      columns,
+      aspectCell,
+      fit,
+      gap,
+      padding,
+      borderRadius,
+      borderWidth,
+      borderColor,
+      background,
+      format,
+      qualityPercent,
+      removeOverlap,
+    ],
+  )
+
+  const handleRestoreDraft = useCallback((draft: WorkspaceToolDraft<MergeDraftSettings>) => {
+    const restoredImages = deserializeDraftImages(draft.images)
+    if (restoredImages.length > 0) {
+      setImages(restoredImages)
+    }
+    const cfg = draft.settings
+    if (cfg.direction === 'horizontal' || cfg.direction === 'vertical' || cfg.direction === 'grid') {
+      setDirection(cfg.direction)
+    }
+    if (cfg.normalize === 'match-min' || cfg.normalize === 'match-max' || cfg.normalize === 'original') {
+      setNormalize(cfg.normalize)
+    }
+    if (cfg.align === 'start' || cfg.align === 'center' || cfg.align === 'end') {
+      setAlign(cfg.align)
+    }
+    if (typeof cfg.columns === 'number' && Number.isFinite(cfg.columns)) {
+      setColumns(Math.max(2, Math.min(6, Math.round(cfg.columns))))
+    }
+    if (cfg.aspectCell === 'auto' || cfg.aspectCell === '1:1' || cfg.aspectCell === '4:3' || cfg.aspectCell === '3:4') {
+      setAspectCell(cfg.aspectCell)
+    }
+    if (cfg.fit === 'cover' || cfg.fit === 'contain') {
+      setFit(cfg.fit)
+    }
+    if (typeof cfg.gap === 'number' && Number.isFinite(cfg.gap)) setGap(cfg.gap)
+    if (typeof cfg.padding === 'number' && Number.isFinite(cfg.padding)) setPadding(cfg.padding)
+    if (typeof cfg.borderRadius === 'number' && Number.isFinite(cfg.borderRadius)) setBorderRadius(cfg.borderRadius)
+    if (typeof cfg.borderWidth === 'number' && Number.isFinite(cfg.borderWidth)) setBorderWidth(cfg.borderWidth)
+    if (typeof cfg.borderColor === 'string' && cfg.borderColor) setBorderColor(cfg.borderColor)
+    if (typeof cfg.background === 'string' && cfg.background) setBackground(cfg.background)
+    if (
+      cfg.format === 'image/png' ||
+      cfg.format === 'image/jpeg' ||
+      cfg.format === 'image/webp' ||
+      cfg.format === 'application/pdf'
+    ) {
+      setFormat(cfg.format)
+    }
+    if (typeof cfg.qualityPercent === 'number' && Number.isFinite(cfg.qualityPercent)) {
+      setQualityPercent(Math.max(50, Math.min(100, Math.round(cfg.qualityPercent))))
+    }
+    if (typeof cfg.removeOverlap === 'boolean') {
+      setRemoveOverlap(cfg.removeOverlap)
+    }
+  }, [])
+
+  const { hasDraft, clearDraft } = useToolDraft<MergeDraftSettings>({
+    toolId: 'merge',
+    images,
+    settings: draftSettings,
+    onRestore: handleRestoreDraft,
+  })
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -291,6 +278,13 @@ export function MergeQuickTool({
       createDemoImageInput('photo-2', 'slide-2.svg'),
       createDemoImageInput('photo-3', 'slide-3.svg'),
     ])
+  }
+
+  const handleClearAll = () => {
+    setImages([])
+    setResult(null)
+    setCopied(false)
+    void clearDraft()
   }
 
   const moveImage = (index: number, delta: -1 | 1) => {
@@ -350,6 +344,7 @@ export function MergeQuickTool({
           background,
           format,
           quality: debouncedQuality / 100,
+          removeOverlap: direction === 'vertical' ? removeOverlap : false,
         })
         if (!cancelled) setResult(merged)
       } catch (err) {
@@ -378,6 +373,7 @@ export function MergeQuickTool({
     background,
     format,
     debouncedQuality,
+    removeOverlap,
     engines,
     s.merge.mergeError,
   ])
@@ -385,6 +381,10 @@ export function MergeQuickTool({
   const activeResult = images.length > 0 ? result : null
   const isScaledDown =
     activeResult?.scaleFactor !== undefined && activeResult.scaleFactor < 0.999
+  const overlapRemovedPx =
+    direction === 'vertical' && removeOverlap
+      ? Math.round(activeResult?.layout?.overlapRemovedPx ?? 0)
+      : 0
 
   const handleCopy = async () => {
     if (!activeResult) return
@@ -406,21 +406,15 @@ export function MergeQuickTool({
     }
   }
 
-  const handleOpenInStudio = () => {
-    if (!activeResult) return
-    onOpenInStudio({
-      images: [
-        {
-          dataUrl: activeResult.dataUrl,
-          name: activeResult.filename,
-          width: activeResult.width,
-          height: activeResult.height,
-        },
-      ],
-      mode: 'canvas',
-      slideWidth: activeResult.width,
-      slideHeight: activeResult.height,
-    })
+  const handleOpenInStudio = async () => {
+    if (!activeResult || handingOff) return
+    setHandingOff(true)
+    try {
+      const payload = await buildMergeStudioHandoff(images, activeResult, background)
+      onOpenInStudio(payload)
+    } finally {
+      setHandingOff(false)
+    }
   }
 
   const alignOptions =
@@ -453,6 +447,14 @@ export function MergeQuickTool({
                   {activeResult.width} × {activeResult.height} · {formatBytes(activeResult.sizeBytes)}
                 </span>
               )}
+              {overlapRemovedPx > 0 && (
+                <span
+                  data-testid="merge-overlap-removed-badge"
+                  className={`rounded-md px-2 py-0.5 text-[11px] font-semibold tabular-nums ${tokens.badgePositive}`}
+                >
+                  {s.merge.overlapTrimmedLabel}: {overlapRemovedPx} px
+                </span>
+              )}
               {isScaledDown && (
                 <span
                   data-testid="merge-scaled-notice"
@@ -473,11 +475,7 @@ export function MergeQuickTool({
               {images.length > 0 && (
                 <button
                   type="button"
-                  onClick={() => {
-                    setImages([])
-                    setResult(null)
-                    setCopied(false)
-                  }}
+                  onClick={handleClearAll}
                   className={`min-h-8 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${tokens.focusRing} ${tokens.textMuted} hover:text-danger`}
                 >
                   {s.common.clearAll}
@@ -576,6 +574,16 @@ export function MergeQuickTool({
               onFiles={handleFiles}
             />
           </div>
+
+          {hasDraft && (
+            <DraftStatusBar
+              theme={theme}
+              toolId="merge"
+              savedLabel={s.common.draftSaved}
+              clearLabel={s.common.clearDraft}
+              onClear={handleClearAll}
+            />
+          )}
         </div>
       </div>
 
@@ -593,6 +601,29 @@ export function MergeQuickTool({
             ]}
             onChange={setDirection}
           />
+
+          {direction === 'vertical' && (
+            <label
+              data-testid="merge-remove-overlap-field"
+              className={`flex cursor-pointer items-start gap-2.5 rounded-xl border px-3 py-2.5 transition-colors ${tokens.cardMuted}`}
+            >
+              <input
+                type="checkbox"
+                data-testid="merge-remove-overlap-toggle"
+                checked={removeOverlap}
+                onChange={(e) => setRemoveOverlap(e.target.checked)}
+                className={`mt-0.5 h-4 w-4 shrink-0 accent-accent ${tokens.focusRing}`}
+              />
+              <span className="flex flex-col gap-0.5">
+                <span className={`text-xs font-semibold ${tokens.text}`}>
+                  {s.merge.removeOverlapLabel}
+                </span>
+                <span className={`text-[11px] leading-snug ${tokens.textSubtle}`}>
+                  {s.merge.removeOverlapHint}
+                </span>
+              </span>
+            </label>
+          )}
 
           {direction !== 'grid' ? (
             <div className="space-y-3">
@@ -738,8 +769,8 @@ export function MergeQuickTool({
             <StudioHandoffButton
               theme={theme}
               label={s.common.openInStudio}
-              disabled={!activeResult}
-              onClick={handleOpenInStudio}
+              disabled={!activeResult || handingOff}
+              onClick={() => void handleOpenInStudio()}
             />
           </div>
         </div>

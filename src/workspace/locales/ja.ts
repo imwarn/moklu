@@ -60,6 +60,8 @@ export const JA: WorkspaceStrings = {
     decodeError: '画像を読み込めませんでした。ファイル形式をご確認ください。',
     exportError: '書き出しに失敗しました。もう一度お試しください。',
     zipError: 'ZIP ファイルの作成に失敗しました。もう一度お試しください。',
+    draftSaved: 'ローカル下書きを自動保存済み',
+    clearDraft: '下書きを消去',
   },
   swatches: {
     white: 'ホワイト',
@@ -126,6 +128,9 @@ export const JA: WorkspaceStrings = {
     rotate90: '90°回転',
     dragToReorder: 'ドラッグで並び替え',
     scaledNotice: '安全解像度に自動縮小済み',
+    removeOverlapLabel: 'スマート重複カット（縦長スクショ）',
+    removeOverlapHint: 'スクロールの重複部分や固定ヘッダー・フッターをローカルで自動カット。',
+    overlapTrimmedLabel: '重複カット',
     addMore: '画像を追加',
     loadDemoSet: '3枚デモを読み込む',
     itemsCount: '枚',

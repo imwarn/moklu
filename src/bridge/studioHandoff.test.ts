@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on vitest; depends on stageImagesIntoStudio from ./studioHandoff; depends on useEditorStore from @/store; depends on useAssetStore from @/store/assets; depends on BASE_CANVAS_FORMAT from @/utils/canvasFormats; depends on QUICK_THEMES from @/utils/quickDesign; depends on BackgroundLayer, ImageLayer, and PhoneLayer from @/types
- * [OUTPUT]: verifies mockup, canvas, and carousel handoffs, user style/fit/scale/chrome preservation, asset registration, non-destructive preservation of existing Studio slides, and empty-payload safety
+ * [OUTPUT]: verifies mockup, canvas, carousel, and multi-layer collage handoffs (including >4096px uniform scaling, rotation, cornerRadius, solid/gradient/transparent backgrounds), user style/fit/scale/chrome preservation, asset registration, non-destructive preservation of existing Studio slides, and empty-payload safety
  * [POS]: Unit test suite for src/bridge/studioHandoff
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -203,5 +203,190 @@ describe('stageImagesIntoStudio', () => {
       theme: 'dark',
       showAddressBar: true,
     })
+  })
+
+  it('stages layers mode with matched BackgroundLayer and N independently editable ImageLayers without duplicating assets', () => {
+    const secondPng = 'data:image/png;base64,BBBB'
+    stageImagesIntoStudio({
+      mode: 'layers',
+      slideWidth: 1600,
+      slideHeight: 900,
+      background: 'linear-gradient(135deg, #b5b0f2, #e5efff)',
+      images: [
+        { dataUrl: TINY_PNG, name: 'panel-1.png', width: 760, height: 852 },
+        { dataUrl: secondPng, name: 'panel-2.png', width: 760, height: 852 },
+      ],
+      layers: [
+        {
+          dataUrl: TINY_PNG,
+          name: 'panel-1.png',
+          x: 24,
+          y: 24,
+          width: 760,
+          height: 852,
+          rotation: 0,
+          cornerRadius: 16,
+        },
+        {
+          dataUrl: secondPng,
+          name: 'panel-2.png',
+          x: 816,
+          y: 24,
+          width: 760,
+          height: 852,
+          rotation: 90,
+          cornerRadius: 16,
+        },
+      ],
+    })
+
+    const state = useEditorStore.getState()
+    const activeGroup = state.project.slideGroups.find((g) => g.id === state.activeSlideGroupId)!
+    expect(activeGroup.numSlides).toBe(1)
+    expect(activeGroup.slideWidth).toBe(1600)
+    expect(activeGroup.slideHeight).toBe(900)
+    expect(activeGroup.layers).toHaveLength(3)
+
+    const bg = activeGroup.layers[0] as BackgroundLayer
+    expect(bg.fill).toEqual({
+      type: 'linear',
+      angle: 135,
+      stops: [
+        { color: '#b5b0f2', offset: 0 },
+        { color: '#e5efff', offset: 1 },
+      ],
+    })
+
+    const [layer1, layer2] = activeGroup.layers.slice(1) as ImageLayer[]
+    expect(layer1).toMatchObject({
+      type: 'image',
+      name: 'panel-1.png',
+      x: 24,
+      y: 24,
+      width: 760,
+      height: 852,
+      rotation: 0,
+      cornerRadius: 16,
+    })
+    expect(layer2).toMatchObject({
+      type: 'image',
+      name: 'panel-2.png',
+      x: 816,
+      y: 24,
+      width: 760,
+      height: 852,
+      rotation: 90,
+      cornerRadius: 16,
+    })
+    expect(useAssetStore.getState().listAssets()).toHaveLength(2)
+    expect(useAssetStore.getState().getAsset(layer1.src)).toBe(TINY_PNG)
+    expect(useAssetStore.getState().getAsset(layer2.src)).toBe(secondPng)
+    expect(layer1.localeContent?.en?.src).toBe(layer1.src)
+    expect(state.selection).toEqual({ slideGroupId: activeGroup.id, layerId: layer1.id })
+  })
+
+  it('uniformly downscales canvas and all layer coordinates, dimensions, and cornerRadius when layers exceed MAX_SLIDE_DIM (4096)', () => {
+    stageImagesIntoStudio({
+      mode: 'layers',
+      slideWidth: 2000,
+      slideHeight: 8192,
+      background: '#0f172a',
+      images: [],
+      layers: [
+        {
+          dataUrl: TINY_PNG,
+          name: 'top.png',
+          x: 40,
+          y: 40,
+          width: 1920,
+          height: 4000,
+          rotation: 0,
+          cornerRadius: 24,
+        },
+        {
+          dataUrl: TINY_PNG,
+          name: 'bottom.png',
+          x: 40,
+          y: 4100,
+          width: 1920,
+          height: 4052,
+          rotation: 180,
+          cornerRadius: 24,
+        },
+      ],
+    })
+
+    const state = useEditorStore.getState()
+    const group = state.project.slideGroups.find((g) => g.id === state.activeSlideGroupId)!
+    expect(group.slideWidth).toBe(1000)
+    expect(group.slideHeight).toBe(4096)
+
+    const bg = group.layers[0] as BackgroundLayer
+    expect(bg.fill).toBe('#0f172a')
+
+    const [top, bottom] = group.layers.slice(1) as ImageLayer[]
+    expect(top.x).toBe(20)
+    expect(top.y).toBe(20)
+    expect(top.width).toBe(960)
+    expect(top.height).toBe(2000)
+    expect(top.cornerRadius).toBe(12)
+
+    expect(bottom.x).toBe(20)
+    expect(bottom.y).toBe(2050)
+    expect(bottom.width).toBe(960)
+    expect(bottom.height).toBe(2026)
+    expect(bottom.rotation).toBe(180)
+    expect(bottom.cornerRadius).toBe(12)
+  })
+
+  it('handles transparent background and narrow tall (>4096px) centering cleanly in layers mode', () => {
+    stageImagesIntoStudio({
+      mode: 'layers',
+      slideWidth: 300,
+      slideHeight: 8192,
+      background: 'transparent',
+      images: [],
+      layers: [
+        {
+          dataUrl: TINY_PNG,
+          name: 'strip.png',
+          x: 0,
+          y: 0,
+          width: 300,
+          height: 8192,
+          cornerRadius: 10,
+        },
+      ],
+    })
+
+    const state = useEditorStore.getState()
+    const group = state.project.slideGroups.find((g) => g.id === state.activeSlideGroupId)!
+    const bg = group.layers[0] as BackgroundLayer
+    const img = group.layers[1] as ImageLayer
+
+    expect(bg.opacity).toBe(0)
+    // 300 * 0.5 = 150 < MIN_SLIDE_DIM (240) -> clamped to 240 with (240 - 150) / 2 = 45 horizontal offset
+    expect(group.slideWidth).toBe(240)
+    expect(group.slideHeight).toBe(4096)
+    expect(img.x).toBe(45)
+    expect(img.y).toBe(0)
+    expect(img.width).toBe(150)
+    expect(img.height).toBe(4096)
+    expect(img.cornerRadius).toBe(5)
+  })
+
+  it('falls back to canvas mode when mode is layers but layers array is empty', () => {
+    stageImagesIntoStudio({
+      mode: 'layers',
+      layers: [],
+      slideWidth: 800,
+      slideHeight: 600,
+      images: [{ dataUrl: TINY_PNG, name: 'fallback.png', width: 800, height: 600 }],
+    })
+
+    const state = useEditorStore.getState()
+    const group = state.project.slideGroups.find((g) => g.id === state.activeSlideGroupId)!
+    expect(group.layers).toHaveLength(2)
+    expect(group.layers[1].type).toBe('image')
   })
 })

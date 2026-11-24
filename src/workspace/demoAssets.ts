@@ -169,5 +169,6 @@ export function createDemoImageInput(variant: DemoVariant, name: string): Worksp
     dataUrl,
     sizeBytes: dataUrl.length,
     mimeType: 'image/svg+xml',
+    isDemo: true,
   }
 }

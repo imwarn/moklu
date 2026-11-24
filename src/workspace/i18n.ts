@@ -57,6 +57,8 @@ export interface WorkspaceStrings {
     decodeError: string
     exportError: string
     zipError: string
+    draftSaved: string
+    clearDraft: string
   }
   swatches: {
     white: string
@@ -119,6 +121,9 @@ export interface WorkspaceStrings {
     rotate90: string
     dragToReorder: string
     scaledNotice: string
+    removeOverlapLabel: string
+    removeOverlapHint: string
+    overlapTrimmedLabel: string
     addMore: string
     loadDemoSet: string
     itemsCount: string

@@ -60,6 +60,8 @@ export const EN: WorkspaceStrings = {
     decodeError: 'Unable to decode one or more image files.',
     exportError: 'Export failed. Please try again.',
     zipError: 'Failed to package ZIP archive. Please try again.',
+    draftSaved: 'Local draft auto-saved',
+    clearDraft: 'Clear draft',
   },
   swatches: {
     white: 'White',
@@ -126,6 +128,9 @@ export const EN: WorkspaceStrings = {
     rotate90: 'Rotate 90°',
     dragToReorder: 'Drag to reorder',
     scaledNotice: 'Auto-scaled to safe resolution',
+    removeOverlapLabel: 'Smart Overlap Removal (Long Screenshots)',
+    removeOverlapHint: 'Trims repeated scroll regions and fixed top/bottom bars locally.',
+    overlapTrimmedLabel: 'Overlap trimmed',
     addMore: 'Add Images',
     loadDemoSet: 'Try 3-Image Demo',
     itemsCount: 'images',

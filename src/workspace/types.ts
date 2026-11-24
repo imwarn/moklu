@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on ResolvedTheme from @/theme/themeStore
- * [OUTPUT]: exports dependency-inverted workspace contracts (WorkspaceToolId, WorkspacePreset, WorkspaceLocale, WorkspaceEngines, WorkspaceQuickTheme, WorkspaceScreenshotFit, WorkspaceBrowserChromeOptions, StudioHandoffPayload, QuickWorkspaceProps)
+ * [OUTPUT]: exports dependency-inverted workspace contracts (WorkspaceToolId, WorkspacePreset, WorkspaceLocale, WorkspaceEngines, WorkspaceRect, WorkspaceMergePlacement, WorkspaceMergeLayout, WorkspaceMergeOutput, WorkspaceQuickTheme, WorkspaceScreenshotFit, WorkspaceBrowserChromeOptions, StudioHandoffLayer, StudioHandoffPayload, QuickWorkspaceProps)
  * [POS]: contract layer of src/workspace; isolates all UI panels from concrete image processing engines in src/tools and routing in src/seo
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -35,6 +35,13 @@ export interface StudioHandoffImage {
   height: number
 }
 
+export interface StudioHandoffLayer extends StudioHandoffImage {
+  x: number
+  y: number
+  rotation?: number
+  cornerRadius?: number
+}
+
 export type WorkspaceQuickTheme = 'aurora' | 'midnight' | 'warm'
 
 export type WorkspaceScreenshotFit = 'cover' | 'contain' | 'fill'
@@ -48,7 +55,7 @@ export interface WorkspaceBrowserChromeOptions {
 
 export interface StudioHandoffPayload {
   images: StudioHandoffImage[]
-  mode?: 'mockup' | 'canvas' | 'carousel'
+  mode?: 'mockup' | 'canvas' | 'carousel' | 'layers'
   mockupModel?: string
   slideWidth?: number
   slideHeight?: number
@@ -56,6 +63,8 @@ export interface StudioHandoffPayload {
   screenshotFit?: WorkspaceScreenshotFit
   scaleFactor?: number
   browserChrome?: WorkspaceBrowserChromeOptions
+  layers?: StudioHandoffLayer[]
+  background?: string
 }
 
 export interface WorkspaceImageInput {
@@ -68,6 +77,32 @@ export interface WorkspaceImageInput {
   mimeType?: string
   file?: File
   rotation?: WorkspaceMergeRotation
+  /** Marks built-in demo assets so local draft persistence never writes them to IndexedDB. */
+  isDemo?: boolean
+}
+
+export interface WorkspaceRect {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+export interface WorkspaceMergePlacement {
+  index: number
+  sourceRect: WorkspaceRect
+  destRect: WorkspaceRect
+  radius: number
+  rotation: WorkspaceMergeRotation
+  borderWidth: number
+}
+
+export interface WorkspaceMergeLayout {
+  width: number
+  height: number
+  scaleFactor: number
+  placements: WorkspaceMergePlacement[]
+  overlapRemovedPx?: number
 }
 
 export interface WorkspaceBlobOutput {
@@ -80,6 +115,10 @@ export interface WorkspaceBlobOutput {
   mimeType: string
   /** Uniform scale factor applied when safe canvas bounds (8192px / 64MP) clamp the output (< 1 means downscaled). */
   scaleFactor?: number
+}
+
+export interface WorkspaceMergeOutput extends WorkspaceBlobOutput {
+  layout?: WorkspaceMergeLayout
 }
 
 export interface WorkspaceMergeOptions {
@@ -97,6 +136,8 @@ export interface WorkspaceMergeOptions {
   background: string
   format: WorkspaceMergeFormat
   quality: number
+  /** Enable client-side scroll overlap and fixed header/footer trimming in vertical mode. */
+  removeOverlap?: boolean
 }
 
 export interface WorkspaceSplitOptions {
@@ -164,7 +205,7 @@ export interface WorkspaceIdCardOptions {
 }
 
 export interface WorkspaceEngines {
-  merge: (images: WorkspaceImageInput[], options: WorkspaceMergeOptions) => Promise<WorkspaceBlobOutput>
+  merge: (images: WorkspaceImageInput[], options: WorkspaceMergeOptions) => Promise<WorkspaceMergeOutput>
   split: (image: WorkspaceImageInput, options: WorkspaceSplitOptions) => Promise<WorkspaceSplitResult>
   compress: (images: WorkspaceImageInput[], options: WorkspaceCompressOptions) => Promise<WorkspaceCompressItem[]>
   transform: (images: WorkspaceImageInput[], options: WorkspaceTransformOptions) => Promise<WorkspaceBlobOutput[]>

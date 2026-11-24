@@ -1,11 +1,11 @@
 /**
- * [INPUT]: depends on react, WorkspaceTheme from ./types, and getWorkspaceThemeTokens from ./themeTokens
- * [OUTPUT]: exports DropZone, PrivacyBadge, PreviewBusyOverlay, SegmentedControl, SliderField, StudioHandoffButton, and ColorSwatchRow (with optional native custom color picker)
+ * [INPUT]: depends on react, WorkspaceTheme and WorkspaceToolId from ./types, and getWorkspaceThemeTokens from ./themeTokens
+ * [OUTPUT]: exports DropZone, PrivacyBadge, PreviewBusyOverlay, SegmentedControl, SliderField, StudioHandoffButton, ColorSwatchRow (with optional native custom color picker), and DraftStatusBar
  * [POS]: reusable WCAG-compliant accessible UI primitives shared across all 6 Quick Workspace tool panels in src/workspace/tools
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
-import type { WorkspaceTheme } from './types'
+import type { WorkspaceTheme, WorkspaceToolId } from './types'
 import { getWorkspaceThemeTokens } from './themeTokens'
 
 const IMAGE_FILE_PATTERN = /\.(png|jpe?g|webp|svg|gif)$/i
@@ -452,6 +452,45 @@ export function ColorSwatchRow({
           </label>
         )}
       </div>
+    </div>
+  )
+}
+
+export interface DraftStatusBarProps {
+  theme: WorkspaceTheme
+  toolId: WorkspaceToolId
+  savedLabel: string
+  clearLabel: string
+  onClear: () => void
+}
+
+export function DraftStatusBar({
+  theme,
+  toolId,
+  savedLabel,
+  clearLabel,
+  onClear,
+}: DraftStatusBarProps) {
+  const tokens = getWorkspaceThemeTokens(theme)
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      data-testid={`draft-status-${toolId}`}
+      className={`mt-2.5 flex flex-wrap items-center justify-between gap-2 rounded-xl border px-3 py-1.5 text-[11px] ${tokens.card}`}
+    >
+      <span className={`inline-flex items-center gap-1.5 font-medium ${tokens.textSubtle}`}>
+        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-success" aria-hidden="true" />
+        <span>{savedLabel}</span>
+      </span>
+      <button
+        type="button"
+        data-testid={`clear-draft-${toolId}`}
+        onClick={onClear}
+        className={`inline-flex min-h-6 items-center rounded-md border px-2 py-0.5 text-[11px] font-semibold transition-colors ${tokens.focusRing} ${tokens.dangerGhost}`}
+      >
+        {clearLabel}
+      </button>
     </div>
   )
 }

@@ -1,12 +1,13 @@
 /**
- * [INPUT]: depends on react, ModalShell from @/components/ui/ModalShell, canvasUtils from ../canvasUtils, strings from ../i18n, themeTokens from ../themeTokens, UI primitives from ../uiPrimitives, useDebouncedValue from ../useDebouncedValue, and WorkspaceToolPanelProps from ../types
- * [OUTPUT]: exports CompressPreviewModal and CompressQuickTool for batch offline PNG/JPEG/WebP compression with focus-trapped lightbox preview, debounced quality, per-item remove, and error-handled ZIP export
+ * [INPUT]: depends on react, ModalShell from @/components/ui/ModalShell, canvasUtils from ../canvasUtils, draftStorage from ../draftStorage, useToolDraft from ../useToolDraft, strings from ../i18n, themeTokens from ../themeTokens, UI primitives from ../uiPrimitives, useDebouncedValue from ../useDebouncedValue, and WorkspaceToolPanelProps from ../types
+ * [OUTPUT]: exports CompressPreviewModal and CompressQuickTool for batch offline PNG/JPEG/WebP compression with focus-trapped lightbox preview, debounced quality, per-item remove, local IndexedDB draft auto-save, and error-handled ZIP export
  * [POS]: local batch image compressor panel inside src/workspace/tools; delegates compression and ZIP packaging to injected engines
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ModalShell } from '@/components/ui/ModalShell'
 import { createDemoImageInput, formatBytes, readFileAsImageInput, triggerBlobDownload } from '../canvasUtils'
+import { deserializeDraftImages, type WorkspaceToolDraft } from '../draftStorage'
 import { getWorkspaceStrings } from '../i18n'
 import { getWorkspaceThemeTokens } from '../themeTokens'
 import type {
@@ -17,8 +18,15 @@ import type {
   WorkspaceTheme,
   WorkspaceToolPanelProps,
 } from '../types'
-import { DropZone, PreviewBusyOverlay, SegmentedControl, SliderField } from '../uiPrimitives'
+import { DraftStatusBar, DropZone, PreviewBusyOverlay, SegmentedControl, SliderField } from '../uiPrimitives'
 import { useDebouncedValue } from '../useDebouncedValue'
+import { useToolDraft } from '../useToolDraft'
+
+interface CompressDraftSettings {
+  format: WorkspaceImageFormat
+  qualityPercent: number
+  maxWidthKey: string
+}
 
 const MAX_WIDTH_OPTIONS = [
   { value: '0', label: 'Original' },
@@ -121,6 +129,40 @@ export function CompressQuickTool({
   const [processing, setProcessing] = useState(false)
   const [zipping, setZipping] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const draftSettings = useMemo<CompressDraftSettings>(
+    () => ({ format, qualityPercent, maxWidthKey }),
+    [format, qualityPercent, maxWidthKey],
+  )
+
+  const handleRestoreDraft = useCallback((draft: WorkspaceToolDraft<CompressDraftSettings>) => {
+    const restored = deserializeDraftImages(draft.images)
+    if (restored.length > 0) setImages(restored)
+    const cfg = draft.settings
+    if (cfg.format === 'image/png' || cfg.format === 'image/jpeg' || cfg.format === 'image/webp') {
+      setFormat(cfg.format)
+    }
+    if (typeof cfg.qualityPercent === 'number' && Number.isFinite(cfg.qualityPercent)) {
+      setQualityPercent(Math.max(10, Math.min(100, Math.round(cfg.qualityPercent))))
+    }
+    if (typeof cfg.maxWidthKey === 'string' && MAX_WIDTH_OPTIONS.some((o) => o.value === cfg.maxWidthKey)) {
+      setMaxWidthKey(cfg.maxWidthKey)
+    }
+  }, [])
+
+  const { hasDraft, clearDraft } = useToolDraft<CompressDraftSettings>({
+    toolId: 'compress',
+    images,
+    settings: draftSettings,
+    onRestore: handleRestoreDraft,
+  })
+
+  const handleClearAll = () => {
+    setImages([])
+    setResults([])
+    setPreviewId(null)
+    void clearDraft()
+  }
 
   const debouncedQualityPercent = useDebouncedValue(qualityPercent)
   const hasPendingParams = images.length > 0 && debouncedQualityPercent !== qualityPercent
@@ -225,11 +267,7 @@ export function CompressQuickTool({
               {images.length > 0 && (
                 <button
                   type="button"
-                  onClick={() => {
-                    setImages([])
-                    setResults([])
-                    setPreviewId(null)
-                  }}
+                  onClick={handleClearAll}
                   className={`min-h-8 rounded-lg px-2.5 py-1 text-xs font-medium ${tokens.focusRing} ${tokens.textMuted} hover:text-danger`}
                 >
                   {s.common.clearAll}
@@ -324,6 +362,16 @@ export function CompressQuickTool({
               onFiles={handleFiles}
             />
           </div>
+
+          {hasDraft && (
+            <DraftStatusBar
+              theme={theme}
+              toolId="compress"
+              savedLabel={s.common.draftSaved}
+              clearLabel={s.common.clearDraft}
+              onClear={handleClearAll}
+            />
+          )}
         </div>
       </div>
 
