@@ -72,9 +72,8 @@ All files currently tracked under `public/` and `src/assets/` were audited again
 | --- | --- | --- | --- |
 | `public/favicon.svg`, `public/logo.svg`, `public/logo-dark.svg`, `public/logo-light.svg`, `public/logo-mono.svg`, `public/apple-touch-icon.png`, `public/og-image.png` | Moklu contributors (original Nested Mockup Frame brand mark & OG card, commit `80d16ed`) | `MIT` (Moklu) | Original vector & raster brand assets created for Moklu. |
 | `public/_headers` | Moklu contributors | `MIT` (Moklu) | Cloudflare Pages / Netlify HTTP security & CSP header configuration. |
-| `public/templates/index.json`, `public/templates/deep-focus.template.json`, `public/templates/ledger-dark.template.json`, `public/templates/nutrition-coach.template.json`, `public/templates/wanderlight.template.json` | Introduced in Moklu bootstrap commit `c582096`; JSON metadata carries `"author": "PixelDeck"` with 0 embedded bitmap images (`assets: {}`) | **待确认**（JSON 纯布局模板，不含外部图片素材；`author` 字段标注为 `PixelDeck`，但文件名与 `pixeldeck/main` 现有模板集不同，建议公开前确认原始创建来源并保留 MIT 归属说明） | Pure vector/text JSON scene definitions (`Flowly`, `Ledgr`, `NutriCoach`, `Wander` placeholder copy); zero third-party photographs or copyrighted screenshots embedded. |
+| `public/templates/index.json`, `public/templates/deep-focus.template.json`, `public/templates/ledger-dark.template.json`, `public/templates/nutrition-coach.template.json`, `public/templates/wanderlight.template.json` | 布局数据，作者署名 PixelDeck（0 embedded bitmap images, `assets: {}`） | `MIT`（按 MIT 授权保留） | Pure vector/text JSON layout data (`Flowly`, `Ledgr`, `NutriCoach`, `Wander` placeholder copy); zero third-party photographs or copyrighted screenshots embedded. |
 | `public/templates/thumbs/.gitkeep` | PixelDeck / Moklu | `MIT` | Empty directory placeholder. |
-| `public/icons.svg` | Inherited from PixelDeck (`remotes/pixeldeck/main`), originally from Vite's default `create-vite` starter sprite; contains Bluesky, Discord, GitHub, and X brand icons (`currentColor`) | **待确认**（含第三方品牌标志路径 Bluesky / Discord / GitHub / X；当前 `src/` 与 `index.html` 均未引用，公开前建议核验或直接删除） | Unused legacy starter sprite sheet. |
 
 ### 3.2 `src/assets/`
 
