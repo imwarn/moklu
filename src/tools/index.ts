@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on ./types, ./canvasHelpers, ./pdfHelper, ./mergeEngine, ./splitEngine, ./compressEngine, ./transformEngine, and ./idCardEngine
- * [OUTPUT]: re-exports all client-side image processing engines, PDF wrapper, helpers, constants, and TypeScript interfaces
+ * [INPUT]: depends on ./types, ./canvasHelpers, ./pdfHelper, ./stitchOverlap, ./mergeEngine, ./splitEngine, ./compressEngine, ./transformEngine, and ./idCardEngine
+ * [OUTPUT]: re-exports all client-side image processing engines, overlap detector, PDF wrapper, helpers, constants, and TypeScript interfaces
  * [POS]: sole public barrel entry point of src/tools; imported by workspace tools and integration adapters
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -29,6 +29,7 @@ export type {
   IdCardWatermarkMode,
   IdCardWatermarkOptions,
   IdCardWatermarkPlacement,
+  ImageDataLike,
   ImageDrawable,
   ImageFormat,
   ImageInputSource,
@@ -46,7 +47,10 @@ export type {
   MergeRotation,
   NormalizedCropRect,
   ObjectFitMode,
+  PairOverlapMatch,
   Rect,
+  RgbaRaster,
+  RowProfile,
   SplitMode,
   SplitOptions,
   SplitResult,
@@ -60,6 +64,9 @@ export type {
   TransformPadOptions,
   TransformResizeOptions,
   TransformResultItem,
+  VerticalItemTrim,
+  VerticalOverlapOptions,
+  VerticalOverlapPlan,
   ZipFileEntry,
 } from './types'
 
@@ -88,6 +95,14 @@ export {
 } from './canvasHelpers'
 
 export { computeMergeLayout, mergeImages } from './mergeEngine'
+
+export {
+  DEFAULT_ANALYSIS_WIDTH,
+  computeRowProfile,
+  detectPairOverlap,
+  detectVerticalStitchOverlaps,
+  extractNormalizedRaster,
+} from './stitchOverlap'
 
 export {
   buildSinglePagePdfBytes,

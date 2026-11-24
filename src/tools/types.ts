@@ -1,7 +1,7 @@
 /**
  * [INPUT]: depends on browser DOM CanvasImageSource, Blob, and File built-in types
- * [OUTPUT]: exports all shared option, layout, runtime, and result interfaces for src/tools engines
- * [POS]: foundational type contract of src/tools; imported by canvasHelpers and all five processing engines
+ * [OUTPUT]: exports all shared option, layout, runtime, vertical overlap analysis, and result interfaces for src/tools engines
+ * [POS]: foundational type contract of src/tools; imported by canvasHelpers, stitchOverlap, and all five processing engines
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
@@ -51,6 +51,12 @@ export interface CanvasGradientLike {
   addColorStop(offset: number, color: string): void
 }
 
+export interface ImageDataLike {
+  readonly width: number
+  readonly height: number
+  readonly data: Uint8ClampedArray
+}
+
 export interface CanvasContextLike {
   fillStyle: string | CanvasGradientLike
   strokeStyle: string | CanvasGradientLike
@@ -96,6 +102,7 @@ export interface CanvasContextLike {
     dh: number,
   ): void
   fillText(text: string, x: number, y: number, maxWidth?: number): void
+  getImageData?(sx: number, sy: number, sw: number, sh: number): ImageDataLike
 }
 
 export interface CanvasLike {
@@ -175,6 +182,8 @@ export interface MergeOptions extends EngineRuntimeOptions {
   borderColor?: string
   /** Optional per-item clockwise rotation overrides indexed alongside items. */
   itemRotations?: ReadonlyArray<MergeRotation>
+  /** Automatically detect and trim overlapping scroll regions and fixed top/bottom bars in vertical mode. */
+  removeOverlap?: boolean
   background?: BackgroundFill
   format?: MergeOutputFormat
   quality?: number
@@ -194,6 +203,47 @@ export interface MergePlacement {
 export interface MergeLayout extends Dimensions {
   scaleFactor: number
   placements: MergePlacement[]
+  /** Cumulative duplicate vertical pixel height trimmed across seams (0 when disabled or undetected). */
+  overlapRemovedPx?: number
+}
+
+export interface RgbaRaster {
+  width: number
+  height: number
+  data: Uint8ClampedArray
+}
+
+export interface RowProfile {
+  meanR: Float32Array
+  meanG: Float32Array
+  meanB: Float32Array
+  meanGrad: Float32Array
+  gradStd: Float32Array
+  isTextured: Uint8Array
+}
+
+export interface PairOverlapMatch {
+  fixedTop: number
+  fixedBottom: number
+  scrollOverlap: number
+  mae: number
+  texturedRows: number
+}
+
+export interface VerticalItemTrim {
+  trimTop: number
+  trimBottom: number
+}
+
+export interface VerticalOverlapPlan {
+  trims: VerticalItemTrim[]
+  seams: PairOverlapMatch[]
+}
+
+export interface VerticalOverlapOptions {
+  itemRotations?: ReadonlyArray<MergeRotation>
+  createCanvas?: CanvasFactory
+  maxAnalysisWidth?: number
 }
 
 export interface MergeResult {
