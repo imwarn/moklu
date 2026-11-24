@@ -1,12 +1,13 @@
 /**
- * [INPUT]: depends on LocaleBundle type from ../types.ts; depends on JA_TOOL_ROUTES from ./jaTools.ts and INFO_PAGE_ROUTES from ./infoRoutes.ts
- * [OUTPUT]: exports JA_LOCALE complete Japanese UI labels and 23 intent/info route copy entries
+ * [INPUT]: depends on LocaleBundle type from ../types.ts; depends on JA_TOOL_ROUTES from ./jaTools.ts, JA_GROWTH_ROUTES from ./jaGrowthRoutes.ts, and INFO_PAGE_ROUTES from ./infoRoutes.ts
+ * [OUTPUT]: exports JA_LOCALE complete Japanese UI labels and 30 intent/info route copy entries
  * [POS]: Japanese (`/ja/...`) language pack within src/seo/locales, loaded by src/seo/i18n.ts
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
 import type { LocaleBundle } from '../types.ts'
 import { JA_TOOL_ROUTES } from './jaTools.ts'
+import { JA_GROWTH_ROUTES } from './jaGrowthRoutes.ts'
 import { INFO_PAGE_ROUTES } from './infoRoutes.ts'
 
 export const JA_LOCALE: LocaleBundle = {
@@ -305,31 +306,31 @@ export const JA_LOCALE: LocaleBundle = {
     },
     'device-mockup': {
       navLabel: 'マルチデバイス枠',
-      title: 'マルチデバイスモックアップ生成（Pixel 9 / iPhone / Web）| Moklu',
+      title: 'マルチデバイスモックアップ生成（全 13 種のスマホ・タブレット・ウォッチ・Web 枠）| Moklu',
       metaDescription:
-        'Google Pixel 9、iPhone 16 Pro、デスクトップブラウザ枠を統一テイストで生成。完全ローカル描画でクロスプラットフォーム製品に最適。',
-      badge: 'Pixel 9 · iPhone · ブラウザ対応',
+        'Chrome・Safari・ミニマル枠・iPhone 16 Pro・Pixel 9・iPad・Android タブレット・Apple Watch・Wear OS・フレームレスの全 13 枠を統一テイストでローカル生成。',
+      badge: '全 13 種の内蔵デバイス＆ブラウザ枠',
       h1: 'マルチデバイスモックアップ生成ツール',
       subtitle:
-        'Android・iOS・Web の各画面を統一された影と背景グラデーションで美しくフレーミング。Pixel 9 を含む主要枠をローカルで即座に切り替えられます。',
+        'Chrome・Safari・ミニマル枠・iPhone 16 Pro・Pixel 9・iPad・Android タブレット・Apple Watch・Wear OS・フレームレスまで全 13 枠を統一された光影と背景でローカル生成します。',
       steps: [
         {
-          title: 'Android・iOS・Web の画面をドロップ',
-          description: '画像を 1 度読み込めば、再アップロードなしで各デバイス枠を見比べられます。',
+          title: 'スマホ・タブレット・ウォッチ・Web の画面をドロップ',
+          description: '画像を 1 度読み込めば、再アップロードなしで全 13 種のデバイス＆ブラウザ枠を見比べられます。',
         },
         {
-          title: 'キャンバス比率と背景トーンを統一',
-          description: 'Aurora・Midnight・Warm Paper のテーマで全プラットフォームのビジュアルに一貫性を持たせます。',
+          title: 'キャンバス比率・背景トーン・ローカルぼかしを調整',
+          description: 'Aurora・Midnight・Warm Paper のテーマで統一感を持たせ、必要なら機密部分のぼかしや伏せ字もその場で実行できます。',
         },
         {
           title: '書き出し、または Studio で複数端末を合成',
-          description: '単体モックアップを保存するか、Studio で PC ブラウザとスマホを 1 枚に並べて演出します。',
+          description: '単体モックアップを保存するか、Studio で PC ブラウザ・タブレット・ウォッチ・スマホを 1 枚に並べて演出します。',
         },
       ],
       highlights: [
         {
-          title: 'Android / Google Pixel 9 フレーム標準搭載',
-          description: 'Google Play 向けアプリも iOS と同じ洗練されたハードウェア枠で見せられます。',
+          title: '全 13 種の端末・ブラウザ・フレームレス枠を標準搭載',
+          description: 'Chrome・Safari・ミニマル枠・iPhone 16 Pro・Pixel 9・iPad・Android タブレット・Apple Watch・Wear OS・フレームレスを即切替。',
         },
         {
           title: 'ブランドの一貫性を保つ光影設計',
@@ -343,7 +344,7 @@ export const JA_LOCALE: LocaleBundle = {
       faqs: [
         {
           question: '切り替え可能なデバイスモデルは何種類ありますか？',
-          answer: 'Google Pixel 9、iPhone 16 Pro、Chrome ブラウザ、Safari ブラウザ、ミニマルウィンドウの 5 種類に対応しています。',
+          answer: 'Chrome・Safari・ミニマルウィンドウ・iPhone 16 Pro・Google Pixel 9・iPad・Android タブレット・Apple Watch・Wear OS・フレームレスを含む全 13 種類に対応しています。',
         },
         {
           question: 'PC 画面とスマホ画面を 1 枚の画像に同時に配置できますか？',
@@ -660,6 +661,7 @@ export const JA_LOCALE: LocaleBundle = {
       ],
     },
     ...JA_TOOL_ROUTES,
+    ...JA_GROWTH_ROUTES,
     ...INFO_PAGE_ROUTES.ja,
   },
 }

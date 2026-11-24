@@ -1,12 +1,13 @@
 /**
- * [INPUT]: depends on LocaleBundle type from ../types.ts; depends on KO_TOOL_ROUTES from ./koTools.ts and INFO_PAGE_ROUTES from ./infoRoutes.ts
- * [OUTPUT]: exports KO_LOCALE complete Korean UI labels and 23 intent/info route copy entries
+ * [INPUT]: depends on LocaleBundle type from ../types.ts; depends on KO_TOOL_ROUTES from ./koTools.ts, KO_GROWTH_ROUTES from ./koGrowthRoutes.ts, and INFO_PAGE_ROUTES from ./infoRoutes.ts
+ * [OUTPUT]: exports KO_LOCALE complete Korean UI labels and 30 intent/info route copy entries
  * [POS]: Korean (`/ko/...`) language pack within src/seo/locales, loaded by src/seo/i18n.ts
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
 import type { LocaleBundle } from '../types.ts'
 import { KO_TOOL_ROUTES } from './koTools.ts'
+import { KO_GROWTH_ROUTES } from './koGrowthRoutes.ts'
 import { INFO_PAGE_ROUTES } from './infoRoutes.ts'
 
 export const KO_LOCALE: LocaleBundle = {
@@ -305,35 +306,35 @@ export const KO_LOCALE: LocaleBundle = {
     },
     'device-mockup': {
       navLabel: '멀티 디바이스 목업',
-      title: '멀티 디바이스 목업 생성기 (Pixel 9 · iPhone · 브라우저) | Moklu',
+      title: '멀티 디바이스 목업 생성기 (13종 폰 · 태블릿 · 워치 · 브라우저) | Moklu',
       metaDescription:
-        'Google Pixel 9, iPhone 16 Pro, 데스크톱 브라우저 목업을 통일된 배경과 그림자로 빠르게 제작하세요. 100% 브라우저 로컬 처리.',
-      badge: 'Pixel 9 · iPhone · 브라우저 프레임',
+        'Chrome, Safari, 미니멀 창, iPhone 16 Pro, Pixel 9, iPad, 안드로이드 태블릿, Apple Watch, Wear OS, 프레임리스까지 13종 프레임을 브라우저 로컬에서 빠르게 제작하세요.',
+      badge: '13종 내장 디바이스 & 브라우저 프레임',
       h1: '크로스 플랫폼 멀티 디바이스 목업 생성기',
       subtitle:
-        'Android, iOS, 반응형 웹 스크린샷을 일관된 조명과 배경 팔레트로 연출하세요. Pixel 9부터 데스크톱 브라우저까지 서버 대기 없이 로컬에서 전환됩니다.',
+        'Chrome, Safari, 미니멀 창, iPhone 16 Pro, Pixel 9, iPad, 안드로이드 태블릿, Apple Watch, Wear OS, 프레임리스까지 13종 내장 프레임을 통일된 조명과 배경 팔레트로 로컬 전환하세요.',
       steps: [
         {
-          title: 'Android · iOS · 웹 스크린샷 드롭',
-          description: '이미지를 한 번만 불러오면 다시 올리지 않고도 여러 기기 프레임을 바로 비교할 수 있습니다.',
+          title: '모바일 · 태블릿 · 워치 · 웹 스크린샷 드롭',
+          description: '이미지를 한 번만 불러오면 다시 올리지 않고도 13종 내장 디바이스·브라우저 프레임을 바로 비교할 수 있습니다.',
         },
         {
-          title: '캔버스 비율과 배경 톤 통일',
-          description: 'Aurora, Midnight, Warm Paper 테마로 모든 플랫폼 소개 이미지의 브랜드 톤을 맞춥니다.',
+          title: '캔버스 비율, 배경 톤 및 로컬 가리기 조정',
+          description: 'Aurora, Midnight, Warm Paper 테마로 브랜드 톤을 맞추고 필요 시 민감 정보 모자이크도 함께 적용합니다.',
         },
         {
           title: '즉시 저장 또는 Studio에서 복합 연출',
-          description: '단일 기기 목업을 저장하거나 Studio에서 데스크톱과 모바일을 한 화면에 함께 구성하세요.',
+          description: '단일 기기 목업을 저장하거나 Studio에서 데스크톱·태블릿·워치·모바일을 한 화면에 함께 구성하세요.',
         },
       ],
       highlights: [
         {
-          title: 'Android Google Pixel 9 프레임 지원',
-          description: '구글 플레이 출시 앱도 아이폰 목업 못지않은 깔끔한 하드웨어 프레임으로 선보일 수 있습니다.',
+          title: '13종 디바이스 · 브라우저 · 프레임리스 기본 탑재',
+          description: 'Chrome, Safari, 미니멀 창, iPhone 16 Pro, Pixel 9, iPad, 안드로이드 태블릿, Apple Watch, Wear OS, 프레임리스를 원클릭으로 전환합니다.',
         },
         {
           title: '일관된 브랜드 비주얼 시스템',
-          description: '웹·안드로이드·iOS 목업 전체에 동일한 그림자 깊이와 여백 규칙을 유지합니다.',
+          description: '웹·안드로이드·iOS·태블릿·웨어러블 목업 전체에 동일한 그림자 깊이와 여백 규칙을 유지합니다.',
         },
         {
           title: '지연 없는 60fps 로컬 미리보기',
@@ -343,7 +344,7 @@ export const KO_LOCALE: LocaleBundle = {
       faqs: [
         {
           question: '어떤 디바이스 프레임을 전환해 볼 수 있나요?',
-          answer: 'Google Pixel 9, iPhone 16 Pro, Chrome 브라우저, Safari 브라우저, 미니멀 창 프레임을 지원합니다.',
+          answer: 'Chrome, Safari, 미니멀 창, iPhone 16 Pro, Google Pixel 9, iPad, 안드로이드 태블릿, Apple Watch, Wear OS, 프레임리스까지 총 13종 내장 프레임을 지원합니다.',
         },
         {
           question: '모바일 앱 화면과 PC 웹 화면을 한 장에 같이 넣을 수 있나요?',
@@ -660,6 +661,7 @@ export const KO_LOCALE: LocaleBundle = {
       ],
     },
     ...KO_TOOL_ROUTES,
+    ...KO_GROWTH_ROUTES,
     ...INFO_PAGE_ROUTES.ko,
   },
 }

@@ -49,13 +49,13 @@ import { isToolNavActive } from './navHelpers.ts'
 const execFileAsync = promisify(execFile)
 
 describe('SEO route registry and pathname resolution', () => {
-  it('defines all 23 route slugs and 92 localized static routes', () => {
-    expect(ROUTE_SLUGS).toHaveLength(23)
-    expect(ROUTE_DEFINITIONS).toHaveLength(23)
-    expect(ALL_ROUTES).toHaveLength(92)
+  it('defines all 30 route slugs and 120 localized static routes', () => {
+    expect(ROUTE_SLUGS).toHaveLength(30)
+    expect(ROUTE_DEFINITIONS).toHaveLength(30)
+    expect(ALL_ROUTES).toHaveLength(120)
 
     const uniquePaths = new Set(ALL_ROUTES.map((r) => r.path))
-    expect(uniquePaths.size).toBe(92)
+    expect(uniquePaths.size).toBe(120)
   })
 
   it('builds root paths for English and trailing-slash paths for all subroutes', () => {
@@ -79,13 +79,21 @@ describe('SEO route registry and pathname resolution', () => {
       ['/zh/studio', { locale: 'zh', slug: 'studio', tool: 'mockup', check: (r) => expect(r.isStudio).toBe(true) }],
       ['/browser-mockup', { locale: 'en', slug: 'browser-mockup', tool: 'mockup', check: (r) => expect(r.preset.mockupModel).toBe('browser-chrome') }],
       ['/iphone-mockup', { locale: 'en', slug: 'iphone-mockup', tool: 'mockup', check: (r) => expect(r.preset.mockupModel).toBe('iphone-16-pro') }],
+      ['/ipad-mockup', { locale: 'en', slug: 'ipad-mockup', tool: 'mockup', check: (r) => { expect(r.preset.mockupModel).toBe('ipad-13'); expect(r.preset.canvasSize).toBe('landscape') } }],
+      ['/watch-mockup', { locale: 'en', slug: 'watch-mockup', tool: 'mockup', check: (r) => { expect(r.preset.mockupModel).toBe('apple-watch'); expect(r.preset.canvasSize).toBe('square') } }],
       ['/device-mockup', { locale: 'en', slug: 'device-mockup', tool: 'mockup', check: (r) => expect(r.preset.mockupModel).toBe('pixel-9') }],
       ['/app-store-screenshots', { locale: 'en', slug: 'app-store-screenshots', tool: 'mockup', check: (r) => expect(r.preset.canvasSize).toBe('story') }],
+      ['/redact-screenshot', { locale: 'en', slug: 'redact-screenshot', tool: 'mockup', check: (r) => { expect(r.preset.mockupModel).toBe('browser-chrome'); expect(r.preset.canvasSize).toBe('wide'); expect(r.preset.enableRedact).toBe(true) } }],
       ['/combine-photos-side-by-side', { locale: 'en', slug: 'combine-photos-side-by-side', tool: 'merge', check: (r) => expect(r.preset.mergeDirection).toBe('horizontal') }],
       ['/stitch-images-vertically', { locale: 'en', slug: 'stitch-images-vertically', tool: 'merge', check: (r) => expect(r.preset.mergeDirection).toBe('vertical') }],
+      ['/stitch-screenshots', { locale: 'en', slug: 'stitch-screenshots', tool: 'merge', check: (r) => { expect(r.preset.mergeDirection).toBe('vertical'); expect(r.preset.removeOverlap).toBe(true) } }],
       ['/photo-collage-grid', { locale: 'en', slug: 'photo-collage-grid', tool: 'merge', check: (r) => expect(r.preset.mergeDirection).toBe('grid') }],
+      ['/merge-photos-to-pdf', { locale: 'en', slug: 'merge-photos-to-pdf', tool: 'merge', check: (r) => { expect(r.preset.mergeFormat).toBe('application/pdf'); expect(r.preset.pdfMode).toBe('multipage') } }],
       ['/ja/carousel-splitter?ref=test', { locale: 'ja', slug: 'carousel-splitter', tool: 'split', check: (r) => expect(r.preset.splitMode).toBe('carousel') }],
       ['/ko/image-grid-splitter/', { locale: 'ko', slug: 'image-grid-splitter', tool: 'split', check: (r) => expect(r.preset.splitMode).toBe('grid') }],
+      ['/heic-to-jpg', { locale: 'en', slug: 'heic-to-jpg', tool: 'compress', check: (r) => expect(r.preset.targetFormat).toBe('image/jpeg') }],
+      ['/remove-exif', { locale: 'en', slug: 'remove-exif', tool: 'compress', check: (r) => { expect(r.preset.targetFormat).toBe('image/jpeg'); expect(r.preset.inspectExif).toBe(true) } }],
+      ['/compress-image-to-200kb', { locale: 'en', slug: 'compress-image-to-200kb', tool: 'compress', check: (r) => { expect(r.preset.targetFormat).toBe('image/webp'); expect(r.preset.targetSizeKb).toBe(200) } }],
       ['/png-to-webp', { locale: 'en', slug: 'png-to-webp', tool: 'compress', check: (r) => expect(r.preset.targetFormat).toBe('image/webp') }],
       ['/resize-image', { locale: 'en', slug: 'resize-image', tool: 'resize', check: (r) => expect(r.preset.resizeMode).toBe('resize') }],
       ['/crop-image', { locale: 'en', slug: 'crop-image', tool: 'resize', check: (r) => expect(r.preset.resizeMode).toBe('crop') }],
@@ -133,6 +141,24 @@ describe('SEO route registry and pathname resolution', () => {
       { hreflang: 'ko', href: 'https://moklu.app/ko/id-card-watermark/' },
       { hreflang: 'x-default', href: 'https://moklu.app/id-card-watermark/' },
     ])
+
+    for (const growthSlug of [
+      'ipad-mockup',
+      'watch-mockup',
+      'stitch-screenshots',
+      'heic-to-jpg',
+      'remove-exif',
+      'compress-image-to-200kb',
+      'redact-screenshot',
+    ] as const) {
+      const growthLinks = getHreflangLinks(growthSlug, 'https://moklu.app')
+      expect(growthLinks).toHaveLength(5)
+      expect(growthLinks.map((l) => l.hreflang)).toEqual(['en', 'zh-Hans', 'ja', 'ko', 'x-default'])
+      const growthRoute = resolvePathname(`/${growthSlug}`)
+      const growthSchemas = buildRouteSchemas(growthRoute, 'https://moklu.app')
+      expect(growthSchemas.webApplication.url).toBe(`https://moklu.app/${growthSlug}/`)
+      expect(growthSchemas.faqPage.mainEntity.length).toBeGreaterThanOrEqual(4)
+    }
   })
 })
 
@@ -534,7 +560,7 @@ describe('Build-time SSG prerenderer, sitemap.xml, robots.txt, and CSP safety', 
     expect(rerendered.match(/data-testid="tool-landing-page"/g)?.length).toBe(1)
   })
 
-  it('executes scripts/prerender-seo.mjs via Node ESM and writes all 92 static HTML files, sitemap.xml, robots.txt, and llms.txt', async () => {
+  it('executes scripts/prerender-seo.mjs via Node ESM and writes all 120 static HTML files, sitemap.xml, robots.txt, and llms.txt', async () => {
     const tmpDir = await mkdtemp(path.join(os.tmpdir(), 'moklu-ssg-test-'))
     try {
       await writeFile(path.join(tmpDir, 'index.html'), SAMPLE_DIST_TEMPLATE, 'utf8')
@@ -559,18 +585,25 @@ describe('Build-time SSG prerenderer, sitemap.xml, robots.txt, and CSP safety', 
 
       expect(report.ok).toBe(true)
       expect(report.siteUrl).toBe('https://moklu.app')
-      expect(report.routesWritten).toBe(92)
-      expect(report.sitemapUrls).toBe(92)
+      expect(report.routesWritten).toBe(120)
+      expect(report.sitemapUrls).toBe(120)
 
       // Spot-check key static route paths
       const spotChecks = [
         { route: resolvePathname('/'), expectedRel: 'index.html', expectedLang: 'en' },
         { route: resolvePathname('/merge-images'), expectedRel: path.join('merge-images', 'index.html'), expectedLang: 'en' },
         { route: resolvePathname('/merge-photos-to-pdf'), expectedRel: path.join('merge-photos-to-pdf', 'index.html'), expectedLang: 'en' },
+        { route: resolvePathname('/heic-to-jpg'), expectedRel: path.join('heic-to-jpg', 'index.html'), expectedLang: 'en' },
+        { route: resolvePathname('/compress-image-to-200kb'), expectedRel: path.join('compress-image-to-200kb', 'index.html'), expectedLang: 'en' },
+        { route: resolvePathname('/redact-screenshot'), expectedRel: path.join('redact-screenshot', 'index.html'), expectedLang: 'en' },
         { route: resolvePathname('/studio'), expectedRel: path.join('studio', 'index.html'), expectedLang: 'en' },
         { route: resolvePathname('/zh'), expectedRel: path.join('zh', 'index.html'), expectedLang: 'zh-CN' },
+        { route: resolvePathname('/zh/stitch-screenshots'), expectedRel: path.join('zh', 'stitch-screenshots', 'index.html'), expectedLang: 'zh-CN' },
+        { route: resolvePathname('/zh/remove-exif'), expectedRel: path.join('zh', 'remove-exif', 'index.html'), expectedLang: 'zh-CN' },
         { route: resolvePathname('/zh/id-card-watermark'), expectedRel: path.join('zh', 'id-card-watermark', 'index.html'), expectedLang: 'zh-CN' },
         { route: resolvePathname('/zh/privacy'), expectedRel: path.join('zh', 'privacy', 'index.html'), expectedLang: 'zh-CN' },
+        { route: resolvePathname('/ja/ipad-mockup'), expectedRel: path.join('ja', 'ipad-mockup', 'index.html'), expectedLang: 'ja' },
+        { route: resolvePathname('/ko/watch-mockup'), expectedRel: path.join('ko', 'watch-mockup', 'index.html'), expectedLang: 'ko' },
         { route: resolvePathname('/ko/browser-mockup'), expectedRel: path.join('ko', 'browser-mockup', 'index.html'), expectedLang: 'ko' },
       ]
 
@@ -594,12 +627,15 @@ describe('Build-time SSG prerenderer, sitemap.xml, robots.txt, and CSP safety', 
 
       const sitemap = await readFile(path.join(tmpDir, 'sitemap.xml'), 'utf8')
       expect(sitemap).toBe(generateSitemapXml('https://moklu.app', '2026-11-23'))
-      expect(sitemap.match(/<url>/g)?.length).toBe(92)
+      expect(sitemap.match(/<url>/g)?.length).toBe(120)
       expect(sitemap).toContain('xmlns:xhtml="http://www.w3.org/1999/xhtml"')
       expect(sitemap).toContain('hreflang="zh-Hans"')
       expect(sitemap).toContain('<loc>https://moklu.app/zh/id-card-watermark/</loc>')
       expect(sitemap).toContain('<loc>https://moklu.app/zh/privacy/</loc>')
       expect(sitemap).toContain('<loc>https://moklu.app/merge-photos-to-pdf/</loc>')
+      expect(sitemap).toContain('<loc>https://moklu.app/heic-to-jpg/</loc>')
+      expect(sitemap).toContain('<loc>https://moklu.app/zh/stitch-screenshots/</loc>')
+      expect(sitemap).toContain('<loc>https://moklu.app/ko/remove-exif/</loc>')
       for (const match of sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)) {
         expect(match[1].endsWith('/'), `sitemap loc ${match[1]} must end with /`).toBe(true)
       }

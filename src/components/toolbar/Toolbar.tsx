@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on react, zustand useShallow, useEditorStore/useUndoRedo from @/store, useProjectsStore from @/store/projects, toolbar buttons (BrandKitButton, Logo, ReplaceScreenshotButton, ToolbarMoreMenu) and useReplaceScreenshot, StudioIcons, useContextMenuKeyboard from @/components/ui/contextMenu, lightweight modals, lazy HelpModal wrapped in ChunkErrorBoundary, stageRegistry, export helpers, buildLocalizedPath from @/seo, and STUDIO_UI_LOCALES/useStudioLocale from @/i18n
- * [OUTPUT]: exports Toolbar component providing localized project controls, Quick Design, Canvas Size, undo/redo, PNG export, localization toggle, Studio UI language switcher, responsive ToolbarMoreMenu, and Home/Tools navigation back link
+ * [INPUT]: depends on react, zustand useShallow, useEditorStore/useUndoRedo from @/store, useProjectsStore from @/store/projects, toolbar buttons (BrandKitButton, Logo, ProjectBackupBadge, ReplaceScreenshotButton, ToolbarMoreMenu) and useReplaceScreenshot, StudioIcons, useContextMenuKeyboard from @/components/ui/contextMenu, lightweight modals, lazy HelpModal wrapped in ChunkErrorBoundary, stageRegistry, export helpers, buildLocalizedPath from @/seo, and STUDIO_UI_LOCALES/useStudioLocale from @/i18n
+ * [OUTPUT]: exports Toolbar component providing localized project controls, Quick Design, Canvas Size, undo/redo, .moklu backup reminder badge, PNG export, localization toggle, Studio UI language switcher, responsive ToolbarMoreMenu, and Home/Tools navigation back link
  * [POS]: top chrome bar of StudioPage inside src/components/toolbar
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -19,6 +19,7 @@ import { SettingsModal } from '@/components/panels/SettingsModal'
 import { ChunkErrorBoundary } from '@/components/common/ChunkErrorBoundary'
 import { ReplaceScreenshotButton } from '@/components/toolbar/ReplaceScreenshotButton'
 import { useReplaceScreenshot } from '@/components/toolbar/useReplaceScreenshot'
+import { ProjectBackupBadge } from '@/components/toolbar/ProjectBackupBadge'
 import { ToolbarMoreMenu } from '@/components/toolbar/ToolbarMoreMenu'
 import {
   ArrowLeftIcon,
@@ -380,6 +381,9 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
             {saveLabel === 'saving' ? t.toolbar.saving : t.toolbar.saved}
           </span>
         )}
+
+        {/* Non-intrusive local-only .moklu backup reminder */}
+        <ProjectBackupBadge />
 
         <div className="hidden h-5 w-px shrink-0 bg-[rgba(255,255,255,0.1)] min-[640px]:block" />
 

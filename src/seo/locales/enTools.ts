@@ -10,49 +10,49 @@ import type { RouteCopy, SecondaryToolSlug } from '../types.ts'
 export const EN_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   'merge-photos-to-pdf': {
     navLabel: 'Merge Photos to PDF',
-    title: 'Merge Photos to Single-Page PDF Online Free (Local) | Moklu',
+    title: 'Merge Photos to Multi-Page A4 or Single-Page PDF Free (Local) | Moklu',
     metaDescription:
-      'Combine multiple photos, receipts, or screenshots into one clean single-page PDF 1.4 sheet directly in your browser. Zero uploads, custom borders, and quality control.',
-    badge: 'Single-Page PDF 1.4 · Zero Uploads',
-    h1: 'Merge Multiple Photos into One Single-Page PDF',
+      'Combine photos, receipts, or scans into a printable Multi-Page A4 PDF (Mode A) or a continuous Single-Page Long PDF (Mode B) directly in your browser. Zero uploads.',
+    badge: 'Multi-Page A4 & Single-Page PDF 1.4',
+    h1: 'Merge Photos into Multi-Page A4 or Single-Page PDF',
     subtitle:
-      'Arrange receipts, scans, or screenshots vertically, side by side, or in a 2 to 6 column grid and export a print-ready single-page PDF 1.4 file locally in your browser.',
+      'Export receipts, document scans, or screenshots as a printable Multi-Page A4 / Fit PDF (1 photo per page) or switch to a Single-Page Long PDF sheet, 100% locally in your browser.',
     steps: [
       {
         title: 'Add and order your photos',
         description: 'Drop, select, or paste images with Cmd/Ctrl+V, drag thumbnails to reorder, reverse order, or rotate individual photos 90 degrees.',
       },
       {
-        title: 'Choose layout, borders, and PDF quality',
-        description: 'Pick vertical, horizontal, or 2 to 6 column grid layout, tune spacing, padding, per-image borders, and set PDF quality (50% to 100%, default 92%).',
+        title: 'Choose Multi-Page A4 or Single-Page PDF mode',
+        description: 'Use Mode A (Multi-Page A4 portrait/landscape or fit-to-image with optional margins) for printable multi-page packets, or Mode B (Single-Page Long PDF) for vertical, horizontal, or 2 to 6 column sheets, with 50% to 100% quality control.',
       },
       {
-        title: 'Export your local single-page PDF',
-        description: 'Download a standard PDF 1.4 file directly from HTML5 Canvas with zero server uploads and zero watermarks.',
+        title: 'Export your local PDF 1.4 document',
+        description: 'Download a standards-compliant PDF 1.4 file generated directly in browser RAM with zero server uploads and zero watermarks.',
       },
     ],
     highlights: [
       {
-        title: 'Zero-Dependency Local PDF 1.4',
-        description: 'Generates a clean single-page PDF sheet straight in browser RAM, ideal for expense receipts, notes, and printouts.',
+        title: 'Mode A: Printable Multi-Page A4 / Fit PDF',
+        description: 'Places each photo cleanly centered on its own A4 portrait/landscape or fit-to-image page with crisp white margins for printing and submissions.',
       },
       {
-        title: 'Automatic White Backdrop for Transparency',
-        description: 'Transparent PNG cutouts automatically composite onto a crisp white sheet when exporting to PDF or JPEG.',
+        title: 'Mode B: Continuous Single-Page Long PDF',
+        description: 'Switches to one combined vertical, horizontal, or 2 to 6 column grid PDF sheet whenever you want all receipts or slides on a single page.',
       },
       {
-        title: 'Flexible Grid, Rotation & Borders',
-        description: 'Switch between cover and contain fit, add 0 to 24px per-image borders, and pick any custom canvas color.',
+        title: '100% Local PDF 1.4 & White Transparency Fill',
+        description: 'Zero-dependency browser PDF encoder keeps confidential scans offline and automatically flattens transparent PNGs onto a crisp white page.',
       },
     ],
     faqs: [
       {
-        question: 'Does Merge Photos to PDF create a single-page or multi-page PDF?',
-        answer: 'Moklu packages your combined image sheet into a clean single-page PDF 1.4 file. It is designed for combining photos onto one printable sheet rather than merging existing multi-page PDF documents.',
+        question: 'Does Merge Photos to PDF support both Multi-Page A4 and Single-Page PDF?',
+        answer: 'Yes. Mode A creates a printable Multi-Page PDF 1.4 (one photo per A4 portrait/landscape or fit-to-image page, default on this route), and Mode B creates a Single-Page Long PDF sheet combining all photos on one canvas. It converts images to PDF rather than merging existing PDF documents.',
       },
       {
         question: 'Can I control the file size and quality of the exported PDF?',
-        answer: 'Yes. When PDF output is selected, Moklu exposes a quality slider from 50% to 100% (default 92%) so you can balance sharp text with compact file size.',
+        answer: 'Yes. When PDF output is selected, Moklu exposes a quality slider from 50% to 100% (default 92%) plus A4 orientation and margin controls so you can balance sharp text with compact file size.',
       },
       {
         question: 'What happens if I merge transparent PNGs into a PDF?',

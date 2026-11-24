@@ -1,12 +1,13 @@
 /**
- * [INPUT]: depends on LocaleBundle type from ../types.ts; depends on EN_TOOL_ROUTES from ./enTools.ts and INFO_PAGE_ROUTES from ./infoRoutes.ts
- * [OUTPUT]: exports EN_LOCALE complete English UI labels and 23 intent/info route copy entries
+ * [INPUT]: depends on LocaleBundle type from ../types.ts; depends on EN_TOOL_ROUTES from ./enTools.ts, EN_GROWTH_ROUTES from ./enGrowthRoutes.ts, and INFO_PAGE_ROUTES from ./infoRoutes.ts
+ * [OUTPUT]: exports EN_LOCALE complete English UI labels and 30 intent/info route copy entries
  * [POS]: default (root `/`) English language pack within src/seo/locales, loaded by src/seo/i18n.ts
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
 import type { LocaleBundle } from '../types.ts'
 import { EN_TOOL_ROUTES } from './enTools.ts'
+import { EN_GROWTH_ROUTES } from './enGrowthRoutes.ts'
 import { INFO_PAGE_ROUTES } from './infoRoutes.ts'
 
 export const EN_LOCALE: LocaleBundle = {
@@ -305,35 +306,35 @@ export const EN_LOCALE: LocaleBundle = {
     },
     'device-mockup': {
       navLabel: 'Device Mockup',
-      title: 'Free Multi-Device Mockup Generator (Android, Pixel & Web) | Moklu',
+      title: 'Free Multi-Device Mockup Generator (13 Phone, Tablet, Watch & Web Frames) | Moklu',
       metaDescription:
-        'Generate clean Google Pixel 9, iPhone, and desktop browser mockups in seconds. 100% client-side rendering with custom gradients and Studio handoff.',
-      badge: 'Pixel 9, iPhone & Browser Frames',
+        'Generate clean Google Pixel 9, iPhone 16 Pro, iPad, Android Tablet, Apple Watch, Wear OS, Chrome, Safari, Minimal, and Frameless mockups locally in seconds.',
+      badge: '13 Built-In Device & Browser Frames',
       h1: 'Multi-Device Mockup Generator for Cross-Platform Apps',
       subtitle:
-        'Present Android, iOS, and responsive web screenshots inside unified hardware and browser frames with consistent lighting, processed locally on your machine.',
+        'Present Android, iOS, tablet, smartwatch, and responsive web screenshots across 13 built-in frames (Chrome, Safari, Minimal, iPhone 16 Pro, Pixel 9, iPad, Android Tablet, Apple Watch, Wear OS, and Frameless) locally in your browser.',
       steps: [
         {
-          title: 'Drop your Android, iOS, or web screenshot',
-          description: 'Start with a Pixel 9 capture or switch frames anytime without re-uploading your screenshot.',
+          title: 'Drop your Android, iOS, tablet, watch, or web screenshot',
+          description: 'Start with Pixel 9 or switch across all 13 built-in hardware, browser, and frameless presets anytime without re-uploading.',
         },
         {
           title: 'Match canvas proportions and lighting',
-          description: 'Choose landscape, widescreen, square, or portrait ratios with Aurora, Midnight, or Warm Paper themes.',
+          description: 'Choose landscape, widescreen, square, or portrait ratios with Aurora, Midnight, or Warm Paper themes and optional local redaction.',
         },
         {
           title: 'Export or combine devices in Studio',
-          description: 'Save a single device mockup immediately, or open in Studio to arrange desktop and mobile frames together.',
+          description: 'Save a single device mockup immediately, or open in Studio to arrange desktop, tablet, watch, and mobile frames together.',
         },
       ],
       highlights: [
         {
-          title: 'Android & Google Play Ready',
-          description: 'Dedicated Google Pixel 9 hardware frame gives Android releases the same polish as iOS launches.',
+          title: '13 Hardware, Browser & Frameless Presets',
+          description: 'Switch seamlessly between Chrome, Safari, Minimal, iPhone 16 Pro, Pixel 9, iPad, Android Tablet, Apple Watch, Wear OS, and Frameless shots.',
         },
         {
           title: 'Unified Brand Aesthetics',
-          description: 'Keep identical shadows and background palettes across web, iOS, and Android marketing visuals.',
+          description: 'Keep identical shadows and background palettes across web, iOS, Android, tablet, and wearable marketing visuals.',
         },
         {
           title: 'Fast Client-Side Canvas',
@@ -343,7 +344,7 @@ export const EN_LOCALE: LocaleBundle = {
       faqs: [
         {
           question: 'Which device models can I switch between?',
-          answer: 'Quick Workspace supports Google Pixel 9, iPhone 16 Pro, Chrome Browser, Safari Browser, and Minimal Window frames.',
+          answer: 'Moklu includes 13 built-in frames spanning Chrome, Safari, and Minimal browser windows, iPhone 16 Pro, Google Pixel 9, iPad, Android Tablet, Apple Watch, Wear OS, and Frameless clean screenshots.',
         },
         {
           question: 'Can I showcase an Android phone and a desktop browser in one image?',
@@ -660,6 +661,7 @@ export const EN_LOCALE: LocaleBundle = {
       ],
     },
     ...EN_TOOL_ROUTES,
+    ...EN_GROWTH_ROUTES,
     ...INFO_PAGE_ROUTES.en,
   },
 }

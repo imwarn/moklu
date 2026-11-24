@@ -1,7 +1,7 @@
 /**
  * [INPUT]: depends on RouteDefinition, RouteSlug, LocaleCode, HtmlLangCode, HreflangCode, ResolvedRoute, HreflangLink, and ToolId types from ./types.ts
  * [OUTPUT]: exports LOCALE_CODES, DEFAULT_LOCALE, DEFAULT_SITE_URL, ROUTE_SLUGS, ROUTE_DEFINITIONS, ALL_ROUTES, TOOL_ROUTE_DEFINITIONS, INFO_ROUTE_DEFINITIONS, PRIMARY_TOOL_SLUGS, getHtmlLang, getHreflangCode, getSiteUrl, isLocaleCode, isRouteSlug, getRouteDefinition, buildLocalizedPath, buildCanonicalUrl, getHreflangLinks, resolvePathname, and getRelatedRoutes
- * [POS]: single source of truth for all 23 intent/info slugs (92 trailing-slash localized URLs), BCP-47 lang/hreflang tags (`zh-CN`/`zh-Hans`), URL normalization, preset mapping, and internal link graphs across client routing and build-time SSG
+ * [POS]: single source of truth for all 30 intent/info slugs (120 trailing-slash localized URLs), BCP-47 lang/hreflang tags (`zh-CN`/`zh-Hans`), URL normalization, preset mapping, and internal link graphs across client routing and build-time SSG
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
@@ -91,7 +91,7 @@ export const ROUTE_DEFINITIONS: readonly RouteDefinition[] = [
     isStudio: false,
     priority: 0.95,
     preset: { tool: 'mockup', mockupModel: 'browser-chrome', canvasSize: 'wide' },
-    relatedSlugs: ['iphone-mockup', 'device-mockup', 'app-store-screenshots', 'compress-image', 'add-border-to-photo', 'studio'],
+    relatedSlugs: ['redact-screenshot', 'iphone-mockup', 'ipad-mockup', 'device-mockup', 'app-store-screenshots', 'studio'],
   },
   {
     slug: 'iphone-mockup',
@@ -99,7 +99,23 @@ export const ROUTE_DEFINITIONS: readonly RouteDefinition[] = [
     isStudio: false,
     priority: 0.95,
     preset: { tool: 'mockup', mockupModel: 'iphone-16-pro', canvasSize: 'portrait' },
-    relatedSlugs: ['app-store-screenshots', 'device-mockup', 'browser-mockup', 'carousel-splitter', 'resize-image', 'studio'],
+    relatedSlugs: ['app-store-screenshots', 'ipad-mockup', 'watch-mockup', 'device-mockup', 'browser-mockup', 'studio'],
+  },
+  {
+    slug: 'ipad-mockup',
+    category: 'mockup',
+    isStudio: false,
+    priority: 0.9,
+    preset: { tool: 'mockup', mockupModel: 'ipad-13', canvasSize: 'landscape' },
+    relatedSlugs: ['iphone-mockup', 'device-mockup', 'browser-mockup', 'watch-mockup', 'app-store-screenshots', 'studio'],
+  },
+  {
+    slug: 'watch-mockup',
+    category: 'mockup',
+    isStudio: false,
+    priority: 0.88,
+    preset: { tool: 'mockup', mockupModel: 'apple-watch', canvasSize: 'square' },
+    relatedSlugs: ['iphone-mockup', 'ipad-mockup', 'device-mockup', 'app-store-screenshots', 'resize-image', 'studio'],
   },
   {
     slug: 'device-mockup',
@@ -107,7 +123,7 @@ export const ROUTE_DEFINITIONS: readonly RouteDefinition[] = [
     isStudio: false,
     priority: 0.9,
     preset: { tool: 'mockup', mockupModel: 'pixel-9', canvasSize: 'landscape' },
-    relatedSlugs: ['browser-mockup', 'iphone-mockup', 'app-store-screenshots', 'combine-photos-side-by-side', 'compress-image', 'studio'],
+    relatedSlugs: ['browser-mockup', 'iphone-mockup', 'ipad-mockup', 'watch-mockup', 'app-store-screenshots', 'studio'],
   },
   {
     slug: 'app-store-screenshots',
@@ -115,7 +131,15 @@ export const ROUTE_DEFINITIONS: readonly RouteDefinition[] = [
     isStudio: false,
     priority: 0.95,
     preset: { tool: 'mockup', mockupModel: 'iphone-16-pro', canvasSize: 'story' },
-    relatedSlugs: ['iphone-mockup', 'device-mockup', 'carousel-splitter', 'resize-image', 'compress-image', 'studio'],
+    relatedSlugs: ['iphone-mockup', 'ipad-mockup', 'device-mockup', 'carousel-splitter', 'resize-image', 'studio'],
+  },
+  {
+    slug: 'redact-screenshot',
+    category: 'mockup',
+    isStudio: false,
+    priority: 0.9,
+    preset: { tool: 'mockup', mockupModel: 'browser-chrome', canvasSize: 'wide', enableRedact: true },
+    relatedSlugs: ['browser-mockup', 'remove-exif', 'stitch-screenshots', 'id-card-watermark', 'iphone-mockup', 'studio'],
   },
   // Merge family
   {
@@ -124,7 +148,7 @@ export const ROUTE_DEFINITIONS: readonly RouteDefinition[] = [
     isStudio: false,
     priority: 0.95,
     preset: { tool: 'merge', mergeDirection: 'horizontal' },
-    relatedSlugs: ['combine-photos-side-by-side', 'stitch-images-vertically', 'photo-collage-grid', 'merge-photos-to-pdf', 'carousel-splitter', 'compress-image'],
+    relatedSlugs: ['combine-photos-side-by-side', 'stitch-images-vertically', 'stitch-screenshots', 'photo-collage-grid', 'merge-photos-to-pdf', 'compress-image'],
   },
   {
     slug: 'combine-photos-side-by-side',
@@ -132,7 +156,7 @@ export const ROUTE_DEFINITIONS: readonly RouteDefinition[] = [
     isStudio: false,
     priority: 0.9,
     preset: { tool: 'merge', mergeDirection: 'horizontal' },
-    relatedSlugs: ['merge-images', 'stitch-images-vertically', 'photo-collage-grid', 'merge-photos-to-pdf', 'add-border-to-photo', 'browser-mockup'],
+    relatedSlugs: ['merge-images', 'stitch-images-vertically', 'stitch-screenshots', 'photo-collage-grid', 'merge-photos-to-pdf', 'browser-mockup'],
   },
   {
     slug: 'stitch-images-vertically',
@@ -140,7 +164,15 @@ export const ROUTE_DEFINITIONS: readonly RouteDefinition[] = [
     isStudio: false,
     priority: 0.9,
     preset: { tool: 'merge', mergeDirection: 'vertical' },
-    relatedSlugs: ['merge-images', 'combine-photos-side-by-side', 'photo-collage-grid', 'merge-photos-to-pdf', 'compress-image', 'id-card-watermark'],
+    relatedSlugs: ['stitch-screenshots', 'merge-images', 'combine-photos-side-by-side', 'photo-collage-grid', 'merge-photos-to-pdf', 'compress-image'],
+  },
+  {
+    slug: 'stitch-screenshots',
+    category: 'merge',
+    isStudio: false,
+    priority: 0.92,
+    preset: { tool: 'merge', mergeDirection: 'vertical', removeOverlap: true },
+    relatedSlugs: ['stitch-images-vertically', 'merge-images', 'merge-photos-to-pdf', 'redact-screenshot', 'compress-image', 'studio'],
   },
   {
     slug: 'photo-collage-grid',
@@ -155,8 +187,8 @@ export const ROUTE_DEFINITIONS: readonly RouteDefinition[] = [
     category: 'merge',
     isStudio: false,
     priority: 0.9,
-    preset: { tool: 'merge', mergeDirection: 'vertical', mergeFormat: 'application/pdf' },
-    relatedSlugs: ['merge-images', 'stitch-images-vertically', 'combine-photos-side-by-side', 'photo-collage-grid', 'id-card-watermark', 'compress-image'],
+    preset: { tool: 'merge', mergeDirection: 'vertical', mergeFormat: 'application/pdf', pdfMode: 'multipage' },
+    relatedSlugs: ['merge-images', 'stitch-screenshots', 'stitch-images-vertically', 'photo-collage-grid', 'id-card-watermark', 'compress-image-to-200kb'],
   },
   // Split family
   {
@@ -182,7 +214,31 @@ export const ROUTE_DEFINITIONS: readonly RouteDefinition[] = [
     isStudio: false,
     priority: 0.95,
     preset: { tool: 'compress', targetFormat: 'image/webp' },
-    relatedSlugs: ['convert-image-format', 'png-to-webp', 'resize-image', 'merge-images', 'browser-mockup', 'id-card-watermark'],
+    relatedSlugs: ['compress-image-to-200kb', 'heic-to-jpg', 'remove-exif', 'convert-image-format', 'png-to-webp', 'resize-image'],
+  },
+  {
+    slug: 'compress-image-to-200kb',
+    category: 'compress',
+    isStudio: false,
+    priority: 0.92,
+    preset: { tool: 'compress', targetFormat: 'image/webp', targetSizeKb: 200 },
+    relatedSlugs: ['compress-image', 'heic-to-jpg', 'remove-exif', 'resize-image', 'png-to-webp', 'id-card-watermark'],
+  },
+  {
+    slug: 'heic-to-jpg',
+    category: 'compress',
+    isStudio: false,
+    priority: 0.93,
+    preset: { tool: 'compress', targetFormat: 'image/jpeg' },
+    relatedSlugs: ['convert-image-format', 'compress-image', 'compress-image-to-200kb', 'remove-exif', 'png-to-webp', 'resize-image'],
+  },
+  {
+    slug: 'remove-exif',
+    category: 'compress',
+    isStudio: false,
+    priority: 0.92,
+    preset: { tool: 'compress', targetFormat: 'image/jpeg', inspectExif: true },
+    relatedSlugs: ['id-card-watermark', 'redact-screenshot', 'heic-to-jpg', 'compress-image', 'compress-image-to-200kb', 'privacy'],
   },
   {
     slug: 'convert-image-format',
@@ -190,7 +246,7 @@ export const ROUTE_DEFINITIONS: readonly RouteDefinition[] = [
     isStudio: false,
     priority: 0.9,
     preset: { tool: 'compress', targetFormat: 'image/png' },
-    relatedSlugs: ['png-to-webp', 'compress-image', 'resize-image', 'crop-image', 'merge-images', 'browser-mockup'],
+    relatedSlugs: ['heic-to-jpg', 'png-to-webp', 'compress-image', 'remove-exif', 'resize-image', 'crop-image'],
   },
   {
     slug: 'png-to-webp',
@@ -198,7 +254,7 @@ export const ROUTE_DEFINITIONS: readonly RouteDefinition[] = [
     isStudio: false,
     priority: 0.9,
     preset: { tool: 'compress', targetFormat: 'image/webp' },
-    relatedSlugs: ['compress-image', 'convert-image-format', 'resize-image', 'browser-mockup', 'app-store-screenshots', 'carousel-splitter'],
+    relatedSlugs: ['compress-image', 'compress-image-to-200kb', 'convert-image-format', 'heic-to-jpg', 'resize-image', 'browser-mockup'],
   },
   // Resize / Crop / Pad family
   {
@@ -207,7 +263,7 @@ export const ROUTE_DEFINITIONS: readonly RouteDefinition[] = [
     isStudio: false,
     priority: 0.95,
     preset: { tool: 'resize', resizeMode: 'resize' },
-    relatedSlugs: ['crop-image', 'add-border-to-photo', 'compress-image', 'convert-image-format', 'app-store-screenshots', 'carousel-splitter'],
+    relatedSlugs: ['crop-image', 'add-border-to-photo', 'compress-image-to-200kb', 'compress-image', 'convert-image-format', 'app-store-screenshots'],
   },
   {
     slug: 'crop-image',
@@ -232,7 +288,7 @@ export const ROUTE_DEFINITIONS: readonly RouteDefinition[] = [
     isStudio: false,
     priority: 0.95,
     preset: { tool: 'id-card' },
-    relatedSlugs: ['merge-photos-to-pdf', 'stitch-images-vertically', 'combine-photos-side-by-side', 'compress-image', 'crop-image', 'resize-image'],
+    relatedSlugs: ['remove-exif', 'redact-screenshot', 'merge-photos-to-pdf', 'compress-image-to-200kb', 'crop-image', 'resize-image'],
   },
   // Trust & architecture info pages (E-E-A-T)
   {

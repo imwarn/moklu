@@ -11,10 +11,28 @@ import { useAssetStore } from '@/store/assets'
 import { QuickDesignPreview } from '@/components/panels/QuickDesignPreview'
 import { prepareScreenshotUpload, validateScreenshotFile } from '@/utils/screenshotAssets'
 import {
-  getQuickMockupPlacement, makeQuickLayers, QUICK_MOCKUPS, QUICK_SIZES, QUICK_THEMES,
-  type QuickMockup, type QuickSize, type QuickTheme, type QuickScreenshotFit,
+  getQuickMockupPlacement,
+  getQuickMockupsByCategory,
+  makeQuickLayers,
+  QUICK_MOCKUP_CATEGORIES,
+  QUICK_MOCKUPS,
+  QUICK_SIZES,
+  QUICK_THEMES,
+  type MockupCategory,
+  type QuickMockup,
+  type QuickSize,
+  type QuickTheme,
+  type QuickScreenshotFit,
 } from '@/utils/quickDesign'
 import { useStudioLocale } from '@/i18n'
+
+const MOCKUP_CATEGORY_LABELS: Record<MockupCategory, string> = {
+  browser: 'Browser',
+  phone: 'Phone',
+  tablet: 'Tablet',
+  watch: 'Watch',
+  screen: 'Frameless',
+}
 
 interface QuickDesignModalProps {
   open: boolean
@@ -251,7 +269,13 @@ function QuickDesignDialog({ activeGroup, onClose }: { activeGroup: SlideGroup |
           </label>
           <label className="block text-xs text-[#aeb0c3]">{q.mockup}
             <select className={controlClass + ' mt-2'} value={mockup} onChange={(e) => setMockup(e.target.value as QuickMockup)}>
-              {QUICK_MOCKUPS.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
+              {QUICK_MOCKUP_CATEGORIES.map((category) => (
+                <optgroup key={category} label={MOCKUP_CATEGORY_LABELS[category]}>
+                  {getQuickMockupsByCategory(category).map((m) => (
+                    <option key={m.id} value={m.id}>{m.label}</option>
+                  ))}
+                </optgroup>
+              ))}
             </select>
           </label>
         </div>
