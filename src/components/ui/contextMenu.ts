@@ -110,8 +110,11 @@ export function useContextMenuKeyboard(
 
     const getItems = () =>
       Array.from(
-        menuRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not([disabled])') ?? [],
-      )
+        menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]:not([disabled]):not([aria-disabled="true"])') ?? [],
+      ).filter((item) => {
+        if (typeof window === 'undefined') return true
+        return window.getComputedStyle(item).display !== 'none'
+      })
 
     const initialItems = getItems()
     if (initialItems.length > 0) {

@@ -32,7 +32,7 @@ export function ShadowControls({ layer }: { layer: Layer }) {
             }
           }}
           className="relative h-6 w-11 rounded-full border transition-colors"
-          knobClassName="absolute top-0.5 h-4.5 w-4.5 rounded-full bg-white transition-all"
+          knobClassName="absolute top-0.5 h-4.5 w-4.5 rounded-full bg-white transition-[left]"
           checkedClassName="border-accent bg-accent"
           uncheckedClassName="border-[rgba(255,255,255,0.12)] bg-surface"
           checkedKnobClassName="left-[22px]"

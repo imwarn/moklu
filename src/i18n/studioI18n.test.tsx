@@ -192,24 +192,28 @@ describe('Studio UI localized rendering and content-locale isolation', () => {
     expect(enHtml).toContain('Quick Design')
     expect(enHtml).toContain('title="Export the active canvas at its original size"')
     expect(enHtml).toContain('aria-label="Switch Studio UI language"')
-    expect(enHtml).toContain('<span aria-hidden="true">⚙</span><span class="max-[1099px]:hidden">Settings</span>')
+    expect(enHtml).toContain('aria-label="Settings"')
+    expect(enHtml).toContain('<span>Settings</span>')
 
     const zhHtml = renderToolbar('zh')
     expect(zhHtml).toContain('工具箱')
     expect(zhHtml).toContain('快速设计')
     expect(zhHtml).toContain('画布尺寸')
-    expect(zhHtml).toContain('<span aria-hidden="true">⚙</span><span class="max-[1099px]:hidden">设置</span>')
+    expect(zhHtml).toContain('aria-label="设置"')
+    expect(zhHtml).toContain('<span>设置</span>')
     expect(zhHtml).toContain('中文')
 
     const jaHtml = renderToolbar('ja')
     expect(jaHtml).toContain('ツール')
     expect(jaHtml).toContain('クイック作成')
-    expect(jaHtml).toContain('<span aria-hidden="true">⚙</span><span class="max-[1099px]:hidden">設定</span>')
+    expect(jaHtml).toContain('aria-label="設定"')
+    expect(jaHtml).toContain('<span>設定</span>')
 
     const koHtml = renderToolbar('ko')
     expect(koHtml).toContain('도구')
     expect(koHtml).toContain('빠른 디자인')
-    expect(koHtml).toContain('<span aria-hidden="true">⚙</span><span class="max-[1099px]:hidden">설정</span>')
+    expect(koHtml).toContain('aria-label="설정"')
+    expect(koHtml).toContain('<span>설정</span>')
 
     // Rendering Studio in any UI locale must never mutate project content activeLocale
     expect(useEditorStore.getState().activeLocale).toBe(initialContentLocale)

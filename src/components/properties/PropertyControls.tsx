@@ -84,7 +84,7 @@ export function ColorField({
             type="button"
             title={bc.name}
             onClick={() => onChange(toBrandToken(bc.id))}
-            className={`w-5 h-5 rounded-full border-2 transition-all ${
+            className={`w-5 h-5 rounded-full border-2 transition-[border-color,transform] ${
               activeBrand?.id === bc.id
                 ? 'border-accent scale-110'
                 : 'border-[rgba(255,255,255,0.2)] hover:border-[rgba(255,255,255,0.5)]'
@@ -333,7 +333,7 @@ export function GradientEditor({ fill, onChange, onInteractionStart = () => {}, 
                         type="button"
                         title={bc.name}
                         onClick={() => onChange(toBrandToken(bc.id))}
-                        className={`w-5 h-5 rounded-full border-2 transition-all ${
+                        className={`w-5 h-5 rounded-full border-2 transition-[border-color,transform] ${
                           isActive ? 'border-accent scale-110' : 'border-[rgba(255,255,255,0.2)] hover:border-[rgba(255,255,255,0.5)]'
                         }`}
                         style={{ background: resolveBrandColor(bc.value, brandColors) }}
@@ -353,7 +353,7 @@ export function GradientEditor({ fill, onChange, onInteractionStart = () => {}, 
                         type="button"
                         title={color}
                         onClick={() => onChange(color)}
-                        className="h-5 w-5 rounded border border-[rgba(255,255,255,0.12)] hover:border-accent/60 transition-all hover:scale-105"
+                        className="h-5 w-5 rounded border border-[rgba(255,255,255,0.12)] hover:border-accent/60 transition-[border-color,transform] hover:scale-105"
                         style={{ background: color }}
                       />
                       <button
@@ -397,7 +397,7 @@ export function GradientEditor({ fill, onChange, onInteractionStart = () => {}, 
                 type="button"
                 title={p.label}
                 onClick={() => onChange(p.fill)}
-                className="h-5 w-9 rounded border border-[rgba(255,255,255,0.12)] hover:border-accent/60 transition-all hover:scale-105"
+                className="h-5 w-9 rounded border border-[rgba(255,255,255,0.12)] hover:border-accent/60 transition-[border-color,transform] hover:scale-105"
                 style={{ background: fillToCss(p.fill) }}
               />
             ))}
@@ -416,7 +416,7 @@ export function GradientEditor({ fill, onChange, onInteractionStart = () => {}, 
                     type="button"
                     title={t.properties.saved}
                     onClick={() => onChange(g)}
-                    className="h-5 w-9 rounded border border-[rgba(255,255,255,0.12)] hover:border-accent/60 transition-all hover:scale-105"
+                    className="h-5 w-9 rounded border border-[rgba(255,255,255,0.12)] hover:border-accent/60 transition-[border-color,transform] hover:scale-105"
                     style={{ background: fillToCss(g) }}
                   />
                   <button
@@ -444,7 +444,7 @@ export function GradientEditor({ fill, onChange, onInteractionStart = () => {}, 
                 type="button"
                 title={p.label}
                 onClick={() => onChange(p.color)}
-                className="h-5 w-5 rounded border border-[rgba(255,255,255,0.12)] hover:border-accent/60 transition-all hover:scale-105"
+                className="h-5 w-5 rounded border border-[rgba(255,255,255,0.12)] hover:border-accent/60 transition-[border-color,transform] hover:scale-105"
                 style={{ background: p.color }}
               />
             ))}

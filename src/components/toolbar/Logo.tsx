@@ -14,7 +14,7 @@ export function Logo() {
         <rect fill="var(--color-accent-fg)" x="18" y="6" width="6" height="2" rx="1" />
       </svg>
       <span className="text-sm font-bold tracking-tight text-[#F4F4F5]">Moklu</span>
-      <span className="hidden text-[10px] font-medium tracking-wide text-muted min-[1536px]:inline">STUDIO</span>
+      <span className="hidden text-[10px] font-medium tracking-wide text-muted min-[1680px]:inline">STUDIO</span>
     </div>
   )
 }
