@@ -15,9 +15,9 @@ concurrency:
 
 jobs:
   quality:
-    # Never expose trusted self-hosted infrastructure to untrusted fork PRs.
+    # Restrict automated CI execution to first-party branches and same-repo PRs.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: [self-hosted, Linux, X64, coolify]
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
@@ -38,11 +38,11 @@ jobs:
       - run: npm run build
 
   browser-export:
-    # Browser binaries execute only trusted first-party code on the self-hosted pool.
+    # Run multi-browser Playwright suites only on trusted same-repo PRs and main pushes.
     # Avoid duplicate heavyweight browser suites on feature pushes + their PRs.
     if: (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     needs: quality
-    runs-on: [self-hosted, Linux, X64, coolify]
+    runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v7
@@ -53,7 +53,7 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
-      - name: Install real browser engines and OS dependencies
+      - name: Install Playwright browsers and OS dependencies
         run: npx playwright install --with-deps chromium firefox webkit
       - name: Browser export and RGBA goldens
         run: npm run test:browser

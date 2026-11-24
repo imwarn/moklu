@@ -9,7 +9,7 @@ on:
         required: false
         default: false
       require_csp:
-        description: 'Require live Content-Security-Policy after Coolify/Cloudflare headers are enabled'
+        description: 'Require live Content-Security-Policy response header on the deployed site'
         type: boolean
         required: false
         default: false
@@ -17,9 +17,14 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: moklu-deployment-smoke
+  cancel-in-progress: false
+
 jobs:
   deployed-site:
-    runs-on: [self-hosted, Linux, X64, coolify]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v7
@@ -34,7 +39,7 @@ jobs:
         env:
           MOKLU_DEPLOY_URL: https://moklu.app
         run: node scripts/check-deployment.mjs
-      - name: Install browser engines
+      - name: Install Playwright browsers and OS dependencies
         run: npx playwright install --with-deps chromium firefox webkit
       - name: Run deployed-site browser smoke
         env:

@@ -14,7 +14,7 @@ jobs:
   baseline:
     # Explicit manual run on the trusted default branch only.
     if: github.ref == 'refs/heads/main'
-    runs-on: [self-hosted, Linux, X64, coolify]
+    runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v7
@@ -25,12 +25,15 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
-      - name: Record system context
+      - name: Record runtime context
         run: |
-          node --version | tee benchmark-environment.txt
-          uname -a | tee -a benchmark-environment.txt
-          grep -m1 'model name' /proc/cpuinfo | tee -a benchmark-environment.txt || true
-          free -h | tee -a benchmark-environment.txt || true
+          {
+            printf 'runner=github-hosted (ubuntu-latest)\n'
+            printf 'os=%s\n' "${RUNNER_OS:-Linux}"
+            printf 'arch=%s\n' "${RUNNER_ARCH:-X64}"
+            printf 'node=%s\n' "$(node -v)"
+            printf 'npm=%s\n' "$(npm -v)"
+          } | tee benchmark-environment.txt
       - name: Run opt-in, non-gating core microbenchmarks
         run: |
           npm run bench:core 2>&1 | tee benchmark-results.txt
