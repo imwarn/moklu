@@ -28,13 +28,17 @@ export const FOOTER_LINK_GROUPS: {
   mockups: [
     'browser-mockup',
     'iphone-mockup',
+    'ipad-mockup',
+    'watch-mockup',
     'device-mockup',
     'app-store-screenshots',
+    'redact-screenshot',
   ],
   mergeSplit: [
     'merge-images',
     'combine-photos-side-by-side',
     'stitch-images-vertically',
+    'stitch-screenshots',
     'photo-collage-grid',
     'merge-photos-to-pdf',
     'carousel-splitter',
@@ -42,6 +46,9 @@ export const FOOTER_LINK_GROUPS: {
   ],
   optimizeResize: [
     'compress-image',
+    'compress-image-to-200kb',
+    'heic-to-jpg',
+    'remove-exif',
     'convert-image-format',
     'png-to-webp',
     'resize-image',

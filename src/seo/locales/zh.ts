@@ -1,12 +1,13 @@
 /**
- * [INPUT]: depends on LocaleBundle type from ../types.ts; depends on ZH_TOOL_ROUTES from ./zhTools.ts and INFO_PAGE_ROUTES from ./infoRoutes.ts
- * [OUTPUT]: exports ZH_LOCALE complete Simplified Chinese UI labels and 23 intent/info route copy entries
+ * [INPUT]: depends on LocaleBundle type from ../types.ts; depends on ZH_TOOL_ROUTES from ./zhTools.ts, ZH_GROWTH_ROUTES from ./zhGrowthRoutes.ts, and INFO_PAGE_ROUTES from ./infoRoutes.ts
+ * [OUTPUT]: exports ZH_LOCALE complete Simplified Chinese UI labels and 30 intent/info route copy entries
  * [POS]: Simplified Chinese (`/zh/...`) language pack within src/seo/locales, loaded by src/seo/i18n.ts
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
 import type { LocaleBundle } from '../types.ts'
 import { ZH_TOOL_ROUTES } from './zhTools.ts'
+import { ZH_GROWTH_ROUTES } from './zhGrowthRoutes.ts'
 import { INFO_PAGE_ROUTES } from './infoRoutes.ts'
 
 export const ZH_LOCALE: LocaleBundle = {
@@ -304,35 +305,35 @@ export const ZH_LOCALE: LocaleBundle = {
     },
     'device-mockup': {
       navLabel: '多设备样机',
-      title: '多设备样机生成器（Pixel / iPhone / 浏览器）| Moklu',
+      title: '多设备样机生成器（13 款手机 / 平板 / 手表 / 浏览器边框）| Moklu',
       metaDescription:
-        '一站式生成 Google Pixel 9、iPhone 16 Pro 与桌面浏览器样机展示图，统一光影与配色风格，100% 本地浏览器渲染。',
-      badge: 'Pixel 9 · iPhone · 桌面窗口',
+        '一站式切换 13 款内置样机：Chrome、Safari、极简窗口、iPhone 16 Pro、Pixel 9、iPad、安卓平板、Apple Watch、Wear OS 与无边框展示图，100% 本地渲染。',
+      badge: '13 款内置设备与浏览器样机',
       h1: '跨平台多设备样机生成器',
       subtitle:
-        '为 Android、iOS 与响应式 Web 应用提供统一质感的硬件与窗口样机，一键切换 Pixel 9、iPhone 与浏览器边框，全程本地渲染。',
+        '内置 13 款完整设备与窗口样机（Chrome、Safari、极简窗口、iPhone 16 Pro、Pixel 9、iPad、安卓平板、Apple Watch、Wear OS 与无边框），全平台光影统一，全程本地渲染。',
       steps: [
         {
-          title: '上传 Android、iOS 或网页截图',
-          description: '拖入任意端截图，切换不同设备外框时已上传的画面会自动保留无需重传。',
+          title: '上传手机、平板、手表或网页截图',
+          description: '拖入任意端截图，在 13 款设备、窗口与无边框预设间切换时已上传画面自动保留无需重传。',
         },
         {
-          title: '统一画布尺寸与光影氛围',
-          description: '使用同一套柔和极光、午夜深蓝或暖纸色调，确保跨端宣传图风格高度一致。',
+          title: '统一画布尺寸、光影氛围与局部打码',
+          description: '使用同一套极光、午夜深蓝或暖纸色调确保跨端风格一致，必要时可直接在本地打码敏感内容。',
         },
         {
           title: '导出单图或在 Studio 组合多端',
-          description: '立即导出高清 PNG，或进入 Studio 把桌面端与移动端样机拼在同一张头图中。',
+          description: '立即导出高清 PNG，或进入 Studio 把桌面端、平板、手表与移动端样机拼在同一张头图中。',
         },
       ],
       highlights: [
         {
-          title: '原生支持 Android Pixel 9 样机',
-          description: '让 Google Play 与安卓独立应用也能拥有与 iOS 同样高级的硬件展示框。',
+          title: '覆盖 13 款全终端与无边框样机',
+          description: '集成 Chrome、Safari、极简窗口、iPhone 16 Pro、Pixel 9、iPad、安卓平板、Apple Watch、Wear OS 与无边框全系列。',
         },
         {
           title: '全平台视觉语言统一',
-          description: '共享一致的阴影深度、留白比例与渐变配色，告别拼凑感。',
+          description: '共享一致的阴影深度、留白比例与渐变配色，让手机、平板、手表与网页宣传图毫无拼凑感。',
         },
         {
           title: '本地 60fps 实时预览',
@@ -342,7 +343,7 @@ export const ZH_LOCALE: LocaleBundle = {
       faqs: [
         {
           question: '支持哪些设备与窗口模型？',
-          answer: '目前内置 Google Pixel 9、iPhone 16 Pro、Chrome 浏览器、Safari 浏览器和极简窗口五种常用样机。',
+          answer: 'Moklu 内置 13 款常用样机，覆盖 Chrome、Safari、极简窗口、iPhone 16 Pro、Google Pixel 9、iPad、安卓平板、Apple Watch、Wear OS 以及纯净无边框样式。',
         },
         {
           question: '怎么把手机版和网页版截图放在同一张宣传图里？',
@@ -659,6 +660,7 @@ export const ZH_LOCALE: LocaleBundle = {
       ],
     },
     ...ZH_TOOL_ROUTES,
+    ...ZH_GROWTH_ROUTES,
     ...INFO_PAGE_ROUTES.zh,
   },
 }
