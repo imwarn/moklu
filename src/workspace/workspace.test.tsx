@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on node:fs, node:path, vitest, react, react-dom/server, jszip, QuickDesignPreview, QuickWorkspace, batchHelpers, ResizePreviewStage, CompressPreviewModal, getWorkspaceStrings, getWorkspaceThemeTokens, canvasUtils, and workspace types
- * [OUTPUT]: Vitest suite validating all 6 Quick Workspace tools, 4 locales, light/dark Neutral Zinc + Signal Orange tokens, roving tabIndex, label bindings, busy overlay, QuickDesignPreview scaleFactor, MergeQuickTool controls/PDF preset, preset propagation, multi-image Resize filmstrip UX, Compress preview modal, demo generators, and dynamic ZIP packing
+ * [INPUT]: depends on node:fs, node:path, vitest, react, react-dom/server, jszip, QuickDesignPreview, QuickWorkspace, batchHelpers, mergeHandoff, DraftStatusBar, ResizePreviewStage, CompressPreviewModal, getWorkspaceStrings, getWorkspaceThemeTokens, canvasUtils, and workspace types
+ * [OUTPUT]: Vitest suite validating all 6 Quick Workspace tools, 4 locales (with zero em-dash enforcement), light/dark Neutral Zinc + Signal Orange tokens, roving tabIndex, label bindings, busy overlay, QuickDesignPreview scaleFactor, MergeQuickTool controls/overlap-removal/PDF preset, buildMergeStudioHandoff multi-layer & sourceRect cropping, DraftStatusBar, preset propagation, multi-image Resize filmstrip UX, Compress preview modal, demo generators, and dynamic ZIP packing
  * [POS]: automated verification suite for src/workspace
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -14,6 +14,7 @@ import { QuickDesignPreview } from '@/components/panels/QuickDesignPreview'
 import {
   QuickWorkspace,
   buildBatchStudioHandoff,
+  buildMergeStudioHandoff,
   clampBatchIndex,
   createDefaultWorkspaceEngines,
   createDemoImageInput,
@@ -21,17 +22,22 @@ import {
   formatBytes,
   getWorkspaceStrings,
   getWorkspaceThemeTokens,
+  isPartialSourceCrop,
+  placementToStudioLayer,
   removeBatchEntry,
   stepBatchIndex,
   type DemoVariant,
   type WorkspaceBlobOutput,
   type WorkspaceCompressItem,
+  type WorkspaceImageInput,
   type WorkspaceLocale,
+  type WorkspaceMergeOutput,
   type WorkspacePreset,
   type WorkspaceToolId,
 } from './index'
 import { CompressPreviewModal } from './tools/CompressQuickTool'
 import { ResizePreviewStage } from './tools/ResizeQuickTool'
+import { DraftStatusBar } from './uiPrimitives'
 
 const ALL_TOOLS: WorkspaceToolId[] = ['mockup', 'merge', 'split', 'compress', 'resize', 'id-card']
 const ALL_LOCALES: WorkspaceLocale[] = ['en', 'zh', 'ja', 'ko']
@@ -491,5 +497,171 @@ describe('workspace i18n and utilities', () => {
     expect(pdfHtml).toContain('下载 PDF')
     expect(pdfHtml).toContain('压缩质量')
     expect(pdfHtml).toContain('复制图片')
+    expect(pdfHtml).toContain('data-testid="merge-remove-overlap-toggle"')
+    expect(pdfHtml).toContain('智能去重叠（长截图）')
+    expect(pdfHtml).not.toContain('checked=""')
+    // Overlap toggle is only rendered in vertical mode, not in grid or horizontal mode.
+    expect(gridHtml).not.toContain('data-testid="merge-remove-overlap-toggle"')
+  })
+
+  it('keeps all 4 workspace locale dictionaries free of em-dashes and populated for overlap + draft labels', () => {
+    const walkStrings = (value: unknown, out: string[]) => {
+      if (typeof value === 'string') {
+        out.push(value)
+        return
+      }
+      if (value && typeof value === 'object') {
+        for (const v of Object.values(value as Record<string, unknown>)) {
+          walkStrings(v, out)
+        }
+      }
+    }
+
+    for (const locale of ALL_LOCALES) {
+      const dict = getWorkspaceStrings(locale)
+      expect(dict.common.draftSaved.trim().length).toBeGreaterThan(0)
+      expect(dict.common.clearDraft.trim().length).toBeGreaterThan(0)
+      expect(dict.merge.removeOverlapLabel.trim().length).toBeGreaterThan(0)
+      expect(dict.merge.removeOverlapHint.trim().length).toBeGreaterThan(0)
+      expect(dict.merge.overlapTrimmedLabel.trim().length).toBeGreaterThan(0)
+
+      const allStrings: string[] = []
+      walkStrings(dict, allStrings)
+      for (const str of allStrings) {
+        expect(str).not.toContain('—')
+      }
+    }
+  })
+
+  it('renders DraftStatusBar with localized auto-saved status and clear action', () => {
+    const html = renderToStaticMarkup(
+      <DraftStatusBar
+        theme="light"
+        toolId="merge"
+        savedLabel="已自动保存本地草稿"
+        clearLabel="清空草稿"
+        onClear={vi.fn()}
+      />,
+    )
+    expect(html).toContain('data-testid="draft-status-merge"')
+    expect(html).toContain('data-testid="clear-draft-merge"')
+    expect(html).toContain('已自动保存本地草稿')
+    expect(html).toContain('清空草稿')
+  })
+})
+
+describe('buildMergeStudioHandoff', () => {
+  const sampleInputs: WorkspaceImageInput[] = [
+    {
+      id: 'a',
+      name: 'shot-1.png',
+      width: 1000,
+      height: 800,
+      dataUrl: 'data:image/png;base64,SHOT1',
+      sizeBytes: 1000,
+      rotation: 0,
+    },
+    {
+      id: 'b',
+      name: 'shot-2.png',
+      width: 960,
+      height: 640,
+      dataUrl: 'data:image/png;base64,SHOT2',
+      sizeBytes: 1000,
+      rotation: 90,
+    },
+  ]
+
+  it('builds mode:layers payload, slices partial sourceRect crops offscreen, and maps 90deg rotation to Konva center coordinates', async () => {
+    const cropSpy = vi.fn(async (img: WorkspaceImageInput) => `data:image/png;base64,CROPPED_${img.id}`)
+    const merged: WorkspaceMergeOutput = {
+      ...makeMockOutput('moklu-merged.png', 1680, 1000, 50_000),
+      layout: {
+        width: 1680,
+        height: 1000,
+        scaleFactor: 1,
+        overlapRemovedPx: 120,
+        placements: [
+          {
+            index: 0,
+            // Partial crop (e.g. overlap trimmed bottom 120px)
+            sourceRect: { x: 0, y: 0, width: 1000, height: 680 },
+            destRect: { x: 20, y: 20, width: 1000, height: 680 },
+            radius: 12,
+            rotation: 0,
+            borderWidth: 0,
+          },
+          {
+            index: 1,
+            // Full uncropped source rotated 90deg clockwise -> visual destRect is 640x960
+            sourceRect: { x: 0, y: 0, width: 960, height: 640 },
+            destRect: { x: 1040, y: 20, width: 640, height: 960 },
+            radius: 12,
+            rotation: 90,
+            borderWidth: 0,
+          },
+        ],
+      },
+    }
+
+    expect(isPartialSourceCrop(merged.layout!.placements[0].sourceRect, 1000, 800)).toBe(true)
+    expect(isPartialSourceCrop(merged.layout!.placements[1].sourceRect, 960, 640)).toBe(false)
+
+    const payload = await buildMergeStudioHandoff(sampleInputs, merged, '#f1f5f9', {
+      cropSource: cropSpy,
+    })
+
+    expect(payload.mode).toBe('layers')
+    expect(payload.slideWidth).toBe(1680)
+    expect(payload.slideHeight).toBe(1000)
+    expect(payload.background).toBe('#f1f5f9')
+    expect(payload.layers).toHaveLength(2)
+
+    // Only the partially cropped placement triggers offscreen slicing.
+    expect(cropSpy).toHaveBeenCalledTimes(1)
+    expect(payload.layers![0]).toEqual({
+      dataUrl: 'data:image/png;base64,CROPPED_a',
+      name: 'shot-1.png',
+      x: 20,
+      y: 20,
+      width: 1000,
+      height: 680,
+      rotation: 0,
+      cornerRadius: 12,
+    })
+
+    // Rotated 90deg placement swaps unrotated width/height to 960x640 around the same visual center (1360, 500).
+    const rotatedLayer = payload.layers![1]
+    expect(rotatedLayer.dataUrl).toBe('data:image/png;base64,SHOT2')
+    expect(rotatedLayer.width).toBe(960)
+    expect(rotatedLayer.height).toBe(640)
+    expect(rotatedLayer.rotation).toBe(90)
+    expect(rotatedLayer.x + rotatedLayer.width / 2).toBe(1040 + 640 / 2)
+    expect(rotatedLayer.y + rotatedLayer.height / 2).toBe(20 + 960 / 2)
+  })
+
+  it('falls back to mode:canvas when merge result lacks layout placements', async () => {
+    const merged: WorkspaceMergeOutput = makeMockOutput('moklu-merged.png', 1200, 800, 40_000)
+    const payload = await buildMergeStudioHandoff(sampleInputs, merged, '#ffffff')
+    expect(payload.mode).toBe('canvas')
+    expect(payload.layers).toBeUndefined()
+    expect(payload.images).toHaveLength(1)
+    expect(payload.images[0].dataUrl).toBe(merged.dataUrl)
+  })
+
+  it('computes placementToStudioLayer accurately for 0, 90, 180, and 270 degree rotations', () => {
+    const base = {
+      index: 0,
+      sourceRect: { x: 0, y: 0, width: 200, height: 100 },
+      destRect: { x: 10, y: 20, width: 100, height: 200 },
+      radius: 8,
+      borderWidth: 0,
+    }
+    const r270 = placementToStudioLayer({ name: 'rot.png' }, { ...base, rotation: 270 }, 'data:x')
+    expect(r270.width).toBe(200)
+    expect(r270.height).toBe(100)
+    expect(r270.x + r270.width / 2).toBe(10 + 100 / 2)
+    expect(r270.y + r270.height / 2).toBe(20 + 200 / 2)
+    expect(r270.rotation).toBe(270)
   })
 })

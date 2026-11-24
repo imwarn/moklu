@@ -1,11 +1,12 @@
 /**
- * [INPUT]: depends on react, canvasUtils from ../canvasUtils, strings from ../i18n, themeTokens from ../themeTokens, UI primitives from ../uiPrimitives, useDebouncedValue from ../useDebouncedValue, and WorkspaceToolPanelProps from ../types
- * [OUTPUT]: exports SplitQuickTool component for carousel panorama splitting and grid matrix slicing with interactive cut-line overlays, debounced slicing, and error-handled ZIP export
+ * [INPUT]: depends on react, canvasUtils from ../canvasUtils, draftStorage from ../draftStorage, useToolDraft from ../useToolDraft, strings from ../i18n, themeTokens from ../themeTokens, UI primitives from ../uiPrimitives, useDebouncedValue from ../useDebouncedValue, and WorkspaceToolPanelProps from ../types
+ * [OUTPUT]: exports SplitQuickTool component for carousel panorama splitting and grid matrix slicing with interactive cut-line overlays, debounced slicing, local IndexedDB draft auto-save, and error-handled ZIP export
  * [POS]: carousel and grid splitter panel inside src/workspace/tools; delegates slice rendering and ZIP export to injected engines.split
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createDemoImageInput, readFileAsImageInput, triggerBlobDownload } from '../canvasUtils'
+import { deserializeDraftImages, type WorkspaceToolDraft } from '../draftStorage'
 import { getWorkspaceStrings } from '../i18n'
 import { getWorkspaceThemeTokens } from '../themeTokens'
 import type {
@@ -15,6 +16,7 @@ import type {
   WorkspaceToolPanelProps,
 } from '../types'
 import {
+  DraftStatusBar,
   DropZone,
   PreviewBusyOverlay,
   SegmentedControl,
@@ -22,6 +24,15 @@ import {
   StudioHandoffButton,
 } from '../uiPrimitives'
 import { useDebouncedValue } from '../useDebouncedValue'
+import { useToolDraft } from '../useToolDraft'
+
+interface SplitDraftSettings {
+  mode: WorkspaceSplitOptions['mode']
+  carouselCount: number
+  carouselAspect: WorkspaceSplitOptions['carouselAspect']
+  rows: number
+  cols: number
+}
 
 export function SplitQuickTool({
   preset,
@@ -43,6 +54,49 @@ export function SplitQuickTool({
   const [processing, setProcessing] = useState(false)
   const [zipping, setZipping] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const draftImages = useMemo(() => (source ? [source] : []), [source])
+  const draftSettings = useMemo<SplitDraftSettings>(
+    () => ({ mode, carouselCount, carouselAspect, rows, cols }),
+    [mode, carouselCount, carouselAspect, rows, cols],
+  )
+
+  const handleRestoreDraft = useCallback((draft: WorkspaceToolDraft<SplitDraftSettings>) => {
+    const restored = deserializeDraftImages(draft.images)
+    if (restored[0]) setSource(restored[0])
+    const cfg = draft.settings
+    if (cfg.mode === 'carousel' || cfg.mode === 'grid') setMode(cfg.mode)
+    if (typeof cfg.carouselCount === 'number' && Number.isFinite(cfg.carouselCount)) {
+      setCarouselCount(Math.max(2, Math.min(10, Math.round(cfg.carouselCount))))
+    }
+    if (
+      cfg.carouselAspect === '4:5' ||
+      cfg.carouselAspect === '3:4' ||
+      cfg.carouselAspect === '1:1' ||
+      cfg.carouselAspect === 'auto'
+    ) {
+      setCarouselAspect(cfg.carouselAspect)
+    }
+    if (typeof cfg.rows === 'number' && Number.isFinite(cfg.rows)) {
+      setRows(Math.max(1, Math.min(6, Math.round(cfg.rows))))
+    }
+    if (typeof cfg.cols === 'number' && Number.isFinite(cfg.cols)) {
+      setCols(Math.max(1, Math.min(6, Math.round(cfg.cols))))
+    }
+  }, [])
+
+  const { hasDraft, clearDraft } = useToolDraft<SplitDraftSettings>({
+    toolId: 'split',
+    images: draftImages,
+    settings: draftSettings,
+    onRestore: handleRestoreDraft,
+  })
+
+  const handleClearDraft = () => {
+    setSource(null)
+    setResult(null)
+    void clearDraft()
+  }
 
   const debouncedCarouselCount = useDebouncedValue(carouselCount)
   const debouncedRows = useDebouncedValue(rows)
@@ -241,6 +295,16 @@ export function SplitQuickTool({
               onFiles={handleFiles}
             />
           </div>
+
+          {hasDraft && (
+            <DraftStatusBar
+              theme={theme}
+              toolId="split"
+              savedLabel={s.common.draftSaved}
+              clearLabel={s.common.clearDraft}
+              onClear={handleClearDraft}
+            />
+          )}
         </div>
       </div>
 

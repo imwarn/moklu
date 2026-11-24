@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on QuickWorkspace, types, i18n, themeTokens, canvasUtils, demoAssets, and defaultEngines within src/workspace
- * [OUTPUT]: barrel re-exports for QuickWorkspace, DIP contracts, i18n dictionary, demo generators, and default engines
+ * [INPUT]: depends on QuickWorkspace, batchHelpers, mergeHandoff, draftStorage, useToolDraft, types, i18n, themeTokens, canvasUtils, demoAssets, and defaultEngines within src/workspace
+ * [OUTPUT]: barrel re-exports for QuickWorkspace, DIP contracts, i18n dictionary, multi-layer merge handoff, IndexedDB draft storage, demo generators, and default engines
  * [POS]: public API entry point of src/workspace consumed by ToolLandingPage and engineAdapter
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -11,6 +11,33 @@ export {
   removeBatchEntry,
   stepBatchIndex,
 } from './batchHelpers'
+export {
+  buildMergeStudioHandoff,
+  cropSourceRectToDataUrl,
+  isPartialSourceCrop,
+  placementToStudioLayer,
+  type BuildMergeHandoffOptions,
+} from './mergeHandoff'
+export {
+  DRAFT_DB_NAME,
+  DRAFT_SCHEMA_VERSION,
+  DRAFT_STORE_NAME,
+  clearAllToolDrafts,
+  deleteToolDraft,
+  deserializeDraftImages,
+  isDraftStorageSupported,
+  loadToolDraft,
+  saveToolDraft,
+  serializeDraftImages,
+  type SerializedDraftImage,
+  type WorkspaceToolDraft,
+} from './draftStorage'
+export {
+  WORKSPACE_DRAFT_DEBOUNCE_MS,
+  useToolDraft,
+  type UseToolDraftOptions,
+  type UseToolDraftResult,
+} from './useToolDraft'
 export { getWorkspaceStrings, type WorkspaceStrings } from './i18n'
 export { getWorkspaceThemeTokens, type WorkspaceThemeTokens } from './themeTokens'
 export { createDefaultWorkspaceEngines } from './defaultEngines'
@@ -31,6 +58,7 @@ export {
 export type {
   QuickWorkspaceProps,
   StudioHandoffImage,
+  StudioHandoffLayer,
   StudioHandoffPayload,
   WorkspaceAspectPreset,
   WorkspaceBlobOutput,
@@ -44,10 +72,14 @@ export type {
   WorkspaceLocale,
   WorkspaceMergeAlign,
   WorkspaceMergeFormat,
+  WorkspaceMergeLayout,
   WorkspaceMergeOptions,
+  WorkspaceMergeOutput,
+  WorkspaceMergePlacement,
   WorkspaceMergeRotation,
   WorkspacePreset,
   WorkspaceQuickTheme,
+  WorkspaceRect,
   WorkspaceScreenshotFit,
   WorkspaceSplitOptions,
   WorkspaceSplitResult,

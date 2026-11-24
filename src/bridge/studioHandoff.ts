@@ -1,7 +1,7 @@
 /**
- * [INPUT]: depends on nanoid from nanoid; depends on BackgroundLayer, BrowserChromeOptions, ImageLayer, Layer, PhoneLayer, PhoneModel, and SlideGroup from @/types; depends on getPhoneSpec from @/assets/mockups/specs; depends on useEditorStore from @/store; depends on useAssetStore from @/store/assets; depends on ensureProjectsBootstrapped from @/store/projects; depends on createBackgroundLayer, newId, newSlideGroup, and seedLocaleContent from @/store/helpers; depends on BASE_CANVAS_FORMAT from @/utils/canvasFormats; depends on QUICK_MOCKUPS, QUICK_SIZES, QuickMockup, QuickScreenshotFit, QuickSize, QuickTheme, and makeQuickLayers from @/utils/quickDesign
- * [OUTPUT]: exports StudioHandoffImage, StudioHandoffMode, StudioHandoffPayload, stageImagesIntoStudio(), and stageImagesIntoStudioAfterBootstrap()
- * [POS]: Quick-Workspace-to-Studio handoff bridge; registers browser-generated images in useAssetStore and stages an editable SlideGroup in useEditorStore preserving user mockup style, fit, scale, and browser chrome
+ * [INPUT]: depends on nanoid from nanoid; depends on BackgroundLayer, BrowserChromeOptions, FillValue, GradientStop, ImageLayer, Layer, PhoneLayer, PhoneModel, and SlideGroup from @/types; depends on getPhoneSpec from @/assets/mockups/specs; depends on useEditorStore from @/store; depends on useAssetStore from @/store/assets; depends on ensureProjectsBootstrapped from @/store/projects; depends on createBackgroundLayer, newId, newSlideGroup, and seedLocaleContent from @/store/helpers; depends on BASE_CANVAS_FORMAT from @/utils/canvasFormats; depends on QUICK_MOCKUPS, QUICK_SIZES, QuickMockup, QuickScreenshotFit, QuickSize, QuickTheme, and makeQuickLayers from @/utils/quickDesign
+ * [OUTPUT]: exports StudioHandoffImage, StudioHandoffLayer, StudioHandoffMode, StudioHandoffPayload, stageImagesIntoStudio(), and stageImagesIntoStudioAfterBootstrap()
+ * [POS]: Quick-Workspace-to-Studio handoff bridge; registers browser-generated images in useAssetStore and stages an editable SlideGroup in useEditorStore for mockup, canvas, carousel, and multi-layer collage handoffs
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
@@ -9,6 +9,8 @@ import { nanoid } from 'nanoid'
 import type {
   BackgroundLayer,
   BrowserChromeOptions,
+  FillValue,
+  GradientStop,
   ImageLayer,
   Layer,
   PhoneLayer,
@@ -43,7 +45,14 @@ export interface StudioHandoffImage {
   height: number
 }
 
-export type StudioHandoffMode = 'mockup' | 'canvas' | 'carousel'
+export interface StudioHandoffLayer extends StudioHandoffImage {
+  x: number
+  y: number
+  rotation?: number
+  cornerRadius?: number
+}
+
+export type StudioHandoffMode = 'mockup' | 'canvas' | 'carousel' | 'layers'
 
 export interface StudioHandoffPayload {
   images: Array<StudioHandoffImage>
@@ -55,10 +64,26 @@ export interface StudioHandoffPayload {
   screenshotFit?: QuickScreenshotFit
   scaleFactor?: number
   browserChrome?: BrowserChromeOptions
+  layers?: Array<StudioHandoffLayer>
+  background?: string
 }
 
 interface RegisteredImage extends StudioHandoffImage {
   key: string
+}
+
+interface RegisteredLayer extends StudioHandoffLayer {
+  key: string
+}
+
+interface StagedGroupSpec {
+  name: string
+  numSlides: number
+  slideWidth: number
+  slideHeight: number
+  slideNames: string[]
+  layers: Layer[]
+  primaryLayerId: string
 }
 
 const MIN_SLIDE_DIM = 240
@@ -310,40 +335,144 @@ function buildImageLayersGroupSpec(
   }
 }
 
-/**
- * Registers browser-generated images in `useAssetStore` and stages an editable
- * `SlideGroup` in `useEditorStore` with the primary layer selected so opening
- * `/studio` immediately exposes the user's work for multi-layer editing.
- */
-export function stageImagesIntoStudio(payload: StudioHandoffPayload): void {
-  const validImages = payload.images.filter(
-    (img) => typeof img?.dataUrl === 'string' && img.dataUrl.trim().length > 0,
-  )
-  if (validImages.length === 0) return
+function sanitizeLayerDimension(value: number, fallback: number): number {
+  if (!Number.isFinite(value) || value <= 0) return fallback
+  return Math.max(1, value)
+}
 
-  const assetStore = useAssetStore.getState()
-  const registered: RegisteredImage[] = validImages.map((img, index) => {
-    const slug = sanitizeSlug(img.name, index)
-    const key = `handoff-${nanoid(10)}-${slug}`
-    assetStore.addAsset(key, img.dataUrl)
+function roundCoord(value: number): number {
+  return Math.round(value * 100) / 100
+}
+
+function parseCssBackgroundToFill(background: string): FillValue {
+  const trimmed = background.trim()
+  if (!trimmed.toLowerCase().startsWith('linear-gradient(') || !trimmed.endsWith(')')) {
+    return trimmed
+  }
+
+  const inner = trimmed.slice('linear-gradient('.length, -1)
+  const parts = inner
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean)
+
+  let angle = 135
+  let colorTokens = parts
+  if (parts.length > 0 && /deg$/i.test(parts[0])) {
+    const parsedAngle = Number.parseFloat(parts[0])
+    if (Number.isFinite(parsedAngle)) {
+      angle = parsedAngle
+      colorTokens = parts.slice(1)
+    }
+  }
+
+  if (colorTokens.length < 2) {
+    return colorTokens[0] ?? '#ffffff'
+  }
+
+  const stops: GradientStop[] = colorTokens.map((token, idx) => {
+    const percentMatch = /^(.*?)\s+(\d+(?:\.\d+)?)%$/.exec(token)
+    if (percentMatch) {
+      return {
+        color: percentMatch[1].trim(),
+        offset: Number.parseFloat(percentMatch[2]) / 100,
+      }
+    }
     return {
-      key,
-      dataUrl: img.dataUrl,
-      name: img.name || `Image ${index + 1}`,
-      width: sanitizeImageDimension(img.width, payload.slideWidth ?? 1200),
-      height: sanitizeImageDimension(img.height, payload.slideHeight ?? 900),
+      color: token,
+      offset: idx / Math.max(1, colorTokens.length - 1),
     }
   })
 
+  return { type: 'linear', angle, stops }
+}
+
+function buildBackgroundLayerFromCss(background?: string): BackgroundLayer {
+  const trimmed = background?.trim()
+  if (!trimmed) return createBackgroundLayer()
+  if (trimmed.toLowerCase() === 'transparent') {
+    return createBackgroundLayer({
+      fill: '#ffffff',
+      opacity: 0,
+      accents: [],
+    })
+  }
+  return createBackgroundLayer({
+    fill: parseCssBackgroundToFill(trimmed),
+    accents: [],
+  })
+}
+
+function buildExplicitLayersGroupSpec(
+  registered: RegisteredLayer[],
+  defaultLocale: string,
+  payload: StudioHandoffPayload,
+): StagedGroupSpec {
+  const inferredWidth = Math.max(
+    1,
+    ...registered.map((item) => item.x + item.width),
+  )
+  const inferredHeight = Math.max(
+    1,
+    ...registered.map((item) => item.y + item.height),
+  )
+  const rawWidth =
+    typeof payload.slideWidth === 'number' && Number.isFinite(payload.slideWidth) && payload.slideWidth > 0
+      ? payload.slideWidth
+      : inferredWidth
+  const rawHeight =
+    typeof payload.slideHeight === 'number' && Number.isFinite(payload.slideHeight) && payload.slideHeight > 0
+      ? payload.slideHeight
+      : inferredHeight
+
+  const maxDim = Math.max(rawWidth, rawHeight)
+  const scale = maxDim > MAX_SLIDE_DIM ? MAX_SLIDE_DIM / maxDim : 1
+  const scaledW = rawWidth * scale
+  const scaledH = rawHeight * scale
+  const slideWidth = clampSlideDimension(scaledW)
+  const slideHeight = clampSlideDimension(scaledH)
+  const offsetX = (slideWidth - scaledW) / 2
+  const offsetY = (slideHeight - scaledH) / 2
+
+  const bgLayer = buildBackgroundLayerFromCss(payload.background)
+  const imageLayers: Layer[] = registered.map((item, index) => {
+    const rotation = typeof item.rotation === 'number' && Number.isFinite(item.rotation)
+      ? item.rotation
+      : 0
+    const rawRadius = typeof item.cornerRadius === 'number' && Number.isFinite(item.cornerRadius)
+      ? Math.max(0, item.cornerRadius)
+      : 0
+    const imageLayer: ImageLayer = {
+      id: newId(),
+      name: item.name || `Image ${index + 1}`,
+      type: 'image',
+      src: item.key,
+      x: roundCoord(item.x * scale + offsetX),
+      y: roundCoord(item.y * scale + offsetY),
+      width: Math.max(1, roundCoord(item.width * scale)),
+      height: Math.max(1, roundCoord(item.height * scale)),
+      rotation,
+      opacity: 1,
+      visible: true,
+      locked: false,
+      cornerRadius: roundCoord(rawRadius * scale),
+    }
+    return seedLocaleContent(imageLayer, defaultLocale)
+  })
+
+  return {
+    name: 'Moklu Collage',
+    numSlides: 1,
+    slideWidth,
+    slideHeight,
+    slideNames: [sanitizeSlug(registered[0].name, 0)],
+    layers: [bgLayer, ...imageLayers],
+    primaryLayerId: imageLayers[0].id,
+  }
+}
+
+function commitStagedGroupSpec(staged: StagedGroupSpec): void {
   const editor = useEditorStore.getState()
-  const defaultLocale = editor.project.settings.defaultLocale || 'en'
-  const resolvedMode: StudioHandoffMode =
-    payload.mode ?? (payload.mockupModel ? 'mockup' : registered.length > 1 ? 'carousel' : 'canvas')
-
-  const staged = resolvedMode === 'mockup'
-    ? buildMockupGroupSpec(registered, defaultLocale, payload)
-    : buildImageLayersGroupSpec(registered, defaultLocale, resolvedMode, payload)
-
   const activeGroup = editor.project.slideGroups.find(
     (group) => group.id === editor.activeSlideGroupId,
   )
@@ -382,6 +511,77 @@ export function stageImagesIntoStudio(payload: StudioHandoffPayload): void {
   useEditorStore.getState().setActiveSlideGroup(targetGroupId)
   useEditorStore.getState().setActiveCanvasFormat(BASE_CANVAS_FORMAT)
   useEditorStore.getState().select(staged.primaryLayerId)
+}
+
+/**
+ * Registers browser-generated images in `useAssetStore` and stages an editable
+ * `SlideGroup` in `useEditorStore` with the primary layer selected so opening
+ * `/studio` immediately exposes the user's work for multi-layer editing.
+ */
+export function stageImagesIntoStudio(payload: StudioHandoffPayload): void {
+  const assetStore = useAssetStore.getState()
+  const editor = useEditorStore.getState()
+  const defaultLocale = editor.project.settings.defaultLocale || 'en'
+
+  if (payload.mode === 'layers') {
+    const validLayers = (payload.layers ?? []).filter(
+      (layer) => typeof layer?.dataUrl === 'string' && layer.dataUrl.trim().length > 0,
+    )
+    if (validLayers.length > 0) {
+      const registeredLayers: RegisteredLayer[] = validLayers.map((layer, index) => {
+        const slug = sanitizeSlug(layer.name, index)
+        const key = `handoff-${nanoid(10)}-${slug}`
+        assetStore.addAsset(key, layer.dataUrl)
+        return {
+          key,
+          dataUrl: layer.dataUrl,
+          name: layer.name || `Image ${index + 1}`,
+          x: Number.isFinite(layer.x) ? layer.x : 0,
+          y: Number.isFinite(layer.y) ? layer.y : 0,
+          width: sanitizeLayerDimension(layer.width, payload.slideWidth ?? 1200),
+          height: sanitizeLayerDimension(layer.height, payload.slideHeight ?? 900),
+          rotation: layer.rotation,
+          cornerRadius: layer.cornerRadius,
+        }
+      })
+      const staged = buildExplicitLayersGroupSpec(registeredLayers, defaultLocale, payload)
+      commitStagedGroupSpec(staged)
+      return
+    }
+  }
+
+  const validImages = payload.images.filter(
+    (img) => typeof img?.dataUrl === 'string' && img.dataUrl.trim().length > 0,
+  )
+  if (validImages.length === 0) return
+
+  const registered: RegisteredImage[] = validImages.map((img, index) => {
+    const slug = sanitizeSlug(img.name, index)
+    const key = `handoff-${nanoid(10)}-${slug}`
+    assetStore.addAsset(key, img.dataUrl)
+    return {
+      key,
+      dataUrl: img.dataUrl,
+      name: img.name || `Image ${index + 1}`,
+      width: sanitizeImageDimension(img.width, payload.slideWidth ?? 1200),
+      height: sanitizeImageDimension(img.height, payload.slideHeight ?? 900),
+    }
+  })
+
+  const resolvedMode: Exclude<StudioHandoffMode, 'layers'> =
+    payload.mode && payload.mode !== 'layers'
+      ? payload.mode
+      : payload.mockupModel
+        ? 'mockup'
+        : registered.length > 1
+          ? 'carousel'
+          : 'canvas'
+
+  const staged = resolvedMode === 'mockup'
+    ? buildMockupGroupSpec(registered, defaultLocale, payload)
+    : buildImageLayersGroupSpec(registered, defaultLocale, resolvedMode, payload)
+
+  commitStagedGroupSpec(staged)
 }
 
 /**

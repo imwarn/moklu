@@ -24,8 +24,12 @@ import type {
   WorkspaceIdCardOptions,
   WorkspaceImageInput,
   WorkspaceMergeAlign,
+  WorkspaceMergeLayout,
   WorkspaceMergeOptions,
+  WorkspaceMergeOutput,
+  WorkspaceMergePlacement,
   WorkspaceMergeRotation,
+  WorkspaceRect,
   WorkspaceSplitOptions,
   WorkspaceSplitResult,
   WorkspaceSplitSlice,
@@ -33,6 +37,7 @@ import type {
 } from './types'
 
 interface MergePlacement {
+  index: number
   img: HTMLImageElement
   x: number
   y: number
@@ -40,6 +45,71 @@ interface MergePlacement {
   h: number
   fit: 'cover' | 'contain'
   rotation: WorkspaceMergeRotation
+  sourceRect: WorkspaceRect
+  destRect: WorkspaceRect
+}
+
+function mapRotatedSourceRect(
+  rotatedRect: WorkspaceRect,
+  origWidth: number,
+  origHeight: number,
+  rotation: WorkspaceMergeRotation,
+): WorkspaceRect {
+  const { x: rx, y: ry, width: rw, height: rh } = rotatedRect
+  switch (rotation) {
+    case 90:
+      return { x: ry, y: origHeight - (rx + rw), width: rh, height: rw }
+    case 180:
+      return { x: origWidth - (rx + rw), y: origHeight - (ry + rh), width: rw, height: rh }
+    case 270:
+      return { x: origWidth - (ry + rh), y: rx, width: rh, height: rw }
+    case 0:
+    default:
+      return rotatedRect
+  }
+}
+
+function computeCellFitRects(
+  effW: number,
+  effH: number,
+  box: WorkspaceRect,
+  fit: 'cover' | 'contain',
+): { rotatedSourceRect: WorkspaceRect; destRect: WorkspaceRect } {
+  const srcRatio = effW / Math.max(1, effH)
+  const dstRatio = box.width / Math.max(1, box.height)
+  if (fit === 'cover') {
+    let sx = 0
+    let sy = 0
+    let cropW = effW
+    let cropH = effH
+    if (srcRatio > dstRatio) {
+      cropW = effH * dstRatio
+      sx = (effW - cropW) / 2
+    } else {
+      cropH = effW / dstRatio
+      sy = (effH - cropH) / 2
+    }
+    return {
+      rotatedSourceRect: { x: sx, y: sy, width: cropW, height: cropH },
+      destRect: box,
+    }
+  }
+  let rw = box.width
+  let rh = box.height
+  if (srcRatio > dstRatio) {
+    rh = box.width / srcRatio
+  } else {
+    rw = box.height * srcRatio
+  }
+  return {
+    rotatedSourceRect: { x: 0, y: 0, width: effW, height: effH },
+    destRect: {
+      x: box.x + (box.width - rw) / 2,
+      y: box.y + (box.height - rh) / 2,
+      width: rw,
+      height: rh,
+    },
+  }
 }
 
 function resolveCrossOffset(containerSpan: number, itemSpan: number, align: WorkspaceMergeAlign): number {
@@ -79,12 +149,12 @@ function computeMergeLayout(
   const pad = Math.max(0, options.padding)
   const gap = Math.max(0, options.gap)
   const align: WorkspaceMergeAlign = options.align ?? 'center'
-  const dims = loaded.map(({ img, rotation }) => {
+  const dims = loaded.map(({ img, rotation }, index) => {
     const nw = img.naturalWidth || img.width
     const nh = img.naturalHeight || img.height
     return rotation === 90 || rotation === 270
-      ? { img, rotation, w: nh, h: nw }
-      : { img, rotation, w: nw, h: nh }
+      ? { index, img, rotation, origW: nw, origH: nh, w: nh, h: nw }
+      : { index, img, rotation, origW: nw, origH: nh, w: nw, h: nh }
   })
 
   if (options.direction === 'horizontal') {
@@ -96,7 +166,19 @@ function computeMergeLayout(
       const h = options.normalize === 'original' ? d.h : targetH
       const w = options.normalize === 'original' ? d.w : Math.max(1, Math.round((d.w / d.h) * targetH))
       const y = pad + resolveCrossOffset(targetH, h, align)
-      const item: MergePlacement = { img: d.img, x: cursorX, y, w, h, fit: 'cover', rotation: d.rotation }
+      const destRect: WorkspaceRect = { x: cursorX, y, width: w, height: h }
+      const item: MergePlacement = {
+        index: d.index,
+        img: d.img,
+        x: cursorX,
+        y,
+        w,
+        h,
+        fit: 'cover',
+        rotation: d.rotation,
+        sourceRect: { x: 0, y: 0, width: d.origW, height: d.origH },
+        destRect,
+      }
       cursorX += w + gap
       return item
     })
@@ -112,7 +194,19 @@ function computeMergeLayout(
       const w = options.normalize === 'original' ? d.w : targetW
       const h = options.normalize === 'original' ? d.h : Math.max(1, Math.round((d.h / d.w) * targetW))
       const x = pad + resolveCrossOffset(targetW, w, align)
-      const item: MergePlacement = { img: d.img, x, y: cursorY, w, h, fit: 'cover', rotation: d.rotation }
+      const destRect: WorkspaceRect = { x, y: cursorY, width: w, height: h }
+      const item: MergePlacement = {
+        index: d.index,
+        img: d.img,
+        x,
+        y: cursorY,
+        w,
+        h,
+        fit: 'cover',
+        rotation: d.rotation,
+        sourceRect: { x: 0, y: 0, width: d.origW, height: d.origH },
+        destRect,
+      }
       cursorY += h + gap
       return item
     })
@@ -130,15 +224,28 @@ function computeMergeLayout(
         ? 3 / 4
         : dims.reduce((sum, d) => sum + d.w / d.h, 0) / dims.length
   const cellH = Math.max(1, Math.round(cellW / cellRatio))
-  const placements: MergePlacement[] = dims.map((d, idx) => ({
-    img: d.img,
-    x: pad + (idx % cols) * (cellW + gap),
-    y: pad + Math.floor(idx / cols) * (cellH + gap),
-    w: cellW,
-    h: cellH,
-    fit: options.fit,
-    rotation: d.rotation,
-  }))
+  const placements: MergePlacement[] = dims.map((d, idx) => {
+    const cellBox: WorkspaceRect = {
+      x: pad + (idx % cols) * (cellW + gap),
+      y: pad + Math.floor(idx / cols) * (cellH + gap),
+      width: cellW,
+      height: cellH,
+    }
+    const { rotatedSourceRect, destRect } = computeCellFitRects(d.w, d.h, cellBox, options.fit)
+    const sourceRect = mapRotatedSourceRect(rotatedSourceRect, d.origW, d.origH, d.rotation)
+    return {
+      index: d.index,
+      img: d.img,
+      x: cellBox.x,
+      y: cellBox.y,
+      w: cellW,
+      h: cellH,
+      fit: options.fit,
+      rotation: d.rotation,
+      sourceRect,
+      destRect,
+    }
+  })
   return {
     placements,
     totalW: pad * 2 + cols * cellW + (cols - 1) * gap,
@@ -149,7 +256,7 @@ function computeMergeLayout(
 async function mergeFallback(
   images: WorkspaceImageInput[],
   options: WorkspaceMergeOptions,
-): Promise<WorkspaceBlobOutput> {
+): Promise<WorkspaceMergeOutput> {
   if (images.length === 0) throw new Error('At least one image is required to merge')
   const loaded = await Promise.all(
     images.map(async (item) => ({
@@ -209,6 +316,27 @@ async function mergeFallback(
     }
   }
 
+  const scaledPlacements: WorkspaceMergePlacement[] = placements.map((item) => ({
+    index: item.index,
+    sourceRect: item.sourceRect,
+    destRect: {
+      x: item.destRect.x * scale,
+      y: item.destRect.y * scale,
+      width: item.destRect.width * scale,
+      height: item.destRect.height * scale,
+    },
+    radius: radius * scale,
+    rotation: item.rotation,
+    borderWidth: borderWidth * scale,
+  }))
+  const layout: WorkspaceMergeLayout = {
+    width: canvas.width,
+    height: canvas.height,
+    scaleFactor: scale,
+    placements: scaledPlacements,
+    overlapRemovedPx: 0,
+  }
+
   const ext = extensionForMime(options.format)
   if (options.format === 'application/pdf') {
     const jpegOut = await finalizeCanvasOutput(
@@ -228,11 +356,12 @@ async function mergeFallback(
       sizeBytes: pdfBlob.size,
       mimeType: 'application/pdf',
       scaleFactor: scale,
+      layout,
     }
   }
 
   const out = await finalizeCanvasOutput(canvas, `moklu-merge-${options.direction}.${ext}`, options.format, options.quality)
-  return { ...out, scaleFactor: scale }
+  return { ...out, scaleFactor: scale, layout }
 }
 
 async function splitFallback(

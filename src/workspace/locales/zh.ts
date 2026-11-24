@@ -60,6 +60,8 @@ export const ZH: WorkspaceStrings = {
     decodeError: '无法解析部分图片文件，请检查文件是否完整。',
     exportError: '导出失败，请重试。',
     zipError: '打包 ZIP 失败，请重试。',
+    draftSaved: '已自动保存本地草稿',
+    clearDraft: '清空草稿',
   },
   swatches: {
     white: '纯白',
@@ -126,6 +128,9 @@ export const ZH: WorkspaceStrings = {
     rotate90: '顺时针旋转 90°',
     dragToReorder: '支持拖拽排序',
     scaledNotice: '已自动缩放至安全分辨率',
+    removeOverlapLabel: '智能去重叠（长截图）',
+    removeOverlapHint: '本地像素匹配，自动裁除滚动重叠内容与重复顶/底栏。',
+    overlapTrimmedLabel: '已去重叠',
     addMore: '继续添加',
     loadDemoSet: '加载 3 张示例图',
     itemsCount: '张图片',

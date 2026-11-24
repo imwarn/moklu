@@ -29,7 +29,9 @@ import type {
   WorkspaceIdCardOptions,
   WorkspaceImageFormat,
   WorkspaceImageInput,
+  WorkspaceMergeLayout,
   WorkspaceMergeOptions,
+  WorkspaceMergeOutput,
   WorkspaceSplitOptions,
   WorkspaceSplitResult,
   WorkspaceTransformOptions,
@@ -157,7 +159,7 @@ async function toBlobOutput(
 
 export function createToolsWorkspaceEngines(): WorkspaceEngines {
   return {
-    async merge(images: WorkspaceImageInput[], options: WorkspaceMergeOptions): Promise<WorkspaceBlobOutput> {
+    async merge(images: WorkspaceImageInput[], options: WorkspaceMergeOptions): Promise<WorkspaceMergeOutput> {
       return withLoadedImages(images, async (loaded) => {
         const ext = options.format === 'application/pdf' ? 'pdf' : extensionForFormat(options.format)
         const result = await mergeImages(loaded, {
@@ -178,10 +180,24 @@ export function createToolsWorkspaceEngines(): WorkspaceEngines {
           quality: options.quality,
           filename: `moklu-merged.${ext}`,
         })
-        return toBlobOutput(result.blob, result.width, result.height, result.filename, result.format, {
+        const base = await toBlobOutput(result.blob, result.width, result.height, result.filename, result.format, {
           previewBlob: result.previewBlob,
           scaleFactor: result.layout.scaleFactor,
         })
+        const layout: WorkspaceMergeLayout = {
+          width: result.layout.width,
+          height: result.layout.height,
+          scaleFactor: result.layout.scaleFactor,
+          placements: result.layout.placements.map((p) => ({
+            index: p.index,
+            sourceRect: { ...p.sourceRect },
+            destRect: { ...p.destRect },
+            radius: p.radius,
+            rotation: p.rotation,
+            borderWidth: p.borderWidth,
+          })),
+        }
+        return { ...base, layout }
       })
     },
 
