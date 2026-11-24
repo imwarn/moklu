@@ -6,10 +6,14 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: moklu-release-candidate
+  cancel-in-progress: false
+
 jobs:
   release-evidence:
     if: github.ref == 'refs/heads/main'
-    runs-on: [self-hosted, Linux, X64, coolify]
+    runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v7
@@ -26,7 +30,7 @@ jobs:
       - run: npm run build
       - name: Verify distributable
         run: node scripts/verify-release.mjs
-      - name: Install supported browser engines
+      - name: Install Playwright browsers and OS dependencies
         run: npx playwright install --with-deps chromium firefox webkit
       - name: Run browser E2E on production build
         env:
@@ -36,8 +40,8 @@ jobs:
         shell: bash
         run: |
           mkdir -p release-evidence
-          printf 'sha=%s\nrunner=%s\nos=%s\nnode=%s\nnpm=%s\n' \
-            "$GITHUB_SHA" "$RUNNER_NAME" "$(uname -a)" "$(node -v)" "$(npm -v)" > release-evidence/environment.txt
+          printf 'sha=%s\nrunner=github-hosted (ubuntu-latest)\nos=%s\narch=%s\nnode=%s\nnpm=%s\n' \
+            "$GITHUB_SHA" "${RUNNER_OS:-Linux}" "${RUNNER_ARCH:-X64}" "$(node -v)" "$(npm -v)" > release-evidence/environment.txt
           npm audit --omit=dev --json > release-evidence/npm-audit.json || echo 'Dependency audit reports findings: manual security disposition required' >> release-evidence/environment.txt
           sha256sum dist/index.html > release-evidence/dist-index.sha256
       - name: Inventory dependency licenses
@@ -57,7 +61,6 @@ jobs:
           path: release-evidence/
           if-no-files-found: ignore
           retention-days: 30
-
       - name: Upload browser failure traces
         if: failure()
         uses: actions/upload-artifact@v7
