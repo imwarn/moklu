@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on node:fs/promises and root package-lock.json
+ * [OUTPUT]: writes release-evidence/license-inventory.json summarizing dependency license metadata
+ * [POS]: Release-engineering evidence script in scripts/ for third-party dependency license auditing
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { readFile, mkdir, writeFile } from 'node:fs/promises'
 const lock = JSON.parse(await readFile('package-lock.json', 'utf8'))
 const dependencies = Object.entries(lock.packages ?? {})

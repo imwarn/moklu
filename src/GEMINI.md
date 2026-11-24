@@ -2,17 +2,17 @@
 > L2 | Parent: ../GEMINI.md
 
 ## Member list
-- `main.tsx`: Tick-0 browser mount entry point, `vite:preloadError` auto-recovery (`installChunkRecoveryListener`), Google Fonts loader, non-blocking background project bootstrap (`ensureProjectsBootstrapped`), and headless ExportApp switch.
-- `App.tsx`: Lightweight History API SPA router routing `/` and 18 localized SEO tool slugs to `ToolLandingPage` and `/studio` to lazy-loaded `StudioPage` wrapped in `ChunkErrorBoundary`.
+- `main.tsx`: Tick-0 browser mount entry point, `vite:preloadError` auto-recovery (`installChunkRecoveryListener`), Studio-only on-demand dynamic loading of `@/store/projects` (`ensureProjectsBootstrapped`) and `@/utils/fonts` (`loadGoogleFonts`), and headless ExportApp switch.
+- `App.tsx`: Lightweight History API SPA router routing `/` and localized SEO/info/tool slugs to `ToolLandingPage` and `/studio` to lazy-loaded `StudioPage` (with on-demand Studio font loader inside `StudioRouteShell`) wrapped in `ChunkErrorBoundary`.
 - `config.ts`: Canonical site config exporting `SITE_URL` (`https://moklu.app`), `BRAND_NAME` (`Moklu`), and `getPixelDeckConfig()`.
 - `index.css`: Self-hosted Geist & Geist Mono font imports, Tailwind v4 `@theme static` Signal Orange + Neutral Zinc semantic tokens (`surface`/`panel`/`border`/`muted`/`accent*`/`success`/`warning`/`danger`), `@custom-variant dark` bound to `[data-theme="dark"]`, and adaptive Light/Dark vs Studio body/scrollbar rules.
 - `globals.d.ts`: Build-time Vite constant declarations (`__APP_VERSION__`, `__GIT_HASH__`).
-- `seo/`: 4-language (`en | zh | ja | ko`) 19-slug (76-URL) route registry, JSON-LD schemas, runtime `<head>` sync, SSG HTML/sitemap generators, `ssrEntry.ts`, and site chrome.
+- `seo/`: 4-language (`en | zh | ja | ko`) 23-slug (92 trailing-slash URL) route registry, JSON-LD schemas, runtime `<head>` sync, SSG HTML/sitemap/llms.txt generators, `ssrEntry.ts`, and site chrome.
 - `i18n/`: Decoupled 4-language (`en | zh | ja | ko`) Studio UI localization context (`StudioLocaleProvider`, `useStudioLocale`), message/relative-time formatters (`format.ts`), and complete dictionaries for Studio toolbar, panels, properties, modals, and localization view.
-- `workspace/`: Above-the-fold 6-tool Quick Workspace UI (`QuickWorkspace`), DIP `WorkspaceEngines` contract, `engineAdapter.ts`, `useDebouncedValue.ts`, and split 4-locale UI strings (`locales/`).
-- `tools/`: Pure client-side HTML5 Canvas / Blob / JSZip engines for Merge, Split, Compress, Transform (Resize/Crop/Pad), and ID Card A4 Watermark.
+- `workspace/`: Above-the-fold 6-tool Quick Workspace UI (`QuickWorkspace`), DIP `WorkspaceEngines` contract, `engineAdapter.ts`, `mergeHandoff.ts` (multi-layer Studio handoff builder), IndexedDB local draft persistence (`draftStorage.ts`, `useToolDraft.ts`), vertical long-screenshot overlap-removal UI, `useDebouncedValue.ts`, and split 4-locale UI strings (`locales/`).
+- `tools/`: Pure client-side HTML5 Canvas / Blob / JSZip engines for Merge (including `stitchOverlap.ts` vertical long-screenshot overlap & fixed-bar removal), Split, Compress, Transform (Resize/Crop/Pad), PDF 1.4 export, and ID Card A4 Watermark.
 - `theme/`: Signal Orange + Neutral Zinc JS/Konva palette registry (`brand.ts`: `BRAND`, `BRAND_LIGHT`, `BRAND_DARK`, `getBrandPalette`), persistent Light/Dark/System UI theme Zustand store (`useThemeStore`), and document theme applier.
-- `bridge/`: Quick-Workspace-to-Studio handoff bridge (`stageImagesIntoStudio`) staging assets and editable `SlideGroup`s.
+- `bridge/`: Quick-Workspace-to-Studio handoff bridge (`stageImagesIntoStudio`) staging assets and editable `SlideGroup`s, including `mode: 'layers'` multi-layer handoff with 4096px scaling and solid/gradient/transparent background preservation.
 - `commercial/`: Free vs Moklu Studio Pro entitlement store (`useEntitlementStore`) and accessible `PricingModal`.
 - `pages/`: Top-level route views (`ToolLandingPage`, `StudioPage`, `LocalizationView`, `ExportApp`).
 - `components/`: Konva canvas nodes (`canvas/`, `canvas/stage/`), Studio toolbar (`toolbar/`), side panels (`panels/`, `panels/help/`, `panels/layers/`), property editors (`properties/`), rich-text controls (`text/`), AI settings (`ai/`), common modals (`common/`), and shared UI primitives (`ui/`), each with L2 `GEMINI.md` maps.
