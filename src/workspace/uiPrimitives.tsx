@@ -332,7 +332,7 @@ export function StudioHandoffButton({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className={`inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50 ${tokens.focusRing} ${tokens.buttonStudio}`}
+      className={`inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-semibold transition-[color,background-color,opacity,transform,scale] disabled:cursor-not-allowed disabled:opacity-50 ${tokens.focusRing} ${tokens.buttonStudio}`}
     >
       <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
         <path d="M4 13.5V16h2.5l7.4-7.4-2.5-2.5L4 13.5Z" strokeLinejoin="round" />

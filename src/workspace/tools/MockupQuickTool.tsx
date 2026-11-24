@@ -324,7 +324,7 @@ export function MockupQuickTool({
                     type="button"
                     aria-pressed={active}
                     onClick={() => setQuickTheme(key)}
-                    className={`flex min-h-9 items-center gap-2 rounded-xl border px-2.5 py-2 text-left text-xs font-medium transition-all ${tokens.focusRing} ${
+                    className={`flex min-h-9 items-center gap-2 rounded-xl border px-2.5 py-2 text-left text-xs font-medium transition-colors ${tokens.focusRing} ${
                       active ? tokens.pillActive : tokens.pillIdle
                     }`}
                   >
