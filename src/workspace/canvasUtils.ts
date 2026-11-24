@@ -1,13 +1,19 @@
 /**
- * [INPUT]: depends on nanoid, getMockupSvg from @/assets/mockups/registry, getPhoneSpec from @/assets/mockups/specs, BRAND from @/theme/brand, QUICK_THEMES from @/utils/quickDesign, getQuickPreviewGeometry and makeSvgImageDataUrl from @/utils/quickPreview, demoAssets, and workspace types from ./types
- * [OUTPUT]: exports low-level canvas primitives, readFileAsImageInput, triggerBlobDownload, copyImageToClipboard, isClipboardImageSupported, formatBytes, renderMockupCanvasToPng, and re-exports demoAssets helpers
- * [POS]: memory-safe browser image I/O, clipboard export, and offscreen mockup PNG renderer for src/workspace
+ * [INPUT]: depends on nanoid, getMockupSvg from @/assets/mockups/registry, getPhoneSpec from @/assets/mockups/specs, BRAND from @/theme/brand, decodeHeicToBlob/isHeicFile/readExifSummary from @/tools, QUICK_THEMES from @/utils/quickDesign, getQuickPreviewGeometry and makeSvgImageDataUrl from @/utils/quickPreview, trackFunnelEvent from @/utils/telemetry, applyRedactionsToCanvas from ./redact, demoAssets, and workspace types from ./types
+ * [OUTPUT]: exports low-level canvas primitives, isSupportedImageFile, ReadImageInputOptions, readFileAsImageInput (with local HEIC decode and EXIF extraction), triggerBlobDownload, copyImageToClipboard, isClipboardImageSupported, formatBytes, renderMockupCanvasToPng (with redactions), and re-exports demoAssets helpers
+ * [POS]: memory-safe browser image I/O, HEIC/EXIF preprocessing, clipboard export, and offscreen mockup PNG renderer for src/workspace
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 import { nanoid } from 'nanoid'
 import { getMockupSvg } from '@/assets/mockups/registry'
 import { getPhoneSpec } from '@/assets/mockups/specs'
 import { BRAND } from '@/theme/brand'
+import {
+  decodeHeicToBlob,
+  isHeicFile,
+  readExifSummary,
+  type DecodeHeicStage,
+} from '@/tools'
 import type { BrowserChromeOptions } from '@/types'
 import {
   QUICK_THEMES,
@@ -16,17 +22,25 @@ import {
   type QuickTheme,
 } from '@/utils/quickDesign'
 import { getQuickPreviewGeometry, makeSvgImageDataUrl } from '@/utils/quickPreview'
+import { trackFunnelEvent } from '@/utils/telemetry'
+import { applyRedactionsToCanvas } from './redact'
 import type {
   WorkspaceBlobOutput,
   WorkspaceImageFormat,
   WorkspaceImageInput,
   WorkspaceMergeFormat,
+  WorkspaceRedactionRegion,
 } from './types'
 
 export { createDemoImageInput, createDemoScreenshotDataUrl, type DemoVariant } from './demoAssets'
 
 const MAX_CANVAS_EDGE = 8192
 const MAX_CANVAS_PIXELS = 67_108_864
+const SUPPORTED_IMAGE_FILE_PATTERN = /\.(png|jpe?g|webp|avif|heic|heif|svg|gif)$/i
+
+export function isSupportedImageFile(file: File): boolean {
+  return file.type.startsWith('image/') || SUPPORTED_IMAGE_FILE_PATTERN.test(file.name)
+}
 
 export function formatBytes(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes <= 0) return '0 B'
@@ -165,15 +179,15 @@ export function drawRoundedRectPath(
 
 export function drawFittedImage(
   ctx: CanvasRenderingContext2D,
-  img: HTMLImageElement,
+  img: HTMLImageElement | HTMLCanvasElement,
   dx: number,
   dy: number,
   dw: number,
   dh: number,
   fit: 'cover' | 'contain' | 'fill',
 ): void {
-  const sw = img.naturalWidth || img.width || 1
-  const sh = img.naturalHeight || img.height || 1
+  const sw = ('naturalWidth' in img ? img.naturalWidth : 0) || img.width || 1
+  const sh = ('naturalHeight' in img ? img.naturalHeight : 0) || img.height || 1
   if (fit === 'fill') {
     ctx.drawImage(img, dx, dy, dw, dh)
     return
@@ -205,23 +219,54 @@ export function drawFittedImage(
   ctx.drawImage(img, dx + (dw - rw) / 2, dy + (dh - rh) / 2, rw, rh)
 }
 
+export interface ReadImageInputOptions {
+  onHeicStage?: (stage: DecodeHeicStage) => void
+}
+
+function inferImageExtension(name: string, mimeType: string): string {
+  const dotIdx = name.lastIndexOf('.')
+  if (dotIdx > 0 && dotIdx < name.length - 1) {
+    return name.slice(dotIdx + 1).toLowerCase().slice(0, 12)
+  }
+  const slashIdx = mimeType.indexOf('/')
+  if (slashIdx >= 0 && slashIdx < mimeType.length - 1) {
+    return mimeType.slice(slashIdx + 1).toLowerCase().replace(/\+.*$/, '').slice(0, 12)
+  }
+  return 'unknown'
+}
+
 export async function readFileAsImageInput(
   file: File | Blob,
   fallbackName = 'image.png',
+  options?: ReadImageInputOptions,
 ): Promise<WorkspaceImageInput> {
   const name = file instanceof File && file.name ? file.name : fallbackName
-  const objectUrl = URL.createObjectURL(file)
+  // Inspect binary EXIF headers before any HEIC or canvas re-encoding strips them.
+  const exif = await readExifSummary(file)
+  const heicSource = isHeicFile({ name, type: file.type })
+  const workingBlob = heicSource
+    ? await decodeHeicToBlob(file, {
+        outputType: 'image/jpeg',
+        quality: 0.92,
+        onStage: options?.onHeicStage,
+      })
+    : file
+
+  const objectUrl = URL.createObjectURL(workingBlob)
   try {
     const img = await loadHtmlImage(objectUrl)
-    const dataUrl = await blobToDataUrl(file)
+    const dataUrl = await blobToDataUrl(workingBlob)
+    const ext = inferImageExtension(name, file.type)
+    trackFunnelEvent('image_loaded', { ext })
     return {
       id: nanoid(10),
       name,
       width: img.naturalWidth || img.width,
       height: img.naturalHeight || img.height,
       dataUrl,
-      sizeBytes: file.size,
-      mimeType: file.type || 'image/png',
+      sizeBytes: workingBlob.size,
+      mimeType: workingBlob.type || file.type || 'image/png',
+      exif,
       ...(file instanceof File ? { file } : {}),
     }
   } finally {
@@ -293,6 +338,7 @@ export interface MockupRenderParams {
   screenshotFit: QuickScreenshotFit
   scaleFactor?: number
   browserChrome?: BrowserChromeOptions
+  redactions?: WorkspaceRedactionRegion[]
 }
 
 export async function renderMockupCanvasToPng(params: MockupRenderParams): Promise<WorkspaceBlobOutput> {
@@ -372,9 +418,21 @@ export async function renderMockupCanvasToPng(params: MockupRenderParams): Promi
 
   if (params.screenshotSrc) {
     const shotImg = await loadHtmlImage(params.screenshotSrc)
+    let drawable: HTMLImageElement | HTMLCanvasElement = shotImg
+    if (params.redactions && params.redactions.length > 0) {
+      const shotDims = clampDimensions(shotImg.naturalWidth || shotImg.width, shotImg.naturalHeight || shotImg.height)
+      const redactedCanvas = document.createElement('canvas')
+      redactedCanvas.width = shotDims.width
+      redactedCanvas.height = shotDims.height
+      const redactedCtx = redactedCanvas.getContext('2d')
+      if (redactedCtx) {
+        applyRedactionsToCanvas(redactedCtx, shotImg, shotDims.width, shotDims.height, params.redactions)
+        drawable = redactedCanvas
+      }
+    }
     drawFittedImage(
       ctx,
-      shotImg,
+      drawable,
       spec.screen.x,
       spec.screen.y,
       spec.screen.width,

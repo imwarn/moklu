@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on react (Suspense, lazy, useCallback, useEffect, useMemo, useState), src/seo (InfoPageContent, SiteHeader, SeoLandingSections, SiteFooter, useSeoHead, getRouteCopy, buildLocalizedPath, ResolvedRoute), src/workspace (QuickWorkspace, StudioHandoffPayload), src/workspace/engineAdapter (createToolsWorkspaceEngines), dynamic import of @/bridge/studioHandoff (stageImagesIntoStudioAfterBootstrap), src/commercial/entitlements (isEffectivePro, useEntitlementStore), lazy-loaded @/commercial/PricingModal, src/theme/themeStore (applyDocumentTheme, useThemeStore), and PhoneModel from @/types
- * [OUTPUT]: exports ToolLandingPage component rendering the zero-splash above-the-fold QuickWorkspace (or editorial InfoPageContent on /about, /privacy, /terms), localized SEO sections, adaptive Light/Dark chrome, on-demand PricingModal, and lazy Studio handoff
+ * [INPUT]: depends on react (Suspense, lazy, useCallback, useEffect, useMemo, useState), src/seo (InfoPageContent, SiteHeader, SeoLandingSections, SiteFooter, useSeoHead, getRouteCopy, buildLocalizedPath, ResolvedRoute), src/workspace (QuickWorkspace, StudioHandoffPayload), src/workspace/engineAdapter (createToolsWorkspaceEngines), dynamic import of @/bridge/studioHandoff (stageImagesIntoStudioAfterBootstrap), src/commercial/entitlements (isEffectivePro, useEntitlementStore), lazy-loaded @/commercial/PricingModal, src/theme/themeStore (applyDocumentTheme, useThemeStore), trackFunnelEvent from @/utils/telemetry, and PhoneModel from @/types
+ * [OUTPUT]: exports ToolLandingPage component rendering the zero-splash above-the-fold QuickWorkspace (or editorial InfoPageContent on /about, /privacy, /terms), localized SEO sections, adaptive Light/Dark chrome, funnel telemetry, on-demand PricingModal, and lazy Studio handoff
  * [POS]: primary landing page in src/pages; serves '/', all SEO tool routes, and /about, /privacy, /terms across en/zh/ja/ko without loading Konva or Studio stores
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -18,6 +18,7 @@ import {
 } from '@/seo'
 import { applyDocumentTheme, useThemeStore } from '@/theme/themeStore'
 import type { PhoneModel } from '@/types'
+import { trackFunnelEvent } from '@/utils/telemetry'
 import { QuickWorkspace, type StudioHandoffPayload as WorkspaceHandoffPayload } from '@/workspace'
 import { createToolsWorkspaceEngines } from '@/workspace/engineAdapter'
 
@@ -81,8 +82,31 @@ export function ToolLandingPage({ route, onNavigate }: ToolLandingPageProps) {
     return () => media.removeEventListener('change', onChange)
   }, [syncSystemTheme])
 
+  useEffect(() => {
+    if (route.isInfoPage) return
+    trackFunnelEvent('tool_view', {
+      tool: route.tool,
+      slug: route.slug || 'home',
+      locale: route.locale,
+    })
+  }, [route.isInfoPage, route.locale, route.slug, route.tool])
+
+  const handleOpenProModal = useCallback(() => {
+    trackFunnelEvent('pro_cta_clicked', {
+      tool: route.tool,
+      slug: route.slug || 'home',
+      locale: route.locale,
+    })
+    setPricingOpen(true)
+  }, [route.locale, route.slug, route.tool])
+
   const handleOpenInStudio = useCallback(
     (payload: WorkspaceHandoffPayload) => {
+      trackFunnelEvent('studio_handoff', {
+        tool: route.tool,
+        mode: payload.mode ?? 'canvas',
+        locale: route.locale,
+      })
       void import('@/bridge/studioHandoff')
         .then(({ stageImagesIntoStudioAfterBootstrap }) =>
           stageImagesIntoStudioAfterBootstrap({
@@ -97,7 +121,7 @@ export function ToolLandingPage({ route, onNavigate }: ToolLandingPageProps) {
           console.error('[Moklu] Studio handoff failed:', err)
         })
     },
-    [onNavigate, route.locale],
+    [onNavigate, route.locale, route.tool],
   )
 
   return (
@@ -113,7 +137,7 @@ export function ToolLandingPage({ route, onNavigate }: ToolLandingPageProps) {
         theme={resolvedTheme}
         onNavigate={onNavigate}
         onToggleTheme={toggleTheme}
-        onOpenProModal={() => setPricingOpen(true)}
+        onOpenProModal={handleOpenProModal}
         isPro={isPro}
       />
 
@@ -155,7 +179,7 @@ export function ToolLandingPage({ route, onNavigate }: ToolLandingPageProps) {
                 theme={resolvedTheme}
                 engines={engines}
                 onOpenInStudio={handleOpenInStudio}
-                onOpenProModal={() => setPricingOpen(true)}
+                onOpenProModal={handleOpenProModal}
               />
             </section>
 
@@ -163,7 +187,7 @@ export function ToolLandingPage({ route, onNavigate }: ToolLandingPageProps) {
               route={route}
               theme={resolvedTheme}
               onNavigate={onNavigate}
-              onOpenProModal={() => setPricingOpen(true)}
+              onOpenProModal={handleOpenProModal}
               isPro={isPro}
             />
           </>

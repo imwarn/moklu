@@ -1,17 +1,21 @@
 /**
- * [INPUT]: depends on react, WorkspaceTheme and WorkspaceToolId from ./types, and getWorkspaceThemeTokens from ./themeTokens
- * [OUTPUT]: exports DropZone, PrivacyBadge, PreviewBusyOverlay, SegmentedControl, SliderField, StudioHandoffButton, ColorSwatchRow (with optional native custom color picker), and DraftStatusBar
+ * [INPUT]: depends on react, trackFunnelEvent from @/utils/telemetry, copyImageToClipboard and isSupportedImageFile from ./canvasUtils, WorkspaceTheme and WorkspaceToolId from ./types, and getWorkspaceThemeTokens from ./themeTokens
+ * [OUTPUT]: exports DropZone (with HEIC/AVIF support, decoding progress, and rejection telemetry), PrivacyBadge, PreviewBusyOverlay, SegmentedControl, SliderField, StudioHandoffButton, CopyImageButton (with Cmd/Ctrl+Shift+C shortcut and 1.5s confirmation), ColorSwatchRow, and DraftStatusBar
  * [POS]: reusable WCAG-compliant accessible UI primitives shared across all 6 Quick Workspace tool panels in src/workspace/tools
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
+import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
+import { trackFunnelEvent } from '@/utils/telemetry'
+import { copyImageToClipboard, isSupportedImageFile } from './canvasUtils'
 import type { WorkspaceTheme, WorkspaceToolId } from './types'
 import { getWorkspaceThemeTokens } from './themeTokens'
 
-const IMAGE_FILE_PATTERN = /\.(png|jpe?g|webp|svg|gif)$/i
-
-function isSupportedImageFile(file: File): boolean {
-  return file.type.startsWith('image/') || IMAGE_FILE_PATTERN.test(file.name)
+function trackRejectedFiles(rejected: readonly File[]): void {
+  for (const file of rejected) {
+    const dot = file.name.lastIndexOf('.')
+    const ext = dot > 0 && dot < file.name.length - 1 ? file.name.slice(dot + 1).toLowerCase() : 'none'
+    trackFunnelEvent('format_rejected', { ext, mime: file.type || 'unknown' })
+  }
 }
 
 export interface DropZoneProps {
@@ -20,6 +24,7 @@ export interface DropZoneProps {
   hint: string
   buttonLabel: string
   invalidFileMessage?: string
+  decodingLabel?: string | null
   multiple?: boolean
   compact?: boolean
   enablePaste?: boolean
@@ -34,6 +39,7 @@ export function DropZone({
   hint,
   buttonLabel,
   invalidFileMessage = 'Unsupported file format. Please choose an image file.',
+  decodingLabel = null,
   multiple = false,
   compact = false,
   enablePaste = true,
@@ -70,11 +76,15 @@ export function DropZone({
       if (pasted.length > 0) {
         event.preventDefault()
         setInvalidNotice(rejected.length > 0 ? invalidFileMessage : null)
-        if (rejected.length > 0) onInvalidFiles?.(rejected)
+        if (rejected.length > 0) {
+          trackRejectedFiles(rejected)
+          onInvalidFiles?.(rejected)
+        }
         onFiles(multiple ? pasted : [pasted[0]])
       } else if (rejected.length > 0) {
         event.preventDefault()
         setInvalidNotice(invalidFileMessage)
+        trackRejectedFiles(rejected)
         onInvalidFiles?.(rejected)
       }
     }
@@ -96,6 +106,7 @@ export function DropZone({
     }
     if (rejected.length > 0) {
       setInvalidNotice(invalidFileMessage)
+      trackRejectedFiles(rejected)
       onInvalidFiles?.(rejected)
     } else {
       setInvalidNotice(null)
@@ -135,7 +146,7 @@ export function DropZone({
         <input
           ref={inputRef}
           type="file"
-          accept="image/*"
+          accept="image/*,.heic,.heif,.avif"
           multiple={multiple}
           className="hidden"
           onChange={(e) => {
@@ -155,6 +166,20 @@ export function DropZone({
           {buttonLabel}
         </span>
       </div>
+      {decodingLabel && (
+        <div
+          role="status"
+          aria-live="polite"
+          data-testid="dropzone-decoding-status"
+          className={`mt-2 flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-medium ${tokens.busyPill}`}
+        >
+          <span
+            aria-hidden="true"
+            className="h-3 w-3 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent"
+          />
+          <span>{decodingLabel}</span>
+        </div>
+      )}
       {invalidNotice && (
         <p role="alert" data-testid="dropzone-invalid-alert" className={`mt-2 text-xs font-medium ${tokens.errorText}`}>
           {invalidNotice}
@@ -492,5 +517,129 @@ export function DraftStatusBar({
         {clearLabel}
       </button>
     </div>
+  )
+}
+
+export interface CopyImageButtonProps {
+  theme: WorkspaceTheme
+  tool: WorkspaceToolId
+  label: string
+  copiedLabel: string
+  copyErrorMessage: string
+  disabled?: boolean
+  getImage: () => Promise<{ blob: Blob; previewDataUrl?: string } | null>
+  onError?: (message: string | null) => void
+  onBusyChange?: (copying: boolean) => void
+  testId?: string
+  className?: string
+}
+
+export function CopyImageButton({
+  theme,
+  tool,
+  label,
+  copiedLabel,
+  copyErrorMessage,
+  disabled = false,
+  getImage,
+  onError,
+  onBusyChange,
+  testId,
+  className = '',
+}: CopyImageButtonProps) {
+  const tokens = getWorkspaceThemeTokens(theme)
+  const [copied, setCopied] = useState(false)
+  const [copying, setCopying] = useState(false)
+  const timerRef = useRef<number | null>(null)
+  const getImageRef = useRef(getImage)
+  const onErrorRef = useRef(onError)
+  const onBusyRef = useRef(onBusyChange)
+
+  useEffect(() => {
+    getImageRef.current = getImage
+    onErrorRef.current = onError
+    onBusyRef.current = onBusyChange
+  }, [getImage, onError, onBusyChange])
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current !== null && typeof window !== 'undefined') {
+        window.clearTimeout(timerRef.current)
+      }
+    }
+  }, [])
+
+  const handleCopy = useCallback(async () => {
+    if (disabled || copying) return
+    setCopying(true)
+    onBusyRef.current?.(true)
+    onErrorRef.current?.(null)
+    try {
+      const target = await getImageRef.current()
+      if (!target) return
+      await copyImageToClipboard(target.blob, target.previewDataUrl)
+      trackFunnelEvent('copy_completed', { tool })
+      setCopied(true)
+      if (typeof window !== 'undefined') {
+        if (timerRef.current !== null) window.clearTimeout(timerRef.current)
+        timerRef.current = window.setTimeout(() => {
+          setCopied(false)
+          timerRef.current = null
+        }, 1500)
+      }
+    } catch {
+      onErrorRef.current?.(copyErrorMessage)
+    } finally {
+      setCopying(false)
+      onBusyRef.current?.(false)
+    }
+  }, [copyErrorMessage, copying, disabled, tool])
+
+  useEffect(() => {
+    if (disabled || typeof window === 'undefined') return
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (!(event.metaKey || event.ctrlKey) || !event.shiftKey || event.key.toLowerCase() !== 'c') {
+        return
+      }
+      const target = event.target as HTMLElement | null
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable)
+      ) {
+        return
+      }
+      event.preventDefault()
+      void handleCopy()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [disabled, handleCopy])
+
+  return (
+    <button
+      type="button"
+      data-testid={testId}
+      disabled={disabled || copying}
+      title={`${label} (Cmd/Ctrl+Shift+C)`}
+      onClick={() => void handleCopy()}
+      className={`inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl px-3.5 py-2.5 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${tokens.focusRing} ${
+        copied ? `${tokens.privacyBadge} border` : tokens.buttonSecondary
+      } ${className}`}
+    >
+      {copied ? (
+        <svg viewBox="0 0 20 20" className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.1" aria-hidden="true">
+          <path d="M4.5 10.5 8.2 14.2 15.8 6.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      ) : (
+        <svg viewBox="0 0 20 20" className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
+          <rect x="7" y="7" width="9.5" height="9.5" rx="2" />
+          <path d="M13 7V5.5A2 2 0 0 0 11 3.5H5.5A2 2 0 0 0 3.5 5.5V11A2 2 0 0 0 5.5 13H7" strokeLinecap="round" />
+        </svg>
+      )}
+      <span className="truncate">{copied ? copiedLabel : label}</span>
+    </button>
   )
 }

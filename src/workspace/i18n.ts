@@ -30,7 +30,13 @@ export interface WorkspaceStrings {
     downloadZip: string
     copyImage: string
     copied: string
+    copiedToChat: string
     copyError: string
+    exportTrustNote: string
+    heicDecoding: string
+    multiPastePrompt: string
+    multiPasteSwitch: string
+    multiPasteDismiss: string
     customColor: string
     downloading: string
     processing: string
@@ -78,6 +84,7 @@ export interface WorkspaceStrings {
   }
   mockup: {
     deviceLabel: string
+    categories: Record<'browser' | 'phone' | 'tablet' | 'watch' | 'screen', string>
     canvasLabel: string
     canvasWidthLabel: string
     canvasHeightLabel: string
@@ -91,8 +98,36 @@ export interface WorkspaceStrings {
     paddingLabel: string
     browserTitle: string
     browserUrl: string
+    browserThemeLabel: string
+    browserThemeLight: string
+    browserThemeDark: string
     demoLoaded: string
     replaceScreenshot: string
+  }
+  exif: {
+    badgeWithGps: string
+    badgeGeneric: string
+    toggleExpand: string
+    toggleCollapse: string
+    gpsLabel: string
+    cameraLabel: string
+    dateLabel: string
+    exposureLabel: string
+    softwareLabel: string
+    strippedHint: string
+  }
+  redact: {
+    toolbarLabel: string
+    modeOff: string
+    blur: string
+    pixelate: string
+    spotlight: string
+    intensity: string
+    spotlightZoom: string
+    deleteSelected: string
+    clearAll: string
+    drawHint: string
+    regionsCount: string
   }
   merge: {
     directionLabel: string

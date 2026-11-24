@@ -1,18 +1,16 @@
 /**
- * [INPUT]: depends on react, batchHelpers from ../batchHelpers, canvasUtils from ../canvasUtils, draftStorage from ../draftStorage, useToolDraft from ../useToolDraft, strings from ../i18n, themeTokens from ../themeTokens, UI primitives from ../uiPrimitives, useDebouncedValue from ../useDebouncedValue, and WorkspaceToolPanelProps from ../types
- * [OUTPUT]: exports ResizePreviewStage and ResizeQuickTool for multi-image Resize (px or scale %), Crop, and non-crop Border & Pad workflows with filmstrip preview switcher, debounced transforms, local IndexedDB draft auto-save, error-handled ZIP export, and full-batch Studio handoff
+ * [INPUT]: depends on react, isHeicFile from @/tools, trackFunnelEvent from @/utils/telemetry, batchHelpers from ../batchHelpers, canvasUtils from ../canvasUtils, draftStorage from ../draftStorage, ExifPrivacyBanner from ../ExifPrivacyBanner, useToolDraft from ../useToolDraft, strings from ../i18n, themeTokens from ../themeTokens, UI primitives from ../uiPrimitives, useDebouncedValue from ../useDebouncedValue, and WorkspaceToolPanelProps from ../types
+ * [OUTPUT]: exports ResizePreviewStage and ResizeQuickTool for multi-image Resize (px or scale %), Crop, and non-crop Border & Pad workflows with filmstrip preview switcher, HEIC decoding progress, EXIF privacy banner, clipboard Copy Image loop, debounced transforms, local IndexedDB draft auto-save, error-handled ZIP export, and full-batch Studio handoff
  * [POS]: resize, crop, and border-pad panel inside src/workspace/tools; delegates rendering to injected engines.transform
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 import { useCallback, useEffect, useId, useMemo, useState } from 'react'
-import {
-  buildBatchStudioHandoff,
-  clampBatchIndex,
-  removeBatchEntry,
-  stepBatchIndex,
-} from '../batchHelpers'
+import { isHeicFile } from '@/tools'
+import { trackFunnelEvent } from '@/utils/telemetry'
+import { buildBatchStudioHandoff, clampBatchIndex, removeBatchEntry, stepBatchIndex } from '../batchHelpers'
 import { createDemoImageInput, formatBytes, readFileAsImageInput, triggerBlobDownload } from '../canvasUtils'
 import { deserializeDraftImages, type WorkspaceToolDraft } from '../draftStorage'
+import { ExifPrivacyBanner } from '../ExifPrivacyBanner'
 import { getWorkspaceStrings } from '../i18n'
 import { getWorkspaceThemeTokens } from '../themeTokens'
 import type {
@@ -26,6 +24,7 @@ import type {
 } from '../types'
 import {
   ColorSwatchRow,
+  CopyImageButton,
   DraftStatusBar,
   DropZone,
   PreviewBusyOverlay,
@@ -53,6 +52,7 @@ interface ResizeDraftSettings {
 const MIN_RESIZE_PX = 16
 const MAX_RESIZE_PX = 8192
 const SCALE_PRESETS = [25, 50, 75, 150, 200] as const
+const VALID_ASPECTS = new Set<WorkspaceAspectPreset>(['free', '1:1', '4:5', '3:4', '16:9', '9:16', '3:2'])
 
 function clampResizePx(value: number, fallback: number): number {
   if (!Number.isFinite(value)) return fallback
@@ -66,6 +66,7 @@ export interface ResizePreviewStageProps {
   selectedIndex: number
   hasSourceImages: boolean
   busy?: boolean
+  decodingLabel?: string | null
   onSelectIndex: (index: number) => void
   onDownloadAt: (index: number) => void
   onRemoveAt: (index: number) => void
@@ -81,6 +82,7 @@ export function ResizePreviewStage({
   selectedIndex,
   hasSourceImages,
   busy = false,
+  decodingLabel = null,
   onSelectIndex,
   onDownloadAt,
   onRemoveAt,
@@ -201,18 +203,12 @@ export function ResizePreviewStage({
                     className={`group flex flex-col rounded-lg text-left ${tokens.focusRing}`}
                   >
                     <div className="relative overflow-hidden rounded-lg bg-black/5">
-                      <img
-                        src={item.dataUrl}
-                        alt={item.filename}
-                        className="h-16 w-full object-cover"
-                      />
+                      <img src={item.dataUrl} alt={item.filename} className="h-16 w-full object-cover" />
                       <span className="absolute left-1 top-1 rounded bg-zinc-900/80 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-white">
                         #{idx + 1}
                       </span>
                     </div>
-                    <span className={`mt-1.5 truncate text-[11px] font-semibold ${tokens.text}`}>
-                      {item.filename}
-                    </span>
+                    <span className={`mt-1.5 truncate text-[11px] font-semibold ${tokens.text}`}>{item.filename}</span>
                     <span className={`text-[10px] tabular-nums ${tokens.textSubtle}`}>
                       {item.width}×{item.height}
                     </span>
@@ -255,6 +251,7 @@ export function ResizePreviewStage({
           hint={s.common.dropHint}
           buttonLabel={s.common.chooseFiles}
           invalidFileMessage={s.common.invalidFileError}
+          decodingLabel={decodingLabel}
           onFiles={onFiles}
         />
       </div>
@@ -301,6 +298,7 @@ export function ResizeQuickTool({
   const [background, setBackground] = useState<string>('#ffffff')
   const [shadow, setShadow] = useState<boolean>(true)
   const [outputs, setOutputs] = useState<WorkspaceBlobOutput[]>([])
+  const [heicDecoding, setHeicDecoding] = useState(false)
   const [processing, setProcessing] = useState(false)
   const [zipping, setZipping] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -334,17 +332,7 @@ export function ResizeQuickTool({
     if (typeof cfg.scalePercent === 'number' && Number.isFinite(cfg.scalePercent)) {
       setScalePercent(Math.max(10, Math.min(200, Math.round(cfg.scalePercent))))
     }
-    if (
-      cfg.aspectRatio === 'free' ||
-      cfg.aspectRatio === '1:1' ||
-      cfg.aspectRatio === '4:5' ||
-      cfg.aspectRatio === '3:4' ||
-      cfg.aspectRatio === '16:9' ||
-      cfg.aspectRatio === '9:16' ||
-      cfg.aspectRatio === '3:2'
-    ) {
-      setAspectRatio(cfg.aspectRatio)
-    }
+    if (VALID_ASPECTS.has(cfg.aspectRatio)) setAspectRatio(cfg.aspectRatio)
     if (typeof cfg.widthPx === 'number' && Number.isFinite(cfg.widthPx)) {
       const w = clampResizePx(cfg.widthPx, 1200)
       setWidthPx(w)
@@ -383,13 +371,21 @@ export function ResizeQuickTool({
       debouncedBorderPx !== borderPx ||
       debouncedBorderRadius !== borderRadius)
   const isBusy = processing || hasPendingParams
-
   const hasImages = images.length > 0
 
   const handleFiles = useCallback(async (files: File[]) => {
     setError(null)
+    if (files.some((f) => isHeicFile(f))) setHeicDecoding(true)
     try {
-      const loaded = await Promise.all(files.map((file) => readFileAsImageInput(file)))
+      const loaded = await Promise.all(
+        files.map((file) =>
+          readFileAsImageInput(file, 'image.png', {
+            onHeicStage: (stage) => {
+              if (stage !== 'done') setHeicDecoding(true)
+            },
+          }),
+        ),
+      )
       setImages((prev) => [...prev, ...loaded])
       if (!hasImages && loaded[0]) {
         setWidthPx(loaded[0].width)
@@ -400,6 +396,8 @@ export function ResizeQuickTool({
       }
     } catch {
       setError(s.common.decodeError)
+    } finally {
+      setHeicDecoding(false)
     }
   }, [hasImages, s.common.decodeError])
 
@@ -438,9 +436,7 @@ export function ResizeQuickTool({
     setWidthDraft(raw)
     if (raw.trim() === '') return
     const parsed = Number(raw)
-    if (Number.isFinite(parsed) && parsed >= MIN_RESIZE_PX && parsed <= MAX_RESIZE_PX) {
-      commitWidth(Math.round(parsed))
-    }
+    if (Number.isFinite(parsed) && parsed >= MIN_RESIZE_PX && parsed <= MAX_RESIZE_PX) commitWidth(Math.round(parsed))
   }
 
   const handleWidthBlur = () => {
@@ -454,9 +450,7 @@ export function ResizeQuickTool({
     setHeightDraft(raw)
     if (raw.trim() === '') return
     const parsed = Number(raw)
-    if (Number.isFinite(parsed) && parsed >= MIN_RESIZE_PX && parsed <= MAX_RESIZE_PX) {
-      commitHeight(Math.round(parsed))
-    }
+    if (Number.isFinite(parsed) && parsed >= MIN_RESIZE_PX && parsed <= MAX_RESIZE_PX) commitHeight(Math.round(parsed))
   }
 
   const handleHeightBlur = () => {
@@ -513,44 +507,40 @@ export function ResizeQuickTool({
       cancelled = true
     }
   }, [
-    images,
-    mode,
-    resizeBy,
-    debouncedScalePercent,
-    debouncedWidthPx,
-    debouncedHeightPx,
-    lockAspect,
-    aspectRatio,
-    debouncedBorderPx,
-    background,
-    debouncedBorderRadius,
-    shadow,
-    engines,
-    s.resize.transformError,
+    images, mode, resizeBy, debouncedScalePercent, debouncedWidthPx, debouncedHeightPx,
+    lockAspect, aspectRatio, debouncedBorderPx, background, debouncedBorderRadius, shadow,
+    engines, s.resize.transformError,
   ])
 
   const activeOutputs = images.length > 0 ? outputs : []
   const safeIndex = clampBatchIndex(selectedIndex, activeOutputs.length)
   const current = activeOutputs[safeIndex] ?? null
 
+  const getCopyTarget = useCallback(
+    async () => (current ? { blob: current.blob, previewDataUrl: current.dataUrl } : null),
+    [current],
+  )
+
   const handleDownloadAt = (idx: number) => {
     const item = activeOutputs[idx]
-    if (item) triggerBlobDownload(item.blob, item.filename)
+    if (!item) return
+    triggerBlobDownload(item.blob, item.filename)
+    trackFunnelEvent('export_completed', { tool: 'resize', mode, count: 1 })
   }
 
   const handleDownloadPrimaryOrZip = async () => {
     if (activeOutputs.length === 0 || zipping) return
     if (activeOutputs.length === 1) {
       triggerBlobDownload(activeOutputs[0].blob, activeOutputs[0].filename)
+      trackFunnelEvent('export_completed', { tool: 'resize', mode, count: 1 })
       return
     }
     setZipping(true)
     setError(null)
     try {
-      const zipBlob = await engines.packZip(
-        activeOutputs.map((out) => ({ filename: out.filename, blob: out.blob })),
-      )
+      const zipBlob = await engines.packZip(activeOutputs.map((out) => ({ filename: out.filename, blob: out.blob })))
       triggerBlobDownload(zipBlob, `moklu-${mode}-${activeOutputs.length}.zip`)
+      trackFunnelEvent('export_completed', { tool: 'resize', mode, count: activeOutputs.length })
     } catch (err) {
       setError(err instanceof Error && err.message ? err.message : s.common.zipError)
     } finally {
@@ -574,6 +564,7 @@ export function ResizeQuickTool({
           selectedIndex={safeIndex}
           hasSourceImages={images.length > 0}
           busy={isBusy}
+          decodingLabel={heicDecoding ? s.common.heicDecoding : null}
           onSelectIndex={setSelectedIndex}
           onDownloadAt={handleDownloadAt}
           onRemoveAt={handleRemoveAt}
@@ -581,6 +572,7 @@ export function ResizeQuickTool({
           onLoadDemo={handleLoadDemo}
           onFiles={handleFiles}
         />
+        <ExifPrivacyBanner theme={theme} locale={locale} images={images} />
         {hasDraft && (
           <DraftStatusBar
             theme={theme}
@@ -637,16 +629,7 @@ export function ResizeQuickTool({
                       </button>
                     ))}
                   </div>
-                  <SliderField
-                    theme={theme}
-                    label={s.resize.scaleLabel}
-                    value={scalePercent}
-                    min={10}
-                    max={200}
-                    step={5}
-                    unit="%"
-                    onChange={setScalePercent}
-                  />
+                  <SliderField theme={theme} label={s.resize.scaleLabel} value={scalePercent} min={10} max={200} step={5} unit="%" onChange={setScalePercent} />
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -714,31 +697,9 @@ export function ResizeQuickTool({
 
           {mode === 'pad' && (
             <div className="space-y-3.5">
-              <SliderField
-                theme={theme}
-                label={s.resize.borderLabel}
-                value={borderPx}
-                min={0}
-                max={160}
-                unit="px"
-                onChange={setBorderPx}
-              />
-              <SliderField
-                theme={theme}
-                label={s.common.radius}
-                value={borderRadius}
-                min={0}
-                max={64}
-                unit="px"
-                onChange={setBorderRadius}
-              />
-              <ColorSwatchRow
-                theme={theme}
-                label={s.common.background}
-                value={background}
-                options={padSwatches}
-                onChange={setBackground}
-              />
+              <SliderField theme={theme} label={s.resize.borderLabel} value={borderPx} min={0} max={160} unit="px" onChange={setBorderPx} />
+              <SliderField theme={theme} label={s.common.radius} value={borderRadius} min={0} max={64} unit="px" onChange={setBorderRadius} />
+              <ColorSwatchRow theme={theme} label={s.common.background} value={background} options={padSwatches} onChange={setBackground} />
               <label className={`flex cursor-pointer items-center gap-2 text-xs font-medium ${tokens.textMuted}`}>
                 <input
                   type="checkbox"
@@ -773,12 +734,20 @@ export function ResizeQuickTool({
                     ? s.common.downloadZip
                     : s.common.downloadImage}
             </button>
-            <StudioHandoffButton
+            <CopyImageButton
               theme={theme}
-              label={s.common.openInStudio}
-              disabled={!current}
-              onClick={handleOpenInStudio}
+              tool="resize"
+              testId="resize-copy-image"
+              label={s.common.copyImage}
+              copiedLabel={s.common.copiedToChat}
+              copyErrorMessage={s.common.copyError}
+              disabled={!current || isBusy}
+              getImage={getCopyTarget}
+              onError={setError}
             />
+          </div>
+          <div className="grid grid-cols-1">
+            <StudioHandoffButton theme={theme} label={s.common.openInStudio} disabled={!current} onClick={handleOpenInStudio} />
           </div>
         </div>
       </div>

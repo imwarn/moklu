@@ -1,12 +1,14 @@
 /**
- * [INPUT]: depends on react, useThemeStore from @/theme/themeStore, createDefaultWorkspaceEngines from ./defaultEngines, getWorkspaceStrings from ./i18n, getWorkspaceThemeTokens from ./themeTokens, PrivacyBadge from ./uiPrimitives, all 6 tool panels from ./tools/*, and types from ./types
- * [OUTPUT]: exports QuickWorkspace component rendering the above-the-fold 6-tool instant workspace with keyboard-navigable tablist, locale-preserving panel state, Light/Dark theming, 4-locale UI, and Studio handoff
+ * [INPUT]: depends on react, useThemeStore from @/theme/themeStore, isSupportedImageFile and readFileAsImageInput from ./canvasUtils, createDefaultWorkspaceEngines from ./defaultEngines, saveToolDraft and serializeDraftImages from ./draftStorage, getWorkspaceStrings from ./i18n, getWorkspaceThemeTokens from ./themeTokens, PrivacyBadge from ./uiPrimitives, all 6 tool panels from ./tools/*, and types from ./types
+ * [OUTPUT]: exports QuickWorkspace component rendering the above-the-fold 6-tool instant workspace with global paste pulse highlight, multi-image paste switch-to-Merge banner, keyboard-navigable tablist, locale-preserving panel state, Light/Dark theming, 4-locale UI, and Studio handoff
  * [POS]: top-level UI entry point of src/workspace; mounted by ToolLandingPage and testable standalone via injected WorkspaceEngines
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
-import { useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { useThemeStore } from '@/theme/themeStore'
+import { isSupportedImageFile, readFileAsImageInput } from './canvasUtils'
 import { createDefaultWorkspaceEngines } from './defaultEngines'
+import { saveToolDraft, serializeDraftImages } from './draftStorage'
 import { getWorkspaceStrings } from './i18n'
 import { getWorkspaceThemeTokens } from './themeTokens'
 import { CompressQuickTool } from './tools/CompressQuickTool'
@@ -24,6 +26,7 @@ import type {
 import { PrivacyBadge } from './uiPrimitives'
 
 const TOOL_ORDER: WorkspaceToolId[] = ['mockup', 'merge', 'split', 'compress', 'resize', 'id-card']
+const SINGLE_IMAGE_TOOLS = new Set<WorkspaceToolId>(['mockup', 'split', 'id-card'])
 
 const DEFAULT_PRESET: WorkspacePreset = { tool: 'mockup' }
 
@@ -93,6 +96,11 @@ export function QuickWorkspace({
   const [tabOverride, setTabOverride] = useState<{ base: WorkspaceToolId; tool: WorkspaceToolId } | null>(null)
   const activeTool = tabOverride && tabOverride.base === presetTool ? tabOverride.tool : presetTool
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([])
+  const [pastePulse, setPastePulse] = useState(false)
+  const pastePulseTimerRef = useRef<number | null>(null)
+  const [pendingMergeFiles, setPendingMergeFiles] = useState<File[] | null>(null)
+  const [switchingToMerge, setSwitchingToMerge] = useState(false)
+  const [mergeHydrateNonce, setMergeHydrateNonce] = useState(0)
 
   const resolvedEngines = useMemo<WorkspaceEngines>(() => {
     if (
@@ -116,10 +124,94 @@ export function QuickWorkspace({
     }
   }, [engines])
 
-  const selectTool = (nextTool: WorkspaceToolId) => {
+  const selectTool = useCallback((nextTool: WorkspaceToolId) => {
     setTabOverride({ base: presetTool, tool: nextTool })
+    setPendingMergeFiles(null)
     onToolChange?.(nextTool)
-  }
+  }, [onToolChange, presetTool])
+
+  // Global Cmd/Ctrl+V paste highlight pulse + multi-image switch-to-Merge prompt.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const handleWindowPaste = (event: ClipboardEvent) => {
+      const target = event.target as HTMLElement | null
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable)
+      ) {
+        return
+      }
+      setPastePulse(true)
+      if (pastePulseTimerRef.current !== null) {
+        window.clearTimeout(pastePulseTimerRef.current)
+      }
+      pastePulseTimerRef.current = window.setTimeout(() => {
+        setPastePulse(false)
+        pastePulseTimerRef.current = null
+      }, 650)
+
+      const items = event.clipboardData?.items
+      if (!items) return
+      const validFiles: File[] = []
+      for (const item of Array.from(items)) {
+        if (item.kind !== 'file') continue
+        const file = item.getAsFile()
+        if (file && isSupportedImageFile(file)) {
+          validFiles.push(file)
+        }
+      }
+      if (validFiles.length >= 2 && SINGLE_IMAGE_TOOLS.has(activeTool)) {
+        setPendingMergeFiles(validFiles)
+      }
+    }
+    window.addEventListener('paste', handleWindowPaste)
+    return () => {
+      window.removeEventListener('paste', handleWindowPaste)
+      if (pastePulseTimerRef.current !== null) {
+        window.clearTimeout(pastePulseTimerRef.current)
+      }
+    }
+  }, [activeTool])
+
+  const handleSwitchToolWithFiles = useCallback(async (targetTool: WorkspaceToolId, files: File[]) => {
+    if (files.length === 0) return
+    if (targetTool === 'merge') {
+      setSwitchingToMerge(true)
+      try {
+        const loaded = await Promise.all(files.map((file) => readFileAsImageInput(file)))
+        await saveToolDraft('merge', {
+          images: serializeDraftImages(loaded),
+          settings: {
+            direction: 'vertical',
+            removeOverlap: true,
+            normalize: 'match-min',
+            align: 'center',
+            columns: 2,
+            aspectCell: '1:1',
+            fit: 'cover',
+            gap: 0,
+            padding: 0,
+            borderRadius: 0,
+            borderWidth: 0,
+            borderColor: '#ffffff',
+            background: '#ffffff',
+            format: 'image/png',
+            qualityPercent: 92,
+          },
+        })
+        setPendingMergeFiles(null)
+        setMergeHydrateNonce((n) => n + 1)
+        selectTool('merge')
+      } finally {
+        setSwitchingToMerge(false)
+      }
+      return
+    }
+    selectTool(targetTool)
+  }, [selectTool])
 
   const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
     let nextIndex: number | null = null
@@ -144,9 +236,15 @@ export function QuickWorkspace({
     preset.canvasSize ?? '',
     preset.mergeDirection ?? '',
     preset.mergeFormat ?? '',
+    preset.removeOverlap ? '1' : '0',
+    preset.pdfMode ?? '',
     preset.splitMode ?? '',
     preset.targetFormat ?? '',
+    preset.targetSizeKb ?? '',
+    preset.inspectExif ? '1' : '0',
+    preset.enableRedact ? '1' : '0',
     preset.resizeMode ?? '',
+    activeTool === 'merge' ? String(mergeHydrateNonce) : '',
   ].join(':')
 
   const panelProps = {
@@ -156,6 +254,9 @@ export function QuickWorkspace({
     engines: resolvedEngines,
     onOpenInStudio,
     onOpenProModal,
+    onSwitchToolWithFiles: (tool: WorkspaceToolId, files: File[]) => {
+      void handleSwitchToolWithFiles(tool, files)
+    },
   }
 
   return (
@@ -163,9 +264,43 @@ export function QuickWorkspace({
       data-testid="quick-workspace"
       data-theme={resolvedTheme}
       data-active-tool={activeTool}
+      data-paste-pulse={pastePulse ? 'true' : undefined}
       aria-label={s.tabs[activeTool].label}
-      className={`w-full rounded-3xl border p-4 sm:p-6 transition-colors ${tokens.shell} ${className}`}
+      className={`w-full rounded-3xl border p-4 sm:p-6 transition-[color,background-color,box-shadow] duration-300 ${tokens.shell} ${
+        pastePulse ? 'ring-2 ring-accent/50' : ''
+      } ${className}`}
     >
+      {/* Multi-image paste prompt banner */}
+      {pendingMergeFiles && pendingMergeFiles.length >= 2 && (
+        <div
+          role="status"
+          data-testid="multi-paste-banner"
+          className={`mb-4 flex flex-wrap items-center justify-between gap-2.5 rounded-2xl border border-accent/35 bg-accent-soft px-3.5 py-2.5 text-xs ${tokens.text}`}
+        >
+          <span className="font-semibold">
+            {s.common.multiPastePrompt} ({pendingMergeFiles.length})
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              data-testid="multi-paste-switch-btn"
+              disabled={switchingToMerge}
+              onClick={() => void handleSwitchToolWithFiles('merge', pendingMergeFiles)}
+              className={`inline-flex min-h-7 items-center rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors disabled:opacity-50 ${tokens.focusRing} ${tokens.buttonPrimary}`}
+            >
+              {switchingToMerge ? s.common.processing : s.common.multiPasteSwitch}
+            </button>
+            <button
+              type="button"
+              data-testid="multi-paste-dismiss-btn"
+              onClick={() => setPendingMergeFiles(null)}
+              className={`inline-flex min-h-7 items-center rounded-lg border px-2 py-1 text-xs font-medium transition-colors ${tokens.focusRing} ${tokens.pillIdle}`}
+            >
+              {s.common.multiPasteDismiss}
+            </button>
+          </div>
+        </div>
+      )}
       {/* Top Bar: Tool Tabs + Privacy Trust Pill */}
       <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div

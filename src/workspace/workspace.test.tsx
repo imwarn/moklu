@@ -37,7 +37,9 @@ import {
 } from './index'
 import { CompressPreviewModal } from './tools/CompressQuickTool'
 import { ResizePreviewStage } from './tools/ResizeQuickTool'
-import { DraftStatusBar } from './uiPrimitives'
+import { isSupportedImageFile } from './canvasUtils'
+import { ExifPrivacyBanner } from './ExifPrivacyBanner'
+import { DraftStatusBar, DropZone } from './uiPrimitives'
 
 const ALL_TOOLS: WorkspaceToolId[] = ['mockup', 'merge', 'split', 'compress', 'resize', 'id-card']
 const ALL_LOCALES: WorkspaceLocale[] = ['en', 'zh', 'ja', 'ko']
@@ -158,7 +160,7 @@ describe('QuickWorkspace', () => {
         onOpenProModal={vi.fn()}
       />,
     )
-    expect(withPro).toContain('4K Batch Export · Pro')
+    expect(withPro).toContain('Batch Multi-Size / 4K Export (Studio Pro)')
 
     const withoutPro = renderToStaticMarkup(
       <QuickWorkspace
@@ -168,7 +170,128 @@ describe('QuickWorkspace', () => {
         onOpenInStudio={vi.fn()}
       />,
     )
-    expect(withoutPro).not.toContain('4K Batch Export · Pro')
+    expect(withoutPro).not.toContain('Batch Multi-Size / 4K Export (Studio Pro)')
+  })
+
+  it('renders 13-device 2-level selector, independent browser Light/Dark toggle, workspace preview variant, copy loop, trust copy, and redact toolbar', () => {
+    const browserZh = renderToStaticMarkup(
+      <QuickWorkspace
+        preset={{ tool: 'mockup', mockupModel: 'browser-chrome', canvasSize: 'wide', enableRedact: true }}
+        locale="zh"
+        theme="light"
+        onOpenInStudio={vi.fn()}
+        onOpenProModal={vi.fn()}
+      />,
+    )
+    // Workspace variant hides QuickDesignModal's disclaimer header/footer.
+    expect(browserZh).not.toContain('4. Live preview')
+    // 5 Level-1 device category tabs.
+    for (const cat of ['browser', 'phone', 'tablet', 'watch', 'screen']) {
+      expect(browserZh).toContain(`data-testid="mockup-category-${cat}"`)
+    }
+    // Browser category shows all 3 browser models + independent Light/Dark Chrome toggle.
+    expect(browserZh).toContain('data-testid="mockup-model-browser-chrome"')
+    expect(browserZh).toContain('data-testid="mockup-model-browser-safari"')
+    expect(browserZh).toContain('data-testid="mockup-model-browser-minimal"')
+    expect(browserZh).toContain('data-testid="browser-chrome-controls"')
+    expect(browserZh).toContain('亮色顶栏')
+    expect(browserZh).toContain('暗色顶栏')
+    // Export trust copy + ghost Pro CTA + Copy Image button.
+    expect(browserZh).toContain('原图分辨率无损导出 · 免费无水印')
+    expect(browserZh).toContain('批量多尺寸 / 4K 导出 (Studio Pro)')
+    expect(browserZh).toContain('data-testid="mockup-copy-image"')
+    // Redact micro-toolbar auto-selects blur when preset.enableRedact is true.
+    expect(browserZh).toContain('data-testid="redact-micro-toolbar"')
+    expect(browserZh).toContain('data-testid="redact-mode-blur" aria-pressed="true"')
+    expect(browserZh).toContain('像素马赛克')
+    expect(browserZh).toContain('聚焦高亮框')
+
+    // Tablet & Watch presets select their own category pills and hide browser chrome controls.
+    const tabletHtml = renderToStaticMarkup(
+      <QuickWorkspace preset={{ tool: 'mockup', mockupModel: 'ipad-13' }} locale="en" theme="dark" onOpenInStudio={vi.fn()} />,
+    )
+    expect(tabletHtml).toContain('data-testid="mockup-model-ipad-13"')
+    expect(tabletHtml).toContain('data-testid="mockup-model-android-tablet"')
+    expect(tabletHtml).not.toContain('data-testid="browser-chrome-controls"')
+
+    const watchHtml = renderToStaticMarkup(
+      <QuickWorkspace preset={{ tool: 'mockup', mockupModel: 'apple-watch' }} locale="en" theme="dark" onOpenInStudio={vi.fn()} />,
+    )
+    expect(watchHtml).toContain('data-testid="mockup-model-apple-watch"')
+    expect(watchHtml).toContain('data-testid="mockup-model-wear-os"')
+
+    // Copy Image buttons exist on Split, Resize, and ID Card tools.
+    expect(
+      renderToStaticMarkup(<QuickWorkspace preset={{ tool: 'split' }} locale="en" theme="light" onOpenInStudio={vi.fn()} />),
+    ).toContain('data-testid="split-copy-image"')
+    expect(
+      renderToStaticMarkup(<QuickWorkspace preset={{ tool: 'resize' }} locale="en" theme="light" onOpenInStudio={vi.fn()} />),
+    ).toContain('data-testid="resize-copy-image"')
+    expect(
+      renderToStaticMarkup(<QuickWorkspace preset={{ tool: 'id-card' }} locale="en" theme="light" onOpenInStudio={vi.fn()} />),
+    ).toContain('data-testid="id-card-copy-image"')
+  })
+
+  it('supports .heic/.avif uploads in DropZone, renders inline decoding progress, and shows expandable EXIF privacy banner', () => {
+    expect(isSupportedImageFile(new File(['x'], 'photo.HEIC', { type: '' }))).toBe(true)
+    expect(isSupportedImageFile(new File(['x'], 'photo.heif', { type: '' }))).toBe(true)
+    expect(isSupportedImageFile(new File(['x'], 'photo.avif', { type: '' }))).toBe(true)
+    expect(isSupportedImageFile(new File(['x'], 'notes.pdf', { type: 'application/pdf' }))).toBe(false)
+
+    const dropHtml = renderToStaticMarkup(
+      <DropZone
+        theme="light"
+        title="Drop"
+        hint="Hint"
+        buttonLabel="Choose"
+        decodingLabel="正在本地解码苹果 HEIC 原图（不上传网络）..."
+        onFiles={vi.fn()}
+      />,
+    )
+    expect(dropHtml).toContain('accept="image/*,.heic,.heif,.avif"')
+    expect(dropHtml).toContain('data-testid="dropzone-decoding-status"')
+    expect(dropHtml).toContain('正在本地解码苹果 HEIC 原图（不上传网络）...')
+
+    // Demo or EXIF-free images render nothing.
+    const emptyExif = renderToStaticMarkup(
+      <ExifPrivacyBanner
+        theme="light"
+        locale="zh"
+        images={[createDemoImageInput('saas', 'demo.svg')]}
+      />,
+    )
+    expect(emptyExif).toBe('')
+
+    // User image with GPS & camera metadata renders amber banner and expandable details.
+    const userImgWithExif: WorkspaceImageInput = {
+      id: 'u1',
+      name: 'IMG_1024.HEIC',
+      width: 4032,
+      height: 3024,
+      dataUrl: 'data:image/jpeg;base64,AA',
+      sizeBytes: 120000,
+      exif: {
+        hasExif: true,
+        hasSensitiveData: true,
+        tagCount: 7,
+        gps: { latitude: 31.23041, longitude: 121.47371 },
+        make: 'Apple',
+        model: 'iPhone 16 Pro',
+        dateTimeOriginal: '2026:03:18 14:22:09',
+        exposureTime: '1/120s',
+        fNumber: 'f/1.8',
+        iso: 64,
+      },
+    }
+    const exifHtml = renderToStaticMarkup(
+      <ExifPrivacyBanner theme="light" locale="zh" images={[userImgWithExif]} defaultExpanded />,
+    )
+    expect(exifHtml).toContain('data-testid="exif-privacy-banner"')
+    expect(exifHtml).toContain('检测到拍摄定位 (GPS) 与设备型号等 7 项元数据 -&gt; 导出时将默认抹除')
+    expect(exifHtml).toContain('31.23041° N, 121.47371° E')
+    expect(exifHtml).toContain('Apple iPhone 16 Pro')
+    expect(exifHtml).toContain('2026:03:18 14:22:09')
+    expect(exifHtml).toContain('ISO 64')
   })
 })
 

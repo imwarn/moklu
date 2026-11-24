@@ -1,22 +1,28 @@
 /**
- * [INPUT]: depends on react, QuickDesignPreview from @/components/panels/QuickDesignPreview, QUICK_MOCKUPS/QUICK_SIZES/QUICK_THEMES from @/utils/quickDesign, browser chrome defaults from @/assets/mockups/browser, canvas utilities from ../canvasUtils, draftStorage from ../draftStorage, useToolDraft from ../useToolDraft, UI primitives from ../uiPrimitives, theme tokens from ../themeTokens, and strings from ../i18n
- * [OUTPUT]: exports MockupQuickTool component for instant above-the-fold screenshot beautification, local IndexedDB draft auto-save (excluding built-in demos), and full-style Studio handoff
+ * [INPUT]: depends on react, getMockupCategory from @/assets/mockups/registry, DEFAULT_BROWSER_CHROME and isBrowserModel from @/assets/mockups/browser, QuickDesignPreview from @/components/panels/QuickDesignPreview, isHeicFile from @/tools, QUICK_MOCKUP_CATEGORIES/QUICK_MOCKUPS/QUICK_SIZES/QUICK_THEMES/getQuickMockupsByCategory from @/utils/quickDesign, trackFunnelEvent from @/utils/telemetry, canvasUtils from ../canvasUtils, draftStorage from ../draftStorage, ExifPrivacyBanner from ../ExifPrivacyBanner, i18n from ../i18n, renderRedactedImageDataUrl from ../redact, RedactOverlay/RedactToolbar from ../RedactOverlay, themeTokens from ../themeTokens, UI primitives from ../uiPrimitives, useToolDraft from ../useToolDraft, and workspace types from ../types
+ * [OUTPUT]: exports MockupQuickTool component with 13-device 2-level selector, independent Browser Light/Dark chrome toggle, 3-second Blur/Pixelate/Spotlight redaction micro-toolbar, EXIF privacy banner, HEIC decoding progress, clipboard Copy loop, and non-destructive Studio handoff
  * [POS]: primary mockup tool panel inside src/workspace/tools; reuses QuickDesignPreview and quickDesign constants
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
-import { useCallback, useId, useMemo, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useState, type ReactNode } from 'react'
 import { DEFAULT_BROWSER_CHROME, isBrowserModel } from '@/assets/mockups/browser'
+import { getMockupCategory } from '@/assets/mockups/registry'
 import { QuickDesignPreview } from '@/components/panels/QuickDesignPreview'
+import { isHeicFile } from '@/tools'
 import type { BrowserChromeOptions } from '@/types'
 import {
+  QUICK_MOCKUP_CATEGORIES,
   QUICK_MOCKUPS,
   QUICK_SIZES,
   QUICK_THEMES,
+  getQuickMockupsByCategory,
+  type MockupCategory,
   type QuickMockup,
   type QuickScreenshotFit,
   type QuickSize,
   type QuickTheme,
 } from '@/utils/quickDesign'
+import { trackFunnelEvent } from '@/utils/telemetry'
 import {
   createDemoImageInput,
   readFileAsImageInput,
@@ -24,10 +30,18 @@ import {
   triggerBlobDownload,
 } from '../canvasUtils'
 import { deserializeDraftImages, type WorkspaceToolDraft } from '../draftStorage'
+import { ExifPrivacyBanner } from '../ExifPrivacyBanner'
 import { getWorkspaceStrings } from '../i18n'
+import { renderRedactedImageDataUrl } from '../redact'
+import { RedactOverlay, RedactToolbar, type RedactToolMode } from '../RedactOverlay'
 import { getWorkspaceThemeTokens } from '../themeTokens'
-import type { WorkspaceImageInput, WorkspaceToolPanelProps } from '../types'
+import type {
+  WorkspaceImageInput,
+  WorkspaceRedactionRegion,
+  WorkspaceToolPanelProps,
+} from '../types'
 import {
+  CopyImageButton,
   DraftStatusBar,
   DropZone,
   PreviewBusyOverlay,
@@ -47,6 +61,7 @@ interface MockupDraftSettings {
   scalePercent: number
   browserTitle: string
   browserAddress: string
+  browserChromeMode: 'light' | 'dark'
 }
 
 const MIN_CANVAS_PX = 240
@@ -67,6 +82,45 @@ function resolveInitialSize(sizeKey?: string): QuickSize {
 function clampCanvasPx(value: number, fallback: number): number {
   if (!Number.isFinite(value)) return fallback
   return Math.max(MIN_CANVAS_PX, Math.min(MAX_CANVAS_PX, Math.round(value)))
+}
+
+function CategoryIcon({ category }: { category: MockupCategory }): ReactNode {
+  switch (category) {
+    case 'browser':
+      return (
+        <svg viewBox="0 0 18 18" className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+          <rect x="2" y="3" width="14" height="12" rx="2" />
+          <path d="M2 6.5h14" />
+        </svg>
+      )
+    case 'phone':
+      return (
+        <svg viewBox="0 0 18 18" className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+          <rect x="5" y="2" width="8" height="14" rx="2" />
+          <path d="M8 13.5h2" strokeLinecap="round" />
+        </svg>
+      )
+    case 'tablet':
+      return (
+        <svg viewBox="0 0 18 18" className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+          <rect x="3" y="2.5" width="12" height="13" rx="2" />
+          <circle cx="9" cy="13.2" r="0.6" fill="currentColor" stroke="none" />
+        </svg>
+      )
+    case 'watch':
+      return (
+        <svg viewBox="0 0 18 18" className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+          <rect x="5" y="4.5" width="8" height="9" rx="2.5" />
+          <path d="M7 4.5V2.5h4v2M7 13.5v2h4v-2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      )
+    case 'screen':
+      return (
+        <svg viewBox="0 0 18 18" className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+          <rect x="2.5" y="4" width="13" height="10" rx="1.5" strokeDasharray="2.5 1.8" />
+        </svg>
+      )
+  }
 }
 
 export function MockupQuickTool({
@@ -98,11 +152,47 @@ export function MockupQuickTool({
   const [scalePercent, setScalePercent] = useState<number>(100)
   const [browserTitle, setBrowserTitle] = useState<string>(DEFAULT_BROWSER_CHROME.title)
   const [browserAddress, setBrowserAddress] = useState<string>('https://moklu.app')
+  const [browserChromeMode, setBrowserChromeMode] = useState<'light' | 'dark'>('light')
   const [screenshot, setScreenshot] = useState<WorkspaceImageInput | null>(() =>
     createDemoImageInput(initialMockup.startsWith('browser-') ? 'saas' : 'mobile', 'moklu-demo-screenshot.svg'),
   )
+  const [heicDecoding, setHeicDecoding] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
+  const [isCopying, setIsCopying] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
+
+  // Redact & Spotlight state (kept separate from raw screenshot.dataUrl for non-destructive handoff).
+  const [redactMode, setRedactMode] = useState<RedactToolMode>(preset.enableRedact ? 'blur' : null)
+  const [redactIntensity, setRedactIntensity] = useState<number>(14)
+  const [spotlightZoom, setSpotlightZoom] = useState<boolean>(true)
+  const [redactions, setRedactions] = useState<WorkspaceRedactionRegion[]>([])
+  const [selectedRedactId, setSelectedRedactId] = useState<string | null>(null)
+  const [redactedPreview, setRedactedPreview] = useState<{ sourceUrl: string; url: string } | null>(null)
+
+  const activeCategory: MockupCategory = getMockupCategory(mockup)
+  const categoryModels = useMemo(() => getQuickMockupsByCategory(activeCategory), [activeCategory])
+
+  // Render live redacted preview Data URL whenever regions or screenshot change.
+  useEffect(() => {
+    const sourceUrl = screenshot?.dataUrl
+    if (!sourceUrl || redactions.length === 0) return
+    let cancelled = false
+    void renderRedactedImageDataUrl(sourceUrl, redactions)
+      .then((url) => {
+        if (!cancelled) setRedactedPreview({ sourceUrl, url })
+      })
+      .catch(() => {
+        if (!cancelled) setRedactedPreview(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [screenshot?.dataUrl, redactions])
+
+  const effectivePreviewSrc =
+    redactions.length > 0 && redactedPreview && redactedPreview.sourceUrl === screenshot?.dataUrl
+      ? redactedPreview.url
+      : screenshot?.dataUrl
 
   const draftImages = useMemo(() => (screenshot ? [screenshot] : []), [screenshot])
   const draftSettings = useMemo<MockupDraftSettings>(
@@ -116,8 +206,9 @@ export function MockupQuickTool({
       scalePercent,
       browserTitle,
       browserAddress,
+      browserChromeMode,
     }),
-    [mockup, sizeKey, customWidth, customHeight, quickTheme, fit, scalePercent, browserTitle, browserAddress],
+    [mockup, sizeKey, customWidth, customHeight, quickTheme, fit, scalePercent, browserTitle, browserAddress, browserChromeMode],
   )
 
   const handleRestoreDraft = useCallback((draft: WorkspaceToolDraft<MockupDraftSettings>) => {
@@ -143,6 +234,9 @@ export function MockupQuickTool({
     }
     if (typeof cfg.browserTitle === 'string') setBrowserTitle(cfg.browserTitle)
     if (typeof cfg.browserAddress === 'string') setBrowserAddress(cfg.browserAddress)
+    if (cfg.browserChromeMode === 'light' || cfg.browserChromeMode === 'dark') {
+      setBrowserChromeMode(cfg.browserChromeMode)
+    }
   }, [initialSize])
 
   const { hasDraft, clearDraft } = useToolDraft<MockupDraftSettings>({
@@ -156,6 +250,8 @@ export function MockupQuickTool({
     void clearDraft()
     const variant = initialMockup.startsWith('browser-') ? 'saas' : 'mobile'
     setScreenshot(createDemoImageInput(variant, 'moklu-demo-screenshot.svg'))
+    setRedactions([])
+    setSelectedRedactId(null)
   }
 
   const browserChrome = useMemo<BrowserChromeOptions | undefined>(() => {
@@ -163,10 +259,17 @@ export function MockupQuickTool({
     return {
       title: browserTitle || DEFAULT_BROWSER_CHROME.title,
       address: browserAddress || DEFAULT_BROWSER_CHROME.address,
-      theme: quickTheme === 'midnight' ? 'dark' : 'light',
+      theme: browserChromeMode,
       showAddressBar: true,
     }
-  }, [mockup, browserTitle, browserAddress, quickTheme])
+  }, [mockup, browserTitle, browserAddress, browserChromeMode])
+
+  const handleCategorySelect = (category: MockupCategory) => {
+    const models = getQuickMockupsByCategory(category)
+    if (models.length > 0 && getMockupCategory(mockup) !== category) {
+      setMockup(models[0].id)
+    }
+  }
 
   const handleSizeSelect = (next: QuickSize) => {
     const nextW = QUICK_SIZES[next].width
@@ -214,11 +317,21 @@ export function MockupQuickTool({
     const file = files[0]
     if (!file) return
     setExportError(null)
+    const heic = isHeicFile(file)
+    if (heic) setHeicDecoding(true)
     try {
-      const loaded = await readFileAsImageInput(file)
+      const loaded = await readFileAsImageInput(file, 'screenshot.png', {
+        onHeicStage: (stage) => {
+          setHeicDecoding(stage !== 'done')
+        },
+      })
       setScreenshot(loaded)
+      setRedactions([])
+      setSelectedRedactId(null)
     } catch {
       setExportError(s.common.decodeError)
+    } finally {
+      setHeicDecoding(false)
     }
   }, [s.common.decodeError])
 
@@ -226,13 +339,13 @@ export function MockupQuickTool({
     setExportError(null)
     const variant = mockup.startsWith('browser-') ? 'saas' : 'mobile'
     setScreenshot(createDemoImageInput(variant, `moklu-demo-${variant}.svg`))
+    setRedactions([])
+    setSelectedRedactId(null)
   }
 
-  const handleDownloadPng = async () => {
-    setIsExporting(true)
-    setExportError(null)
-    try {
-      const output = await renderMockupCanvasToPng({
+  const renderCurrentPng = useCallback(
+    () =>
+      renderMockupCanvasToPng({
         width: customWidth,
         height: customHeight,
         theme: quickTheme,
@@ -241,14 +354,29 @@ export function MockupQuickTool({
         screenshotFit: fit,
         scaleFactor: scalePercent / 100,
         browserChrome,
-      })
+        redactions,
+      }),
+    [customWidth, customHeight, quickTheme, mockup, screenshot?.dataUrl, fit, scalePercent, browserChrome, redactions],
+  )
+
+  const handleDownloadPng = async () => {
+    setIsExporting(true)
+    setExportError(null)
+    try {
+      const output = await renderCurrentPng()
       triggerBlobDownload(output.blob, output.filename)
+      trackFunnelEvent('export_completed', { tool: 'mockup', model: mockup, redacted: redactions.length > 0 })
     } catch (err) {
       setExportError(err instanceof Error && err.message ? err.message : s.common.exportError)
     } finally {
       setIsExporting(false)
     }
   }
+
+  const getCopyTarget = useCallback(async () => {
+    const output = await renderCurrentPng()
+    return { blob: output.blob, previewDataUrl: output.dataUrl }
+  }, [renderCurrentPng])
 
   const handleOpenInStudio = () => {
     const target = screenshot ?? createDemoImageInput('saas', 'moklu-demo.svg')
@@ -269,12 +397,44 @@ export function MockupQuickTool({
       screenshotFit: fit,
       scaleFactor: scalePercent / 100,
       browserChrome,
+      ...(redactions.length > 0 ? { redactions } : {}),
     })
   }
 
+  const handleIntensityChange = (next: number) => {
+    setRedactIntensity(next)
+    if (selectedRedactId) {
+      setRedactions((prev) =>
+        prev.map((r) => (r.id === selectedRedactId && r.kind !== 'spotlight' ? { ...r, intensity: next } : r)),
+      )
+    }
+  }
+
+  const handleSpotlightZoomChange = (zoomed: boolean) => {
+    setSpotlightZoom(zoomed)
+    if (selectedRedactId) {
+      setRedactions((prev) =>
+        prev.map((r) => (r.id === selectedRedactId && r.kind === 'spotlight' ? { ...r, intensity: zoomed ? 1.25 : 1 } : r)),
+      )
+    }
+  }
+
+  const handleDeleteSelectedRedact = () => {
+    if (!selectedRedactId) return
+    setRedactions((prev) => prev.filter((r) => r.id !== selectedRedactId))
+    setSelectedRedactId(null)
+  }
+
+  const handleClearRedactions = () => {
+    setRedactions([])
+    setSelectedRedactId(null)
+  }
+
+  const isBusy = isExporting || isCopying
+
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-      {/* Left: Live Mockup Stage */}
+      {/* Left: Live Mockup Stage + Redact Micro-Toolbar */}
       <div className="flex flex-col gap-4 lg:col-span-7">
         <div className={`rounded-2xl border p-4 ${tokens.stage}`}>
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -295,18 +455,53 @@ export function MockupQuickTool({
             </button>
           </div>
 
-          <div aria-busy={isExporting} className="relative rounded-xl bg-zinc-950 p-1">
-            {isExporting && <PreviewBusyOverlay theme="dark" label={s.common.downloading} />}
+          {/* 3-Second Redact / Pixelate / Spotlight Micro-Toolbar */}
+          <RedactToolbar
+            theme={theme}
+            locale={locale}
+            activeMode={redactMode}
+            intensity={redactIntensity}
+            spotlightZoom={spotlightZoom}
+            regions={redactions}
+            selectedId={selectedRedactId}
+            onModeChange={setRedactMode}
+            onIntensityChange={handleIntensityChange}
+            onSpotlightZoomChange={handleSpotlightZoomChange}
+            onDeleteSelected={handleDeleteSelectedRedact}
+            onClearAll={handleClearRedactions}
+          />
+
+          <div aria-busy={isBusy} className="relative rounded-xl bg-zinc-950 p-1">
+            {isBusy && <PreviewBusyOverlay theme="dark" label={s.common.downloading} />}
             <QuickDesignPreview
+              variant="workspace"
               width={customWidth}
               height={customHeight}
               theme={quickTheme}
               mockup={mockup}
-              screenshotSrc={screenshot?.dataUrl}
+              screenshotSrc={effectivePreviewSrc}
               screenshotFit={fit}
               scaleFactor={scalePercent / 100}
               browserChrome={browserChrome}
             />
+            {screenshot && (
+              <RedactOverlay
+                canvasWidth={customWidth}
+                canvasHeight={customHeight}
+                mockup={mockup}
+                scaleFactor={scalePercent / 100}
+                screenshotWidth={screenshot.width}
+                screenshotHeight={screenshot.height}
+                screenshotFit={fit}
+                activeMode={redactMode}
+                intensity={redactIntensity}
+                spotlightZoom={spotlightZoom}
+                regions={redactions}
+                selectedId={selectedRedactId}
+                onSelect={setSelectedRedactId}
+                onChangeRegions={setRedactions}
+              />
+            )}
           </div>
 
           <div className="mt-4">
@@ -317,9 +512,12 @@ export function MockupQuickTool({
               hint={screenshot ? `${screenshot.name} (${screenshot.width}×${screenshot.height})` : s.common.dropHint}
               buttonLabel={s.mockup.replaceScreenshot}
               invalidFileMessage={s.common.invalidFileError}
+              decodingLabel={heicDecoding ? s.common.heicDecoding : null}
               onFiles={handleFiles}
             />
           </div>
+
+          <ExifPrivacyBanner theme={theme} locale={locale} images={draftImages} className="mt-3" />
 
           {hasDraft && (
             <DraftStatusBar
@@ -336,13 +534,57 @@ export function MockupQuickTool({
       {/* Right: Controls & Instant Actions */}
       <div className={`flex flex-col justify-between gap-5 rounded-2xl border p-5 lg:col-span-5 ${tokens.card}`}>
         <div className="space-y-4">
-          <SegmentedControl
-            theme={theme}
-            label={s.mockup.deviceLabel}
-            value={mockup}
-            options={QUICK_MOCKUPS.map((item) => ({ value: item.id, label: item.label }))}
-            onChange={(next) => setMockup(next)}
-          />
+          {/* 2-Level 13-Device Selector: Level 1 Categories + Level 2 Model Pills */}
+          <div className="space-y-2" data-testid="mockup-device-selector">
+            <span className={`block text-xs font-semibold ${tokens.textMuted}`}>{s.mockup.deviceLabel}</span>
+            <div role="tablist" aria-label={s.mockup.deviceLabel} className="flex flex-wrap gap-1.5">
+              {QUICK_MOCKUP_CATEGORIES.map((category) => {
+                const selected = category === activeCategory
+                return (
+                  <button
+                    key={category}
+                    type="button"
+                    role="tab"
+                    aria-selected={selected}
+                    data-testid={`mockup-category-${category}`}
+                    onClick={() => handleCategorySelect(category)}
+                    className={`inline-flex min-h-8 items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-semibold transition-colors ${tokens.focusRing} ${
+                      selected ? tokens.pillActive : tokens.pillIdle
+                    }`}
+                  >
+                    <CategoryIcon category={category} />
+                    <span>{s.mockup.categories[category]}</span>
+                  </button>
+                )
+              })}
+            </div>
+            <div
+              role="radiogroup"
+              aria-label={s.mockup.categories[activeCategory]}
+              data-testid="mockup-model-pills"
+              className="flex flex-wrap gap-1.5"
+            >
+              {categoryModels.map((item) => {
+                const active = item.id === mockup
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    tabIndex={active ? 0 : -1}
+                    data-testid={`mockup-model-${item.id}`}
+                    onClick={() => setMockup(item.id)}
+                    className={`min-h-8 rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors ${tokens.focusRing} ${
+                      active ? tokens.pillActive : tokens.pillIdle
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
 
           <SegmentedControl
             theme={theme}
@@ -359,9 +601,7 @@ export function MockupQuickTool({
             <span className={`mb-1.5 block text-xs font-semibold ${tokens.textMuted}`}>{s.mockup.customSize}</span>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label htmlFor={widthInputId} className="sr-only">
-                  {s.mockup.canvasWidthLabel}
-                </label>
+                <label htmlFor={widthInputId} className="sr-only">{s.mockup.canvasWidthLabel}</label>
                 <input
                   id={widthInputId}
                   type="number"
@@ -374,9 +614,7 @@ export function MockupQuickTool({
                 />
               </div>
               <div>
-                <label htmlFor={heightInputId} className="sr-only">
-                  {s.mockup.canvasHeightLabel}
-                </label>
+                <label htmlFor={heightInputId} className="sr-only">{s.mockup.canvasHeightLabel}</label>
                 <input
                   id={heightInputId}
                   type="number"
@@ -428,7 +666,7 @@ export function MockupQuickTool({
               { value: 'contain', label: s.mockup.fitContain },
               { value: 'fill', label: s.mockup.fitFill },
             ]}
-            onChange={(next) => setFit(next)}
+            onChange={setFit}
           />
 
           <SliderField
@@ -442,35 +680,48 @@ export function MockupQuickTool({
           />
 
           {isBrowserModel(mockup) && (
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <div>
-                <label htmlFor={browserTitleId} className={`mb-1 block text-[11px] font-semibold ${tokens.textMuted}`}>
-                  {s.mockup.browserTitle}
-                </label>
-                <input
-                  id={browserTitleId}
-                  type="text"
-                  value={browserTitle}
-                  onChange={(e) => setBrowserTitle(e.target.value)}
-                  className={`min-h-8 w-full rounded-lg border px-2.5 py-1.5 text-xs outline-none ${tokens.input}`}
-                />
-              </div>
-              <div>
-                <label htmlFor={browserUrlId} className={`mb-1 block text-[11px] font-semibold ${tokens.textMuted}`}>
-                  {s.mockup.browserUrl}
-                </label>
-                <input
-                  id={browserUrlId}
-                  type="text"
-                  value={browserAddress}
-                  onChange={(e) => setBrowserAddress(e.target.value)}
-                  className={`min-h-8 w-full rounded-lg border px-2.5 py-1.5 text-xs outline-none ${tokens.input}`}
-                />
+            <div className="space-y-3" data-testid="browser-chrome-controls">
+              <SegmentedControl
+                theme={theme}
+                label={s.mockup.browserThemeLabel}
+                value={browserChromeMode}
+                options={[
+                  { value: 'light', label: s.mockup.browserThemeLight },
+                  { value: 'dark', label: s.mockup.browserThemeDark },
+                ]}
+                onChange={setBrowserChromeMode}
+              />
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <div>
+                  <label htmlFor={browserTitleId} className={`mb-1 block text-[11px] font-semibold ${tokens.textMuted}`}>
+                    {s.mockup.browserTitle}
+                  </label>
+                  <input
+                    id={browserTitleId}
+                    type="text"
+                    value={browserTitle}
+                    onChange={(e) => setBrowserTitle(e.target.value)}
+                    className={`min-h-8 w-full rounded-lg border px-2.5 py-1.5 text-xs outline-none ${tokens.input}`}
+                  />
+                </div>
+                <div>
+                  <label htmlFor={browserUrlId} className={`mb-1 block text-[11px] font-semibold ${tokens.textMuted}`}>
+                    {s.mockup.browserUrl}
+                  </label>
+                  <input
+                    id={browserUrlId}
+                    type="text"
+                    value={browserAddress}
+                    onChange={(e) => setBrowserAddress(e.target.value)}
+                    className={`min-h-8 w-full rounded-lg border px-2.5 py-1.5 text-xs outline-none ${tokens.input}`}
+                  />
+                </div>
               </div>
             </div>
           )}
         </div>
 
+        {/* Export Loop: Download + Copy Image + Trust Subtext + Studio + Ghost Pro */}
         <div className="space-y-2.5 border-t pt-4 border-current/10">
           {exportError && (
             <p role="alert" className={`text-xs font-medium ${tokens.errorText}`}>
@@ -480,24 +731,42 @@ export function MockupQuickTool({
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <button
               type="button"
-              disabled={isExporting}
+              disabled={isBusy}
               onClick={handleDownloadPng}
               className={`inline-flex min-h-9 items-center justify-center rounded-xl px-4 py-2.5 text-xs font-semibold transition-colors disabled:opacity-50 ${tokens.focusRing} ${tokens.buttonPrimary}`}
             >
               {isExporting ? s.common.downloading : s.common.downloadPng}
             </button>
-            <StudioHandoffButton theme={theme} label={s.common.openInStudio} onClick={handleOpenInStudio} />
+            <CopyImageButton
+              theme={theme}
+              tool="mockup"
+              testId="mockup-copy-image"
+              label={s.common.copyImage}
+              copiedLabel={s.common.copiedToChat}
+              copyErrorMessage={s.common.copyError}
+              disabled={isExporting}
+              getImage={getCopyTarget}
+              onError={setExportError}
+              onBusyChange={setIsCopying}
+            />
           </div>
-          {onOpenProModal && (
-            <button
-              type="button"
-              onClick={onOpenProModal}
-              className={`flex min-h-9 w-full items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${tokens.focusRing} ${tokens.buttonPro}`}
-            >
-              <span aria-hidden="true">✦</span>
-              <span>{s.common.proBatchCta}</span>
-            </button>
-          )}
+          <p data-testid="mockup-export-trust" className={`text-center text-[11px] font-medium ${tokens.textSubtle}`}>
+            {s.common.exportTrustNote}
+          </p>
+          <div className="grid grid-cols-1 gap-2">
+            <StudioHandoffButton theme={theme} label={s.common.openInStudio} onClick={handleOpenInStudio} />
+            {onOpenProModal && (
+              <button
+                type="button"
+                data-testid="mockup-pro-cta"
+                onClick={onOpenProModal}
+                className={`flex min-h-8 w-full items-center justify-center gap-1.5 rounded-xl border border-border bg-transparent px-3 py-1.5 text-xs font-medium transition-colors hover:bg-surface ${tokens.focusRing} ${tokens.textMuted}`}
+              >
+                <span aria-hidden="true">✦</span>
+                <span>{s.common.proBatchCta}</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

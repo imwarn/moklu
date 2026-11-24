@@ -1,10 +1,12 @@
 /**
- * [INPUT]: depends on react, canvasUtils from ../canvasUtils, draftStorage from ../draftStorage, useToolDraft from ../useToolDraft, strings from ../i18n, themeTokens from ../themeTokens, UI primitives from ../uiPrimitives, useDebouncedValue from ../useDebouncedValue, and WorkspaceToolPanelProps from ../types
- * [OUTPUT]: exports SplitQuickTool component for carousel panorama splitting and grid matrix slicing with interactive cut-line overlays, debounced slicing, local IndexedDB draft auto-save, and error-handled ZIP export
+ * [INPUT]: depends on react, isHeicFile from @/tools, trackFunnelEvent from @/utils/telemetry, canvasUtils from ../canvasUtils, draftStorage from ../draftStorage, useToolDraft from ../useToolDraft, strings from ../i18n, themeTokens from ../themeTokens, UI primitives from ../uiPrimitives, useDebouncedValue from ../useDebouncedValue, and WorkspaceToolPanelProps from ../types
+ * [OUTPUT]: exports SplitQuickTool component for carousel panorama splitting and grid matrix slicing with interactive cut-line overlays, HEIC decoding progress, clipboard Copy Image loop, debounced slicing, local IndexedDB draft auto-save, and error-handled ZIP export
  * [POS]: carousel and grid splitter panel inside src/workspace/tools; delegates slice rendering and ZIP export to injected engines.split
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { isHeicFile } from '@/tools'
+import { trackFunnelEvent } from '@/utils/telemetry'
 import { createDemoImageInput, readFileAsImageInput, triggerBlobDownload } from '../canvasUtils'
 import { deserializeDraftImages, type WorkspaceToolDraft } from '../draftStorage'
 import { getWorkspaceStrings } from '../i18n'
@@ -16,6 +18,7 @@ import type {
   WorkspaceToolPanelProps,
 } from '../types'
 import {
+  CopyImageButton,
   DraftStatusBar,
   DropZone,
   PreviewBusyOverlay,
@@ -51,6 +54,7 @@ export function SplitQuickTool({
   const [rows, setRows] = useState<number>(3)
   const [cols, setCols] = useState<number>(3)
   const [result, setResult] = useState<WorkspaceSplitResult | null>(null)
+  const [heicDecoding, setHeicDecoding] = useState(false)
   const [processing, setProcessing] = useState(false)
   const [zipping, setZipping] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -111,11 +115,16 @@ export function SplitQuickTool({
     const file = files[0]
     if (!file) return
     setError(null)
+    if (isHeicFile(file)) setHeicDecoding(true)
     try {
-      const loaded = await readFileAsImageInput(file)
+      const loaded = await readFileAsImageInput(file, 'image.png', {
+        onHeicStage: (stage) => setHeicDecoding(stage !== 'done'),
+      })
       setSource(loaded)
     } catch {
       setError(s.common.decodeError)
+    } finally {
+      setHeicDecoding(false)
     }
   }, [s.common.decodeError])
 
@@ -154,8 +163,14 @@ export function SplitQuickTool({
   }, [source, mode, debouncedCarouselCount, carouselAspect, debouncedRows, debouncedCols, engines, s.split.splitError])
 
   const activeResult = source ? result : null
+  const firstSlice = activeResult?.slices[0] ?? null
   const guideCols = mode === 'carousel' ? carouselCount : cols
   const guideRows = mode === 'carousel' ? 1 : rows
+
+  const getCopyTarget = useCallback(
+    async () => (firstSlice ? { blob: firstSlice.blob, previewDataUrl: firstSlice.dataUrl } : null),
+    [firstSlice],
+  )
 
   const handleDownloadZip = async () => {
     if (!activeResult || zipping) return
@@ -165,6 +180,7 @@ export function SplitQuickTool({
       const zipBlob = activeResult.zipBlob
         ?? (await engines.packZip(activeResult.slices.map((sl) => ({ filename: sl.filename, blob: sl.blob }))))
       triggerBlobDownload(zipBlob, `moklu-split-${mode}-${activeResult.slices.length}.zip`)
+      trackFunnelEvent('export_completed', { tool: 'split', mode, slices: activeResult.slices.length })
     } catch (err) {
       setError(err instanceof Error && err.message ? err.message : s.common.zipError)
     } finally {
@@ -272,7 +288,10 @@ export function SplitQuickTool({
                       <button
                         type="button"
                         aria-label={`${s.split.downloadSlice}: ${slice.filename}`}
-                        onClick={() => triggerBlobDownload(slice.blob, slice.filename)}
+                        onClick={() => {
+                          triggerBlobDownload(slice.blob, slice.filename)
+                          trackFunnelEvent('export_completed', { tool: 'split', mode, slices: 1 })
+                        }}
                         className={`inline-flex min-h-7 items-center justify-center rounded-md px-2 py-1 text-[11px] font-semibold transition-colors ${tokens.focusRing} ${tokens.accentChip}`}
                       >
                         {s.split.downloadSlice}
@@ -292,6 +311,7 @@ export function SplitQuickTool({
               hint={s.common.dropHint}
               buttonLabel={s.common.chooseFiles}
               invalidFileMessage={s.common.invalidFileError}
+              decodingLabel={heicDecoding ? s.common.heicDecoding : null}
               onFiles={handleFiles}
             />
           </div>
@@ -396,6 +416,19 @@ export function SplitQuickTool({
             >
               {zipping ? s.common.downloading : isBusy ? s.common.processing : s.common.downloadZip}
             </button>
+            <CopyImageButton
+              theme={theme}
+              tool="split"
+              testId="split-copy-image"
+              label={s.common.copyImage}
+              copiedLabel={s.common.copiedToChat}
+              copyErrorMessage={s.common.copyError}
+              disabled={!firstSlice || isBusy}
+              getImage={getCopyTarget}
+              onError={setError}
+            />
+          </div>
+          <div className="grid grid-cols-1">
             <StudioHandoffButton
               theme={theme}
               label={s.common.openInStudio}

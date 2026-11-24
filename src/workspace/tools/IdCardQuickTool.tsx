@@ -1,12 +1,15 @@
 /**
- * [INPUT]: depends on react, canvasUtils from ../canvasUtils, draftStorage from ../draftStorage, useToolDraft from ../useToolDraft, strings from ../i18n, themeTokens from ../themeTokens, UI primitives from ../uiPrimitives, useDebouncedValue from ../useDebouncedValue, and WorkspaceToolPanelProps from ../types
- * [OUTPUT]: exports IdCardQuickTool component for offline A4 front+back ID card sheet layout, local IndexedDB draft auto-save (excluding sample mock IDs), and debounced anti-fraud watermarking
+ * [INPUT]: depends on react, isHeicFile from @/tools, trackFunnelEvent from @/utils/telemetry, canvasUtils from ../canvasUtils, draftStorage from ../draftStorage, ExifPrivacyBanner from ../ExifPrivacyBanner, useToolDraft from ../useToolDraft, strings from ../i18n, themeTokens from ../themeTokens, UI primitives from ../uiPrimitives, useDebouncedValue from ../useDebouncedValue, and WorkspaceToolPanelProps from ../types
+ * [OUTPUT]: exports IdCardQuickTool component for offline A4 front+back ID card sheet layout, HEIC decoding progress, EXIF privacy banner, clipboard Copy Image loop, local IndexedDB draft auto-save (excluding sample mock IDs), and debounced anti-fraud watermarking
  * [POS]: privacy-first ID card watermark tool panel inside src/workspace/tools; delegates A4 rendering to injected engines.idCard
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 import { useCallback, useEffect, useId, useMemo, useState } from 'react'
+import { isHeicFile } from '@/tools'
+import { trackFunnelEvent } from '@/utils/telemetry'
 import { createDemoImageInput, formatBytes, readFileAsImageInput, triggerBlobDownload } from '../canvasUtils'
 import { deserializeDraftImages, type WorkspaceToolDraft } from '../draftStorage'
+import { ExifPrivacyBanner } from '../ExifPrivacyBanner'
 import { getWorkspaceStrings } from '../i18n'
 import { getWorkspaceThemeTokens } from '../themeTokens'
 import type {
@@ -15,7 +18,15 @@ import type {
   WorkspaceImageInput,
   WorkspaceToolPanelProps,
 } from '../types'
-import { ColorSwatchRow, DraftStatusBar, DropZone, PreviewBusyOverlay, SegmentedControl, SliderField } from '../uiPrimitives'
+import {
+  ColorSwatchRow,
+  CopyImageButton,
+  DraftStatusBar,
+  DropZone,
+  PreviewBusyOverlay,
+  SegmentedControl,
+  SliderField,
+} from '../uiPrimitives'
 import { useDebouncedValue } from '../useDebouncedValue'
 import { useToolDraft } from '../useToolDraft'
 
@@ -63,6 +74,8 @@ export function IdCardQuickTool({
   const [dpi, setDpi] = useState<'150' | '300'>('300')
   const [grayscale, setGrayscale] = useState<boolean>(false)
   const [sheet, setSheet] = useState<WorkspaceBlobOutput | null>(null)
+  const [frontHeicDecoding, setFrontHeicDecoding] = useState(false)
+  const [backHeicDecoding, setBackHeicDecoding] = useState(false)
   const [rendering, setRendering] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -154,10 +167,17 @@ export function IdCardQuickTool({
     const file = files[0]
     if (!file) return
     setError(null)
+    if (isHeicFile(file)) setFrontHeicDecoding(true)
     try {
-      setFront(await readFileAsImageInput(file))
+      setFront(
+        await readFileAsImageInput(file, 'id-front.png', {
+          onHeicStage: (stage) => setFrontHeicDecoding(stage !== 'done'),
+        }),
+      )
     } catch {
       setError(s.idCard.frontDecodeError)
+    } finally {
+      setFrontHeicDecoding(false)
     }
   }, [s.idCard.frontDecodeError])
 
@@ -165,10 +185,17 @@ export function IdCardQuickTool({
     const file = files[0]
     if (!file) return
     setError(null)
+    if (isHeicFile(file)) setBackHeicDecoding(true)
     try {
-      setBack(await readFileAsImageInput(file))
+      setBack(
+        await readFileAsImageInput(file, 'id-back.png', {
+          onHeicStage: (stage) => setBackHeicDecoding(stage !== 'done'),
+        }),
+      )
     } catch {
       setError(s.idCard.backDecodeError)
+    } finally {
+      setBackHeicDecoding(false)
     }
   }, [s.idCard.backDecodeError])
 
@@ -222,6 +249,11 @@ export function IdCardQuickTool({
   ])
 
   const activeSheet = hasCards ? sheet : null
+
+  const getCopyTarget = useCallback(
+    async () => (activeSheet ? { blob: activeSheet.blob, previewDataUrl: activeSheet.dataUrl } : null),
+    [activeSheet],
+  )
 
   return (
     <div className="space-y-4">
@@ -280,6 +312,7 @@ export function IdCardQuickTool({
                 hint={front ? front.name : s.idCard.cardSizeHint}
                 buttonLabel={s.idCard.uploadFront}
                 invalidFileMessage={s.common.invalidFileError}
+                decodingLabel={frontHeicDecoding ? s.common.heicDecoding : null}
                 onFiles={handleFrontFiles}
               />
             </div>
@@ -312,10 +345,13 @@ export function IdCardQuickTool({
                 hint={back ? back.name : s.idCard.cardSizeHint}
                 buttonLabel={s.idCard.uploadBack}
                 invalidFileMessage={s.common.invalidFileError}
+                decodingLabel={backHeicDecoding ? s.common.heicDecoding : null}
                 onFiles={handleBackFiles}
               />
             </div>
           </div>
+
+          <ExifPrivacyBanner theme={theme} locale={locale} images={draftImages} />
 
           <div className={`rounded-2xl border p-4 ${tokens.stage}`}>
             <div className="mb-2 flex items-center justify-between gap-2">
@@ -447,14 +483,31 @@ export function IdCardQuickTool({
                 {error}
               </p>
             )}
-            <button
-              type="button"
-              disabled={!activeSheet || isBusy}
-              onClick={() => activeSheet && triggerBlobDownload(activeSheet.blob, activeSheet.filename)}
-              className={`inline-flex min-h-9 w-full items-center justify-center rounded-xl px-4 py-2.5 text-xs font-semibold transition-colors disabled:opacity-50 ${tokens.focusRing} ${tokens.buttonPrimary}`}
-            >
-              {isBusy ? s.common.processing : s.idCard.downloadA4}
-            </button>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                disabled={!activeSheet || isBusy}
+                onClick={() => {
+                  if (!activeSheet) return
+                  triggerBlobDownload(activeSheet.blob, activeSheet.filename)
+                  trackFunnelEvent('export_completed', { tool: 'id-card', dpi })
+                }}
+                className={`inline-flex min-h-9 w-full items-center justify-center rounded-xl px-4 py-2.5 text-xs font-semibold transition-colors disabled:opacity-50 ${tokens.focusRing} ${tokens.buttonPrimary}`}
+              >
+                {isBusy ? s.common.processing : s.idCard.downloadA4}
+              </button>
+              <CopyImageButton
+                theme={theme}
+                tool="id-card"
+                testId="id-card-copy-image"
+                label={s.common.copyImage}
+                copiedLabel={s.common.copiedToChat}
+                copyErrorMessage={s.common.copyError}
+                disabled={!activeSheet || isBusy}
+                getImage={getCopyTarget}
+                onError={setError}
+              />
+            </div>
           </div>
         </div>
       </div>
