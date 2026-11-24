@@ -149,6 +149,17 @@ curl -sS -X POST https://api.indexnow.org/indexnow \
   - 任意匹配 `/name|path|url|src|blob|data|file/i` 的属性键会被无条件剥离。
   - 仅白名单短键 `mime` 与 `ext` 允许保留（且截断至最多 16 个字符，如 `image/heic`、`webp`）。
   - 任何以 `data:`、`blob:`、`http(s)://`、`file://` 或本地绝对路径开头的值也会被剥离。
-- **默认零网络发送**：
-  - 所有事件默认仅保存在浏览器内存的最近 100 条环形队列中（可通过 `getRecentFunnelEvents()` / `clearFunnelEvents()` 读取与清空）。
-  - 仅当构建期环境变量 `VITE_ANALYTICS_ENDPOINT` 非空时，才会通过 `navigator.sendBeacon` 异步上报脱敏后的 JSON 事件，且上报异常不会影响任何前端交互。若启用自定义上报端点，需同步将该域名加入 [`public/_headers`](../public/_headers) 的 `connect-src` 白名单并通过 `node scripts/check-headers.mjs` 校验。
+- **生产同源自动上报与本地零外发**：
+  - 本地开发（`localhost`）、单测、E2E 与自建镜像默认仅保存在浏览器内存的最近 100 条环形队列中（零网络请求）。
+  - 在正式域名 `https://moklu.app` 下，自动通过同源 `navigator.sendBeacon('/_telemetry', ...)` 发往边缘 Worker [`workers/telemetry/`](../workers/telemetry/wrangler.jsonc)，按「天 + 事件 + 工具 + 路由 + 语种 + 扩展名」聚合累加到 Cloudflare D1 数据库 `moklu-funnel`（表 `funnel_daily`，零单条会话明细、零 Cookie、不存 IP；同时该边缘 Worker 在 `moklu.app/*` 自动注入 `public/_headers` 的完整 CSP 与安全头；如需关闭上报可设 `VITE_ANALYTICS_ENDPOINT=off`）。
+  - 部署与日常查询命令：
+    ```bash
+    # 部署/更新边缘安全头与同源漏斗 Worker (moklu.app/*)
+    npm run cf:deploy-telemetry
+
+    # 查询最近 7 天各工具漏斗与被拒文件格式分布
+    npm run funnel:report -- 7
+
+    # 将 dist/sitemap.xml 全部 120 条 URL 推送至 IndexNow
+    npm run indexnow
+    ```

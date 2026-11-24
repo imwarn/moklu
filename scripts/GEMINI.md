@@ -8,6 +8,9 @@
 - `serve-headers.mjs`: Local static server applying `public/_headers` rules with SPA fallback and `.txt` MIME support for CI CSP and healthcheck testing.
 - `check-deployment.mjs`: Deployment verification helper for live hosted builds.
 - `license-inventory.mjs`: Dependency license inventory generator.
+- `sync-cf-headers.mjs`: Zero-drift Cloudflare API deployer syncing `public/_headers` `/*` security and CSP headers to `moklu.app`'s `http_response_headers_transform` phase ruleset.
+- `query-funnel.mjs`: Zero-secret Cloudflare D1 SQL reporter querying `moklu-funnel` (`funnel_daily`) conversion funnel, top localized slugs, and rejected file extensions via local Wrangler CLI.
+- `push-indexnow.mjs`: Post-deploy IndexNow notifier submitting all 120 canonical URLs from `dist/sitemap.xml` authenticated by `public/fb6946466b9027e3bbb1506815e0f52e.txt`.
 - `verify-deploy.sh`: End-to-end staged deployment verification shell script.
 
 [PROTOCOL]: Update this header on change, then check GEMINI.md

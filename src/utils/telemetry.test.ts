@@ -1,14 +1,16 @@
 /**
  * [INPUT]: depends on vitest and ./telemetry
- * [OUTPUT]: unit tests verifying PII/filename/URL key stripping, safe mime/ext retention & 16-char cap, 100-event ring buffer, and optional sendBeacon dispatch
+ * [OUTPUT]: unit tests verifying PII/filename/URL key stripping, safe mime/ext retention & 16-char cap, 100-event ring buffer, moklu.app same-origin default endpoint, and sendBeacon resilience
  * [POS]: deterministic unit test suite for src/utils/telemetry.ts
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  DEFAULT_MOKLU_TELEMETRY_ENDPOINT,
   clearFunnelEvents,
   getRecentFunnelEvents,
+  resolveAnalyticsEndpoint,
   trackFunnelEvent,
   type FunnelEventName,
 } from './telemetry'
@@ -44,7 +46,7 @@ describe('telemetry', () => {
       tool: 'compress',
       count: 3,
       hasExif: true,
-      mime: 'image/heic-seque', // capped at 16 chars
+      mime: 'image/heic-seque',
       ext: 'heic',
     })
   })
@@ -59,7 +61,6 @@ describe('telemetry', () => {
     expect(events[0].props.seq).toBe(20)
     expect(events[99].props.seq).toBe(119)
 
-    // Mutating returned array/props must not affect internal buffer
     events[0].props.seq = 9999
     events.pop()
     expect(getRecentFunnelEvents()).toHaveLength(100)
@@ -69,14 +70,24 @@ describe('telemetry', () => {
     expect(getRecentFunnelEvents()).toHaveLength(0)
   })
 
+  it('auto-targets same-origin /_telemetry on moklu.app while staying silent on localhost and honoring off overrides', () => {
+    expect(resolveAnalyticsEndpoint(undefined, 'localhost')).toBe('')
+    expect(resolveAnalyticsEndpoint(undefined, 'moklu.app')).toBe(DEFAULT_MOKLU_TELEMETRY_ENDPOINT)
+    expect(resolveAnalyticsEndpoint(undefined, 'www.moklu.app')).toBe(DEFAULT_MOKLU_TELEMETRY_ENDPOINT)
+    expect(resolveAnalyticsEndpoint('off', 'moklu.app')).toBe('')
+
+    const prodBeacon = vi.fn<(url: string, data: BodyInit) => boolean>(() => true)
+    trackFunnelEvent('pro_cta_clicked', { tool: 'mockup' }, { hostname: 'moklu.app', sendBeacon: prodBeacon })
+    expect(prodBeacon).toHaveBeenCalledTimes(1)
+    expect(prodBeacon.mock.calls[0][0]).toBe('/_telemetry')
+  })
+
   it('only sends beacon when endpoint is non-empty and never throws on transport failure', () => {
     const beacon = vi.fn<(url: string, data: BodyInit) => boolean>(() => true)
 
-    // Empty endpoint -> never dispatches
     trackFunnelEvent('export_completed', { tool: 'merge', format: 'pdf' }, { endpoint: '', sendBeacon: beacon })
     expect(beacon).not.toHaveBeenCalled()
 
-    // Non-empty endpoint -> dispatches JSON payload
     trackFunnelEvent(
       'studio_handoff',
       { tool: 'merge', layerCount: 4, filename: 'should-be-stripped.png' },
@@ -89,7 +100,6 @@ describe('telemetry', () => {
     expect(parsed.name).toBe('studio_handoff')
     expect(parsed.props).toEqual({ tool: 'merge', layerCount: 4 })
 
-    // Failing sendBeacon must never throw
     const failingBeacon = vi.fn(() => {
       throw new Error('Network blocked')
     })

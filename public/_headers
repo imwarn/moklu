@@ -48,6 +48,12 @@
   Content-Type: text/html; charset=utf-8
   Cache-Control: no-store
 
+# IndexNow ownership verification key file.
+/fb6946466b9027e3bbb1506815e0f52e.txt
+  Content-Type: text/plain; charset=utf-8
+  Cache-Control: public, max-age=86400
+  X-Content-Type-Options: nosniff
+
 # Content-hashed bundles are immutable: the bytes change only when the name does.
 /assets/*
   Cache-Control: public, max-age=31536000, immutable

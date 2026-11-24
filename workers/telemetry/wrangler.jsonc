@@ -1,0 +1,25 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "moklu-telemetry",
+  "account_id": "d2e5efd1c1a44c14241c36a2774d15b9",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-03-01",
+  "workers_dev": false,
+  "routes": [
+    {
+      "pattern": "moklu.app/*",
+      "zone_name": "moklu.app"
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "moklu-funnel",
+      "database_id": "4674c269-6a93-4db1-bccf-a83ebe9d1058"
+    }
+  ],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  }
+}

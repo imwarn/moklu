@@ -55,3 +55,8 @@ release-evidence/
 
 # Alma workspace snapshots (local tooling state)
 .alma-snapshots/
+
+# Cloudflare Wrangler local state & secrets
+.wrangler/
+.dev.vars
+.dev.vars.*

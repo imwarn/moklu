@@ -94,7 +94,15 @@ Moklu 的 Coolify Resource 为 **Application / Railpack（或历史 Nixpacks）/
 
 ### 阶段 B：启用安全头（优先在 Cloudflare 边缘配置）
 
-如果 `moklu.app` 经过 Cloudflare 代理（DNS 为橙云），可以在 Cloudflare Dashboard 为该域名创建 **Rules → Transform Rules → Modify Response Header**（菜单位置随计划和 UI 版本略有变化）：
+已完成 `npx wrangler login`（或配置 `CLOUDFLARE_API_TOKEN`）时，可直接运行仓库内置的零漂移同步脚本，将 `public/_headers` 的 `/*` 安全与 CSP 规则一键同步至 Cloudflare 边缘 **Response Header Transform Rule**（规则引用名 `moklu_security_headers`）：
+
+```bash
+npm run cf:sync-headers -- --dry-run   # 预览将同步的响应头
+npm run cf:sync-headers                # 同步至 moklu.app 边缘规则集
+curl -sSI https://moklu.app/ | grep -i content-security-policy
+```
+
+如果需要通过 Cloudflare Dashboard 手动核对，该脚本等价于为该域名创建 **Rules → Transform Rules → Modify Response Header**：
 
 - 匹配条件为 `http.host eq "moklu.app"`，而不是误影响其他项目域名；
 - 选择 **Set static**，按 `public/_headers` 中 `/*` 规则逐条填写 `X-Content-Type-Options`、`Referrer-Policy`、`X-Frame-Options`、`Permissions-Policy` 和 **完整** `Content-Security-Policy`；

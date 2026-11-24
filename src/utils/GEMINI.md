@@ -61,8 +61,8 @@ Pure domain engines, canvas-format projection, localization, rich-text rendering
 - `stageCapture.ts`: Exclusive Konva stage capture lock, overlay isolation, and image/font settle synchronizer (`acquireCaptureLock`, `withHiddenEditorOverlays`, `withIdentityTransform`, `waitForStageCaptureReady`).
 - `stageCapture.test.ts`: Vitest suite verifying capture lock exclusion, image classification, and stage settle synchronization.
 - `stageRegistry.ts`: Singleton Konva `Stage` registry (`registerStage`, `getStage`) bridging `StageCanvas` to non-canvas panels.
-- `telemetry.ts`: Privacy-first client-side funnel telemetry utility (`FunnelEventName`, `trackFunnelEvent`, `getRecentFunnelEvents`, `clearFunnelEvents`) stripping PII/filename/URL keys, retaining a bounded 100-event ring buffer, and dispatching `navigator.sendBeacon` only when `VITE_ANALYTICS_ENDPOINT` is configured.
-- `telemetry.test.ts`: Vitest suite verifying PII/filename/URL stripping, safe metadata retention, ring-buffer bounds, and optional `sendBeacon` dispatch.
+- `telemetry.ts`: Privacy-first client-side funnel telemetry utility (`DEFAULT_MOKLU_TELEMETRY_ENDPOINT`, `FunnelEventName`, `resolveAnalyticsEndpoint`, `trackFunnelEvent`, `getRecentFunnelEvents`, `clearFunnelEvents`) stripping PII/filename/URL keys, retaining a bounded 100-event ring buffer, and dispatching same-origin `/_telemetry` beacons on `moklu.app` (or custom `VITE_ANALYTICS_ENDPOINT`).
+- `telemetry.test.ts`: Vitest suite verifying PII/filename/URL stripping, safe metadata retention, ring-buffer bounds, `moklu.app` same-origin endpoint resolution, and `sendBeacon` resilience.
 - `templateAppearance.ts`: Selective style-only template applier (`DEFAULT_APPEARANCE_PARTS`, `applyTemplateAppearance`) preserving slide content and layout.
 - `templateAppearance.test.ts`: Vitest suite verifying selective background, typography, and phone appearance transfers.
 - `templateSlots.ts`: Slot-preserving template applier (`findScreenshotTarget`, `applyTemplateToCanvas`) rebinding existing screenshots onto scaled template layers.
