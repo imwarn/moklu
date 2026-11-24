@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: depends on node:http, node:fs/promises, and node:path; reads public/_headers and serves built static files from ROOT (default dist/)
+ * [OUTPUT]: local HTTP static server applying public/_headers rules with SPA fallback and MIME mapping (including text/plain for .txt healthcheck/crawler files)
+ * [POS]: CI and local preview static server in scripts/, exercising public/_headers before deployment
+ * [PROTOCOL]: Update this header on change, then check GEMINI.md
+ */
 import { createServer } from 'node:http'
 import { readFile, stat } from 'node:fs/promises'
 import { extname, join, normalize } from 'node:path'
@@ -16,6 +22,7 @@ const PORT = Number(process.argv[3] ?? 4174)
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
+  '.txt': 'text/plain; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
