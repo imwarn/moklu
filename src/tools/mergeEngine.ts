@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on canvas & geometry helpers from ./canvasHelpers, single-page PDF wrapper from ./pdfHelper, and Merge* types from ./types
- * [OUTPUT]: exports computeMergeLayout and mergeImages for horizontal, vertical, and grid collages with cross-axis alignment, per-item 90deg rotation, per-image border strokes, and PNG/JPEG/WebP/PDF export
+ * [INPUT]: depends on canvas & geometry helpers from ./canvasHelpers, single-page PDF wrapper from ./pdfHelper, vertical overlap detector from ./stitchOverlap, and Merge* types from ./types
+ * [OUTPUT]: exports computeMergeLayout and mergeImages for horizontal, vertical (with optional long-screenshot overlap & fixed-bar removal), and grid collages with cross-axis alignment, per-item 90deg rotation, per-image border strokes, and PNG/JPEG/WebP/PDF export
  * [POS]: image stitching and collage composition engine within src/tools
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -19,6 +19,7 @@ import {
   traceRoundedRectPath,
 } from './canvasHelpers'
 import { createSinglePagePdfFromJpeg } from './pdfHelper'
+import { detectVerticalStitchOverlaps } from './stitchOverlap'
 import type {
   GridCellAspect,
   LoadedImageItem,
@@ -31,6 +32,7 @@ import type {
   MergeResult,
   MergeRotation,
   Rect,
+  VerticalItemTrim,
 } from './types'
 
 const GRID_ASPECT_RATIOS: Record<Exclude<GridCellAspect, 'auto'>, number> = {
@@ -153,22 +155,40 @@ function computeVerticalRawLayout(
   padding: number,
   borderRadius: number,
   borderWidth: number,
-): { rawWidth: number; rawHeight: number; placements: MergePlacement[] } {
+  verticalTrims?: ReadonlyArray<VerticalItemTrim>,
+): { rawWidth: number; rawHeight: number; placements: MergePlacement[]; rawOverlapRemovedPx: number } {
   const widths = metrics.map((m) => m.effW)
   const targetWidth = normalize === 'match-min' ? Math.min(...widths) : Math.max(...widths)
 
   const placements: MergePlacement[] = []
   let cursorY = padding
+  let rawOverlapRemovedPx = 0
 
   for (let i = 0; i < metrics.length; i += 1) {
     const { origW, origH, effW, effH, rotation } = metrics[i]
+    const trim = verticalTrims?.[i]
+    const trimTop = trim ? Math.max(0, Math.min(Math.round(trim.trimTop), effH - 1)) : 0
+    const trimBottom = trim ? Math.max(0, Math.min(Math.round(trim.trimBottom), effH - trimTop - 1)) : 0
+    const keptEffH = Math.max(1, effH - trimTop - trimBottom)
+
     const drawW = normalize === 'original' ? effW : targetWidth
-    const drawH = normalize === 'original' ? effH : Math.max(1, Math.round(effH * (drawW / effW)))
+    const fullDrawH = normalize === 'original' ? effH : Math.max(1, Math.round(effH * (drawW / effW)))
+    const drawH =
+      trimTop === 0 && trimBottom === 0
+        ? fullDrawH
+        : Math.max(1, Math.round(keptEffH * (drawW / effW)))
+    rawOverlapRemovedPx += Math.max(0, fullDrawH - drawH)
+
     const drawX = padding + resolveCrossOffset(targetWidth, drawW, align)
+    const rotatedSourceRect: Rect = { x: 0, y: trimTop, width: effW, height: keptEffH }
+    const sourceRect =
+      trimTop === 0 && trimBottom === 0
+        ? { x: 0, y: 0, width: origW, height: origH }
+        : mapRotatedSourceRect(rotatedSourceRect, origW, origH, rotation)
 
     placements.push({
       index: i,
-      sourceRect: { x: 0, y: 0, width: origW, height: origH },
+      sourceRect,
       destRect: { x: drawX, y: cursorY, width: drawW, height: drawH },
       radius: borderRadius,
       rotation,
@@ -182,6 +202,7 @@ function computeVerticalRawLayout(
     rawWidth: targetWidth + padding * 2,
     rawHeight: cursorY + padding,
     placements,
+    rawOverlapRemovedPx,
   }
 }
 
@@ -247,6 +268,7 @@ function computeGridRawLayout(
 export function computeMergeLayout(
   items: ReadonlyArray<MergeLayoutItem>,
   options: MergeOptions,
+  verticalTrims?: ReadonlyArray<VerticalItemTrim>,
 ): MergeLayout {
   if (items.length === 0) {
     throw new Error('At least one image is required to compute a merge layout.')
@@ -260,13 +282,22 @@ export function computeMergeLayout(
   const align: MergeAlign = options.align ?? 'center'
   const metrics = resolveItemMetrics(items, options.itemRotations)
 
-  let raw: { rawWidth: number; rawHeight: number; placements: MergePlacement[] }
+  let raw: { rawWidth: number; rawHeight: number; placements: MergePlacement[]; rawOverlapRemovedPx?: number }
   switch (options.mode) {
     case 'horizontal':
       raw = computeHorizontalRawLayout(metrics, normalize, align, gap, padding, borderRadius, borderWidth)
       break
     case 'vertical':
-      raw = computeVerticalRawLayout(metrics, normalize, align, gap, padding, borderRadius, borderWidth)
+      raw = computeVerticalRawLayout(
+        metrics,
+        normalize,
+        align,
+        gap,
+        padding,
+        borderRadius,
+        borderWidth,
+        verticalTrims,
+      )
       break
     case 'grid':
       raw = computeGridRawLayout(
@@ -284,11 +315,14 @@ export function computeMergeLayout(
 
   const clamped = clampCanvasDimensions(raw.rawWidth, raw.rawHeight, options.maxDimension)
   const scale = clamped.scaleFactor
+  const rawRemoved = raw.rawOverlapRemovedPx ?? 0
+  const overlapRemovedPx = rawRemoved > 0 ? Math.max(1, Math.round(rawRemoved * scale)) : 0
 
   return {
     width: clamped.width,
     height: clamped.height,
     scaleFactor: scale,
+    overlapRemovedPx,
     placements: raw.placements.map((placement) => ({
       index: placement.index,
       sourceRect: placement.sourceRect,
@@ -317,7 +351,14 @@ export async function mergeImages(
 
   const format: MergeOutputFormat = options.format ?? 'image/png'
   const isPdf = format === 'application/pdf'
-  const layout = computeMergeLayout(items, options)
+  const verticalTrims =
+    options.mode === 'vertical' && options.removeOverlap && items.length >= 2
+      ? detectVerticalStitchOverlaps(items, {
+          itemRotations: options.itemRotations,
+          createCanvas: options.createCanvas,
+        }).trims
+      : undefined
+  const layout = computeMergeLayout(items, options, verticalTrims)
   const canvas = createCanvas(layout.width, layout.height, options.createCanvas)
   const ctx = get2dContext(canvas)
 

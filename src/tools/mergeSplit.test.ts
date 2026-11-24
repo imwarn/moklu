@@ -71,7 +71,43 @@ describe('mergeEngine', () => {
     // Raw width = 1100, raw height = 50*2 + 5000 + 100 + 5000 = 10200 -> clamped to height 8192
     expect(layout.height).toBeLessThanOrEqual(8192)
     expect(layout.scaleFactor).toBeCloseTo(8192 / 10200, 4)
+    expect(layout.overlapRemovedPx).toBe(0)
     expect(layout.placements).toHaveLength(2)
+  })
+
+  it('applies vertical overlap trims to sourceRect, destRect, total height, and overlapRemovedPx', async () => {
+    const items = [
+      { width: 400, height: 800 },
+      { width: 400, height: 800 },
+    ]
+
+    const trimmed = computeMergeLayout(
+      items,
+      { mode: 'vertical', gap: 0, padding: 0, removeOverlap: true },
+      [
+        { trimTop: 0, trimBottom: 40 },
+        { trimTop: 160, trimBottom: 0 },
+      ],
+    )
+    expect(trimmed.width).toBe(400)
+    expect(trimmed.height).toBe(1400)
+    expect(trimmed.overlapRemovedPx).toBe(200)
+    expect(trimmed.placements[0].sourceRect).toEqual({ x: 0, y: 0, width: 400, height: 760 })
+    expect(trimmed.placements[0].destRect).toEqual({ x: 0, y: 0, width: 400, height: 760 })
+    expect(trimmed.placements[1].sourceRect).toEqual({ x: 0, y: 160, width: 400, height: 640 })
+    expect(trimmed.placements[1].destRect).toEqual({ x: 0, y: 760, width: 400, height: 640 })
+
+    // Horizontal/grid modes ignore removeOverlap and keep overlapRemovedPx = 0
+    const { createCanvas, canvases } = createRecordingCanvasFactory()
+    const horizontalResult = await mergeImages(
+      [
+        makeMockImageItem({ id: 'h1', width: 400, height: 300 }),
+        makeMockImageItem({ id: 'h2', width: 400, height: 300 }),
+      ],
+      { mode: 'horizontal', gap: 0, padding: 0, removeOverlap: true, createCanvas },
+    )
+    expect(horizontalResult.layout.overlapRemovedPx).toBe(0)
+    expect(canvases).toHaveLength(1)
   })
 
   it('computes grid collage with 2..6 columns, aspectCell, fit, rounded corners, and gradient bg', async () => {
