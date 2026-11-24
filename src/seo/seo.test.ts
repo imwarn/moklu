@@ -172,6 +172,70 @@ describe('4-language SEO content uniqueness and completeness', () => {
       }
     }
   })
+
+  it('unifies duplicate-intent CTAs and eliminates em-dashes across all 4 locales', () => {
+    for (const locale of LOCALE_CODES) {
+      const ui = getUiLabels(locale)
+      expect(ui.studioBannerAction).toBe(ui.openStudio)
+      expect(ui.studioBannerProAction).toBe(ui.proUpgrade)
+
+      const uiStrings: string[] = [
+        ui.brandName,
+        ui.brandTagline,
+        ui.skipToContent,
+        ui.openStudio,
+        ui.openStudioShort,
+        ui.openInStudioCta,
+        ui.proBadge,
+        ui.proUpgrade,
+        ui.proActive,
+        ui.dropzoneTitle,
+        ui.dropzoneSubtitle,
+        ui.privacyBadge,
+        ui.privacyBannerTitle,
+        ui.privacyBannerDescription,
+        ...ui.privacyProofPoints,
+        ui.howToHeading,
+        ui.howToSubheading,
+        ui.highlightsHeading,
+        ui.highlightsSubheading,
+        ui.relatedToolsHeading,
+        ui.relatedToolsSubheading,
+        ui.directoryHeading,
+        ui.directorySubheading,
+        ui.faqHeading,
+        ui.faqSubheading,
+        ui.studioBannerTitle,
+        ui.studioBannerDescription,
+        ui.studioBannerAction,
+        ui.studioBannerProAction,
+        ui.footerDescription,
+        ui.footerLocalFirstNote,
+        ui.footerCopyright,
+      ]
+      for (const value of uiStrings) {
+        expect(value, `${locale} UI label contains em-dash: ${value}`).not.toContain('—')
+      }
+
+      for (const slug of ROUTE_SLUGS) {
+        const copy = getRouteCopy(locale, slug)
+        const routeStrings = [
+          copy.navLabel,
+          copy.title,
+          copy.metaDescription,
+          copy.badge,
+          copy.h1,
+          copy.subtitle,
+          ...copy.steps.flatMap((s) => [s.title, s.description]),
+          ...copy.highlights.flatMap((h) => [h.title, h.description]),
+          ...copy.faqs.flatMap((f) => [f.question, f.answer]),
+        ]
+        for (const value of routeStrings) {
+          expect(value, `${locale}/${slug} copy contains em-dash: ${value}`).not.toContain('—')
+        }
+      }
+    }
+  })
 })
 
 describe('Structured data JSON-LD and DOM head synchronization', () => {
@@ -327,7 +391,13 @@ describe('SEO UI chrome SSR rendering', () => {
       expect(headerHtml).toContain('aria-controls="mobile-tool-nav"')
       expect(headerHtml).toContain(`href="${buildLocalizedPath(route.locale, 'studio')}"`)
       expect(sectionsHtml).toContain(escapeHtml(copy.steps[0].title))
-      expect(sectionsHtml).toContain(escapeHtml(copy.faqs[0].question))
+      for (const faq of copy.faqs) {
+        expect(sectionsHtml).toContain(escapeHtml(faq.question))
+        expect(sectionsHtml).toContain(escapeHtml(faq.answer))
+      }
+      expect(sectionsHtml).not.toContain('uppercase tracking-wider')
+      expect(sectionsHtml).not.toContain('transition-all')
+      expect(headerHtml).not.toContain('transition-all')
       expect(sectionsHtml).not.toContain('dark:divide-white/10')
       expect(sectionsHtml).toContain(theme === 'dark' ? 'divide-white/10' : 'divide-zinc-200/70')
       expect(footerHtml).toMatch(/hreflang="en"/i)
@@ -400,7 +470,7 @@ describe('Build-time SSG prerenderer, sitemap.xml, robots.txt, and CSP safety', 
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>Moklu — Screenshot & Mockup Studio</title>
+    <title>Moklu | Screenshot & Mockup Studio</title>
     <meta name="description" content="Default template description" />
     <script type="module" crossorigin src="/assets/index-abc123.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-abc123.css">

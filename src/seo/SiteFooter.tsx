@@ -23,7 +23,7 @@ export function SiteFooter({ route, theme, onNavigate }: SiteFooterProps) {
   const renderGroup = (title: string, slugs: readonly RouteSlug[]) => (
     <div className="space-y-3">
       <h3
-        className={`text-xs font-semibold uppercase tracking-wider ${
+        className={`text-xs font-semibold tracking-tight ${
           isDark ? 'text-zinc-300' : 'text-zinc-900'
         }`}
       >
@@ -63,7 +63,7 @@ export function SiteFooter({ route, theme, onNavigate }: SiteFooterProps) {
       }`}
     >
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-6">
+        <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-6">
           {/* Brand summary */}
           <div className="space-y-3 lg:col-span-2">
             <a
@@ -87,7 +87,21 @@ export function SiteFooter({ route, theme, onNavigate }: SiteFooterProps) {
                   : 'border-success/30 bg-panel text-success'
               }`}
             >
-              <span className="h-1.5 w-1.5 rounded-full bg-success" />
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                className="h-3.5 w-3.5 shrink-0"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M8 2 13 4v4c0 3.1-2.1 5.3-5 6-2.9-.7-5-2.9-5-6V4l5-2Z"
+                />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5.75 8.25 7.25 9.75 10.5 6.5" />
+              </svg>
               <span>{ui.footerLocalFirstNote}</span>
             </p>
           </div>

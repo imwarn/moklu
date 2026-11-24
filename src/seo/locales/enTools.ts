@@ -10,13 +10,13 @@ import type { RouteCopy, SecondaryToolSlug } from '../types.ts'
 export const EN_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   'carousel-splitter': {
     navLabel: 'Carousel Splitter',
-    title: 'Seamless Carousel Panorama Splitter for Instagram & Xiaohongshu — Moklu',
+    title: 'Seamless Carousel Panorama Splitter for Instagram & Xiaohongshu | Moklu',
     metaDescription:
       'Slice wide panoramas or multi-panel designs into seamless 4:5, 3:4, or 1:1 swipeable carousel slides and download as a ZIP. 100% browser-local.',
     badge: 'Seamless Swipe Carousel Slices',
     h1: 'Seamless Social Carousel Panorama Splitter',
     subtitle:
-      'Split any panoramic photo or wide story layout into exact, pixel-aligned swipeable slides for Instagram, Xiaohongshu, and LinkedIn — with 1-click ZIP download.',
+      'Split any panoramic photo or wide story layout into exact, pixel-aligned swipeable slides for Instagram, Xiaohongshu, and LinkedIn with 1-click ZIP download.',
     steps: [
       {
         title: 'Drop a wide panorama or multi-slide canvas',
@@ -66,7 +66,7 @@ export const EN_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'image-grid-splitter': {
     navLabel: 'Grid Splitter',
-    title: '9-Grid Image Splitter Online (3×3 & Custom Matrix) — Moklu',
+    title: '9-Grid Image Splitter Online (3×3 & Custom Matrix) | Moklu',
     metaDescription:
       'Split any image into a crisp 3×3 nine-grid, 2×2, or custom rows × columns matrix and export numbered tiles as a ZIP. 100% local in your browser.',
     badge: '3×3 Nine-Grid & Matrix Slicer',
@@ -116,19 +116,19 @@ export const EN_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
       },
       {
         question: 'Is there any limit on file size or daily exports?',
-        answer: 'No artificial daily caps — everything executes on your own device CPU and memory.',
+        answer: 'No artificial daily caps. Everything executes on your own device CPU and memory.',
       },
     ],
   },
   'compress-image': {
     navLabel: 'Compress Image',
-    title: 'Free Local Image Compressor (PNG, JPEG, WebP) — Moklu',
+    title: 'Free Local Image Compressor (PNG, JPEG, WebP) | Moklu',
     metaDescription:
       'Shrink PNG, JPEG, and WebP file sizes in batch right inside your browser with live KB savings badges, quality sliders, and ZIP export. Zero uploads.',
     badge: 'Batch Local Compression · Live KB Savings',
-    h1: 'Batch Image Compressor — 100% Local in Your Browser',
+    h1: 'Local Batch Image Compressor in Your Browser',
     subtitle:
-      'Reduce image payloads by up to 80% with visual quality control, optional max-width downscaling, before/after byte counters, and 1-click ZIP download — zero server uploads.',
+      'Reduce image payloads by up to 80% with visual quality control, optional max-width downscaling, before/after byte counters, and 1-click ZIP download with zero server uploads.',
     steps: [
       {
         title: 'Drop one or dozens of images',
@@ -178,13 +178,13 @@ export const EN_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'convert-image-format': {
     navLabel: 'Convert Format',
-    title: 'Batch Image Format Converter (PNG, JPEG, WebP) — Moklu',
+    title: 'Batch Image Format Converter (PNG, JPEG, WebP) | Moklu',
     metaDescription:
       'Convert images between PNG, WebP, and JPEG locally in batch with quality control and ZIP download. Zero file uploads, instant browser conversion.',
     badge: 'PNG · WebP · JPEG Batch Converter',
     h1: 'Batch Image Format Converter',
     subtitle:
-      'Convert WebP downloads back to PNG, turn heavy PNGs into compact JPEGs or WebP, and export entire folders in one local ZIP — without uploading a single byte.',
+      'Convert WebP downloads back to PNG, turn heavy PNGs into compact JPEGs or WebP, and export entire folders in one local ZIP without uploading a single byte.',
     steps: [
       {
         title: 'Add mixed-format source files',
@@ -234,7 +234,7 @@ export const EN_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'png-to-webp': {
     navLabel: 'PNG to WebP',
-    title: 'PNG to WebP Converter Online Free (Local Batch) — Moklu',
+    title: 'PNG to WebP Converter Online Free (Local Batch) | Moklu',
     metaDescription:
       'Convert PNG screenshots and graphics to lightweight WebP in batch right inside your browser while preserving transparency. Zero server uploads.',
     badge: 'Web-Ready WebP Optimization',
@@ -266,7 +266,7 @@ export const EN_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
       },
       {
         title: 'Built for Developers & Designers',
-        description: 'No CLI setup needed — batch-convert assets offline right in a browser tab.',
+        description: 'No CLI setup needed. Batch-convert assets offline right in a browser tab.',
       },
     ],
     faqs: [
@@ -290,7 +290,7 @@ export const EN_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'resize-image': {
     navLabel: 'Resize Image',
-    title: 'Free Batch Image Resizer (Exact Pixels & Scale %) — Moklu',
+    title: 'Free Batch Image Resizer (Exact Pixels & Scale %) | Moklu',
     metaDescription:
       'Resize images to exact pixel dimensions or percentage scale with aspect ratio lock locally in your browser. Batch ZIP export, zero uploads.',
     badge: 'Exact Pixels · Scale % · Batch',
@@ -346,7 +346,7 @@ export const EN_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'crop-image': {
     navLabel: 'Crop Image',
-    title: 'Free Image Cropper with Social Aspect Ratios (1:1, 4:5, 16:9) — Moklu',
+    title: 'Free Image Cropper with Social Aspect Ratios (1:1, 4:5, 16:9) | Moklu',
     metaDescription:
       'Crop photos and screenshots to exact 1:1, 4:5, 3:4, 16:9, 9:16, or custom aspect ratios locally in your browser. Zero uploads, instant PNG/WebP export.',
     badge: 'Exact Social Aspect Presets',
@@ -388,7 +388,7 @@ export const EN_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
       },
       {
         question: 'Can I keep the entire photo without cutting anything off?',
-        answer: 'Yes — switch to the Border & Pad mode right inside the tool to fit your photo into any aspect ratio with clean padding instead of cropping.',
+        answer: 'Yes. Switch to the Border & Pad mode right inside the tool to fit your photo into any aspect ratio with clean padding instead of cropping.',
       },
       {
         question: 'Does cropping reduce image sharpness?',
@@ -402,13 +402,13 @@ export const EN_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'add-border-to-photo': {
     navLabel: 'Add Border & Pad',
-    title: 'Add White Border & Pad Photos Without Cropping — Moklu',
+    title: 'Add White Border & Pad Photos Without Cropping | Moklu',
     metaDescription:
       'Add clean white, colored, or gradient borders and pad photos to 1:1, 4:5, or 3:4 social ratios without cropping a pixel. 100% browser-local.',
     badge: 'No-Crop Border & Ratio Padding',
     h1: 'Add Borders & Pad Photos to Any Aspect Ratio',
     subtitle:
-      'Give photography a gallery mat border or fit horizontal shots into 4:5 and 1:1 social feeds without cropping — with rounded corners, soft shadows, and zero uploads.',
+      'Give photography a gallery mat border or fit horizontal shots into 4:5 and 1:1 social feeds without cropping, complete with rounded corners, soft shadows, and zero uploads.',
     steps: [
       {
         title: 'Drop your uncropped photos',
@@ -440,7 +440,7 @@ export const EN_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
     faqs: [
       {
         question: 'How do I fit a horizontal 16:9 photo into a 4:5 Instagram post without cropping?',
-        answer: 'Select the 4:5 ratio preset in Border & Pad mode and pick a white or dark backdrop — Moklu centers your full uncropped photo automatically.',
+        answer: 'Select the 4:5 ratio preset in Border & Pad mode and pick a white or dark backdrop. Moklu centers your full uncropped photo automatically.',
       },
       {
         question: 'Can I add rounded corners and a subtle shadow to the inner photo?',
@@ -458,13 +458,13 @@ export const EN_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'id-card-watermark': {
     navLabel: 'ID Card Watermark',
-    title: 'Offline ID Card A4 Sheet & Anti-Fraud Watermark Maker — Moklu',
+    title: 'Offline ID Card A4 Sheet & Anti-Fraud Watermark Maker | Moklu',
     metaDescription:
       'Combine front and back ID card photos onto a 300 DPI A4 print sheet with customizable anti-fraud watermarks. 100% offline browser-local, never uploaded.',
     badge: '100% Offline · 300 DPI A4 · Anti-Fraud',
     h1: 'ID Card A4 Composer & Anti-Fraud Watermark Tool',
     subtitle:
-      'Place ID card front and back at exact physical ISO/IEC 7810 ID-1 scale onto a print-ready A4 sheet with diagonal security watermarks — 100% offline inside your browser.',
+      'Place ID card front and back at exact physical ISO/IEC 7810 ID-1 scale onto a print-ready A4 sheet with diagonal security watermarks, 100% offline inside your browser.',
     steps: [
       {
         title: 'Load ID front and back locally',
@@ -490,7 +490,7 @@ export const EN_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
       },
       {
         title: 'Verifiably Zero Network Uploads',
-        description: 'Enforced by strict browser CSP and zero upload endpoints — your identity documents never leave RAM.',
+        description: 'Enforced by strict browser CSP and zero upload endpoints, so your identity documents never leave RAM.',
       },
     ],
     faqs: [
@@ -504,7 +504,7 @@ export const EN_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
       },
       {
         question: 'What text should I write in an anti-fraud ID watermark?',
-        answer: 'Specify the exact recipient, purpose, and date — for example: "For Apartment Lease Application Only · Invalid Otherwise · Nov 2026".',
+        answer: 'Specify the exact recipient, purpose, and date, for example: "For Apartment Lease Application Only · Invalid Otherwise · Nov 2026".',
       },
       {
         question: 'Can I make the output look like a traditional black-and-white photocopy?',

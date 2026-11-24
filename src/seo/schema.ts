@@ -87,7 +87,7 @@ export function buildWebApplicationSchema(
     '@context': 'https://schema.org',
     '@type': 'WebApplication',
     name: copy.h1,
-    alternateName: `Moklu — ${copy.navLabel}`,
+    alternateName: `Moklu | ${copy.navLabel}`,
     url: canonicalUrl,
     description: copy.metaDescription,
     applicationCategory: 'DesignApplication',

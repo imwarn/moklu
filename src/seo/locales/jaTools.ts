@@ -10,7 +10,7 @@ import type { RouteCopy, SecondaryToolSlug } from '../types.ts'
 export const JA_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   'carousel-splitter': {
     navLabel: 'カルーセル分割',
-    title: 'Instagram / SNS シームレス・カルーセルパノラマ分割 — Moklu',
+    title: 'Instagram / SNS シームレス・カルーセルパノラマ分割 | Moklu',
     metaDescription:
       '横長パノラマやワイド画像を 4:5・3:4・1:1 の継ぎ目ないスワイプ用カルーセル画像（2〜10 枚）に分割し ZIP 一括出力。完全ブラウザ内処理。',
     badge: '継ぎ目ゼロのスワイプ分割',
@@ -66,7 +66,7 @@ export const JA_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'image-grid-splitter': {
     navLabel: 'グリッド分割',
-    title: '無料 9 分割・グリッド画像分割ツール（3×3 / 自由行列）— Moklu',
+    title: '無料 9 分割・グリッド画像分割ツール（3×3 / 自由行列）| Moklu',
     metaDescription:
       '1 枚の画像を 3×3 の 9 分割、2×2、または任意の行×列マトリクスへ正確に分割し、連番 ZIP でローカル保存。サーバー送信ゼロ。',
     badge: '3×3 九分割・カスタム行列',
@@ -122,7 +122,7 @@ export const JA_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'compress-image': {
     navLabel: '画像圧縮',
-    title: '無料ローカル画像一括圧縮ツール（PNG / JPEG / WebP）— Moklu',
+    title: '無料ローカル画像一括圧縮ツール（PNG / JPEG / WebP）| Moklu',
     metaDescription:
       'PNG・JPEG・WebP 画像をブラウザ内で一括軽量化。圧縮前後の容量と削減率をリアルタイム表示し ZIP 保存。サーバーへのアップロード不要。',
     badge: 'ローカル一括圧縮 · 削減率表示',
@@ -178,7 +178,7 @@ export const JA_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'convert-image-format': {
     navLabel: '形式変換',
-    title: '無料ローカル画像形式一括変換（WebP / PNG / JPEG）— Moklu',
+    title: '無料ローカル画像形式一括変換（WebP / PNG / JPEG）| Moklu',
     metaDescription:
       'WebP→PNG、PNG→JPEG、JPEG→WebP などの形式変換をブラウザ内で一括実行。正しい拡張子付与＆ZIP 出力、アップロード一切不要。',
     badge: 'PNG · WebP · JPEG 一括変換',
@@ -234,7 +234,7 @@ export const JA_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'png-to-webp': {
     navLabel: 'PNG → WebP',
-    title: 'PNG から WebP へ一括変換（透過保持・無料ローカル）— Moklu',
+    title: 'PNG から WebP へ一括変換（透過保持・無料ローカル）| Moklu',
     metaDescription:
       '透過 PNG アイコンやスクショをアルファチャンネル保持のまま軽量 WebP へ一括変換。容量削減率を確認し ZIP 保存。アップロード不要。',
     badge: '透過保持 · Web 表示高速化',
@@ -290,7 +290,7 @@ export const JA_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'resize-image': {
     navLabel: 'リサイズ',
-    title: '無料ローカル画像一括リサイズ（ピクセル指定・％縮小）— Moklu',
+    title: '無料ローカル画像一括リサイズ（ピクセル指定・％縮小）| Moklu',
     metaDescription:
       '縦横比をロックしたままピクセル指定や％倍率で画像を一括リサイズ。高画質スムージング＆ZIP 出力。100% ブラウザ内処理。',
     badge: 'ピクセル指定 · ％倍率 · 一括処理',
@@ -346,7 +346,7 @@ export const JA_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'crop-image': {
     navLabel: 'トリミング',
-    title: '無料画像トリミング・切り抜き（1:1 / 4:5 / 16:9 比率プリセット）— Moklu',
+    title: '無料画像トリミング・切り抜き（1:1 / 4:5 / 16:9 比率プリセット）| Moklu',
     metaDescription:
       'SNS やサムネイル向けの 1:1、4:5、3:4、16:9、9:16 比率で写真やスクショを精密にトリミング。完全ローカル処理で画質劣化なし。',
     badge: 'SNS・Web 黄金比トリミング',
@@ -402,7 +402,7 @@ export const JA_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'add-border-to-photo': {
     navLabel: '白枠・余白追加',
-    title: '写真に白枠・余白を追加（切り抜きなしで SNS 比率対応）— Moklu',
+    title: '写真に白枠・余白を追加（切り抜きなしで SNS 比率対応）| Moklu',
     metaDescription:
       '横長写真を切らずに 1:1 や 4:5 に収める白枠・カラー枠・グラデーション余白追加ツール。角丸や影にも対応。100% ブラウザ内ローカル処理。',
     badge: '切り抜きなし白枠＆余白パディング',
@@ -458,7 +458,7 @@ export const JA_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'id-card-watermark': {
     navLabel: '身分証 A4 透かし',
-    title: '完全オフライン身分証 A4 両面配置＆不正利用防止透かし作成 — Moklu',
+    title: '完全オフライン身分証 A4 両面配置＆不正利用防止透かし作成 | Moklu',
     metaDescription:
       '運転免許証やマイナンバーカード等の表裏を実寸比（85.6×54mm）で 300 DPI A4 用紙に配置し、用途限定透かしを挿入。完全ブラウザ完結・サーバー送信ゼロ。',
     badge: '完全オフライン · 300 DPI A4 · 不正防止透かし',

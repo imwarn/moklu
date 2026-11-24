@@ -39,7 +39,7 @@ export const JA_LOCALE: LocaleBundle = {
       'id-card': '身分証透かし',
     },
     dropzoneTitle: '画像をドロップ、または Ctrl/Cmd+V で貼り付け',
-    dropzoneSubtitle: '100% ブラウザ内ローカル処理 — サーバーへの送信は一切ありません',
+    dropzoneSubtitle: '100% ブラウザ内ローカル処理。サーバーへの送信は一切ありません。',
     privacyBadge: '完全ブラウザ内処理 · サーバー送信ゼロ',
     privacyBannerTitle: '設計からプライベート：画像データはこの端末の外へ出ません',
     privacyBannerDescription:
@@ -62,8 +62,8 @@ export const JA_LOCALE: LocaleBundle = {
     studioBannerTitle: '見出しテキスト、矢印注釈、多言語スライドを作りたいですか？',
     studioBannerDescription:
       '現在の画像をそのまま Moklu Studio へ送信。Konva ベースの多層レイヤーキャンバスで、タイポグラフィ・影・グラデーション・複数スライドを一括編集できます。',
-    studioBannerAction: 'Moklu Studio を起動',
-    studioBannerProAction: 'Moklu Pro を見る',
+    studioBannerAction: 'Studio を開く',
+    studioBannerProAction: 'Moklu Pro',
     footerDescription:
       'オープンソースでローカル優先のスクリーンショット美化＆ブラウザ画像ツールキット。追跡なし、アップロードなし。',
     footerGroups: {
@@ -80,7 +80,7 @@ export const JA_LOCALE: LocaleBundle = {
   routes: {
     '': {
       navLabel: 'ホーム',
-      title: 'Moklu — 無料・完全ローカルのスクショモックアップ＆画像処理ツール',
+      title: 'Moklu | 無料・完全ローカルのスクショモックアップ＆画像処理ツール',
       metaDescription:
         'Chrome / iPhone 16 Pro モックアップ、画像結合、カルーセル分割、WebP 圧縮、身分証 A4 透かし作成を 100% ブラウザ内で完結。サーバー送信ゼロ。',
       badge: '100% ブラウザ完結 · アップロード不要',
@@ -136,7 +136,7 @@ export const JA_LOCALE: LocaleBundle = {
     },
     studio: {
       navLabel: 'Moklu Studio',
-      title: 'Moklu Studio — 多層レイヤー対応モックアップ＆画像キャンバスエディタ',
+      title: 'Moklu Studio | 多層レイヤー対応モックアップ＆画像キャンバスエディタ',
       metaDescription:
         'アプリ紹介画像やプロダクト発表スライドをブラウザ内で制作。デバイス枠、見出しテキスト、グラデーション、多言語スライドをローカル保存で編集。',
       badge: '多層レイヤーキャンバスエディタ',
@@ -192,7 +192,7 @@ export const JA_LOCALE: LocaleBundle = {
     },
     'browser-mockup': {
       navLabel: 'ブラウザ枠',
-      title: '無料ブラウザモックアップ生成（Chrome / Safari ウィンドウ）— Moklu',
+      title: '無料ブラウザモックアップ生成（Chrome / Safari ウィンドウ）| Moklu',
       metaDescription:
         'Web アプリや管理画面のスクショに美しい Chrome・Safari・ミニマルウィンドウ枠と背景グラデーションを追加。完全ブラウザ処理でアップロード不要。',
       badge: 'Chrome / Safari ウィンドウ枠',
@@ -248,7 +248,7 @@ export const JA_LOCALE: LocaleBundle = {
     },
     'iphone-mockup': {
       navLabel: 'iPhone 枠',
-      title: '無料 iPhone 16 Pro モックアップ生成ツール — Moklu',
+      title: '無料 iPhone 16 Pro モックアップ生成ツール | Moklu',
       metaDescription:
         'iOS アプリのスクショを精細な iPhone 16 Pro フレームにはめ込み、スタジオ背景と影を自動適用。完全ローカル処理＆ワンクリック Studio 連携。',
       badge: 'iPhone 16 Pro 端末フレーム',
@@ -304,7 +304,7 @@ export const JA_LOCALE: LocaleBundle = {
     },
     'device-mockup': {
       navLabel: 'マルチデバイス枠',
-      title: 'マルチデバイスモックアップ生成（Pixel 9 / iPhone / Web）— Moklu',
+      title: 'マルチデバイスモックアップ生成（Pixel 9 / iPhone / Web）| Moklu',
       metaDescription:
         'Google Pixel 9、iPhone 16 Pro、デスクトップブラウザ枠を統一テイストで生成。完全ローカル描画でクロスプラットフォーム製品に最適。',
       badge: 'Pixel 9 · iPhone · ブラウザ対応',
@@ -360,7 +360,7 @@ export const JA_LOCALE: LocaleBundle = {
     },
     'app-store-screenshots': {
       navLabel: 'ストアスクショ',
-      title: 'App Store & Google Play 向け 9:16 スクショ作成ツール — Moklu',
+      title: 'App Store & Google Play 向け 9:16 スクショ作成ツール | Moklu',
       metaDescription:
         '9:16 縦長プリセットと iPhone 16 Pro 枠でストア申請用スクリーンショットを素早く作成。ワンクリックで Studio 多言語スライド編集へ連携。',
       badge: '9:16 ストア申請用縦長プリセット',
@@ -416,7 +416,7 @@ export const JA_LOCALE: LocaleBundle = {
     },
     'merge-images': {
       navLabel: '画像結合',
-      title: '無料ローカル画像結合ツール（横並び・縦結合・グリッド）— Moklu',
+      title: '無料ローカル画像結合ツール（横並び・縦結合・グリッド）| Moklu',
       metaDescription:
         '複数枚の画像やスクショを横並び・縦長・グリッド状にローカル結合。サイズ自動揃え、余白、角丸、背景色に対応。サーバー送信ゼロ。',
       badge: '横並び · 縦結合 · グリッド',
@@ -472,7 +472,7 @@ export const JA_LOCALE: LocaleBundle = {
     },
     'combine-photos-side-by-side': {
       navLabel: '横並び結合',
-      title: '2 枚以上の写真を横並びで結合（Before / After 比較）— Moklu',
+      title: '2 枚以上の写真を横並びで結合（Before / After 比較）| Moklu',
       metaDescription:
         '写真や UI スクショを左右横並びに 1 枚へ結合。高さ自動揃え、区切り余白、角丸対応。100% ブラウザ内処理でアップロード不要。',
       badge: '左右比較・横並びプリセット',
@@ -528,7 +528,7 @@ export const JA_LOCALE: LocaleBundle = {
     },
     'stitch-images-vertically': {
       navLabel: '縦長スクショ結合',
-      title: '縦長スクリーンショット結合ツール（チャット・長文スクショ）— Moklu',
+      title: '縦長スクリーンショット結合ツール（チャット・長文スクショ）| Moklu',
       metaDescription:
         '複数枚のスマホスクショやトーク履歴を縦 1 枚にシームレス結合。幅自動揃え・隙間 0px 設定対応。完全ブラウザ内ローカル処理。',
       badge: '縦長スクショ・シームレス結合',
@@ -584,7 +584,7 @@ export const JA_LOCALE: LocaleBundle = {
     },
     'photo-collage-grid': {
       navLabel: 'コラージュグリッド',
-      title: '無料フォトコラージュグリッド作成（2×2 / 3×3 / 自由列数）— Moklu',
+      title: '無料フォトコラージュグリッド作成（2×2 / 3×3 / 自由列数）| Moklu',
       metaDescription:
         '写真を整然とした 2×2・3×3・多列グリッドコラージュへ自動配置。列数・セル比率・角丸・背景色をローカルで自在に調整。',
       badge: 'カスタム列数グリッド配置',

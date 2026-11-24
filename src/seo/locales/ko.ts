@@ -39,7 +39,7 @@ export const KO_LOCALE: LocaleBundle = {
       'id-card': '신분증 워터마크',
     },
     dropzoneTitle: '이미지를 드롭하거나 Ctrl/Cmd+V로 붙여넣기',
-    dropzoneSubtitle: '100% 브라우저 로컬 처리 — 어떤 파일도 서버에 업로드되지 않습니다',
+    dropzoneSubtitle: '100% 브라우저 로컬 처리, 어떤 파일도 서버에 업로드되지 않습니다',
     privacyBadge: '100% 브라우저 로컬 처리 · 서버 업로드 없음',
     privacyBannerTitle: '설계부터 안전한 프라이버시: 픽셀이 내 기기를 벗어나지 않습니다',
     privacyBannerDescription:
@@ -62,8 +62,8 @@ export const KO_LOCALE: LocaleBundle = {
     studioBannerTitle: '헤드라인 문구, 화살표 강조, 다국어 슬라이드가 필요하신가요?',
     studioBannerDescription:
       '현재 작업물을 바로 Moklu Studio로 넘겨보세요. Konva 멀티 레이어 캔버스에서 타이포그래피, 그림자, 메시 그라디언트, 다국어 앱스토어 세트를 자유롭게 편집할 수 있습니다.',
-    studioBannerAction: 'Moklu Studio 실행',
-    studioBannerProAction: 'Moklu Pro 알아보기',
+    studioBannerAction: 'Studio 열기',
+    studioBannerProAction: 'Moklu Pro',
     footerDescription:
       '오픈소스 로컬 우선 스크린샷 목업 스튜디오 및 브라우저 이미지 툴킷. 추적 없음, 서버 업로드 없음.',
     footerGroups: {
@@ -80,7 +80,7 @@ export const KO_LOCALE: LocaleBundle = {
   routes: {
     '': {
       navLabel: '홈 허브',
-      title: 'Moklu — 무료 로컬 스크린샷 목업 & 브라우저 이미지 도구 모음',
+      title: 'Moklu | 무료 로컬 스크린샷 목업 & 브라우저 이미지 도구 모음',
       metaDescription:
         'Chrome·iPhone 16 Pro 스크린샷 목업, 사진 합치기, 인스타 캐러셀 분할, WebP 압축, 신분증 A4 워터마크까지 100% 브라우저 로컬 처리. 서버 업로드 없음.',
       badge: '100% 브라우저 로컬 · 서버 업로드 제로',
@@ -136,7 +136,7 @@ export const KO_LOCALE: LocaleBundle = {
     },
     studio: {
       navLabel: 'Moklu Studio',
-      title: 'Moklu Studio — 멀티 레이어 스크린샷 목업 캔버스 에디터',
+      title: 'Moklu Studio | 멀티 레이어 스크린샷 목업 캔버스 에디터',
       metaDescription:
         '제품 런칭 이미지와 앱스토어 스크린샷을 브라우저에서 제작하는 멀티 레이어 캔버스. 디바이스 프레임, 헤드라인, 그라디언트, 다국어 슬라이드를 로컬 저장으로 편집.',
       badge: '멀티 레이어 캔버스 에디터',
@@ -192,7 +192,7 @@ export const KO_LOCALE: LocaleBundle = {
     },
     'browser-mockup': {
       navLabel: '브라우저 목업',
-      title: '무료 브라우저 목업 생성기 (Chrome & Safari 창 프레임) — Moklu',
+      title: '무료 브라우저 목업 생성기 (Chrome & Safari 창 프레임) | Moklu',
       metaDescription:
         '웹 앱·대시보드 스크린샷에 깔끔한 Chrome, Safari, 미니멀 창 프레임과 배경 그라디언트를 입히세요. 100% 브라우저 로컬 렌더링, 업로드 없음.',
       badge: 'Chrome & Safari 브라우저 프레임',
@@ -248,7 +248,7 @@ export const KO_LOCALE: LocaleBundle = {
     },
     'iphone-mockup': {
       navLabel: '아이폰 목업',
-      title: '무료 아이폰 16 Pro 목업 생성기 온라인 — Moklu',
+      title: '무료 아이폰 16 Pro 목업 생성기 온라인 | Moklu',
       metaDescription:
         '모바일 앱 스크린샷을 정교한 iPhone 16 Pro 베젤에 배치하고 스튜디오 배경과 그림자를 적용하세요. 100% 브라우저 로컬 처리 & Studio 원클릭 연동.',
       badge: 'iPhone 16 Pro 티타늄 프레임',
@@ -304,7 +304,7 @@ export const KO_LOCALE: LocaleBundle = {
     },
     'device-mockup': {
       navLabel: '멀티 디바이스 목업',
-      title: '멀티 디바이스 목업 생성기 (Pixel 9 · iPhone · 브라우저) — Moklu',
+      title: '멀티 디바이스 목업 생성기 (Pixel 9 · iPhone · 브라우저) | Moklu',
       metaDescription:
         'Google Pixel 9, iPhone 16 Pro, 데스크톱 브라우저 목업을 통일된 배경과 그림자로 빠르게 제작하세요. 100% 브라우저 로컬 처리.',
       badge: 'Pixel 9 · iPhone · 브라우저 프레임',
@@ -360,7 +360,7 @@ export const KO_LOCALE: LocaleBundle = {
     },
     'app-store-screenshots': {
       navLabel: '앱스토어 스크린샷',
-      title: '앱스토어 & 구글 플레이 9:16 스크린샷 생성기 — Moklu',
+      title: '앱스토어 & 구글 플레이 9:16 스크린샷 생성기 | Moklu',
       metaDescription:
         '전환율 높은 9:16 앱스토어·구글 플레이 스크린샷을 iPhone 16 Pro 프레임과 스튜디오 배경으로 빠르게 제작하고 Studio 다국어 세트로 확장하세요.',
       badge: '9:16 스토어 등록 세로 프리셋',
@@ -416,7 +416,7 @@ export const KO_LOCALE: LocaleBundle = {
     },
     'merge-images': {
       navLabel: '이미지 합치기',
-      title: '무료 온라인 사진 합치기 (가로·세로·그리드) — Moklu',
+      title: '무료 온라인 사진 합치기 (가로·세로·그리드) | Moklu',
       metaDescription:
         '여러 장의 사진과 스크린샷을 가로 나란히, 세로 긴 이미지, 또는 그리드 콜라주로 100% 브라우저 로컬 합치기. 여백·모서리 라운드 지원, 업로드 없음.',
       badge: '가로 · 세로 · 그리드 합치기',
@@ -472,7 +472,7 @@ export const KO_LOCALE: LocaleBundle = {
     },
     'combine-photos-side-by-side': {
       navLabel: '좌우 나란히 합치기',
-      title: '사진 두 장 좌우 나란히 합치기 무료 (전후 비교) — Moklu',
+      title: '사진 두 장 좌우 나란히 합치기 무료 (전후 비교) | Moklu',
       metaDescription:
         '2장 이상의 사진이나 UI 캡처를 좌우 가로로 나란히 합쳐 전후 비교 이미지를 만드세요. 높이 자동 맞춤, 여백·라운드 지원, 100% 로컬 처리.',
       badge: '좌우 가로 비교 프리셋',
@@ -528,7 +528,7 @@ export const KO_LOCALE: LocaleBundle = {
     },
     'stitch-images-vertically': {
       navLabel: '세로 긴 스샷 합치기',
-      title: '스크린샷 세로 이어붙이기 (대화 내역·긴 이미지) — Moklu',
+      title: '스크린샷 세로 이어붙이기 (대화 내역·긴 이미지) | Moklu',
       metaDescription:
         '여러 장의 모바일 캡처, 카톡 대화 내역, 영수증, 긴 웹 화면을 세로 한 장으로 매끄럽게 이어붙이세요. 너비 자동 정렬, 100% 브라우저 로컬 처리.',
       badge: '세로 긴 스크린샷 이어붙이기',
@@ -584,7 +584,7 @@ export const KO_LOCALE: LocaleBundle = {
     },
     'photo-collage-grid': {
       navLabel: '그리드 콜라주',
-      title: '무료 사진 그리드 콜라주 만들기 (2×2 · 3×3 · 맞춤 열) — Moklu',
+      title: '무료 사진 그리드 콜라주 만들기 (2×2 · 3×3 · 맞춤 열) | Moklu',
       metaDescription:
         '여러 장의 사진을 정갈한 2×2, 3×3 또는 원하는 열 수의 그리드 콜라주로 자동 배치하세요. 셀 비율, 여백, 라운드 조절, 100% 브라우저 로컬 처리.',
       badge: '맞춤 열 수 그리드 레이아웃',

@@ -17,7 +17,7 @@ export const ZH_LOCALE: LocaleBundle = {
     brandName: 'Moklu',
     brandTagline: '纯本地截图套壳与图片工作台',
     skipToContent: '跳至主要内容',
-    openStudio: '进入 Studio 精修',
+    openStudio: '打开 Studio',
     openStudioShort: 'Studio',
     openInStudioCta: '一键转入 Studio 多图层精修',
     proBadge: 'PRO',
@@ -61,9 +61,9 @@ export const ZH_LOCALE: LocaleBundle = {
     faqSubheading: '关于本地隐私保护、输出画质、支持格式与 Studio 精修的说明。',
     studioBannerTitle: '需要自定义大字标题、标注箭头或多页应用商店套图？',
     studioBannerDescription:
-      '将当前作品一键送入 Moklu Studio —— 完整的 Konva 多图层画布编辑器，支持多层阴影、网格渐变、文字标注与多语言套图管理。',
-    studioBannerAction: '启动 Moklu Studio',
-    studioBannerProAction: '了解 Moklu Pro',
+      '将当前作品一键送入 Moklu Studio：完整的 Konva 多图层画布编辑器，支持多层阴影、网格渐变、文字标注与多语言套图管理。',
+    studioBannerAction: '打开 Studio',
+    studioBannerProAction: 'Moklu Pro',
     footerDescription: '开源、本地优先的截图美化与浏览器图片工具集。无追踪、无文件上传。',
     footerGroups: {
       mockups: '套壳与发布视觉',
@@ -79,13 +79,13 @@ export const ZH_LOCALE: LocaleBundle = {
   routes: {
     '': {
       navLabel: '工具首页',
-      title: 'Moklu — 免费纯本地截图套壳、拼图切图与证件水印工具箱',
+      title: 'Moklu | 免费纯本地截图套壳、拼图切图与证件水印工具箱',
       metaDescription:
         '在线浏览器与 iPhone 16 Pro 截图套壳、长图拼接、小红书轮播切图、批量压缩转 WebP、身份证 A4 防盗水印，100% 浏览器本地处理不上传服务器。',
       badge: '100% 浏览器本地 · 不上传服务器',
       h1: '截图美化与纯本地图片处理工作台',
       subtitle:
-        '拖入或粘贴图片即可套上 Chrome / iPhone 16 Pro 边框、拼接长图、切分小红书无缝轮播与九宫格、压缩转换格式或制作身份证 A4 防盗水印 —— 一键转入 Studio 精修。',
+        '拖入或粘贴图片即可套上 Chrome / iPhone 16 Pro 边框、拼接长图、切分小红书无缝轮播与九宫格、压缩转换格式或制作身份证 A4 防盗水印，并支持一键转入 Studio 精修。',
       steps: [
         {
           title: '选择工具或直接粘贴截图',
@@ -135,7 +135,7 @@ export const ZH_LOCALE: LocaleBundle = {
     },
     studio: {
       navLabel: 'Moklu Studio',
-      title: 'Moklu Studio — 多图层截图美化与套壳画布编辑器',
+      title: 'Moklu Studio | 多图层截图美化与套壳画布编辑器',
       metaDescription:
         '纯本地多图层 Konva 画布编辑器：自由编排浏览器与手机样机、大字标题、柔光渐变、阴影标注与多语言应用商店套图。',
       badge: '完整多图层画布编辑器',
@@ -191,7 +191,7 @@ export const ZH_LOCALE: LocaleBundle = {
     },
     'browser-mockup': {
       navLabel: '浏览器样机',
-      title: '免费浏览器截图套壳生成器（Chrome / Safari 窗口）— Moklu',
+      title: '免费浏览器截图套壳生成器（Chrome / Safari 窗口）| Moklu',
       metaDescription:
         '一键给网页或后台截图套上精致 Chrome、Safari 或极简 macOS 窗口外框，自定义渐变背景与阴影。100% 浏览器本地处理，零上传。',
       badge: 'Chrome / Safari 窗口套壳',
@@ -247,7 +247,7 @@ export const ZH_LOCALE: LocaleBundle = {
     },
     'iphone-mockup': {
       navLabel: 'iPhone 样机',
-      title: '免费 iPhone 16 Pro 手机套壳截图生成器 — Moklu',
+      title: '免费 iPhone 16 Pro 手机套壳截图生成器 | Moklu',
       metaDescription:
         '把手机 App 截图一键套入高质感 iPhone 16 Pro 机身外框，搭配柔和渐变背景与投影，100% 浏览器本地运行，支持一键进 Studio 精修。',
       badge: 'iPhone 16 Pro 质感机身',
@@ -303,7 +303,7 @@ export const ZH_LOCALE: LocaleBundle = {
     },
     'device-mockup': {
       navLabel: '多设备样机',
-      title: '多设备样机生成器（Pixel / iPhone / 浏览器）— Moklu',
+      title: '多设备样机生成器（Pixel / iPhone / 浏览器）| Moklu',
       metaDescription:
         '一站式生成 Google Pixel 9、iPhone 16 Pro 与桌面浏览器样机展示图，统一光影与配色风格，100% 本地浏览器渲染。',
       badge: 'Pixel 9 · iPhone · 桌面窗口',
@@ -359,7 +359,7 @@ export const ZH_LOCALE: LocaleBundle = {
     },
     'app-store-screenshots': {
       navLabel: '应用商店截图',
-      title: 'App Store 与 Google Play 应用商店截图生成器（9:16）— Moklu',
+      title: 'App Store 与 Google Play 应用商店截图生成器（9:16）| Moklu',
       metaDescription:
         '快速制作高转化率 9:16 应用商店宣传截图，内置 iPhone 16 Pro 样机与渐变背景，一键转入 Studio 排版多页卖点文案与多语言本地化。',
       badge: '9:16 商店上架竖版预设',
@@ -415,7 +415,7 @@ export const ZH_LOCALE: LocaleBundle = {
     },
     'merge-images': {
       navLabel: '图片合并拼接',
-      title: '免费在线拼图合并工具（横向对比 / 竖向长图 / 宫格）— Moklu',
+      title: '免费在线拼图合并工具（横向对比 / 竖向长图 / 宫格）| Moklu',
       metaDescription:
         '浏览器本地合并多张照片或截图：支持左右拼接、竖向长截图和自由网格拼图，自定义间距、圆角与背景色，不上传任何图片。',
       badge: '横向 · 竖向 · 宫格多图合并',
@@ -471,7 +471,7 @@ export const ZH_LOCALE: LocaleBundle = {
     },
     'combine-photos-side-by-side': {
       navLabel: '左右对比拼图',
-      title: '左右拼图工具：两张照片横向并排合并 — Moklu',
+      title: '左右拼图工具：两张照片横向并排合并 | Moklu',
       metaDescription:
         '把两张或多张照片左右横向并排拼成对比图，自动等高对齐，支持留白间隔与圆角，100% 浏览器本地合成不上传。',
       badge: '横向并排对比预设',
@@ -527,7 +527,7 @@ export const ZH_LOCALE: LocaleBundle = {
     },
     'stitch-images-vertically': {
       navLabel: '竖向长图拼接',
-      title: '免费竖向长截图拼接工具（聊天记录 / 网页长图）— Moklu',
+      title: '免费竖向长截图拼接工具（聊天记录 / 网页长图）| Moklu',
       metaDescription:
         '把多张手机截图、微信聊天记录、账单或教程步骤竖向无缝拼成一张高清长图，自动统一宽度，100% 浏览器本地处理不上传。',
       badge: '竖向长截图无缝拼接',
@@ -583,7 +583,7 @@ export const ZH_LOCALE: LocaleBundle = {
     },
     'photo-collage-grid': {
       navLabel: '宫格拼图',
-      title: '免费宫格拼图生成器（四宫格 / 九宫格 / 自定义列数）— Moklu',
+      title: '免费宫格拼图生成器（四宫格 / 九宫格 / 自定义列数）| Moklu',
       metaDescription:
         '一键将多张照片排成整齐的 2×2 四宫格、3×3 九宫格或自定义列数拼图，支持比例裁剪、圆角与留白背景，100% 浏览器本地完成。',
       badge: '自定义列数宫格拼图',

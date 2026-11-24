@@ -47,7 +47,7 @@ export function renderStudioSkeleton(route: ResolvedRoute): string {
   const homeHref = buildLocalizedPath(route.locale, '')
 
   return [
-    '<div data-testid="studio-ssg-skeleton" class="w-screen h-screen flex flex-col overflow-hidden bg-surface text-zinc-100">',
+    '<div data-testid="studio-ssg-skeleton" class="w-screen h-[100dvh] flex flex-col overflow-hidden bg-surface text-zinc-100">',
     '  <header class="flex h-12 shrink-0 items-center justify-between gap-2 border-b border-border bg-panel px-3">',
     '    <div class="flex items-center gap-3">',
     `      <a href="${escapeHtml(homeHref)}" class="inline-flex shrink-0 items-center gap-1 rounded-md border border-border px-2 py-1 text-xs font-medium text-zinc-300">← Tools</a>`,

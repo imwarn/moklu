@@ -98,7 +98,7 @@ export function ToolLandingPage({ route, onNavigate }: ToolLandingPageProps) {
     <div
       data-testid="tool-landing-page"
       data-theme={resolvedTheme}
-      className={`min-h-screen flex flex-col bg-surface transition-colors ${
+      className={`min-h-[100dvh] flex flex-col bg-surface transition-colors ${
         isDark ? 'text-zinc-100' : 'text-zinc-950'
       }`}
     >

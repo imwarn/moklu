@@ -10,7 +10,7 @@ import type { RouteCopy, SecondaryToolSlug } from '../types.ts'
 export const KO_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   'carousel-splitter': {
     navLabel: '캐러셀 분할',
-    title: '인스타그램·SNS 심리스 캐러셀 파노라마 분할기 — Moklu',
+    title: '인스타그램·SNS 심리스 캐러셀 파노라마 분할기 | Moklu',
     metaDescription:
       '넓은 파노라마나 와이드 디자인을 끊김 없는 4:5, 3:4, 1:1 스와이프 캐러셀 슬라이드(2~10장)로 분할하고 ZIP 일괄 저장. 100% 브라우저 로컬 처리.',
     badge: '끊김 없는 스와이프 캐러셀 분할',
@@ -66,7 +66,7 @@ export const KO_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'image-grid-splitter': {
     navLabel: '9분할·그리드 자르기',
-    title: '무료 9분할 이미지 자르기 (인스타 3×3 & 맞춤 행×열) — Moklu',
+    title: '무료 9분할 이미지 자르기 (인스타 3×3 & 맞춤 행×열) | Moklu',
     metaDescription:
       '한 장의 이미지를 3×3 인스타 9분할, 2×2, 또는 원하는 행×열 그리드로 정확히 자르고 순서별 ZIP으로 저장하세요. 100% 브라우저 로컬 처리.',
     badge: '3×3 구궁격 · 맞춤 행×열 분할',
@@ -122,7 +122,7 @@ export const KO_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'compress-image': {
     navLabel: '이미지 압축',
-    title: '무료 로컬 이미지 일괄 압축 (PNG · JPEG · WebP) — Moklu',
+    title: '무료 로컬 이미지 일괄 압축 (PNG · JPEG · WebP) | Moklu',
     metaDescription:
       '브라우저에서 PNG, JPEG, WebP 용량을 한 번에 줄이고 파일별 KB 절감률을 실시간 확인한 뒤 ZIP으로 저장하세요. 서버 업로드 제로.',
     badge: '로컬 일괄 압축 · 실시간 용량 절감',
@@ -178,7 +178,7 @@ export const KO_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'convert-image-format': {
     navLabel: '포맷 변환',
-    title: '무료 로컬 이미지 포맷 일괄 변환 (PNG · JPEG · WebP) — Moklu',
+    title: '무료 로컬 이미지 포맷 일괄 변환 (PNG · JPEG · WebP) | Moklu',
     metaDescription:
       'WebP→PNG, PNG→JPEG, JPEG→WebP 변환을 브라우저에서 일괄 처리하고 올바른 확장자와 함께 ZIP 저장하세요. 서버 업로드 없음.',
     badge: 'PNG · WebP · JPEG 일괄 변환',
@@ -234,7 +234,7 @@ export const KO_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'png-to-webp': {
     navLabel: 'PNG → WebP',
-    title: 'PNG를 WebP로 무료 일괄 변환 (투명 배경 유지 · 로컬) — Moklu',
+    title: 'PNG를 WebP로 무료 일괄 변환 (투명 배경 유지 · 로컬) | Moklu',
     metaDescription:
       '투명 배경을 유지한 채 PNG 스크린샷과 아이콘을 가벼운 WebP로 브라우저에서 일괄 변환하세요. 실시간 용량 절감 표시, 서버 업로드 없음.',
     badge: '투명 배경 유지 · 웹 성능 최적화',
@@ -290,7 +290,7 @@ export const KO_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'resize-image': {
     navLabel: '크기 조절',
-    title: '무료 로컬 이미지 일괄 리사이즈 (픽셀 · % 배율) — Moklu',
+    title: '무료 로컬 이미지 일괄 리사이즈 (픽셀 · % 배율) | Moklu',
     metaDescription:
       '가로세로 비율을 고정한 채 정확한 픽셀 또는 % 배율로 이미지를 일괄 리사이즈하세요. 고품질 보간 및 ZIP 저장, 100% 브라우저 로컬 처리.',
     badge: '정확한 픽셀 · % 배율 · 일괄',
@@ -346,7 +346,7 @@ export const KO_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'crop-image': {
     navLabel: '이미지 자르기',
-    title: '무료 이미지 자르기 — SNS 비율 프리셋 (1:1 · 4:5 · 16:9) | Moklu',
+    title: '무료 이미지 자르기: SNS 비율 프리셋 (1:1 · 4:5 · 16:9) | Moklu',
     metaDescription:
       '사진과 스크린샷을 1:1, 4:5, 3:4, 16:9, 9:16 비율로 브라우저에서 정밀하게 자르세요. 원본 화질 유지, 서버 업로드 제로.',
     badge: 'SNS · 웹 황금 비율 자르기',
@@ -402,7 +402,7 @@ export const KO_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'add-border-to-photo': {
     navLabel: '테두리·흰 여백 추가',
-    title: '사진 흰 테두리 추가 & 크롭 없이 SNS 비율 맞추기 — Moklu',
+    title: '사진 흰 테두리 추가 & 크롭 없이 SNS 비율 맞추기 | Moklu',
     metaDescription:
       '가로 사진을 자르지 않고 1:1, 4:5, 3:4 비율에 맞추는 흰색·컬러·그라디언트 테두리 추가 도구. 둥근 모서리와 그림자 지원, 100% 브라우저 로컬 처리.',
     badge: '노크롭 흰 테두리 & 비율 패딩',
@@ -458,7 +458,7 @@ export const KO_TOOL_ROUTES: Record<SecondaryToolSlug, RouteCopy> = {
   },
   'id-card-watermark': {
     navLabel: '신분증 워터마크',
-    title: '오프라인 신분증 앞뒷면 A4 배치 & 도용 방지 워터마크 — Moklu',
+    title: '오프라인 신분증 앞뒷면 A4 배치 & 도용 방지 워터마크 | Moklu',
     metaDescription:
       '주민등록증·운전면허증 앞뒷면을 실제 카드 크기(85.6×54mm)로 300 DPI A4 용지에 배치하고 용도 한정 워터마크를 삽입하세요. 100% 오프라인 브라우저 로컬 처리.',
     badge: '100% 오프라인 · 300 DPI A4 · 도용 방지',

@@ -39,9 +39,9 @@ export const EN_LOCALE: LocaleBundle = {
       'id-card': 'ID Card',
     },
     dropzoneTitle: 'Drop images here or paste from clipboard',
-    dropzoneSubtitle: '100% local in your browser — nothing is uploaded to any server',
+    dropzoneSubtitle: '100% local in your browser. Nothing is uploaded to any server.',
     privacyBadge: '100% Browser-Local · Zero Server Uploads',
-    privacyBannerTitle: 'Private by architecture — your pixels never leave this device',
+    privacyBannerTitle: 'Private by architecture: your pixels never leave this device',
     privacyBannerDescription:
       'Every frame render, stitch, crop, compression pass, and ID watermark runs directly on HTML5 Canvas inside your browser tab. Disconnect Wi-Fi and every tool still works.',
     privacyProofPoints: [
@@ -61,9 +61,9 @@ export const EN_LOCALE: LocaleBundle = {
     faqSubheading: 'Answers about local privacy, output quality, supported formats, and Studio editing.',
     studioBannerTitle: 'Need custom typography, callouts, or multi-slide campaigns?',
     studioBannerDescription:
-      'Send your current composition straight into Moklu Studio — our full Konva multi-layer canvas editor with shadows, gradients, annotations, and batch localization.',
-    studioBannerAction: 'Launch Moklu Studio',
-    studioBannerProAction: 'Explore Moklu Pro',
+      'Send your current composition straight into Moklu Studio, our full Konva multi-layer canvas editor with shadows, gradients, annotations, and batch localization.',
+    studioBannerAction: 'Open Studio',
+    studioBannerProAction: 'Moklu Pro',
     footerDescription:
       'Open-source, local-first screenshot mockup studio and browser image toolkit. Zero tracking, zero server uploads.',
     footerGroups: {
@@ -80,13 +80,13 @@ export const EN_LOCALE: LocaleBundle = {
   routes: {
     '': {
       navLabel: 'Home Hub',
-      title: 'Moklu — Free Local Screenshot Mockup & Image Toolkit',
+      title: 'Moklu | Free Local Screenshot Mockup & Image Toolkit',
       metaDescription:
         'Beautify browser & iPhone screenshots, merge photos, split carousels, compress WebP, and watermark ID cards 100% locally in your browser. Zero uploads.',
       badge: '100% Local · Zero Server Uploads',
       h1: 'Screenshot Mockups & Local Image Tools in One Tab',
       subtitle:
-        'Drop or paste any screenshot to frame it in Chrome or iPhone 16 Pro, stitch photos, split carousels, compress images, or prepare watermarked A4 ID sheets — all processed locally with 1-click handoff to Moklu Studio.',
+        'Drop or paste any screenshot to frame it in Chrome or iPhone 16 Pro, stitch photos, split carousels, compress images, or prepare watermarked A4 ID sheets, all processed locally with 1-click handoff to Moklu Studio.',
       steps: [
         {
           title: 'Pick a tool or paste an image',
@@ -136,7 +136,7 @@ export const EN_LOCALE: LocaleBundle = {
     },
     studio: {
       navLabel: 'Moklu Studio',
-      title: 'Moklu Studio — Multi-Layer Screenshot & Mockup Canvas Editor',
+      title: 'Moklu Studio | Multi-Layer Screenshot & Mockup Canvas Editor',
       metaDescription:
         'Full browser-based multi-layer mockup canvas for product launches, App Store sets, browser frames, callouts, gradients, and multi-language localization.',
       badge: 'Full Multi-Layer Canvas Editor',
@@ -192,13 +192,13 @@ export const EN_LOCALE: LocaleBundle = {
     },
     'browser-mockup': {
       navLabel: 'Browser Mockup',
-      title: 'Free Browser Mockup Generator (Chrome & Safari) — Moklu',
+      title: 'Free Browser Mockup Generator (Chrome & Safari) | Moklu',
       metaDescription:
         'Wrap web app screenshots in crisp Chrome, Safari, or minimal window frames with custom gradients and shadows. 100% browser-local, zero uploads.',
       badge: 'Chrome & Safari Window Frames',
       h1: 'Browser Mockup Generator for Web Apps & SaaS',
       subtitle:
-        'Frame website or dashboard screenshots inside clean Chrome, Safari, or minimal macOS browser chrome with balanced padding and soft studio shadows — locally in your browser.',
+        'Frame website or dashboard screenshots inside clean Chrome, Safari, or minimal macOS browser chrome with balanced padding and soft studio shadows, locally in your browser.',
       steps: [
         {
           title: 'Paste or drop a web screenshot',
@@ -248,7 +248,7 @@ export const EN_LOCALE: LocaleBundle = {
     },
     'iphone-mockup': {
       navLabel: 'iPhone Mockup',
-      title: 'Free iPhone 16 Pro Mockup Generator Online — Moklu',
+      title: 'Free iPhone 16 Pro Mockup Generator Online | Moklu',
       metaDescription:
         'Place mobile app screenshots inside a crisp iPhone 16 Pro bezel with studio gradients and drop shadows. 100% browser-local with 1-click Studio editing.',
       badge: 'iPhone 16 Pro Titanium Bezel',
@@ -258,7 +258,7 @@ export const EN_LOCALE: LocaleBundle = {
       steps: [
         {
           title: 'Upload or paste an iOS screen capture',
-          description: 'Drop a simulator capture or device screenshot into the iPhone frame slot — or load the demo screen to preview immediately.',
+          description: 'Drop a simulator capture or device screenshot into the iPhone frame slot, or load the demo screen to preview immediately.',
         },
         {
           title: 'Tune backdrop, ratio, and screen fit',
@@ -290,7 +290,7 @@ export const EN_LOCALE: LocaleBundle = {
         },
         {
           question: 'Can I place two iPhones side by side or tilt the device?',
-          answer: 'Yes — click Open in Studio to duplicate the iPhone layer, rotate frames, and compose multi-device hero shots.',
+          answer: 'Yes. Click Open in Studio to duplicate the iPhone layer, rotate frames, and compose multi-device hero shots.',
         },
         {
           question: 'Does the iPhone mockup add a watermark?',
@@ -304,13 +304,13 @@ export const EN_LOCALE: LocaleBundle = {
     },
     'device-mockup': {
       navLabel: 'Device Mockup',
-      title: 'Free Multi-Device Mockup Generator (Android, Pixel & Web) — Moklu',
+      title: 'Free Multi-Device Mockup Generator (Android, Pixel & Web) | Moklu',
       metaDescription:
         'Generate clean Google Pixel 9, iPhone, and desktop browser mockups in seconds. 100% client-side rendering with custom gradients and Studio handoff.',
       badge: 'Pixel 9, iPhone & Browser Frames',
       h1: 'Multi-Device Mockup Generator for Cross-Platform Apps',
       subtitle:
-        'Present Android, iOS, and responsive web screenshots inside unified hardware and browser frames with consistent lighting — processed locally on your machine.',
+        'Present Android, iOS, and responsive web screenshots inside unified hardware and browser frames with consistent lighting, processed locally on your machine.',
       steps: [
         {
           title: 'Drop your Android, iOS, or web screenshot',
@@ -336,7 +336,7 @@ export const EN_LOCALE: LocaleBundle = {
         },
         {
           title: 'Fast Client-Side Canvas',
-          description: 'No server rendering wait queues — swap frames and preview updates at 60fps right in your browser.',
+          description: 'No server rendering wait queues. Swap frames and preview updates at 60fps right in your browser.',
         },
       ],
       faqs: [
@@ -360,7 +360,7 @@ export const EN_LOCALE: LocaleBundle = {
     },
     'app-store-screenshots': {
       navLabel: 'App Store Screenshots',
-      title: 'App Store & Google Play Screenshot Generator (9:16) — Moklu',
+      title: 'App Store & Google Play Screenshot Generator (9:16) | Moklu',
       metaDescription:
         'Design high-converting 9:16 App Store and Google Play screenshots with iPhone 16 Pro frames, studio backgrounds, and 1-click multi-slide Studio handoff.',
       badge: '9:16 Store Listing Preset',
@@ -398,7 +398,7 @@ export const EN_LOCALE: LocaleBundle = {
       faqs: [
         {
           question: 'How do I add bold marketing headlines above the iPhone frame?',
-          answer: 'Click Open in Studio right from the workspace — your framed screenshot loads into our multi-layer editor where you can add headlines, badges, and multiple slides.',
+          answer: 'Click Open in Studio right from the workspace. Your framed screenshot loads into our multi-layer editor where you can add headlines, badges, and multiple slides.',
         },
         {
           question: 'Does this work for both Apple App Store and Google Play?',
@@ -416,7 +416,7 @@ export const EN_LOCALE: LocaleBundle = {
     },
     'merge-images': {
       navLabel: 'Merge Images',
-      title: 'Merge Images Online Free — Side-by-Side, Vertical & Grid | Moklu',
+      title: 'Merge Images Online Free: Side-by-Side, Vertical & Grid | Moklu',
       metaDescription:
         'Combine multiple photos or screenshots horizontally, vertically, or in a clean grid collage. 100% browser-local processing with custom gaps and borders.',
       badge: 'Horizontal · Vertical · Grid',
@@ -472,7 +472,7 @@ export const EN_LOCALE: LocaleBundle = {
     },
     'combine-photos-side-by-side': {
       navLabel: 'Side-by-Side Photos',
-      title: 'Combine Photos Side by Side Free (Before & After) — Moklu',
+      title: 'Combine Photos Side by Side Free (Before & After) | Moklu',
       metaDescription:
         'Join 2 or more photos horizontally side-by-side with matched heights, custom gaps, and rounded corners. 100% local in your browser with zero uploads.',
       badge: 'Horizontal Comparison Preset',
@@ -522,19 +522,19 @@ export const EN_LOCALE: LocaleBundle = {
         },
         {
           question: 'Is this safe for private personal before-and-after photos?',
-          answer: 'Yes. Processing runs 100% offline in your browser tab — nothing is ever sent to a server.',
+          answer: 'Yes. Processing runs 100% offline in your browser tab, and nothing is ever sent to a server.',
         },
       ],
     },
     'stitch-images-vertically': {
       navLabel: 'Stitch Vertically',
-      title: 'Stitch Screenshots Vertically into One Long Image — Moklu',
+      title: 'Stitch Screenshots Vertically into One Long Image | Moklu',
       metaDescription:
         'Combine multiple mobile screenshots, chat logs, or web captures into one seamless vertical long image locally in your browser. Zero uploads.',
       badge: 'Vertical Long-Screenshot Mode',
       h1: 'Stitch Images Vertically into a Long Screenshot',
       subtitle:
-        'Stack chat logs, receipt captures, full-page mobile views, or tutorial steps top-to-bottom with matched widths and zero-gap seamless stitching — 100% locally.',
+        'Stack chat logs, receipt captures, full-page mobile views, or tutorial steps top-to-bottom with matched widths and zero-gap seamless stitching, 100% locally.',
       steps: [
         {
           title: 'Load screenshots in reading order',
@@ -584,7 +584,7 @@ export const EN_LOCALE: LocaleBundle = {
     },
     'photo-collage-grid': {
       navLabel: 'Photo Collage Grid',
-      title: 'Free Photo Collage Grid Maker (2×2, 3×3 & Custom) — Moklu',
+      title: 'Free Photo Collage Grid Maker (2×2, 3×3 & Custom) | Moklu',
       metaDescription:
         'Arrange photos into clean 2×2, 3×3, or custom column collage grids with adjustable gaps, aspect ratios, and rounded corners. 100% browser-local.',
       badge: 'Custom Column Grid Layout',
