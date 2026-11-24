@@ -1,11 +1,10 @@
 /**
- * [INPUT]: depends on react, react-dom createPortal, zustand useShallow, useEditorStore/useUndoRedo from @/store, useProjectsStore from @/store/projects, toolbar buttons (BrandKitButton, Logo, ReplaceScreenshotButton) and useReplaceScreenshot, StudioIcons, contextMenu helpers (clampMenuPosition, useContextMenuKeyboard), lightweight modals, lazy HelpModal wrapped in ChunkErrorBoundary, stageRegistry, export helpers, buildLocalizedPath from @/seo, and STUDIO_UI_LOCALES/useStudioLocale from @/i18n
- * [OUTPUT]: exports Toolbar component providing localized project controls, Quick Design, Canvas Size, undo/redo, PNG export, localization toggle, Studio UI language switcher, keyboard-accessible responsive More overflow menu, and Home/Tools navigation back link
+ * [INPUT]: depends on react, zustand useShallow, useEditorStore/useUndoRedo from @/store, useProjectsStore from @/store/projects, toolbar buttons (BrandKitButton, Logo, ReplaceScreenshotButton, ToolbarMoreMenu) and useReplaceScreenshot, StudioIcons, useContextMenuKeyboard from @/components/ui/contextMenu, lightweight modals, lazy HelpModal wrapped in ChunkErrorBoundary, stageRegistry, export helpers, buildLocalizedPath from @/seo, and STUDIO_UI_LOCALES/useStudioLocale from @/i18n
+ * [OUTPUT]: exports Toolbar component providing localized project controls, Quick Design, Canvas Size, undo/redo, PNG export, localization toggle, Studio UI language switcher, responsive ToolbarMoreMenu, and Home/Tools navigation back link
  * [POS]: top chrome bar of StudioPage inside src/components/toolbar
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 import { useState, useRef, useEffect, useCallback, lazy, Suspense, type MouseEvent } from 'react'
-import { createPortal } from 'react-dom'
 import { useShallow } from 'zustand/react/shallow'
 import { useEditorStore, useUndoRedo } from '@/store'
 import { notifyProjectConflict, useProjectsStore } from '@/store/projects'
@@ -20,6 +19,7 @@ import { SettingsModal } from '@/components/panels/SettingsModal'
 import { ChunkErrorBoundary } from '@/components/common/ChunkErrorBoundary'
 import { ReplaceScreenshotButton } from '@/components/toolbar/ReplaceScreenshotButton'
 import { useReplaceScreenshot } from '@/components/toolbar/useReplaceScreenshot'
+import { ToolbarMoreMenu } from '@/components/toolbar/ToolbarMoreMenu'
 import {
   ArrowLeftIcon,
   CanvasSizeIcon,
@@ -30,16 +30,14 @@ import {
   HelpCircleIcon,
   LanguagesIcon,
   LoaderIcon,
-  MoreHorizontalIcon,
   ProjectsIcon,
   RedoIcon,
-  ReplaceImageIcon,
   SettingsIcon,
   SparklesIcon,
   TemplatesIcon,
   UndoIcon,
 } from '@/components/ui/StudioIcons'
-import { clampMenuPosition, useContextMenuKeyboard, type MenuPosition } from '@/components/ui/contextMenu'
+import { useContextMenuKeyboard } from '@/components/ui/contextMenu'
 import { getStage } from '@/utils/stageRegistry'
 import { exportSlide, downloadDataUrl } from '@/utils/export'
 import { runExclusiveCapture, waitForStageSettled } from '@/utils/stageCapture'
@@ -50,17 +48,6 @@ import { STUDIO_UI_LOCALES, useStudioLocale } from '@/i18n'
 const HelpModal = lazy(() =>
   import('@/components/panels/HelpModal').then((m) => ({ default: m.HelpModal })),
 )
-
-const MORE_ACTIONS_LABEL: Record<string, string> = {
-  en: 'More actions',
-  zh: '更多操作',
-  ja: 'その他の操作',
-  ko: '더 보기',
-}
-
-const MORE_MENU_WIDTH = 208
-const MORE_MENU_ESTIMATED_HEIGHT = 232
-const MORE_MENU_GAP = 6
 
 interface ToolbarProps {
   mode: 'editor' | 'localization'
@@ -137,6 +124,8 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
   const [templatesOpen, setTemplatesOpen] = useState(false)
   const [quickOpen, setQuickOpen] = useState(false)
   const [canvasSizeOpen, setCanvasSizeOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
   const [isQuickExporting, setIsQuickExporting] = useState(false)
   const [quickExportError, setQuickExportError] = useState<string | null>(null)
   const [langMenuOpen, setLangMenuOpen] = useState(false)
@@ -144,51 +133,12 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
   const langTriggerRef = useRef<HTMLButtonElement>(null)
   const langPopoverRef = useRef<HTMLDivElement>(null)
 
-  const [moreMenuOpen, setMoreMenuOpen] = useState(false)
-  const [moreMenuPos, setMoreMenuPos] = useState<MenuPosition>({ left: 8, top: 54 })
-  const [viewportWidth, setViewportWidth] = useState<number>(() =>
-    typeof window !== 'undefined' ? window.innerWidth : 1280,
-  )
-  const moreButtonRef = useRef<HTMLButtonElement>(null)
-  const moreMenuRef = useRef<HTMLDivElement>(null)
-
   const closeLangMenu = useCallback(() => {
     setLangMenuOpen(false)
     langTriggerRef.current?.focus({ preventScroll: true })
   }, [])
 
-  const closeMoreMenu = useCallback(() => {
-    setMoreMenuOpen(false)
-    moreButtonRef.current?.focus({ preventScroll: true })
-  }, [])
-
   useContextMenuKeyboard(langPopoverRef, langMenuOpen, closeLangMenu)
-  useContextMenuKeyboard(moreMenuRef, moreMenuOpen, closeMoreMenu)
-
-  const updateMoreMenuPosition = useCallback(() => {
-    const button = moreButtonRef.current
-    if (!button || typeof window === 'undefined') return
-    const vw = window.innerWidth
-    setViewportWidth(vw)
-    if (vw >= 1600) {
-      setMoreMenuOpen(false)
-      return
-    }
-    const rect = button.getBoundingClientRect()
-    const measured = moreMenuRef.current?.getBoundingClientRect()
-    const width = measured && measured.width > 0 ? measured.width : MORE_MENU_WIDTH
-    const height = measured && measured.height > 0 ? measured.height : MORE_MENU_ESTIMATED_HEIGHT
-    setMoreMenuPos(
-      clampMenuPosition(
-        rect.right - width,
-        rect.bottom + MORE_MENU_GAP,
-        width,
-        height,
-        vw,
-        window.innerHeight,
-      ),
-    )
-  }, [])
 
   useEffect(() => {
     if (!langMenuOpen) return
@@ -203,31 +153,8 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
     }
   }, [langMenuOpen])
 
-  useEffect(() => {
-    if (!moreMenuOpen) return
-    const rafId = window.requestAnimationFrame(updateMoreMenuPosition)
-    const handlePointerDown = (event: globalThis.MouseEvent) => {
-      const target = event.target as Node
-      if (
-        !moreMenuRef.current?.contains(target) &&
-        !moreButtonRef.current?.contains(target)
-      ) {
-        setMoreMenuOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handlePointerDown)
-    window.addEventListener('resize', updateMoreMenuPosition)
-    return () => {
-      window.cancelAnimationFrame(rafId)
-      document.removeEventListener('mousedown', handlePointerDown)
-      window.removeEventListener('resize', updateMoreMenuPosition)
-    }
-  }, [moreMenuOpen, updateMoreMenuPosition])
-
   const activeLocaleOption =
     STUDIO_UI_LOCALES.find((item) => item.code === uiLocale) ?? STUDIO_UI_LOCALES[0]
-  const moreLabel = MORE_ACTIONS_LABEL[uiLocale] ?? MORE_ACTIONS_LABEL.en
-
   const activeSlideGroup = project.slideGroups.find((g) => g.id === activeSlideGroupId)
 
   const exportQuickPng = async () => {
@@ -248,8 +175,6 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
       setIsQuickExporting(false)
     }
   }
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const [helpOpen, setHelpOpen] = useState(false)
 
   // Saved indicator — flashes "Saving…" then "Saved" briefly
   const [saveLabel, setSaveLabel] = useState<'saved' | 'saving' | null>(null)
@@ -267,118 +192,6 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeProjectMeta?.updatedAt])
-
-  const toggleMoreMenu = () => {
-    setMoreMenuOpen((prev) => {
-      const next = !prev
-      if (next) updateMoreMenuPosition()
-      return next
-    })
-  }
-
-  const menuItemCls =
-    'flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-xs text-[#d6d6e4] transition-colors hover:bg-white/[0.06] hover:text-white focus-visible:bg-white/[0.08] focus-visible:text-white focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40'
-
-  const moreMenuPortal = moreMenuOpen ? (
-    <div
-      ref={moreMenuRef}
-      role="menu"
-      aria-label={moreLabel}
-      data-testid="toolbar-more-menu"
-      tabIndex={-1}
-      className="fixed z-[70] w-52 overflow-hidden rounded-xl border border-white/15 bg-[#1b1b24] p-1.5 shadow-2xl"
-      style={{
-        left: moreMenuPos.left,
-        top: moreMenuPos.top,
-        boxShadow: '0 12px 36px rgba(0,0,0,0.65)',
-      }}
-    >
-      {viewportWidth < 1280 && (
-        <>
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              setMoreMenuOpen(false)
-              setProjectsOpen(true)
-            }}
-            className={menuItemCls}
-          >
-            <ProjectsIcon size={14} className="text-muted" />
-            <span>{t.toolbar.projects}</span>
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              setMoreMenuOpen(false)
-              setTemplatesOpen(true)
-            }}
-            className={menuItemCls}
-          >
-            <TemplatesIcon size={14} className="text-muted" />
-            <span>{t.toolbar.templates}</span>
-          </button>
-        </>
-      )}
-
-      {viewportWidth < 1440 && (
-        <>
-          <button
-            type="button"
-            role="menuitem"
-            disabled={replaceScreenshot.disabled}
-            title={replaceScreenshot.title}
-            onClick={() => {
-              setMoreMenuOpen(false)
-              triggerReplaceScreenshot()
-            }}
-            className={menuItemCls}
-          >
-            <ReplaceImageIcon size={14} className="text-muted" />
-            <span>{replaceScreenshot.label}</span>
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              setMoreMenuOpen(false)
-              setSettingsOpen(true)
-            }}
-            className={menuItemCls}
-          >
-            <SettingsIcon size={14} className="text-muted" />
-            <span>{t.toolbar.settings}</span>
-          </button>
-          <div role="separator" className="my-1 h-px bg-white/10" />
-        </>
-      )}
-
-      <button
-        type="button"
-        role="menuitem"
-        onClick={() => {
-          setMoreMenuOpen(false)
-          setHelpOpen(true)
-        }}
-        className={menuItemCls}
-      >
-        <HelpCircleIcon size={14} className="text-muted" />
-        <span>{t.toolbar.help}</span>
-      </button>
-      <a
-        href="https://github.com/imwarn/moklu"
-        target="_blank"
-        rel="noopener noreferrer"
-        role="menuitem"
-        onClick={() => setMoreMenuOpen(false)}
-        className={menuItemCls}
-      >
-        <GitHubIcon size={14} className="text-muted" />
-        <span>GitHub</span>
-      </a>
-    </div>
-  ) : null
 
   return (
     <header
@@ -449,7 +262,7 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
         </a>
 
         {/* Logo */}
-        <Logo />
+        <Logo compactOnMobile />
 
         {/* Current project name — click to rename inline */}
         {editingName ? (
@@ -470,7 +283,7 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
             type="button"
             onClick={startEditingName}
             title={t.toolbar.renameProjectTitle}
-            className="min-w-0 max-w-[clamp(72px,8vw,136px)] shrink cursor-text truncate whitespace-nowrap rounded-[5px] bg-transparent px-1.5 py-[3px] text-xs text-[#a0a0b0] transition-colors hover:bg-white/[0.05] hover:text-[#e8e8f0]"
+            className="hidden min-w-0 max-w-[clamp(72px,8vw,136px)] shrink cursor-text truncate whitespace-nowrap rounded-[5px] bg-transparent px-1.5 py-[3px] text-xs text-[#a0a0b0] transition-colors hover:bg-white/[0.05] hover:text-[#e8e8f0] min-[860px]:inline-block"
           >
             {displayProjectName}
           </button>
@@ -494,18 +307,18 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
           onClick={() => setQuickOpen(true)}
           title={t.toolbar.quickDesignTitle}
           aria-label={t.toolbar.quickDesignAria}
-          className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-accent/50 bg-accent-soft px-2.5 py-1.5 text-xs font-semibold text-accent-text transition-colors hover:bg-accent/20 min-[1536px]:px-3"
+          className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-accent/50 bg-accent-soft px-2 py-1.5 text-xs font-semibold text-accent-text transition-colors hover:bg-accent/20 min-[640px]:px-2.5 min-[1536px]:px-3"
         >
           <SparklesIcon size={13} />
           <span>{t.toolbar.quickDesign}</span>
         </button>
 
-        {/* Canvas Size */}
+        {/* Canvas Size (inline >= 640px; inside More menu on mobile < 640px) */}
         <button
           type="button"
           onClick={() => setCanvasSizeOpen(true)}
           title={t.toolbar.canvasSizeTitle}
-          className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-white/15 px-2.5 py-1.5 text-xs text-[#d6d6e4] transition-colors hover:border-white/30 hover:bg-white/5 min-[1536px]:px-3"
+          className="hidden shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-white/15 px-2.5 py-1.5 text-xs text-[#d6d6e4] transition-colors hover:border-white/30 hover:bg-white/5 min-[640px]:inline-flex min-[1536px]:px-3"
         >
           <CanvasSizeIcon size={13} />
           <span>{t.toolbar.canvasSize}</span>
@@ -536,7 +349,7 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
         </button>
 
         {/* Brand Kit — portal popover ensures click always opens visibly at every width */}
-        <BrandKitButton />
+        <BrandKitButton className="max-[639px]:hidden" />
 
         {quickExportError && (
           <div
@@ -568,10 +381,10 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
           </span>
         )}
 
-        <div className="h-5 w-px shrink-0 bg-[rgba(255,255,255,0.1)]" />
+        <div className="hidden h-5 w-px shrink-0 bg-[rgba(255,255,255,0.1)] min-[640px]:block" />
 
-        {/* Undo / Redo */}
-        <div className="flex shrink-0 items-center gap-0.5">
+        {/* Undo / Redo (inline >= 640px; inside More menu on mobile < 640px) */}
+        <div className="hidden shrink-0 items-center gap-0.5 min-[640px]:flex">
           <button
             type="button"
             onClick={() => undo()}
@@ -620,7 +433,7 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
           onClick={() => { void exportQuickPng() }}
           title={t.toolbar.quickPngTitle}
           aria-label={t.toolbar.quickPngTitle}
-          className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-white/15 px-2.5 py-1.5 text-xs text-white transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50 min-[1536px]:px-3"
+          className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-white/15 px-2 py-1.5 text-xs text-white transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50 min-[640px]:px-2.5 min-[1536px]:px-3"
         >
           {isQuickExporting ? <LoaderIcon size={13} /> : <DownloadIcon size={13} />}
           <span>PNG</span>
@@ -631,12 +444,13 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
           <button
             ref={langTriggerRef}
             type="button"
+            data-testid="toolbar-lang-btn"
             onClick={() => setLangMenuOpen((open) => !open)}
             aria-expanded={langMenuOpen}
             aria-haspopup="menu"
             aria-label={t.toolbar.uiLanguageAria}
             title={t.toolbar.uiLanguageTitle}
-            className="inline-flex items-center gap-1.5 whitespace-nowrap rounded border border-[rgba(255,255,255,0.1)] px-2 py-1.5 text-xs text-[#e8e8f0] transition-colors hover:border-[rgba(255,255,255,0.2)] hover:bg-[rgba(255,255,255,0.05)] min-[1536px]:px-2.5"
+            className="inline-flex items-center gap-1 whitespace-nowrap rounded border border-[rgba(255,255,255,0.1)] px-1.5 py-1.5 text-xs text-[#e8e8f0] transition-colors hover:border-[rgba(255,255,255,0.2)] hover:bg-[rgba(255,255,255,0.05)] min-[640px]:gap-1.5 min-[640px]:px-2 min-[1536px]:px-2.5"
           >
             <GlobeIcon size={13} className="text-muted" />
             <span>{activeLocaleOption.shortLabel}</span>
@@ -700,14 +514,14 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
           <span>{t.toolbar.settings}</span>
         </button>
 
-        {/* Localization mode toggle */}
+        {/* Localization mode toggle (inline >= 768px; inside More menu < 768px) */}
         <button
           type="button"
           onClick={() => onSetMode(mode === 'localization' ? 'editor' : 'localization')}
           title={t.toolbar.localizationTitle}
           aria-label={mode === 'localization' ? t.toolbar.backToDesign : t.toolbar.localization}
           aria-pressed={mode === 'localization'}
-          className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded border px-2.5 py-1.5 text-xs transition-colors min-[1536px]:px-3 ${
+          className={`hidden items-center gap-1.5 whitespace-nowrap rounded border px-2.5 py-1.5 text-xs transition-colors min-[768px]:inline-flex min-[1536px]:px-3 ${
             mode === 'localization'
               ? 'border-accent/50 bg-accent-soft text-white'
               : 'border-[rgba(255,255,255,0.1)] text-[#e8e8f0] hover:border-[rgba(255,255,255,0.2)] hover:bg-[rgba(255,255,255,0.05)]'
@@ -719,13 +533,13 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
           </span>
         </button>
 
-        {/* Help (inline >= 1600px; inside More menu < 1600px) */}
+        {/* Help (inline >= 1440px; inside More menu < 1440px) */}
         <button
           type="button"
           onClick={() => setHelpOpen(true)}
           title={t.toolbar.helpTitle}
           aria-label={t.toolbar.help}
-          className="hidden items-center gap-1.5 whitespace-nowrap rounded border border-[rgba(255,255,255,0.1)] px-2 py-1.5 text-xs text-[#a0a0b0] transition-colors hover:border-[rgba(255,255,255,0.2)] hover:bg-[rgba(255,255,255,0.05)] hover:text-[#e8e8f0] min-[1600px]:flex min-[1720px]:px-3"
+          className="hidden items-center gap-1.5 whitespace-nowrap rounded border border-[rgba(255,255,255,0.1)] px-2 py-1.5 text-xs text-[#a0a0b0] transition-colors hover:border-[rgba(255,255,255,0.2)] hover:bg-[rgba(255,255,255,0.05)] hover:text-[#e8e8f0] min-[1440px]:flex min-[1720px]:px-3"
         >
           <HelpCircleIcon size={13} />
           <span className="max-[1719px]:hidden">{t.toolbar.help}</span>
@@ -745,26 +559,22 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
         </a>
 
         {/* Responsive keyboard-accessible overflow menu (< 1600px) */}
-        <button
-          ref={moreButtonRef}
-          type="button"
-          data-testid="toolbar-more-btn"
-          onClick={toggleMoreMenu}
-          aria-expanded={moreMenuOpen}
-          aria-haspopup="menu"
-          aria-label={moreLabel}
-          title={moreLabel}
-          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded border transition-colors min-[1600px]:hidden ${
-            moreMenuOpen
-              ? 'border-accent/50 bg-accent-soft text-accent-text'
-              : 'border-[rgba(255,255,255,0.1)] text-[#a0a0b0] hover:border-[rgba(255,255,255,0.2)] hover:bg-[rgba(255,255,255,0.05)] hover:text-[#e8e8f0]'
-          }`}
-        >
-          <MoreHorizontalIcon size={15} />
-        </button>
+        <ToolbarMoreMenu
+          mode={mode}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          replaceScreenshot={replaceScreenshot}
+          onUndo={() => undo()}
+          onRedo={() => redo()}
+          onOpenCanvasSize={() => setCanvasSizeOpen(true)}
+          onOpenProjects={() => setProjectsOpen(true)}
+          onOpenTemplates={() => setTemplatesOpen(true)}
+          onTriggerReplaceScreenshot={triggerReplaceScreenshot}
+          onOpenSettings={() => setSettingsOpen(true)}
+          onToggleLocalization={() => onSetMode(mode === 'localization' ? 'editor' : 'localization')}
+          onOpenHelp={() => setHelpOpen(true)}
+        />
       </div>
-
-      {moreMenuPortal && (typeof document !== 'undefined' ? createPortal(moreMenuPortal, document.body) : moreMenuPortal)}
     </header>
   )
 }
