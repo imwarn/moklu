@@ -172,7 +172,7 @@ export function ResizePreviewStage({
                 <li
                   key={`${item.filename}-${idx}`}
                   data-testid={`resize-thumb-${idx}`}
-                  className={`flex w-[148px] shrink-0 flex-col rounded-xl border p-1.5 transition-all ${
+                  className={`flex w-[148px] shrink-0 flex-col rounded-xl border p-1.5 transition-[border-color,box-shadow] ${
                     selected ? `${tokens.accentRing} ${tokens.card}` : tokens.card
                   }`}
                 >
