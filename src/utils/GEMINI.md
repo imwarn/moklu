@@ -49,8 +49,8 @@ Pure domain engines, canvas-format projection, localization, rich-text rendering
 - `previewKey.ts`: Fast FNV-1a cache key generator (`getGroupPreviewKey`) for slide thumbnail invalidation.
 - `projectAssets.ts`: Project asset-key collector and portable JSON bundle serializer (`collectAssetKeys`, `buildProjectExportBundle`, `isProjectExportBundle`).
 - `projectAssets.test.ts`: Vitest suite verifying recursive asset key collection and export bundle round-trips.
-- `quickDesign.ts`: Quick Workspace mockup size/theme/device presets and layer builder (`QUICK_SIZES`, `QUICK_THEMES`, `QUICK_MOCKUPS`, `getQuickMockupPlacement`, `makeQuickLayers`).
-- `quickDesign.test.ts`: Vitest suite verifying Quick Workspace placement math and generated layer trees.
+- `quickDesign.ts`: Quick Workspace mockup size/theme/device presets covering all 13 `PhoneModel` frames grouped by `MockupCategory`, placement calculator, and layer builder (`QUICK_SIZES`, `QUICK_THEMES`, `QUICK_MOCKUP_CATEGORIES`, `QUICK_MOCKUPS`, `getQuickMockupsByCategory`, `getQuickMockupPlacement`, `makeQuickLayers`).
+- `quickDesign.test.ts`: Vitest suite verifying 13-device category coverage, Quick Workspace placement math, and generated layer trees.
 - `quickPreview.ts`: Lightweight SVG mockup preview geometry and data-URL helper (`screenshotPreserveAspectRatio`, `getQuickPreviewGeometry`, `makeSvgImageDataUrl`).
 - `quickPreview.test.ts`: Vitest suite verifying SVG aspect-ratio fit modes and preview geometry alignment.
 - `richText.ts`: Range-based rich-text mark model and `contentEditable` DOM serializer/selection bridge (`segmentMarks`, `normalizeMarks`, `applyMarkStyle`, `marksToHtml`, `parseEditorDom`).
@@ -61,6 +61,8 @@ Pure domain engines, canvas-format projection, localization, rich-text rendering
 - `stageCapture.ts`: Exclusive Konva stage capture lock, overlay isolation, and image/font settle synchronizer (`acquireCaptureLock`, `withHiddenEditorOverlays`, `withIdentityTransform`, `waitForStageCaptureReady`).
 - `stageCapture.test.ts`: Vitest suite verifying capture lock exclusion, image classification, and stage settle synchronization.
 - `stageRegistry.ts`: Singleton Konva `Stage` registry (`registerStage`, `getStage`) bridging `StageCanvas` to non-canvas panels.
+- `telemetry.ts`: Privacy-first client-side funnel telemetry utility (`FunnelEventName`, `trackFunnelEvent`, `getRecentFunnelEvents`, `clearFunnelEvents`) stripping PII/filename/URL keys, retaining a bounded 100-event ring buffer, and dispatching `navigator.sendBeacon` only when `VITE_ANALYTICS_ENDPOINT` is configured.
+- `telemetry.test.ts`: Vitest suite verifying PII/filename/URL stripping, safe metadata retention, ring-buffer bounds, and optional `sendBeacon` dispatch.
 - `templateAppearance.ts`: Selective style-only template applier (`DEFAULT_APPEARANCE_PARTS`, `applyTemplateAppearance`) preserving slide content and layout.
 - `templateAppearance.test.ts`: Vitest suite verifying selective background, typography, and phone appearance transfers.
 - `templateSlots.ts`: Slot-preserving template applier (`findScreenshotTarget`, `applyTemplateToCanvas`) rebinding existing screenshots onto scaled template layers.
