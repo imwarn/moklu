@@ -60,8 +60,5 @@
 /og-image.png
   Cache-Control: public, max-age=3600
 
-/icons.svg
-  Cache-Control: public, max-age=3600
-
 /templates/*
   Cache-Control: public, max-age=3600

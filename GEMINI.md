@@ -10,7 +10,7 @@ public/ - Static assets, templates, Nested Mockup Frame brand assets (`favicon.s
 tests/ - Playwright browser E2E suites (`tests/e2e/`) and deterministic export fixtures
 cli/ - Headless Node CLI (`moklu` / `pixeldeck`) for scripted project export and locale manifests
 docs/ - Operational guides, Cloudflare Web Analytics & search-indexing setup (`analytics.md`, `cloudflare-response-headers.md`), and release documentation
-.github/ - GitHub Actions CI, benchmark, deployment-smoke, live-reliability, and release-candidate workflows (Actions v7 / Node 24 runtime)
+.github/ - GitHub Actions CI, benchmark, deployment-smoke, live-reliability, and release-candidate workflows (GitHub-hosted `ubuntu-latest`, least-privilege `contents: read`, Actions v7 / Node 24 runtime; see `.github/GEMINI.md`)
 </directory>
 
 <config>
