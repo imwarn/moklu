@@ -58,14 +58,18 @@ describe('SEO route registry and pathname resolution', () => {
     expect(uniquePaths.size).toBe(92)
   })
 
-  it('builds root paths for English and prefixed paths for zh/ja/ko', () => {
+  it('builds root paths for English and trailing-slash paths for all subroutes', () => {
     expect(buildLocalizedPath('en', '')).toBe('/')
-    expect(buildLocalizedPath('en', 'merge-images')).toBe('/merge-images')
-    expect(buildLocalizedPath('en', 'studio')).toBe('/studio')
-    expect(buildLocalizedPath('zh', '')).toBe('/zh')
-    expect(buildLocalizedPath('zh', 'id-card-watermark')).toBe('/zh/id-card-watermark')
-    expect(buildLocalizedPath('ja', 'carousel-splitter')).toBe('/ja/carousel-splitter')
-    expect(buildLocalizedPath('ko', 'browser-mockup')).toBe('/ko/browser-mockup')
+    expect(buildLocalizedPath('en', 'merge-images')).toBe('/merge-images/')
+    expect(buildLocalizedPath('en', 'studio')).toBe('/studio/')
+    expect(buildLocalizedPath('zh', '')).toBe('/zh/')
+    expect(buildLocalizedPath('zh', 'id-card-watermark')).toBe('/zh/id-card-watermark/')
+    expect(buildLocalizedPath('ja', 'carousel-splitter')).toBe('/ja/carousel-splitter/')
+    expect(buildLocalizedPath('ko', 'browser-mockup')).toBe('/ko/browser-mockup/')
+
+    for (const route of ALL_ROUTES) {
+      expect(route.path.endsWith('/'), `${route.path} must end with /`).toBe(true)
+    }
   })
 
   it('resolves all intent presets accurately and handles normalization/fallbacks', () => {
@@ -102,7 +106,7 @@ describe('SEO route registry and pathname resolution', () => {
     const enExplicit = resolvePathname('/en/merge-images/')
     expect(enExplicit.locale).toBe('en')
     expect(enExplicit.slug).toBe('merge-images')
-    expect(enExplicit.path).toBe('/merge-images')
+    expect(enExplicit.path).toBe('/merge-images/')
     expect(enExplicit.isFallback).toBe(false)
 
     // Unknown slug falls back cleanly while preserving locale
@@ -117,17 +121,17 @@ describe('SEO route registry and pathname resolution', () => {
     expect(getSiteUrl('https://preview.moklu.app///')).toBe('https://preview.moklu.app')
     expect(buildCanonicalUrl('en', '', 'https://moklu.app')).toBe('https://moklu.app/')
     expect(buildCanonicalUrl('zh', 'merge-images', 'https://moklu.app')).toBe(
-      'https://moklu.app/zh/merge-images',
+      'https://moklu.app/zh/merge-images/',
     )
 
     const links = getHreflangLinks('id-card-watermark', 'https://moklu.app')
     expect(links).toHaveLength(5)
     expect(links).toEqual([
-      { hreflang: 'en', href: 'https://moklu.app/id-card-watermark' },
-      { hreflang: 'zh-Hans', href: 'https://moklu.app/zh/id-card-watermark' },
-      { hreflang: 'ja', href: 'https://moklu.app/ja/id-card-watermark' },
-      { hreflang: 'ko', href: 'https://moklu.app/ko/id-card-watermark' },
-      { hreflang: 'x-default', href: 'https://moklu.app/id-card-watermark' },
+      { hreflang: 'en', href: 'https://moklu.app/id-card-watermark/' },
+      { hreflang: 'zh-Hans', href: 'https://moklu.app/zh/id-card-watermark/' },
+      { hreflang: 'ja', href: 'https://moklu.app/ja/id-card-watermark/' },
+      { hreflang: 'ko', href: 'https://moklu.app/ko/id-card-watermark/' },
+      { hreflang: 'x-default', href: 'https://moklu.app/id-card-watermark/' },
     ])
   })
 })
@@ -246,7 +250,7 @@ describe('Structured data JSON-LD and DOM head synchronization', () => {
     const schemas = buildRouteSchemas(route, 'https://moklu.app')
 
     expect(schemas.webApplication['@type']).toBe('WebApplication')
-    expect(schemas.webApplication.url).toBe('https://moklu.app/zh/id-card-watermark')
+    expect(schemas.webApplication.url).toBe('https://moklu.app/zh/id-card-watermark/')
     expect(schemas.webApplication.inLanguage).toBe('zh-CN')
     expect(schemas.webApplication.applicationCategory).toBe('UtilitiesApplication')
     expect(schemas.webApplication.offers.price).toBe('0')
@@ -344,7 +348,7 @@ describe('Structured data JSON-LD and DOM head synchronization', () => {
     expect(mockDoc.title).toBe(getRouteCopy('ko', 'merge-images').title)
     expect(headChildren.filter((el) => el.attrs.rel === 'canonical')).toHaveLength(1)
     expect(headChildren.find((el) => el.attrs.rel === 'canonical')?.attrs.href).toBe(
-      'https://moklu.app/ko/merge-images',
+      'https://moklu.app/ko/merge-images/',
     )
     expect(headChildren.filter((el) => el.attrs.rel === 'alternate')).toHaveLength(5)
     expect(headChildren.filter((el) => el.attrs.type === 'application/ld+json')).toHaveLength(6)
@@ -492,10 +496,10 @@ describe('Build-time SSG prerenderer, sitemap.xml, robots.txt, and CSP safety', 
 
     expect(rendered).toContain('<html lang="ja" data-theme="light" data-surface="workspace">')
     expect(rendered).toContain(`<title>${copy.title}</title>`)
-    expect(rendered).toContain('<link rel="canonical" href="https://moklu.app/ja/merge-images" />')
+    expect(rendered).toContain('<link rel="canonical" href="https://moklu.app/ja/merge-images/" />')
     expect(rendered).toContain('<meta property="og:image" content="https://moklu.app/og-image.png" />')
     expect(rendered).toContain('<meta name="twitter:image" content="https://moklu.app/og-image.png" />')
-    expect(rendered).toContain('hreflang="x-default" href="https://moklu.app/merge-images"')
+    expect(rendered).toContain('hreflang="x-default" href="https://moklu.app/merge-images/"')
     expect(rendered).toContain(copy.h1)
     expect(rendered).toContain(copy.faqs[0].question)
     expect(rendered).toContain('data-testid="tool-landing-page"')
@@ -593,9 +597,12 @@ describe('Build-time SSG prerenderer, sitemap.xml, robots.txt, and CSP safety', 
       expect(sitemap.match(/<url>/g)?.length).toBe(92)
       expect(sitemap).toContain('xmlns:xhtml="http://www.w3.org/1999/xhtml"')
       expect(sitemap).toContain('hreflang="zh-Hans"')
-      expect(sitemap).toContain('<loc>https://moklu.app/zh/id-card-watermark</loc>')
-      expect(sitemap).toContain('<loc>https://moklu.app/zh/privacy</loc>')
-      expect(sitemap).toContain('<loc>https://moklu.app/merge-photos-to-pdf</loc>')
+      expect(sitemap).toContain('<loc>https://moklu.app/zh/id-card-watermark/</loc>')
+      expect(sitemap).toContain('<loc>https://moklu.app/zh/privacy/</loc>')
+      expect(sitemap).toContain('<loc>https://moklu.app/merge-photos-to-pdf/</loc>')
+      for (const match of sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)) {
+        expect(match[1].endsWith('/'), `sitemap loc ${match[1]} must end with /`).toBe(true)
+      }
 
       const robots = await readFile(path.join(tmpDir, 'robots.txt'), 'utf8')
       expect(robots).toBe(generateRobotsTxt('https://moklu.app'))
@@ -606,8 +613,8 @@ describe('Build-time SSG prerenderer, sitemap.xml, robots.txt, and CSP safety', 
       expect(llms.startsWith('# Moklu')).toBe(true)
       expect(llms).not.toMatch(/<!doctype html|<html/i)
       expect(llms).toContain('在线图片拼接')
-      expect(llms).toContain('https://moklu.app/zh/merge-images')
-      expect(llms).toContain('https://moklu.app/merge-photos-to-pdf')
+      expect(llms).toContain('https://moklu.app/zh/merge-images/')
+      expect(llms).toContain('https://moklu.app/merge-photos-to-pdf/')
       expect(llms).toContain('https://github.com/imwarn/moklu')
     } finally {
       await rm(tmpDir, { recursive: true, force: true })

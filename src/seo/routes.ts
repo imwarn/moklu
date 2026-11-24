@@ -1,7 +1,7 @@
 /**
  * [INPUT]: depends on RouteDefinition, RouteSlug, LocaleCode, HtmlLangCode, HreflangCode, ResolvedRoute, HreflangLink, and ToolId types from ./types.ts
  * [OUTPUT]: exports LOCALE_CODES, DEFAULT_LOCALE, DEFAULT_SITE_URL, ROUTE_SLUGS, ROUTE_DEFINITIONS, ALL_ROUTES, TOOL_ROUTE_DEFINITIONS, INFO_ROUTE_DEFINITIONS, PRIMARY_TOOL_SLUGS, getHtmlLang, getHreflangCode, getSiteUrl, isLocaleCode, isRouteSlug, getRouteDefinition, buildLocalizedPath, buildCanonicalUrl, getHreflangLinks, resolvePathname, and getRelatedRoutes
- * [POS]: single source of truth for all 23 intent/info slugs (92 localized URLs), BCP-47 lang/hreflang tags (`zh-CN`/`zh-Hans`), URL normalization, preset mapping, and internal link graphs across client routing and build-time SSG
+ * [POS]: single source of truth for all 23 intent/info slugs (92 trailing-slash localized URLs), BCP-47 lang/hreflang tags (`zh-CN`/`zh-Hans`), URL normalization, preset mapping, and internal link graphs across client routing and build-time SSG
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
@@ -315,9 +315,9 @@ export function getRouteDefinition(slug: RouteSlug): RouteDefinition {
 
 export function buildLocalizedPath(locale: LocaleCode, slug: RouteSlug): string {
   if (locale === DEFAULT_LOCALE) {
-    return slug === '' ? '/' : `/${slug}`
+    return slug === '' ? '/' : `/${slug}/`
   }
-  return slug === '' ? `/${locale}` : `/${locale}/${slug}`
+  return slug === '' ? `/${locale}/` : `/${locale}/${slug}/`
 }
 
 export function buildCanonicalUrl(
@@ -327,7 +327,7 @@ export function buildCanonicalUrl(
 ): string {
   const base = getSiteUrl(siteUrl)
   const path = buildLocalizedPath(locale, slug)
-  return path === '/' ? `${base}/` : `${base}${path}`
+  return `${base}${path}`
 }
 
 export function getHreflangLinks(slug: RouteSlug, siteUrl?: string): HreflangLink[] {

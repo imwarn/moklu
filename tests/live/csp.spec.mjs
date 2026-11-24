@@ -50,7 +50,7 @@ test.describe('production CSP', () => {
     const consoleViolations = collectViolations(page)
     await installListener(page)
     try {
-      const response = await page.goto('/studio', { waitUntil: 'domcontentloaded' })
+      const response = await page.goto('/studio/', { waitUntil: 'domcontentloaded' })
       expect(response.status()).toBe(200)
 
       // The response must actually carry the policy, otherwise this test proves nothing.
@@ -109,7 +109,7 @@ test.describe('production CSP', () => {
   })
 
   test('provider endpoints are permitted by connect-src', async ({ page }) => {
-    const response = await page.goto('/studio', { waitUntil: 'domcontentloaded' })
+    const response = await page.goto('/studio/', { waitUntil: 'domcontentloaded' })
     const csp = response.headers()['content-security-policy'] ?? ''
     const connectSrc = (csp.split(';').map((p) => p.trim()).find((p) => p.startsWith('connect-src')) ?? '')
 

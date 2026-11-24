@@ -25,9 +25,9 @@ describe('ChunkErrorBoundary', () => {
 
     const expectations = [
       { locale: 'en' as const, title: 'Studio assets updated', btn: 'Refresh Page', homeHref: '/' },
-      { locale: 'zh' as const, title: 'Studio 资源已更新', btn: '刷新页面', homeHref: '/zh' },
-      { locale: 'ja' as const, title: 'Studio アセットが更新されました', btn: 'ページを再読み込み', homeHref: '/ja' },
-      { locale: 'ko' as const, title: 'Studio 리소스가 업데이트되었습니다', btn: '페이지 새로고침', homeHref: '/ko' },
+      { locale: 'zh' as const, title: 'Studio 资源已更新', btn: '刷新页面', homeHref: '/zh/' },
+      { locale: 'ja' as const, title: 'Studio アセットが更新されました', btn: 'ページを再読み込み', homeHref: '/ja/' },
+      { locale: 'ko' as const, title: 'Studio 리소스가 업데이트되었습니다', btn: '페이지 새로고침', homeHref: '/ko/' },
     ]
 
     for (const item of expectations) {

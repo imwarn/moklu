@@ -36,10 +36,11 @@ export function escapeHtml(value: string): string {
 
 /** Relative POSIX output segments inside dist/, e.g. ['index.html'] or ['zh', 'merge-images', 'index.html']. */
 export function getRouteRelativeHtmlPath(route: ResolvedRoute): readonly string[] {
-  if (route.path === '/') {
+  const segments = route.path.split('/').filter(Boolean)
+  if (segments.length === 0) {
     return ['index.html']
   }
-  return [...route.path.replace(/^\/+/, '').split('/'), 'index.html']
+  return [...segments, 'index.html']
 }
 
 /**

@@ -166,7 +166,7 @@ test('1-click Open in Studio handoff stages mockup layer into /studio and Tools 
   await expect(workspace).toBeVisible()
 
   await workspace.getByRole('button', { name: /Open in Studio/i }).click()
-  await expect(page).toHaveURL(/\/studio$/)
+  await expect(page).toHaveURL(/\/studio\/$/)
 
   // Konva stage mounts and the toolbar shows Quick Design + back-to-tools link.
   await expect(page.locator('.konvajs-content').first()).toBeVisible()
@@ -182,22 +182,29 @@ test('1-click Open in Studio handoff stages mockup layer into /studio and Tools 
 test('4-locale SEO routes sync lang, canonical, hreflang, JSON-LD, and tool presets', async ({ page }) => {
   const cases = [
     {
-      path: '/zh/id-card-watermark',
+      path: '/zh/id-card-watermark/',
       lang: 'zh-CN',
       tool: 'id-card',
-      canonical: 'https://moklu.app/zh/id-card-watermark',
+      canonical: 'https://moklu.app/zh/id-card-watermark/',
     },
     {
-      path: '/ja/merge-images',
+      path: '/ja/merge-images/',
       lang: 'ja',
       tool: 'merge',
-      canonical: 'https://moklu.app/ja/merge-images',
+      canonical: 'https://moklu.app/ja/merge-images/',
     },
     {
-      path: '/ko/browser-mockup',
+      path: '/ko/browser-mockup/',
       lang: 'ko',
       tool: 'mockup',
-      canonical: 'https://moklu.app/ko/browser-mockup',
+      canonical: 'https://moklu.app/ko/browser-mockup/',
+    },
+    {
+      // Slashless incoming path also normalizes canonical to trailing slash
+      path: '/zh/merge-images',
+      lang: 'zh-CN',
+      tool: 'merge',
+      canonical: 'https://moklu.app/zh/merge-images/',
     },
   ]
 
@@ -226,11 +233,11 @@ test('Pre-rendered SSG HTML, sitemap.xml, and llms.txt contain all 92 routes wit
   const sitemap = await readFile(path.join(distDir, 'sitemap.xml'), 'utf8')
   const urlMatches = sitemap.match(/<url>/g) ?? []
   expect(urlMatches.length).toBe(92)
-  expect(sitemap).toContain('https://moklu.app/zh/id-card-watermark')
-  expect(sitemap).toContain('https://moklu.app/ja/merge-images')
-  expect(sitemap).toContain('https://moklu.app/ko/browser-mockup')
-  expect(sitemap).toContain('https://moklu.app/merge-photos-to-pdf')
-  expect(sitemap).toContain('https://moklu.app/zh/privacy')
+  expect(sitemap).toContain('https://moklu.app/zh/id-card-watermark/')
+  expect(sitemap).toContain('https://moklu.app/ja/merge-images/')
+  expect(sitemap).toContain('https://moklu.app/ko/browser-mockup/')
+  expect(sitemap).toContain('https://moklu.app/merge-photos-to-pdf/')
+  expect(sitemap).toContain('https://moklu.app/zh/privacy/')
 
   const robots = await readFile(path.join(distDir, 'robots.txt'), 'utf8')
   expect(robots).toContain('Sitemap: https://moklu.app/sitemap.xml')
@@ -409,14 +416,14 @@ test('Localized /zh/studio renders Simplified Chinese Studio UI and switches UI 
   // Switch Studio UI language to Japanese via Toolbar language switcher
   await page.locator('header button[data-testid="toolbar-lang-btn"]').click()
   await page.getByRole('menuitem', { name: /日本語/ }).click()
-  await expect(page).toHaveURL(/\/ja\/studio$/)
+  await expect(page).toHaveURL(/\/ja\/studio\/$/)
   await expect(page.locator('html')).toHaveAttribute('lang', 'ja')
   await expect(page.locator('header')).toContainText('ツール')
 
-  // Switch back to English /studio
+  // Switch back to English /studio/
   await page.locator('header button[data-testid="toolbar-lang-btn"]').click()
   await page.getByRole('menuitem', { name: /English/ }).click()
-  await expect(page).toHaveURL(/\/studio$/)
+  await expect(page).toHaveURL(/\/studio\/$/)
   await expect(page.locator('header')).toContainText('Quick Design')
 })
 
