@@ -130,3 +130,25 @@ curl -sS -X POST https://api.indexnow.org/indexnow \
 ```
 
 返回 HTTP `200`（已受理）或 `202`（已入队等待 key 校验）即表示提交成功。后续如需全自动化，可将上述请求接入发版后的 GitHub Actions workflow，并从已发布的 `sitemap.xml` 提取 URL 列表批量推送。
+
+---
+
+## 五、隐私优先漏斗埋点（`src/utils/telemetry.ts`）
+
+除页面级 PV 统计外，Moklu 在 [`src/utils/telemetry.ts`](../src/utils/telemetry.ts) 中提供零依赖、本地内存缓冲的隐私优先漏斗事件记录工具，用于度量工具打开到导出的转化漏斗：
+
+- **允许的事件集合（`FunnelEventName`）**：
+  - `tool_view`
+  - `image_loaded`
+  - `export_completed`
+  - `copy_completed`
+  - `format_rejected`
+  - `studio_handoff`
+  - `pro_cta_clicked`
+- **强隐私剥离规则（永不泄露 PII 与本地文件名）**：
+  - 任意匹配 `/name|path|url|src|blob|data|file/i` 的属性键会被无条件剥离。
+  - 仅白名单短键 `mime` 与 `ext` 允许保留（且截断至最多 16 个字符，如 `image/heic`、`webp`）。
+  - 任何以 `data:`、`blob:`、`http(s)://`、`file://` 或本地绝对路径开头的值也会被剥离。
+- **默认零网络发送**：
+  - 所有事件默认仅保存在浏览器内存的最近 100 条环形队列中（可通过 `getRecentFunnelEvents()` / `clearFunnelEvents()` 读取与清空）。
+  - 仅当构建期环境变量 `VITE_ANALYTICS_ENDPOINT` 非空时，才会通过 `navigator.sendBeacon` 异步上报脱敏后的 JSON 事件，且上报异常不会影响任何前端交互。若启用自定义上报端点，需同步将该域名加入 [`public/_headers`](../public/_headers) 的 `connect-src` 白名单并通过 `node scripts/check-headers.mjs` 校验。

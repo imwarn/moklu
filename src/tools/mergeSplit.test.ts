@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on vitest, jszip, ./mergeEngine, ./pdfHelper, ./splitEngine, and ./testHelpers
- * [OUTPUT]: unit tests verifying merge layout math, cross-axis alignment, rotation, borders, PDF 1.4 export, clamping, rendering, carousel/grid slice coordinates, and ZIP archives
+ * [OUTPUT]: unit tests verifying merge layout math, cross-axis alignment, rotation, borders, single- and multi-page A4/fit PDF 1.4 export, clamping, rendering, carousel/grid slice coordinates, and ZIP archives
  * [POS]: unit test suite for src/tools/mergeEngine.ts, src/tools/pdfHelper.ts, and src/tools/splitEngine.ts
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -8,7 +8,14 @@
 import JSZip from 'jszip'
 import { describe, expect, it } from 'vitest'
 import { computeMergeLayout, mergeImages } from './mergeEngine'
-import { buildSinglePagePdfBytes, createSinglePagePdfFromJpeg } from './pdfHelper'
+import {
+  A4_HEIGHT_PT,
+  A4_WIDTH_PT,
+  buildMultiPagePdfBytes,
+  buildSinglePagePdfBytes,
+  createMultiPagePdfFromJpegs,
+  createSinglePagePdfFromJpeg,
+} from './pdfHelper'
 import {
   CAROUSEL_PRESET_SIZES,
   computeCarouselSlices,
@@ -295,6 +302,97 @@ describe('mergeEngine', () => {
     const blob = createSinglePagePdfFromJpeg(new Uint8Array([0xff, 0xd8, 0xff, 0xd9]), 2480, 3508, { dpi: 300 })
     expect(blob.type).toBe('application/pdf')
     expect(blob.size).toBeGreaterThan(200)
+  })
+
+  it('builds valid multi-page A4 portrait, A4 landscape, and fit PDF 1.4 documents with exact 20-byte xref entries', () => {
+    expect(() => buildMultiPagePdfBytes([])).toThrow()
+    expect(() =>
+      buildMultiPagePdfBytes([{ jpegBytes: new Uint8Array(0), pixelWidth: 100, pixelHeight: 100 }]),
+    ).toThrow()
+
+    const fakeJpegA = new Uint8Array([0xff, 0xd8, 0x01, 0x02, 0xff, 0xd9])
+    const fakeJpegB = new Uint8Array([0xff, 0xd8, 0x03, 0x04, 0x05, 0xff, 0xd9])
+    const bytes = buildMultiPagePdfBytes(
+      [
+        { jpegBytes: fakeJpegA, pixelWidth: 1200, pixelHeight: 800 },
+        { jpegBytes: fakeJpegB, pixelWidth: 600, pixelHeight: 1200 },
+      ],
+      { pageSize: 'a4', orientation: 'portrait', margin: 'normal' },
+    )
+    const pdfText = new TextDecoder('latin1').decode(bytes)
+    expect(pdfText.startsWith('%PDF-1.4\n')).toBe(true)
+    expect(pdfText).toContain('/Kids [3 0 R 6 0 R] /Count 2')
+    expect(pdfText).toContain(`/MediaBox [0 0 ${A4_WIDTH_PT} ${A4_HEIGHT_PT}]`)
+    expect(pdfText).toContain('1 1 1 rg')
+    expect(pdfText).toContain('/Im0 Do')
+    expect(pdfText).toContain('/Im1 Do')
+
+    // Verify exact xref table offsets for all 8 objects (Catalog, Pages, 2 * 3 page objects)
+    const startXrefMatch = /startxref\n(\d+)\n%%EOF/.exec(pdfText)
+    expect(startXrefMatch).not.toBeNull()
+    const xrefPos = Number(startXrefMatch![1])
+    expect(pdfText.slice(xrefPos, xrefPos + 4)).toBe('xref')
+    const entryMatches = [...pdfText.slice(xrefPos).matchAll(/^(\d{10}) 00000 n $/gm)]
+    expect(entryMatches).toHaveLength(8)
+    entryMatches.forEach((match, idx) => {
+      const objOffset = Number(match[1])
+      expect(pdfText.slice(objOffset, objOffset + 7)).toBe(`${idx + 1} 0 obj`)
+    })
+
+    // Landscape swaps A4 width & height
+    const landscapeText = new TextDecoder('latin1').decode(
+      buildMultiPagePdfBytes([{ jpegBytes: fakeJpegA, pixelWidth: 800, pixelHeight: 400 }], {
+        pageSize: 'a4',
+        orientation: 'landscape',
+        margin: 'none',
+      }),
+    )
+    expect(landscapeText).toContain(`/MediaBox [0 0 ${A4_HEIGHT_PT} ${A4_WIDTH_PT}]`)
+
+    // Fit mode sizes page to image dimensions (+ 0 margin when none)
+    const fitBlob = createMultiPagePdfFromJpegs(
+      [{ jpegBytes: fakeJpegA, pixelWidth: 500, pixelHeight: 300 }],
+      { pageSize: 'fit', margin: 'none', dpi: 72 },
+    )
+    expect(fitBlob.type).toBe('application/pdf')
+  })
+
+  it('exports multi-page PDF via mergeImages respecting per-item rotations and PDF layout options', async () => {
+    const items = [
+      makeMockImageItem({ id: 'mp1', width: 800, height: 400 }),
+      makeMockImageItem({ id: 'mp2', width: 600, height: 900 }),
+    ]
+    const { createCanvas, canvases } = createRecordingCanvasFactory()
+
+    const result = await mergeImages(items, {
+      mode: 'vertical',
+      format: 'application/pdf',
+      pdfMode: 'multipage',
+      pdfPageSize: 'a4',
+      pdfOrientation: 'landscape',
+      pdfMargin: 'normal',
+      itemRotations: [90, 0],
+      quality: 0.88,
+      filename: 'scanned-docs',
+      createCanvas,
+    })
+
+    expect(result.format).toBe('application/pdf')
+    expect(result.filename).toBe('scanned-docs.pdf')
+    expect(result.previewBlob?.type).toBe('image/jpeg')
+    // 1 canvas per page; page 0 is rotated 90deg -> 400x800 canvas; page 1 is 600x900
+    expect(canvases).toHaveLength(2)
+    expect(canvases[0].width).toBe(400)
+    expect(canvases[0].height).toBe(800)
+    expect(canvases[0].draws[0].rotation).toBeCloseTo(Math.PI / 2, 5)
+    expect(canvases[1].width).toBe(600)
+    expect(canvases[1].height).toBe(900)
+
+    const pdfText = new TextDecoder('latin1').decode(new Uint8Array(await result.blob.arrayBuffer()))
+    expect(pdfText).toContain('/Kids [3 0 R 6 0 R] /Count 2')
+    expect(pdfText).toContain(`/MediaBox [0 0 ${A4_HEIGHT_PT} ${A4_WIDTH_PT}]`)
+    expect(pdfText).toContain('/Width 400 /Height 800')
+    expect(pdfText).toContain('/Width 600 /Height 900')
   })
 })
 

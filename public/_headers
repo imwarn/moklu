@@ -10,6 +10,7 @@
 #   - style-src needs fonts.googleapis.com: src/utils/fonts.ts injects <link> at runtime
 #   - font-src needs data:: user-uploaded fonts are registered from data URLs
 #   - connect-src allows the three direct AI providers plus cloudflareinsights.com for Web Analytics beacons
+#   - script-src allows 'wasm-unsafe-eval': local HEIC WASM decoding (strictly zero JS eval/new Function)
 #   - no 'unsafe-eval' or 'unsafe-inline' in script-src: the bundle contains no eval/new Function or inline scripts
 
 /*
@@ -18,7 +19,7 @@
   X-Frame-Options: DENY
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()
   Cache-Control: no-cache
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://api.openai.com https://openrouter.ai https://generativelanguage.googleapis.com https://cloudflareinsights.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://static.cloudflareinsights.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://api.openai.com https://openrouter.ai https://generativelanguage.googleapis.com https://cloudflareinsights.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
 
 # The HTML entry document must never be cached by heuristics or a CDN edge,
 # otherwise a new deploy keeps serving the previous asset graph.

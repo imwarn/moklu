@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on canvas & ZIP helpers from ./canvasHelpers and Compress* types from ./types
- * [OUTPUT]: exports computeCompressedDimensions, compressImage, and compressImages for batch offline compression & format conversion
+ * [OUTPUT]: exports computeCompressedDimensions, compressImage, and compressImages for batch offline compression, format conversion, and target-KB binary-search compression with optional auto-downscale
  * [POS]: local image compression and format conversion engine within src/tools
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -16,6 +16,7 @@ import {
   replaceFileExtension,
 } from './canvasHelpers'
 import type {
+  CanvasLike,
   ClampedDimensions,
   CompressBatchResult,
   CompressOptions,
@@ -23,6 +24,12 @@ import type {
   Dimensions,
   LoadedImageItem,
 } from './types'
+
+const TARGET_SEARCH_MIN_QUALITY = 0.05
+const TARGET_SEARCH_MAX_QUALITY = 0.98
+const TARGET_SEARCH_ITERATIONS = 7
+const AUTO_DOWNSCALE_MAX_STEPS = 4
+const AUTO_DOWNSCALE_MIN_WIDTH = 320
 
 /**
  * Compute target output dimensions when optional maxWidth/maxHeight caps are provided.
@@ -56,8 +63,66 @@ export function computeCompressedDimensions(
   }
 }
 
+function renderItemToCanvas(
+  item: LoadedImageItem,
+  width: number,
+  height: number,
+  options: CompressOptions,
+): CanvasLike {
+  const canvas = createCanvas(width, height, options.createCanvas)
+  const ctx = get2dContext(canvas)
+
+  if (options.format === 'image/jpeg') {
+    fillBackground(ctx, width, height, options.background ?? '#ffffff')
+  }
+
+  ctx.drawImage(item.source, 0, 0, item.width, item.height, 0, 0, width, height)
+  return canvas
+}
+
+async function binarySearchQualityForTarget(
+  canvas: CanvasLike,
+  format: 'image/webp' | 'image/jpeg',
+  targetBytes: number,
+): Promise<{ blob: Blob; quality: number; met: boolean }> {
+  let low = TARGET_SEARCH_MIN_QUALITY
+  let high = TARGET_SEARCH_MAX_QUALITY
+  let bestUnder: { blob: Blob; quality: number } | null = null
+  let smallest: { blob: Blob; quality: number } | null = null
+
+  for (let i = 0; i < TARGET_SEARCH_ITERATIONS; i += 1) {
+    const mid = (low + high) / 2
+    const blob = await canvasToBlob(canvas, format, mid)
+    if (!smallest || blob.size < smallest.blob.size) {
+      smallest = { blob, quality: mid }
+    }
+    if (blob.size <= targetBytes) {
+      bestUnder = { blob, quality: mid }
+      low = mid
+    } else {
+      high = mid
+    }
+  }
+
+  if (bestUnder) {
+    return { blob: bestUnder.blob, quality: bestUnder.quality, met: true }
+  }
+
+  // Probe the 0.05 quality floor directly before deciding to auto-downscale
+  const floorBlob = await canvasToBlob(canvas, format, TARGET_SEARCH_MIN_QUALITY)
+  if (floorBlob.size <= targetBytes) {
+    return { blob: floorBlob, quality: TARGET_SEARCH_MIN_QUALITY, met: true }
+  }
+  if (!smallest || floorBlob.size <= smallest.blob.size) {
+    return { blob: floorBlob, quality: TARGET_SEARCH_MIN_QUALITY, met: false }
+  }
+  return { blob: smallest.blob, quality: smallest.quality, met: false }
+}
+
 /**
  * Compress and/or convert a single loaded image locally via HTML5 Canvas.
+ * When options.targetBytes > 0 for JPEG/WebP, executes a 7-iteration quality binary search
+ * with optional iterative width downscaling (up to 4 steps, 320px floor) to meet the size cap.
  */
 export async function compressImage(
   item: LoadedImageItem,
@@ -71,16 +136,57 @@ export async function compressImage(
     options.maxHeight,
   )
 
-  const canvas = createCanvas(dims.width, dims.height, options.createCanvas)
-  const ctx = get2dContext(canvas)
+  const targetBytes =
+    options.targetBytes !== undefined && Number.isFinite(options.targetBytes) && options.targetBytes > 0
+      ? Math.floor(options.targetBytes)
+      : undefined
+  const isLossy = format === 'image/webp' || format === 'image/jpeg'
 
-  if (format === 'image/jpeg') {
-    fillBackground(ctx, dims.width, dims.height, options.background ?? '#ffffff')
+  let finalWidth = dims.width
+  let finalHeight = dims.height
+  let blob: Blob
+  let targetBytesMet: boolean | undefined
+  let autoDownscaled: boolean | undefined
+  let appliedQuality: number | undefined
+
+  if (targetBytes !== undefined && isLossy) {
+    let scale = 1
+    let canvas = renderItemToCanvas(item, finalWidth, finalHeight, options)
+    let attempt = await binarySearchQualityForTarget(canvas, format, targetBytes)
+    autoDownscaled = false
+
+    if (!attempt.met && !options.preserveOriginalDimensions && finalWidth > AUTO_DOWNSCALE_MIN_WIDTH) {
+      for (let step = 0; step < AUTO_DOWNSCALE_MAX_STEPS && !attempt.met; step += 1) {
+        const ratio =
+          attempt.blob.size > 0 ? Math.sqrt(targetBytes / attempt.blob.size) * 0.92 : 0.8
+        scale *= Math.min(0.8, ratio)
+        const nextWidth = Math.max(AUTO_DOWNSCALE_MIN_WIDTH, Math.round(dims.width * scale))
+        if (nextWidth >= finalWidth) break
+        const nextHeight = Math.max(1, Math.round(dims.height * (nextWidth / dims.width)))
+
+        finalWidth = nextWidth
+        finalHeight = nextHeight
+        autoDownscaled = true
+
+        canvas = renderItemToCanvas(item, finalWidth, finalHeight, options)
+        attempt = await binarySearchQualityForTarget(canvas, format, targetBytes)
+        if (finalWidth <= AUTO_DOWNSCALE_MIN_WIDTH) break
+      }
+    }
+
+    blob = attempt.blob
+    targetBytesMet = attempt.met
+    appliedQuality = Math.round(attempt.quality * 1000) / 1000
+  } else {
+    const canvas = renderItemToCanvas(item, finalWidth, finalHeight, options)
+    blob = await canvasToBlob(canvas, format, quality)
+    appliedQuality = isLossy ? quality : undefined
+    if (targetBytes !== undefined) {
+      targetBytesMet = blob.size <= targetBytes
+      autoDownscaled = false
+    }
   }
 
-  ctx.drawImage(item.source, 0, 0, item.width, item.height, 0, 0, dims.width, dims.height)
-
-  const blob = await canvasToBlob(canvas, format, quality)
   const originalBytes = Math.max(0, item.originalBytes)
   const outputBytes = blob.size
   const savedBytes = originalBytes - outputBytes
@@ -94,12 +200,15 @@ export async function compressImage(
     format,
     originalWidth: item.width,
     originalHeight: item.height,
-    width: dims.width,
-    height: dims.height,
+    width: finalWidth,
+    height: finalHeight,
     originalBytes,
     outputBytes,
     savedBytes,
     savedRatio,
+    targetBytesMet,
+    autoDownscaled,
+    appliedQuality,
     blob,
   }
 }

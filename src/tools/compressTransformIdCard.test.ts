@@ -1,13 +1,13 @@
 /**
  * [INPUT]: depends on vitest, jszip, ./compressEngine, ./transformEngine, ./idCardEngine, and ./testHelpers
- * [OUTPUT]: unit tests verifying batch compression savings, resize/crop/pad geometry, A4 ID-1 card scaling, watermarks, and ZIP output
+ * [OUTPUT]: unit tests verifying batch compression savings, target-KB binary-search compression and auto-downscaling, resize/crop/pad geometry, A4 ID-1 card scaling, watermarks, and ZIP output
  * [POS]: unit test suite for compressEngine.ts, transformEngine.ts, and idCardEngine.ts
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
 import JSZip from 'jszip'
 import { describe, expect, it } from 'vitest'
-import { compressImages, computeCompressedDimensions } from './compressEngine'
+import { compressImage, compressImages, computeCompressedDimensions } from './compressEngine'
 import {
   A4_DIMENSIONS,
   ID1_CARD_DIMENSIONS,
@@ -71,6 +71,73 @@ describe('compressEngine', () => {
     expect(result.zipBlob).toBeDefined()
     const archive = await JSZip.loadAsync(await result.zipBlob!.arrayBuffer())
     expect(Object.keys(archive.files)).toEqual(['hero.jpg', 'detail.jpg'])
+  })
+
+  it('binary-searches quality to find the highest lossy quality meeting targetBytes without downscaling', async () => {
+    // Monotonic synthetic encoder: size scales linearly with area and quality
+    const { createCanvas } = createRecordingCanvasFactory({
+      blobSizeFor: (_format, quality = 0.8, w = 1000, h = 1000) =>
+        Math.round((w * h * (0.1 + 0.9 * quality)) / 10),
+    })
+
+    // At 1000x1000, size(q) = 100_000 * (0.1 + 0.9 * q) -> target 60_000 => optimal q ≈ 0.555
+    const item = makeMockImageItem({ id: 't1', name: 'banner.png', width: 1000, height: 1000, originalBytes: 300_000 })
+    const res = await compressImage(item, {
+      format: 'image/webp',
+      targetBytes: 60_000,
+      createCanvas,
+    })
+
+    expect(res.targetBytesMet).toBe(true)
+    expect(res.autoDownscaled).toBe(false)
+    expect(res.width).toBe(1000)
+    expect(res.height).toBe(1000)
+    expect(res.outputBytes).toBeLessThanOrEqual(60_000)
+    expect(res.appliedQuality).toBeGreaterThan(0.53)
+    expect(res.appliedQuality).toBeLessThanOrEqual(0.56)
+  })
+
+  it('auto-downscales when quality=0.05 still exceeds targetBytes unless preserveOriginalDimensions is set', async () => {
+    // At 2000x1000 (2M px), even q=0.05 produces 2_000_000 * 0.145 = 290_000 bytes > target 80_000
+    const { createCanvas } = createRecordingCanvasFactory({
+      blobSizeFor: (_format, quality = 0.8, w = 1000, h = 1000) =>
+        Math.round(w * h * (0.1 + 0.9 * quality)),
+    })
+
+    const item = makeMockImageItem({ id: 'big', name: 'raw.jpg', width: 2000, height: 1000, originalBytes: 1_500_000 })
+
+    const scaled = await compressImage(item, {
+      format: 'image/jpeg',
+      targetBytes: 80_000,
+      createCanvas,
+    })
+    expect(scaled.targetBytesMet).toBe(true)
+    expect(scaled.autoDownscaled).toBe(true)
+    expect(scaled.width).toBeLessThan(2000)
+    expect(scaled.width).toBeGreaterThanOrEqual(320)
+    expect(scaled.outputBytes).toBeLessThanOrEqual(80_000)
+
+    const preserved = await compressImage(item, {
+      format: 'image/jpeg',
+      targetBytes: 80_000,
+      preserveOriginalDimensions: true,
+      createCanvas,
+    })
+    expect(preserved.targetBytesMet).toBe(false)
+    expect(preserved.autoDownscaled).toBe(false)
+    expect(preserved.width).toBe(2000)
+    expect(preserved.height).toBe(1000)
+    expect(preserved.appliedQuality).toBe(0.05)
+
+    // Extreme tiny target still respects 320px width floor
+    const floored = await compressImage(item, {
+      format: 'image/webp',
+      targetBytes: 100,
+      createCanvas,
+    })
+    expect(floored.autoDownscaled).toBe(true)
+    expect(floored.width).toBeGreaterThanOrEqual(320)
+    expect(floored.targetBytesMet).toBe(false)
   })
 })
 

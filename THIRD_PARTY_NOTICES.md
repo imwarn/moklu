@@ -49,6 +49,7 @@ License metadata below is verified against each installed package's `package.jso
 | `@dnd-kit/sortable` | `^10.0.0` | `MIT` | Sortable preset for dnd-kit (`https://github.com/clauderic/dnd-kit`). |
 | `@dnd-kit/utilities` | `^3.2.2` | `MIT` | Utility helpers for dnd-kit (`https://github.com/clauderic/dnd-kit`). |
 | `jszip` | `^3.10.1` | `(MIT OR GPL-3.0-or-later)` | Client-side ZIP archive generator (`https://github.com/Stuk/jszip`); used by Moklu under the **MIT** license option. |
+| `heic-to` | `^1.6.7` | `LGPL-3.0` | Client-side HEIC/HEIF decoder (`https://github.com/hoppergee/heic-to`), bundling Emscripten-compiled `libheif` 1.23.7 (`https://github.com/strukturag/libheif`, LGPL-3.0) and `libde265` (LGPL-3.0). Dynamically loaded via `import('heic-to/csp')` (zero `eval`/`new Function`) only when native browser HEIC decoding is unavailable. |
 | `react` | `^19.2.6` | `MIT` | UI runtime (`https://github.com/facebook/react`). |
 | `react-dom` | `^19.2.6` | `MIT` | React DOM & SSR renderer (`https://github.com/facebook/react`). |
 | `zustand` | `^5.0.14` | `MIT` | State management (`https://github.com/pmndrs/zustand`). |
@@ -90,3 +91,14 @@ All files currently tracked under `public/` and `src/assets/` were audited again
 Moklu self-hosts **Geist** and **Geist Mono** (`.woff2` variable fonts via `@fontsource-variable/geist` and `@fontsource-variable/geist-mono`) under the **SIL Open Font License, Version 1.1 (OFL-1.1)**. In compliance with OFL-1.1:
 - The fonts are bundled and served strictly as part of the Moklu web application and are not sold standalone.
 - Full OFL-1.1 license text is included in `node_modules/@fontsource-variable/geist/LICENSE` and `node_modules/@fontsource-variable/geist-mono/LICENSE`.
+
+---
+
+## 5. Dynamic LGPL-3.0 HEIC Decoder Provenance (`heic-to` / `libheif`)
+
+Moklu supports local, zero-upload HEIC/HEIF decoding in browsers that lack native HEIC support (e.g., Chromium and Firefox) by dynamically importing the CSP-safe `heic-to/csp` chunk (`heic-to@^1.6.7`, **GNU Lesser General Public License v3.0**):
+
+- **Upstream Repository**: `https://github.com/hoppergee/heic-to` (wrapping `libheif` v1.23.7 from `https://github.com/strukturag/libheif` and `libde265`, both LGPL-3.0).
+- **Dynamic Separation**: `src/tools/heicDecoder.ts` attempts native browser decoding (`createImageBitmap` / `HTMLImageElement`) first and only loads `import('heic-to/csp')` as a separate lazy ESM chunk on demand. The main application bundle carries 0 KB of `heic-to` code.
+- **CSP Compliance**: Moklu strictly uses the `heic-to/csp` entry point (compiled with `USE_UNSAFE_EVAL=0`, containing zero `eval` or `new Function` calls) alongside `'wasm-unsafe-eval'` in `public/_headers` while keeping `'unsafe-eval'` forbidden.
+- **LGPL-3.0 Compliance**: Full LGPL-3.0 license text is distributed in `node_modules/heic-to/LICENSE`. Because Moklu is open-source (MIT) and dynamically imports `heic-to` as a replaceable npm package, users may freely inspect, modify, or relink `heic-to` / `libheif` via `package.json` and `npm run build`.

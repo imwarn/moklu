@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on canvas & geometry helpers from ./canvasHelpers, single-page PDF wrapper from ./pdfHelper, vertical overlap detector from ./stitchOverlap, and Merge* types from ./types
- * [OUTPUT]: exports computeMergeLayout and mergeImages for horizontal, vertical (with optional long-screenshot overlap & fixed-bar removal), and grid collages with cross-axis alignment, per-item 90deg rotation, per-image border strokes, and PNG/JPEG/WebP/PDF export
+ * [INPUT]: depends on canvas & geometry helpers from ./canvasHelpers, single- and multi-page PDF builders from ./pdfHelper, vertical overlap detector & seam override resolver from ./stitchOverlap, and Merge* types from ./types
+ * [OUTPUT]: exports computeMergeLayout and mergeImages for horizontal, vertical (with automatic overlap removal and per-seam manual overrides), and grid collages with cross-axis alignment, per-item 90deg rotation, per-image border strokes, and PNG/JPEG/WebP/single-or-multipage PDF export
  * [POS]: image stitching and collage composition engine within src/tools
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -18,9 +18,14 @@ import {
   sanitizeFilenameStem,
   traceRoundedRectPath,
 } from './canvasHelpers'
-import { createSinglePagePdfFromJpeg } from './pdfHelper'
-import { detectVerticalStitchOverlaps } from './stitchOverlap'
+import {
+  createMultiPagePdfFromJpegs,
+  createSinglePagePdfFromJpeg,
+  type MultiPagePdfPageInput,
+} from './pdfHelper'
+import { applySeamOverlapOverrides, detectVerticalStitchOverlaps } from './stitchOverlap'
 import type {
+  CanvasContextLike,
   GridCellAspect,
   LoadedImageItem,
   MergeAlign,
@@ -31,6 +36,7 @@ import type {
   MergePlacement,
   MergeResult,
   MergeRotation,
+  MergeSeamInfo,
   Rect,
   VerticalItemTrim,
 } from './types'
@@ -269,6 +275,7 @@ export function computeMergeLayout(
   items: ReadonlyArray<MergeLayoutItem>,
   options: MergeOptions,
   verticalTrims?: ReadonlyArray<VerticalItemTrim>,
+  baseSeamInfos?: ReadonlyArray<MergeSeamInfo>,
 ): MergeLayout {
   if (items.length === 0) {
     throw new Error('At least one image is required to compute a merge layout.')
@@ -281,6 +288,19 @@ export function computeMergeLayout(
   const normalize = options.normalize ?? 'match-max'
   const align: MergeAlign = options.align ?? 'center'
   const metrics = resolveItemMetrics(items, options.itemRotations)
+
+  let resolvedTrims = verticalTrims
+  let seams: MergeSeamInfo[] | undefined
+  if (options.mode === 'vertical' && metrics.length >= 2) {
+    const applied = applySeamOverlapOverrides(
+      metrics.map((m) => m.effH),
+      verticalTrims,
+      baseSeamInfos,
+      options.seamOverlapOverrides,
+    )
+    resolvedTrims = applied.trims
+    seams = applied.seams
+  }
 
   let raw: { rawWidth: number; rawHeight: number; placements: MergePlacement[]; rawOverlapRemovedPx?: number }
   switch (options.mode) {
@@ -296,7 +316,7 @@ export function computeMergeLayout(
         padding,
         borderRadius,
         borderWidth,
-        verticalTrims,
+        resolvedTrims,
       )
       break
     case 'grid':
@@ -323,6 +343,7 @@ export function computeMergeLayout(
     height: clamped.height,
     scaleFactor: scale,
     overlapRemovedPx,
+    ...(seams ? { seams } : {}),
     placements: raw.placements.map((placement) => ({
       index: placement.index,
       sourceRect: placement.sourceRect,
@@ -338,8 +359,50 @@ function extensionForMergeFormat(format: MergeOutputFormat): string {
   return format === 'application/pdf' ? 'pdf' : extensionForFormat(format)
 }
 
+function drawRotatedItem(
+  ctx: CanvasContextLike,
+  item: LoadedImageItem,
+  sourceRect: Rect,
+  destRect: Rect,
+  rotation: MergeRotation,
+): void {
+  if (rotation === 0) {
+    ctx.drawImage(
+      item.source,
+      sourceRect.x,
+      sourceRect.y,
+      sourceRect.width,
+      sourceRect.height,
+      destRect.x,
+      destRect.y,
+      destRect.width,
+      destRect.height,
+    )
+    return
+  }
+
+  const cx = destRect.x + destRect.width / 2
+  const cy = destRect.y + destRect.height / 2
+  const swapped = rotation === 90 || rotation === 270
+  const drawW = swapped ? destRect.height : destRect.width
+  const drawH = swapped ? destRect.width : destRect.height
+  ctx.translate(cx, cy)
+  ctx.rotate((rotation * Math.PI) / 180)
+  ctx.drawImage(
+    item.source,
+    sourceRect.x,
+    sourceRect.y,
+    sourceRect.width,
+    sourceRect.height,
+    -drawW / 2,
+    -drawH / 2,
+    drawW,
+    drawH,
+  )
+}
+
 /**
- * Compose multiple loaded images onto a single client-side HTML5 Canvas and export as PNG, JPEG, WebP, or single-page PDF.
+ * Compose multiple loaded images onto a single client-side HTML5 Canvas and export as PNG, JPEG, WebP, or single-/multi-page PDF.
  */
 export async function mergeImages(
   items: ReadonlyArray<LoadedImageItem>,
@@ -351,14 +414,66 @@ export async function mergeImages(
 
   const format: MergeOutputFormat = options.format ?? 'image/png'
   const isPdf = format === 'application/pdf'
-  const verticalTrims =
+  const overlapPlan =
     options.mode === 'vertical' && options.removeOverlap && items.length >= 2
       ? detectVerticalStitchOverlaps(items, {
           itemRotations: options.itemRotations,
           createCanvas: options.createCanvas,
-        }).trims
+        })
       : undefined
-  const layout = computeMergeLayout(items, options, verticalTrims)
+  const layout = computeMergeLayout(items, options, overlapPlan?.trims, overlapPlan?.seamInfos)
+  const stem = sanitizeFilenameStem(options.filename ?? `merged-${options.mode}`, 'merged')
+  const filename = `${stem}.${extensionForMergeFormat(format)}`
+
+  if (isPdf && options.pdfMode === 'multipage') {
+    const pages: MultiPagePdfPageInput[] = []
+    let previewBlob: Blob | undefined
+
+    for (let i = 0; i < items.length; i += 1) {
+      const item = items[i]
+      const rotation = normalizeRotation(options.itemRotations?.[i])
+      const eff = getEffectiveDimensions(Math.max(1, item.width), Math.max(1, item.height), rotation)
+      const clamped = clampCanvasDimensions(eff.width, eff.height, options.maxDimension)
+
+      const pageCanvas = createCanvas(clamped.width, clamped.height, options.createCanvas)
+      const pageCtx = get2dContext(pageCanvas)
+      fillBackground(pageCtx, clamped.width, clamped.height, options.background ?? '#ffffff', '#ffffff')
+
+      pageCtx.save()
+      drawRotatedItem(
+        pageCtx,
+        item,
+        { x: 0, y: 0, width: item.width, height: item.height },
+        { x: 0, y: 0, width: clamped.width, height: clamped.height },
+        rotation,
+      )
+      pageCtx.restore()
+
+      const jpegBlob = await canvasToBlob(pageCanvas, 'image/jpeg', options.quality)
+      if (!previewBlob) previewBlob = jpegBlob
+      const jpegBytes = new Uint8Array(await jpegBlob.arrayBuffer())
+      pages.push({ jpegBytes, pixelWidth: clamped.width, pixelHeight: clamped.height })
+    }
+
+    const pdfBlob = createMultiPagePdfFromJpegs(pages, {
+      pageSize: options.pdfPageSize,
+      orientation: options.pdfOrientation,
+      margin: options.pdfMargin,
+    })
+
+    return {
+      blob: pdfBlob,
+      previewBlob,
+      width: layout.width,
+      height: layout.height,
+      format,
+      bytes: pdfBlob.size,
+      filename,
+      layout,
+      ...(layout.seams ? { seams: layout.seams } : {}),
+    }
+  }
+
   const canvas = createCanvas(layout.width, layout.height, options.createCanvas)
   const ctx = get2dContext(canvas)
 
@@ -374,38 +489,7 @@ export async function mergeImages(
     if (radius > 0) {
       clipRoundedRect(ctx, destRect.x, destRect.y, destRect.width, destRect.height, radius)
     }
-    if (rotation === 0) {
-      ctx.drawImage(
-        item.source,
-        sourceRect.x,
-        sourceRect.y,
-        sourceRect.width,
-        sourceRect.height,
-        destRect.x,
-        destRect.y,
-        destRect.width,
-        destRect.height,
-      )
-    } else {
-      const cx = destRect.x + destRect.width / 2
-      const cy = destRect.y + destRect.height / 2
-      const swapped = rotation === 90 || rotation === 270
-      const drawW = swapped ? destRect.height : destRect.width
-      const drawH = swapped ? destRect.width : destRect.height
-      ctx.translate(cx, cy)
-      ctx.rotate((rotation * Math.PI) / 180)
-      ctx.drawImage(
-        item.source,
-        sourceRect.x,
-        sourceRect.y,
-        sourceRect.width,
-        sourceRect.height,
-        -drawW / 2,
-        -drawH / 2,
-        drawW,
-        drawH,
-      )
-    }
+    drawRotatedItem(ctx, item, sourceRect, destRect, rotation)
     ctx.restore()
 
     if (borderWidth > 0) {
@@ -431,9 +515,6 @@ export async function mergeImages(
     }
   }
 
-  const stem = sanitizeFilenameStem(options.filename ?? `merged-${options.mode}`, 'merged')
-  const filename = `${stem}.${extensionForMergeFormat(format)}`
-
   if (isPdf) {
     const jpegBlob = await canvasToBlob(canvas, 'image/jpeg', options.quality)
     const jpegBytes = new Uint8Array(await jpegBlob.arrayBuffer())
@@ -447,6 +528,7 @@ export async function mergeImages(
       bytes: pdfBlob.size,
       filename,
       layout,
+      ...(layout.seams ? { seams: layout.seams } : {}),
     }
   }
 
@@ -459,5 +541,6 @@ export async function mergeImages(
     bytes: blob.size,
     filename,
     layout,
+    ...(layout.seams ? { seams: layout.seams } : {}),
   }
 }

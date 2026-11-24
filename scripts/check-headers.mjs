@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on node:fs/promises and node:fs; reads public/_headers, public/healthz.txt, public/healthz/index.html, src/ai/providers.ts, and src/ai/client.ts
- * [OUTPUT]: CLI verifier exiting non-zero when required security headers, Cloudflare Web Analytics / AI provider CSP allowlists, healthcheck assets, or cache rules drift
+ * [OUTPUT]: CLI verifier exiting non-zero when required security headers, wasm-unsafe-eval / Cloudflare Web Analytics / AI provider CSP allowlists, healthcheck assets, or cache rules drift
  * [POS]: mechanical CSP, healthcheck, and response-header consistency gate inside scripts/
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -63,6 +63,7 @@ if (!csp) {
 
   // Evidence from the codebase, not guesses.
   assertAllows('script-src', "'self'")        // hashed bundles only, no inline/eval
+  assertAllows('script-src', "'wasm-unsafe-eval'") // local HEIC WASM decoding without JS eval/new Function
   assertAllows('script-src', 'https://static.cloudflareinsights.com') // Cloudflare Web Analytics beacon script
   assertAllows('style-src', "'unsafe-inline'") // 33 components use React style props
   assertAllows('style-src', 'https://fonts.googleapis.com') // src/utils/fonts.ts injects <link>

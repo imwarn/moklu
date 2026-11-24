@@ -1,7 +1,7 @@
 /**
  * [INPUT]: depends on createCanvas and get2dContext from ./canvasHelpers and overlap/canvas types from ./types
- * [OUTPUT]: exports computeRowProfile, detectPairOverlap, extractNormalizedRaster, detectVerticalStitchOverlaps, and DEFAULT_ANALYSIS_WIDTH
- * [POS]: pure client-side 2D pixel overlap and fixed top/bottom bar detector for vertical long-screenshot stitching in src/tools
+ * [OUTPUT]: exports computeRowProfile, detectPairOverlap, extractNormalizedRaster, detectVerticalStitchOverlaps, applySeamOverlapOverrides, and DEFAULT_ANALYSIS_WIDTH
+ * [POS]: pure client-side 2D pixel overlap, fixed top/bottom bar detector, and manual seam-override resolver for vertical long-screenshot stitching in src/tools
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
@@ -10,6 +10,7 @@ import type {
   CanvasFactory,
   LoadedImageItem,
   MergeRotation,
+  MergeSeamInfo,
   PairOverlapMatch,
   RgbaRaster,
   RowProfile,
@@ -331,11 +332,65 @@ export function extractNormalizedRaster(
   }
 }
 
+const MIN_REMAINING_HEIGHT_PX = 16
+
 function emptyPlan(count: number): VerticalOverlapPlan {
+  const seamCount = Math.max(0, count - 1)
   return {
     trims: Array.from({ length: count }, () => ({ trimTop: 0, trimBottom: 0 })),
-    seams: Array.from({ length: Math.max(0, count - 1) }, () => ({ ...EMPTY_MATCH })),
+    seams: Array.from({ length: seamCount }, () => ({ ...EMPTY_MATCH })),
+    seamInfos: Array.from({ length: seamCount }, (_, index) => ({
+      index,
+      autoOverlapPx: 0,
+      appliedOverlapPx: 0,
+      fixedTopPx: 0,
+      fixedBottomPx: 0,
+    })),
   }
+}
+
+/**
+ * Apply optional manual per-seam top-trim overrides onto vertical stitch trims,
+ * clamping every item safely so at least 16px (or full height if <= 16px) remains.
+ */
+export function applySeamOverlapOverrides(
+  effectiveHeights: ReadonlyArray<number>,
+  baseTrims?: ReadonlyArray<VerticalItemTrim>,
+  baseSeamInfos?: ReadonlyArray<MergeSeamInfo>,
+  overrides?: Readonly<Record<number, number>>,
+): { trims: VerticalItemTrim[]; seams: MergeSeamInfo[] } {
+  const count = effectiveHeights.length
+  const trims: VerticalItemTrim[] = Array.from({ length: count }, (_, idx) => ({
+    trimTop: Math.max(0, Math.round(baseTrims?.[idx]?.trimTop ?? 0)),
+    trimBottom: Math.max(0, Math.round(baseTrims?.[idx]?.trimBottom ?? 0)),
+  }))
+
+  const seams: MergeSeamInfo[] = []
+  for (let i = 0; i < count - 1; i += 1) {
+    const autoOverlapPx = baseSeamInfos?.[i]?.autoOverlapPx ?? trims[i + 1].trimTop
+    const fixedTopPx = baseSeamInfos?.[i]?.fixedTopPx ?? 0
+    const fixedBottomPx = baseSeamInfos?.[i]?.fixedBottomPx ?? trims[i].trimBottom
+
+    const rawOverride = overrides?.[i]
+    if (rawOverride !== undefined && Number.isFinite(rawOverride)) {
+      const effH = Math.max(1, Math.round(effectiveHeights[i + 1]))
+      const minKept = Math.min(MIN_REMAINING_HEIGHT_PX, effH)
+      const safeBottom = Math.min(trims[i + 1].trimBottom, Math.max(0, effH - minKept))
+      trims[i + 1].trimBottom = safeBottom
+      const maxTop = Math.max(0, effH - safeBottom - minKept)
+      trims[i + 1].trimTop = Math.max(0, Math.min(Math.round(rawOverride), maxTop))
+    }
+
+    seams.push({
+      index: i,
+      autoOverlapPx,
+      appliedOverlapPx: trims[i + 1].trimTop,
+      fixedTopPx,
+      fixedBottomPx,
+    })
+  }
+
+  return { trims, seams }
 }
 
 /** Analyze adjacent pairs in a vertical stitch sequence and compute safe per-item pixel trims. */
@@ -366,10 +421,20 @@ export function detectVerticalStitchOverlaps(
 
   const trims: VerticalItemTrim[] = Array.from({ length: count }, () => ({ trimTop: 0, trimBottom: 0 }))
   const seams: PairOverlapMatch[] = []
+  const rawFixedTopPx: number[] = []
+  const rawFixedBottomPx: number[] = []
+
   for (let i = 0; i < count - 1; i += 1) {
     const match = detectPairOverlap(rasters[i], rasters[i + 1])
     seams.push(match)
-    if (match.fixedBottom > 0) trims[i].trimBottom = Math.round(match.fixedBottom * (sizes[i].height / rasters[i].height))
+    const fixedBottomPx =
+      match.fixedBottom > 0 ? Math.round(match.fixedBottom * (sizes[i].height / rasters[i].height)) : 0
+    const fixedTopPx =
+      match.fixedTop > 0 ? Math.round(match.fixedTop * (sizes[i + 1].height / rasters[i + 1].height)) : 0
+    rawFixedTopPx.push(fixedTopPx)
+    rawFixedBottomPx.push(fixedBottomPx)
+
+    if (fixedBottomPx > 0) trims[i].trimBottom = fixedBottomPx
     if (match.fixedTop > 0 || match.scrollOverlap > 0) {
       trims[i + 1].trimTop = Math.round((match.fixedTop + match.scrollOverlap) * (sizes[i + 1].height / rasters[i + 1].height))
     }
@@ -385,5 +450,14 @@ export function detectVerticalStitchOverlaps(
       trims[i].trimBottom = Math.floor(trims[i].trimBottom * ratio)
     }
   }
-  return { trims, seams }
+
+  const seamInfos: MergeSeamInfo[] = seams.map((_, i) => ({
+    index: i,
+    autoOverlapPx: trims[i + 1].trimTop,
+    appliedOverlapPx: trims[i + 1].trimTop,
+    fixedTopPx: Math.min(rawFixedTopPx[i], trims[i + 1].trimTop),
+    fixedBottomPx: Math.min(rawFixedBottomPx[i], trims[i].trimBottom),
+  }))
+
+  return { trims, seams, seamInfos }
 }

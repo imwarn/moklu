@@ -153,12 +153,24 @@ export type MergeNormalizeMode = 'match-min' | 'match-max' | 'original'
 export type MergeAlign = 'start' | 'center' | 'end'
 export type MergeRotation = 0 | 90 | 180 | 270
 export type MergeOutputFormat = ImageFormat | 'application/pdf'
+export type MergePdfMode = 'multipage' | 'single'
+export type MergePdfPageSize = 'a4' | 'fit'
+export type MergePdfOrientation = 'portrait' | 'landscape'
+export type MergePdfMargin = 'none' | 'normal'
 export type GridCellAspect = 'auto' | '1:1' | '4:3' | '3:4'
 export type ObjectFitMode = 'cover' | 'contain'
 
 export interface MergeLayoutItem extends Dimensions {
   /** Clockwise quarter-turn rotation applied before layout sizing and rendering. */
   rotation?: MergeRotation
+}
+
+export interface MergeSeamInfo {
+  index: number
+  autoOverlapPx: number
+  appliedOverlapPx: number
+  fixedTopPx: number
+  fixedBottomPx: number
 }
 
 export interface MergeOptions extends EngineRuntimeOptions {
@@ -184,6 +196,16 @@ export interface MergeOptions extends EngineRuntimeOptions {
   itemRotations?: ReadonlyArray<MergeRotation>
   /** Automatically detect and trim overlapping scroll regions and fixed top/bottom bars in vertical mode. */
   removeOverlap?: boolean
+  /** Optional per-seam top-trim pixel overrides indexed by seam i (between item i and item i + 1, in item i + 1 effective pixel height). */
+  seamOverlapOverrides?: Record<number, number>
+  /** Export a single combined PDF page (default) or one PDF page per input image. */
+  pdfMode?: MergePdfMode
+  /** Target page size when format === 'application/pdf' and pdfMode === 'multipage'. */
+  pdfPageSize?: MergePdfPageSize
+  /** Target page orientation for A4 multipage PDF export. */
+  pdfOrientation?: MergePdfOrientation
+  /** Target page margin preset for multipage PDF export. */
+  pdfMargin?: MergePdfMargin
   background?: BackgroundFill
   format?: MergeOutputFormat
   quality?: number
@@ -205,6 +227,8 @@ export interface MergeLayout extends Dimensions {
   placements: MergePlacement[]
   /** Cumulative duplicate vertical pixel height trimmed across seams (0 when disabled or undetected). */
   overlapRemovedPx?: number
+  /** Per-seam auto and applied vertical overlap telemetry (present in vertical mode with >= 2 items). */
+  seams?: MergeSeamInfo[]
 }
 
 export interface RgbaRaster {
@@ -238,6 +262,8 @@ export interface VerticalItemTrim {
 export interface VerticalOverlapPlan {
   trims: VerticalItemTrim[]
   seams: PairOverlapMatch[]
+  /** Per-seam auto overlap and fixed-bar measurements scaled to each item's effective pixel coordinates. */
+  seamInfos?: MergeSeamInfo[]
 }
 
 export interface VerticalOverlapOptions {
@@ -256,6 +282,8 @@ export interface MergeResult {
   bytes: number
   filename: string
   layout: MergeLayout
+  /** Per-seam auto and applied vertical overlap telemetry mirrored from layout.seams. */
+  seams?: MergeSeamInfo[]
 }
 
 // ============================================================================
@@ -321,6 +349,10 @@ export interface CompressOptions extends EngineRuntimeOptions {
   quality?: number
   maxWidth?: number
   maxHeight?: number
+  /** Target maximum output byte size (e.g. 200_000 for 200 KB). Triggers quality binary search for JPEG/WebP. */
+  targetBytes?: number
+  /** When true, never auto-downscale dimensions below maxWidth/maxHeight to satisfy targetBytes. */
+  preserveOriginalDimensions?: boolean
   /** Fill color behind transparent pixels when encoding to image/jpeg. */
   background?: string
   includeZip?: boolean
@@ -341,6 +373,12 @@ export interface CompressResultItem {
   savedBytes: number
   /** Fraction saved relative to originalBytes (e.g. 0.4 means 40% smaller). */
   savedRatio: number
+  /** Whether the encoded blob met options.targetBytes (populated when targetBytes > 0). */
+  targetBytesMet?: boolean
+  /** True when dimensions were stepped down automatically to hit targetBytes. */
+  autoDownscaled?: boolean
+  /** Effective lossy quality applied to the final encoded blob. */
+  appliedQuality?: number
   blob: Blob
 }
 

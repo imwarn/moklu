@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on vitest, ./stitchOverlap, ./mergeEngine, ./testHelpers, and Canvas/Image types from ./types
- * [OUTPUT]: unit tests covering pixel-level scrolling overlap detection, fixed top/bottom bar deduplication, solid/unrelated false-positive guards, mismatched-dimension normalization, noise tolerance, rotation mapping, and missing getImageData fallback
+ * [OUTPUT]: unit tests covering pixel-level scrolling overlap detection, fixed top/bottom bar deduplication, manual seamOverlapOverrides clamping, solid/unrelated false-positive guards, mismatched-dimension normalization, noise tolerance, rotation mapping, and missing getImageData fallback
  * [POS]: dedicated unit test suite for src/tools/stitchOverlap.ts and vertical overlap integration in src/tools/mergeEngine.ts
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -701,5 +701,52 @@ describe('stitchOverlap', () => {
     })
     expect(safeResult.height).toBe(1200)
     expect(safeResult.layout.overlapRemovedPx).toBe(0)
+  })
+
+  it('applies per-seam seamOverlapOverrides safely clamped to keep at least 16px and exposes seams metadata', async () => {
+    const doc = createVirtualDocument(200, 900, 777)
+    const shot1 = sliceRaster(doc, 0, 360)
+    const shot2 = sliceRaster(doc, 240, 360) // auto overlap 120px
+    const shot3 = sliceRaster(doc, 490, 360) // auto overlap 110px
+
+    const { createCanvas } = createSoftwarePixelCanvasFactory()
+    const items = [
+      makePixelImageItem('o1', shot1),
+      makePixelImageItem('o2', shot2),
+      makePixelImageItem('o3', shot3),
+    ]
+
+    const result = await mergeImages(items, {
+      mode: 'vertical',
+      gap: 0,
+      padding: 0,
+      removeOverlap: true,
+      seamOverlapOverrides: {
+        0: 60, // override seam 0 (item 1 top trim) from 120px to 60px
+        1: 9999, // extreme override clamped so item 2 keeps >= 16px (360 - 16 = 344)
+      },
+      createCanvas,
+    })
+
+    expect(result.seams).toHaveLength(2)
+    expect(result.layout.seams).toEqual(result.seams)
+    expect(result.seams?.[0]).toEqual({
+      index: 0,
+      autoOverlapPx: 120,
+      appliedOverlapPx: 60,
+      fixedTopPx: 0,
+      fixedBottomPx: 0,
+    })
+    expect(result.seams?.[1]).toEqual({
+      index: 1,
+      autoOverlapPx: 110,
+      appliedOverlapPx: 344,
+      fixedTopPx: 0,
+      fixedBottomPx: 0,
+    })
+    // Final height: 360 + (360 - 60) + (360 - 344) = 360 + 300 + 16 = 676
+    expect(result.height).toBe(676)
+    expect(result.layout.placements[1].sourceRect).toEqual({ x: 0, y: 60, width: 200, height: 300 })
+    expect(result.layout.placements[2].sourceRect).toEqual({ x: 0, y: 344, width: 200, height: 16 })
   })
 })

@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on ResolvedTheme from @/theme/themeStore
- * [OUTPUT]: exports dependency-inverted workspace contracts (WorkspaceToolId, WorkspacePreset, WorkspaceLocale, WorkspaceEngines, WorkspaceRect, WorkspaceMergePlacement, WorkspaceMergeLayout, WorkspaceMergeOutput, WorkspaceQuickTheme, WorkspaceScreenshotFit, WorkspaceBrowserChromeOptions, StudioHandoffLayer, StudioHandoffPayload, QuickWorkspaceProps)
+ * [OUTPUT]: exports dependency-inverted workspace contracts (WorkspaceToolId, WorkspacePreset, WorkspaceLocale, WorkspaceEngines, WorkspaceRect, WorkspaceMergeSeamInfo, WorkspaceMergePlacement, WorkspaceMergeLayout, WorkspaceMergeOutput, WorkspaceExifSummary, WorkspaceRedactionRegion, WorkspaceQuickTheme, WorkspaceScreenshotFit, WorkspaceBrowserChromeOptions, StudioHandoffLayer, StudioHandoffPayload, QuickWorkspaceProps, WorkspaceToolPanelProps)
  * [POS]: contract layer of src/workspace; isolates all UI panels from concrete image processing engines in src/tools and routing in src/seo
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -26,6 +26,36 @@ export interface WorkspacePreset {
   splitMode?: 'carousel' | 'grid'
   targetFormat?: WorkspaceImageFormat
   resizeMode?: 'resize' | 'crop' | 'pad'
+  removeOverlap?: boolean
+  pdfMode?: 'multipage' | 'single'
+  targetSizeKb?: number
+  inspectExif?: boolean
+  enableRedact?: boolean
+}
+
+export interface WorkspaceRedactionRegion {
+  id: string
+  kind: 'blur' | 'pixelate' | 'spotlight'
+  x: number
+  y: number
+  width: number
+  height: number
+  intensity: number
+}
+
+export interface WorkspaceExifSummary {
+  hasExif: boolean
+  hasSensitiveData: boolean
+  tagCount: number
+  gps?: { latitude: number; longitude: number }
+  make?: string
+  model?: string
+  software?: string
+  dateTimeOriginal?: string
+  exposureTime?: string
+  fNumber?: string
+  iso?: number
+  orientation?: number
 }
 
 export interface StudioHandoffImage {
@@ -65,6 +95,7 @@ export interface StudioHandoffPayload {
   browserChrome?: WorkspaceBrowserChromeOptions
   layers?: StudioHandoffLayer[]
   background?: string
+  redactions?: WorkspaceRedactionRegion[]
 }
 
 export interface WorkspaceImageInput {
@@ -77,6 +108,7 @@ export interface WorkspaceImageInput {
   mimeType?: string
   file?: File
   rotation?: WorkspaceMergeRotation
+  exif?: WorkspaceExifSummary
   /** Marks built-in demo assets so local draft persistence never writes them to IndexedDB. */
   isDemo?: boolean
 }
@@ -86,6 +118,14 @@ export interface WorkspaceRect {
   y: number
   width: number
   height: number
+}
+
+export interface WorkspaceMergeSeamInfo {
+  index: number
+  autoOverlapPx: number
+  appliedOverlapPx: number
+  fixedTopPx: number
+  fixedBottomPx: number
 }
 
 export interface WorkspaceMergePlacement {
@@ -103,6 +143,7 @@ export interface WorkspaceMergeLayout {
   scaleFactor: number
   placements: WorkspaceMergePlacement[]
   overlapRemovedPx?: number
+  seams?: WorkspaceMergeSeamInfo[]
 }
 
 export interface WorkspaceBlobOutput {
@@ -138,6 +179,16 @@ export interface WorkspaceMergeOptions {
   quality: number
   /** Enable client-side scroll overlap and fixed header/footer trimming in vertical mode. */
   removeOverlap?: boolean
+  /** Optional per-seam top-trim pixel overrides indexed by seam i (between item i and item i + 1). */
+  seamOverlapOverrides?: Record<number, number>
+  /** Single combined page or one PDF page per input image when format === 'application/pdf'. */
+  pdfMode?: 'multipage' | 'single'
+  /** Target PDF page dimensions when pdfMode === 'multipage'. */
+  pdfPageSize?: 'a4' | 'fit'
+  /** Page orientation for A4 multipage PDF export. */
+  pdfOrientation?: 'portrait' | 'landscape'
+  /** Page margin preset for multipage PDF export. */
+  pdfMargin?: 'none' | 'normal'
 }
 
 export interface WorkspaceSplitOptions {
@@ -166,6 +217,8 @@ export interface WorkspaceCompressOptions {
   quality: number
   maxWidth?: number
   maxHeight?: number
+  targetBytes?: number
+  preserveOriginalDimensions?: boolean
 }
 
 export interface WorkspaceCompressItem extends WorkspaceBlobOutput {
@@ -174,6 +227,13 @@ export interface WorkspaceCompressItem extends WorkspaceBlobOutput {
   originalBytes: number
   outputBytes: number
   savedRatio: number
+  originalDataUrl?: string
+  originalWidth?: number
+  originalHeight?: number
+  targetBytesMet?: boolean
+  autoDownscaled?: boolean
+  appliedQuality?: number
+  exif?: WorkspaceExifSummary
 }
 
 export type WorkspaceAspectPreset = 'free' | '1:1' | '4:5' | '3:4' | '16:9' | '9:16' | '3:2'
@@ -235,4 +295,5 @@ export interface WorkspaceToolPanelProps {
   engines: WorkspaceEngines
   onOpenInStudio: (payload: StudioHandoffPayload) => void
   onOpenProModal?: () => void
+  onSwitchToolWithFiles?: (tool: WorkspaceToolId, files: File[]) => void
 }
