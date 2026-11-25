@@ -1,15 +1,17 @@
 /**
- * [INPUT]: depends on react (lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState), resolvePathname/buildLocalizedPath/useSeoHead from @/seo, hasSeoLocale/preloadSeoLocale from @/seo/i18n, hasWorkspaceLocale/preloadWorkspaceLocale from @/workspace/i18n, hasWorkspaceTool/preloadWorkspaceTool from @/workspace/QuickWorkspace, applyDocumentTheme from @/theme/themeStore, ChunkErrorBoundary from @/components/common/ChunkErrorBoundary, ToolLandingPage from @/pages/ToolLandingPage, lazy-loaded StudioPage from @/pages/StudioPage, and Studio-only dynamic import of @/utils/fonts
- * [OUTPUT]: exports default App SPA router mapping '/', localized SEO/info/404 fallback slugs to ToolLandingPage and '/studio' (plus '/<locale>/studio') to lazy-loaded StudioPage with pre-navigation locale/tool chunk preloading (skipping QuickWorkspace chunks on Studio/info/404 fallback routes), race-safe transitions, and pre-paint dark theme lock wrapped in ChunkErrorBoundary
+ * [INPUT]: depends on react (lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState), resolvePathname/buildLocalizedPath/useSeoHead from @/seo, applyPreferredFallbackLocale from @/seo/notFoundCopy, hasSeoLocale/preloadSeoLocale from @/seo/i18n, hasWorkspaceLocale/preloadWorkspaceLocale from @/workspace/i18n, hasWorkspaceTool/preloadWorkspaceTool from @/workspace/QuickWorkspace, applyDocumentTheme from @/theme/themeStore, attemptChunkErrorRecovery from @/utils/chunkRecovery, ChunkErrorBoundary from @/components/common/ChunkErrorBoundary, ToolLandingPage from @/pages/ToolLandingPage, lazy-loaded StudioPage from @/pages/StudioPage, and Studio-only dynamic import of @/utils/fonts
+ * [OUTPUT]: exports default App SPA router mapping '/', localized SEO/info/404 fallback slugs (with browser preferred-language matching on unprefixed 404 URLs) to ChunkErrorBoundary-wrapped ToolLandingPage and '/studio' (plus '/<locale>/studio') to lazy-loaded StudioPage with pre-navigation locale/tool chunk preloading, automatic leaf-chunk reload recovery, race-safe transitions, and pre-paint dark theme lock
  * [POS]: root router shell of src/; ensures landing and 404 routes render instantaneously without loading Konva, Studio stores, editor font sheets, or inactive locales/tools
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 import { Suspense, lazy, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { buildLocalizedPath, resolvePathname, useSeoHead, type ResolvedRoute } from '@/seo'
 import { hasSeoLocale, preloadSeoLocale } from '@/seo/i18n'
+import { applyPreferredFallbackLocale } from '@/seo/notFoundCopy'
 import { applyDocumentTheme } from '@/theme/themeStore'
 import { ChunkErrorBoundary } from '@/components/common/ChunkErrorBoundary'
 import { ToolLandingPage } from '@/pages/ToolLandingPage'
+import { attemptChunkErrorRecovery } from '@/utils/chunkRecovery'
 import { hasWorkspaceLocale, preloadWorkspaceLocale } from '@/workspace/i18n'
 import { hasWorkspaceTool, preloadWorkspaceTool } from '@/workspace/QuickWorkspace'
 
@@ -22,6 +24,10 @@ const StudioPage = lazy(() =>
 function readCurrentPathname(): string {
   if (typeof window === 'undefined') return '/'
   return window.location.pathname || '/'
+}
+
+function resolveClientRoute(pathname: string): ResolvedRoute {
+  return applyPreferredFallbackLocale(resolvePathname(pathname), pathname)
 }
 
 function needsRoutePreload(route: ResolvedRoute): boolean {
@@ -97,7 +103,7 @@ export default function App() {
   useEffect(() => {
     const handlePopState = () => {
       const nextPath = readCurrentPathname()
-      const nextRoute = resolvePathname(nextPath)
+      const nextRoute = resolveClientRoute(nextPath)
       const seq = ++navSeqRef.current
 
       if (!needsRoutePreload(nextRoute)) {
@@ -112,6 +118,7 @@ export default function App() {
           }
         })
         .catch((err) => {
+          if (attemptChunkErrorRecovery(err)) return
           console.error(`[Moklu] Failed to preload route "${nextPath}":`, err)
           if (navSeqRef.current === seq) {
             setPathname(nextPath)
@@ -124,7 +131,7 @@ export default function App() {
 
   const navigate = useCallback((nextPath: string) => {
     const normalized = nextPath.startsWith('/') ? nextPath : `/${nextPath}`
-    const nextRoute = resolvePathname(normalized)
+    const nextRoute = resolveClientRoute(normalized)
     const seq = ++navSeqRef.current
 
     const commit = () => {
@@ -144,16 +151,28 @@ export default function App() {
     void preloadRouteAssets(nextRoute)
       .then(commit)
       .catch((err) => {
+        if (attemptChunkErrorRecovery(err)) return
         console.error(`[Moklu] Failed to preload route "${normalized}":`, err)
         commit()
       })
   }, [])
 
-  const route = resolvePathname(pathname)
+  const route = resolveClientRoute(pathname)
 
   if (route.isStudio) {
     return <StudioRouteShell route={route} onNavigate={navigate} />
   }
 
-  return <ToolLandingPage route={route} onNavigate={navigate} />
+  const homeHref = buildLocalizedPath(route.locale, '')
+
+  return (
+    <ChunkErrorBoundary
+      locale={route.locale}
+      surface="workspace"
+      homeHref={homeHref}
+      onNavigateHome={() => navigate(homeHref)}
+    >
+      <ToolLandingPage route={route} onNavigate={navigate} />
+    </ChunkErrorBoundary>
+  )
 }

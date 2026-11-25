@@ -1,17 +1,21 @@
 /**
- * [INPUT]: depends on WinterCG Fetch/Cache APIs, Cloudflare D1Database interface, and ./headersPolicy (EDGE_SECURITY_HEADERS, applyMokluEdgeHeaders, isStaticNonHtmlAssetPath, isUnexpectedHtmlAssetFallback, resolveEdgeCacheTtlSeconds, resolveExplicitEnRedirectPath)
+ * [INPUT]: depends on WinterCG Fetch/Cache APIs, Cloudflare D1Database interface, and ./headersPolicy (EDGE_SECURITY_HEADERS, applyMokluEdgeHeaders, isHtmlDocumentNavigation, isStaticNonHtmlAssetPath, isUnexpectedHtmlAssetFallback, isUnknownNonAssetPath, resolveEdgeCacheTtlSeconds, resolveEdgeNotFoundLocale, resolveExplicitEnRedirectPath, resolveOriginNotFoundHtmlPath)
  * [OUTPUT]: exports D1DatabaseLike, TelemetryWorkerEnv, ExecutionContextLike, ALLOWED_FUNNEL_EVENTS, sanitizeEdgeDimension, and default Worker fetch handler
- * [POS]: edge entry point of workers/telemetry; serves moklu.app/_telemetry* zero-PII D1 funnel ingestion, canonical 301 /en redirects, static-asset soft-200 HTML fallback rejection (404 text/plain, never cached), and Coolify origin proxying with isolated Cloudflare Cache API (`caches.open('moklu-edge-v2')`) + `cf.cacheEverything`, public/_headers CSP/COOP, CDN-Cache-Control, and unknown-route HTTP 404 + noindex hygiene
+ * [POS]: edge entry point of workers/telemetry; serves moklu.app/_telemetry* zero-PII D1 funnel ingestion (including not_found_view), canonical 301 /en redirects, content-negotiated localized 404.html vs subresource 404 text/plain responses (never cached), and Coolify origin proxying with isolated Cloudflare Cache API (`caches.open('moklu-edge-v3')`) + `cf.cacheEverything`, public/_headers CSP/COOP, and CDN-Cache-Control
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
 import {
   EDGE_SECURITY_HEADERS,
   applyMokluEdgeHeaders,
+  isHtmlDocumentNavigation,
   isStaticNonHtmlAssetPath,
   isUnexpectedHtmlAssetFallback,
+  isUnknownNonAssetPath,
   resolveEdgeCacheTtlSeconds,
+  resolveEdgeNotFoundLocale,
   resolveExplicitEnRedirectPath,
+  resolveOriginNotFoundHtmlPath,
 } from './headersPolicy'
 
 export interface D1PreparedStatementLike {
@@ -50,7 +54,8 @@ interface EdgeCacheStorageLike {
 type EdgeRequest = Request & { cf?: CfRequestMetadata }
 type CfRequestInit = RequestInit & { cf?: CfFetchCacheOptions }
 
-const EDGE_CACHE_NAME = 'moklu-edge-v2'
+const EDGE_CACHE_NAME = 'moklu-edge-v3'
+const HTML_CONTENT_TYPE_RE = /^\s*text\/html\b/i
 
 function buildStaticAssetNotFoundResponse(method: string): Response {
   return new Response(method === 'HEAD' ? null : 'Not Found', {
@@ -60,9 +65,79 @@ function buildStaticAssetNotFoundResponse(method: string): Response {
       ...EDGE_SECURITY_HEADERS,
       'Content-Type': 'text/plain; charset=utf-8',
       'Cache-Control': 'no-store',
+      Vary: 'Accept, Sec-Fetch-Dest, Sec-Fetch-Mode',
       'X-Robots-Tag': 'noindex, nofollow',
     },
   })
+}
+
+async function serveEdgeNotFoundHtml(
+  request: Request,
+  url: URL,
+  robotsDirective: 'noindex, follow' | 'noindex, nofollow',
+): Promise<Response> {
+  const method = request.method.toUpperCase()
+  const locale = resolveEdgeNotFoundLocale(url.pathname, request.headers.get('accept-language'))
+  const targetPath = resolveOriginNotFoundHtmlPath(locale)
+  const candidates = targetPath === '/404.html'
+    ? ['/404.html', '/index.html']
+    : [targetPath, '/404.html', '/index.html']
+
+  const headers: Record<string, string> = {
+    ...EDGE_SECURITY_HEADERS,
+    'Content-Type': 'text/html; charset=utf-8',
+    'Cache-Control': 'no-store',
+    Vary: 'Accept, Accept-Language, Sec-Fetch-Dest, Sec-Fetch-Mode',
+    'X-Robots-Tag': robotsDirective,
+  }
+
+  for (const candidatePath of candidates) {
+    const res = await fetch(new Request(new URL(candidatePath, url.origin).toString(), { method: 'GET' }), {
+      cf: {
+        cacheEverything: true,
+        cacheTtl: 60,
+      },
+    } as CfRequestInit)
+
+    const contentType = res.headers.get('content-type') ?? ''
+    if (res.ok && HTML_CONTENT_TYPE_RE.test(contentType)) {
+      if (method === 'HEAD') {
+        void res.body?.cancel()
+        return new Response(null, {
+          status: 404,
+          statusText: 'Not Found',
+          headers,
+        })
+      }
+      return new Response(res.body, {
+        status: 404,
+        statusText: 'Not Found',
+        headers,
+      })
+    }
+
+    void res.body?.cancel()
+  }
+
+  return new Response(
+    method === 'HEAD' ? null : '<!doctype html><html lang="en"><body><h1>404 Not Found</h1></body></html>',
+    {
+      status: 404,
+      statusText: 'Not Found',
+      headers,
+    },
+  )
+}
+
+function respondStaticAssetNotFound(
+  request: Request,
+  url: URL,
+  method: string,
+): Promise<Response> | Response {
+  if (isHtmlDocumentNavigation(request)) {
+    return serveEdgeNotFoundHtml(request, url, 'noindex, nofollow')
+  }
+  return buildStaticAssetNotFoundResponse(method)
 }
 
 function shouldRejectStaticAssetUpstream(pathname: string, upstream: Response): boolean {
@@ -108,6 +183,7 @@ export const ALLOWED_FUNNEL_EVENTS = new Set<string>([
   'format_rejected',
   'studio_handoff',
   'pro_cta_clicked',
+  'not_found_view',
 ])
 
 const MAX_BODY_BYTES = 2048
@@ -306,6 +382,10 @@ export default {
           },
         })
       }
+
+      if (isUnknownNonAssetPath(url.pathname)) {
+        return serveEdgeNotFoundHtml(request, url, 'noindex, follow')
+      }
     }
 
     const edgeCacheTtl = isReadMethod ? resolveEdgeCacheTtlSeconds(url.pathname) : null
@@ -314,7 +394,7 @@ export default {
       const upstream = await fetch(request)
       if (shouldRejectStaticAssetUpstream(url.pathname, upstream)) {
         void upstream.body?.cancel()
-        return buildStaticAssetNotFoundResponse(method)
+        return respondStaticAssetNotFound(request, url, method)
       }
       const edgeResponse = applyMokluEdgeHeaders(upstream, url.pathname)
       if (method === 'HEAD') {
@@ -335,7 +415,7 @@ export default {
       if (cached) {
         if (shouldRejectStaticAssetUpstream(url.pathname, cached)) {
           void cached.body?.cancel()
-          return buildStaticAssetNotFoundResponse(method)
+          return respondStaticAssetNotFound(request, url, method)
         }
         const hitResponse = applyMokluEdgeHeaders(cached, url.pathname)
         const hitHeaders = new Headers(hitResponse.headers)
@@ -367,7 +447,7 @@ export default {
 
     if (shouldRejectStaticAssetUpstream(url.pathname, upstream)) {
       void upstream.body?.cancel()
-      return buildStaticAssetNotFoundResponse(method)
+      return respondStaticAssetNotFound(request, url, method)
     }
 
     const edgeResponse = applyMokluEdgeHeaders(upstream, url.pathname)

@@ -1,7 +1,7 @@
 /**
  * [INPUT]: depends on browser window, sessionStorage, and fetch globals (all injectable for unit testing)
- * [OUTPUT]: exports CHUNK_RELOAD_STORAGE_KEY, CHUNK_RELOAD_COOLDOWN_MS, isChunkLoadError, canAttemptChunkReload, recordChunkReloadAttempt, clearChunkReloadGuard, triggerFreshReload, handleVitePreloadError, and installChunkRecoveryListener
- * [POS]: deploy-rollover dynamic-import recovery utility in src/utils; installed by src/main.tsx and invoked by ChunkErrorBoundary
+ * [OUTPUT]: exports CHUNK_RELOAD_STORAGE_KEY, CHUNK_RELOAD_COOLDOWN_MS, isChunkLoadError, canAttemptChunkReload, recordChunkReloadAttempt, clearChunkReloadGuard, triggerFreshReload, attemptChunkErrorRecovery, handleVitePreloadError, and installChunkRecoveryListener
+ * [POS]: deploy-rollover dynamic-import recovery utility in src/utils; handles both vite:preloadError and leaf dynamic-import rejections across src/main.tsx, src/App.tsx, and ChunkErrorBoundary
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
@@ -131,15 +131,39 @@ export function triggerFreshReload(runtime: ChunkRecoveryRuntime = {}): Promise<
     })
 }
 
+function resolveGuardContext(runtime: ChunkRecoveryRuntime) {
+  return {
+    pathname:
+      runtime.pathname ?? (typeof window !== 'undefined' ? window.location.pathname || '/' : '/'),
+    now: runtime.now ?? Date.now(),
+    storage: runtime.storage === undefined ? getDefaultStorage() : runtime.storage,
+    cooldownMs: runtime.cooldownMs ?? CHUNK_RELOAD_COOLDOWN_MS,
+  }
+}
+
+export function attemptChunkErrorRecovery(
+  error: unknown,
+  runtime: ChunkRecoveryRuntime = {},
+): boolean {
+  if (!isChunkLoadError(error)) {
+    return false
+  }
+
+  const { pathname, now, storage, cooldownMs } = resolveGuardContext(runtime)
+  if (!canAttemptChunkReload(pathname, now, storage, cooldownMs)) {
+    return false
+  }
+
+  recordChunkReloadAttempt(pathname, now, storage)
+  void triggerFreshReload(runtime)
+  return true
+}
+
 export function handleVitePreloadError(
   event: { preventDefault: () => void },
   runtime: ChunkRecoveryRuntime = {},
 ): boolean {
-  const pathname =
-    runtime.pathname ?? (typeof window !== 'undefined' ? window.location.pathname || '/' : '/')
-  const now = runtime.now ?? Date.now()
-  const storage = runtime.storage === undefined ? getDefaultStorage() : runtime.storage
-  const cooldownMs = runtime.cooldownMs ?? CHUNK_RELOAD_COOLDOWN_MS
+  const { pathname, now, storage, cooldownMs } = resolveGuardContext(runtime)
 
   if (!canAttemptChunkReload(pathname, now, storage, cooldownMs)) {
     return false
@@ -157,9 +181,19 @@ export function installChunkRecoveryListener(
   runtime: ChunkRecoveryRuntime = {},
 ): () => void {
   if (!target) return () => {}
-  const listener = (event: Event) => {
+  const preloadListener = (event: Event) => {
     handleVitePreloadError(event, runtime)
   }
-  target.addEventListener('vite:preloadError', listener)
-  return () => target.removeEventListener('vite:preloadError', listener)
+  const rejectionListener = (event: Event) => {
+    const reason = (event as PromiseRejectionEvent).reason
+    if (attemptChunkErrorRecovery(reason, runtime)) {
+      event.preventDefault?.()
+    }
+  }
+  target.addEventListener('vite:preloadError', preloadListener)
+  target.addEventListener('unhandledrejection', rejectionListener)
+  return () => {
+    target.removeEventListener('vite:preloadError', preloadListener)
+    target.removeEventListener('unhandledrejection', rejectionListener)
+  }
 }

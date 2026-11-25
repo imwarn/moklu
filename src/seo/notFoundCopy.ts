@@ -1,12 +1,13 @@
 /**
- * [INPUT]: depends on LocaleCode from ./types.ts; depends on getUiLabels from ./i18n.ts
- * [OUTPUT]: exports NotFoundCopy type and getNotFoundCopy(locale) 4-locale 404 copy lookup
- * [POS]: pure, React-free 4-locale 404 copy module within src/seo, shared identically by NotFoundContent.tsx, useSeoHead.ts, and React-free Node SSG in ssg.ts
+ * [INPUT]: depends on LocaleCode and ResolvedRoute from ./types.ts; depends on getUiLabels from ./i18n.ts; depends on buildLocalizedPath and isLocaleCode from ./routes.ts
+ * [OUTPUT]: exports NotFoundCopy type, getNotFoundCopy(locale), hasExplicitLocalePrefix(pathname), inferFallbackLocale(pathname, preferredLanguages), and applyPreferredFallbackLocale(route, pathname, preferredLanguages)
+ * [POS]: pure, React-free 4-locale 404 copy and fallback-locale resolver within src/seo, shared identically by NotFoundContent.tsx, useSeoHead.ts, main.tsx, App.tsx, and React-free Node SSG in ssg.ts
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
-import type { LocaleCode } from './types.ts'
+import type { LocaleCode, ResolvedRoute } from './types.ts'
 import { getUiLabels } from './i18n.ts'
+import { buildLocalizedPath, isLocaleCode } from './routes.ts'
 
 export interface NotFoundCopy {
   title: string
@@ -73,5 +74,68 @@ export function getNotFoundCopy(locale: LocaleCode): NotFoundCopy {
   return {
     ...base,
     studioCta: getUiLabels(locale).openStudio,
+  }
+}
+
+function readExplicitLocalePrefix(pathname: string): LocaleCode | null {
+  const cleaned = pathname.split(/[?#]/, 1)[0].trim().toLowerCase()
+  const firstSegment = cleaned.split('/').find(Boolean)
+  if (!firstSegment) return null
+  return isLocaleCode(firstSegment) ? firstSegment : null
+}
+
+export function hasExplicitLocalePrefix(pathname: string): boolean {
+  return readExplicitLocalePrefix(pathname) !== null
+}
+
+export function inferFallbackLocale(
+  pathname: string,
+  preferredLanguages?: readonly string[],
+): LocaleCode {
+  const explicit = readExplicitLocalePrefix(pathname)
+  if (explicit) {
+    return explicit
+  }
+
+  const languages =
+    preferredLanguages ??
+    (typeof navigator !== 'undefined'
+      ? navigator.languages?.length
+        ? navigator.languages
+        : navigator.language
+          ? [navigator.language]
+          : []
+      : [])
+
+  for (const entry of languages) {
+    const normalized = entry.trim().toLowerCase()
+    if (!normalized) continue
+    if (normalized.startsWith('zh')) return 'zh'
+    if (normalized.startsWith('ja')) return 'ja'
+    if (normalized.startsWith('ko')) return 'ko'
+    if (normalized.startsWith('en')) return 'en'
+  }
+
+  return 'en'
+}
+
+export function applyPreferredFallbackLocale(
+  route: ResolvedRoute,
+  pathname: string,
+  preferredLanguages?: readonly string[],
+): ResolvedRoute {
+  if (!route.isFallback || hasExplicitLocalePrefix(pathname)) {
+    return route
+  }
+
+  const locale = inferFallbackLocale(pathname, preferredLanguages)
+  if (locale === route.locale) {
+    return route
+  }
+
+  return {
+    ...route,
+    locale,
+    path: buildLocalizedPath(locale, ''),
   }
 }

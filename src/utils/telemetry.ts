@@ -1,7 +1,7 @@
 /**
  * [INPUT]: depends on browser/Node standard navigator.sendBeacon, window.location.hostname/pathname (optional), and import.meta.env.VITE_ANALYTICS_ENDPOINT
- * [OUTPUT]: exports DEFAULT_MOKLU_TELEMETRY_ENDPOINT, FunnelEventName, FunnelEventPropValue, FunnelEventRecord, resolveAnalyticsEndpoint, trackFunnelEvent, getRecentFunnelEvents, and clearFunnelEvents
- * [POS]: privacy-first client-side funnel telemetry utility in src/utils; strips PII/filename/URL keys, keeps a bounded 100-event ring buffer, and dispatches same-origin /_telemetry beacons on moklu.app (or custom VITE_ANALYTICS_ENDPOINT)
+ * [OUTPUT]: exports DEFAULT_MOKLU_TELEMETRY_ENDPOINT, FunnelEventName, FunnelEventPropValue, FunnelEventRecord, NotFoundTelemetryProps, buildNotFoundTelemetryProps, resolveAnalyticsEndpoint, trackFunnelEvent, getRecentFunnelEvents, and clearFunnelEvents
+ * [POS]: privacy-first client-side funnel telemetry utility in src/utils; strips PII/filename/URL keys, buckets not_found_view paths without PII, keeps a bounded 100-event ring buffer, and dispatches same-origin /_telemetry beacons on moklu.app (or custom VITE_ANALYTICS_ENDPOINT)
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
@@ -9,12 +9,20 @@ export const DEFAULT_MOKLU_TELEMETRY_ENDPOINT = '/_telemetry'
 
 export type FunnelEventName =
   | 'tool_view'
+  | 'not_found_view'
   | 'image_loaded'
   | 'export_completed'
   | 'copy_completed'
   | 'format_rejected'
   | 'studio_handoff'
   | 'pro_cta_clicked'
+
+export type NotFoundTelemetryProps = {
+  tool: 'not-found'
+  slug: string
+  locale: string
+  ext?: string
+}
 
 export type FunnelEventPropValue = string | number | boolean
 
@@ -44,6 +52,49 @@ const PROD_HOSTS = new Set(['moklu.app', 'www.moklu.app'])
 const KNOWN_LOCALES = new Set(['en', 'zh', 'ja', 'ko'])
 
 const recentEvents: FunnelEventRecord[] = []
+
+const ASSET_HASH_BEFORE_EXT_RE = /-[a-z0-9_]{7,}(?=\.[a-z0-9]+$)/i
+const UUID_TOKEN_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi
+const LONG_HEX_TOKEN_RE = /[0-9a-f]{8,}/gi
+const LONG_NUMBER_RE = /\d{4,}/g
+const FILE_EXT_RE = /.+\.([a-z0-9]{1,12})$/i
+
+export function buildNotFoundTelemetryProps(
+  pathname: string,
+  locale: string,
+): NotFoundTelemetryProps {
+  const cleanPath = pathname.split(/[?#]/, 1)[0].trim()
+  const rawSegments = cleanPath.split('/').filter(Boolean)
+  const lastSegment = rawSegments[rawSegments.length - 1] ?? ''
+  const extMatch = lastSegment.match(FILE_EXT_RE)
+  const ext = extMatch ? extMatch[1].toLowerCase() : undefined
+
+  const normalizedSegments = rawSegments
+    .map((segment) =>
+      segment
+        .toLowerCase()
+        .replace(ASSET_HASH_BEFORE_EXT_RE, '-hash')
+        .replace(UUID_TOKEN_RE, 'id')
+        .replace(/\./g, '-')
+        .replace(LONG_HEX_TOKEN_RE, 'id')
+        .replace(LONG_NUMBER_RE, 'n')
+        .replace(/[^a-z0-9-]+/g, '')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, ''),
+    )
+    .filter(Boolean)
+
+  const rawSlug = normalizedSegments
+    .join('-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+  const slug = rawSlug.slice(0, 48).replace(/-+$/, '') || 'not-found'
+  const normalizedLocale = locale.trim().toLowerCase() || 'en'
+
+  return ext
+    ? { tool: 'not-found', slug, locale: normalizedLocale, ext }
+    : { tool: 'not-found', slug, locale: normalizedLocale }
+}
 
 function inferRouteContextFromPathname(pathname: string): { locale: string; slug: string } {
   const segments = pathname

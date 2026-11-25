@@ -145,6 +145,7 @@ curl -sS -X POST https://api.indexnow.org/indexnow \
   - `format_rejected`
   - `studio_handoff`
   - `pro_cta_clicked`
+  - `not_found_view`（记录 404 落地页按去敏路由 `slug`、语种 `locale`、缺失扩展名 `ext` 的每日计数，用于定位失效外链与过期资源引用）
 - **强隐私剥离规则（永不泄露 PII 与本地文件名）**：
   - 任意匹配 `/name|path|url|src|blob|data|file/i` 的属性键会被无条件剥离。
   - 仅白名单短键 `mime` 与 `ext` 允许保留（且截断至最多 16 个字符，如 `image/heic`、`webp`）。
@@ -157,7 +158,7 @@ curl -sS -X POST https://api.indexnow.org/indexnow \
     # 部署/更新边缘安全头与同源漏斗 Worker (moklu.app/*)
     npm run cf:deploy-telemetry
 
-    # 查询最近 7 天各工具漏斗与被拒文件格式分布
+    # 查询最近 7 天各工具漏斗、被拒文件格式分布与 404 (not_found_view) 热点路径
     npm run funnel:report -- 7
 
     # 将 dist/sitemap.xml 全部 120 条 URL 推送至 IndexNow

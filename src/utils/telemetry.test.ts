@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on vitest and ./telemetry
- * [OUTPUT]: unit tests verifying PII/filename/URL key stripping, safe mime/ext retention & 16-char cap, 100-event ring buffer, moklu.app same-origin default endpoint, and sendBeacon resilience
+ * [OUTPUT]: unit tests verifying PII/filename/URL key stripping, safe mime/ext retention & 16-char cap, privacy-safe not_found_view bucketing, 100-event ring buffer, moklu.app same-origin default endpoint, and sendBeacon resilience
  * [POS]: deterministic unit test suite for src/utils/telemetry.ts
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -8,6 +8,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   DEFAULT_MOKLU_TELEMETRY_ENDPOINT,
+  buildNotFoundTelemetryProps,
   clearFunnelEvents,
   getRecentFunnelEvents,
   resolveAnalyticsEndpoint,
@@ -110,5 +111,67 @@ describe('telemetry', () => {
       ).not.toThrow()
     }
     expect(getRecentFunnelEvents()).toHaveLength(5)
+  })
+
+  it('builds privacy-safe not_found_view telemetry props with hash normalization, query stripping, and ext extraction', () => {
+    expect(buildNotFoundTelemetryProps('/assets/SplitQuickTool-Tscs8uh7.js', 'en')).toEqual({
+      tool: 'not-found',
+      slug: 'assets-splitquicktool-hash-js',
+      locale: 'en',
+      ext: 'js',
+    })
+
+    expect(buildNotFoundTelemetryProps('/assets/non-existent-probe.js', 'zh')).toEqual({
+      tool: 'not-found',
+      slug: 'assets-non-existent-probe-js',
+      locale: 'zh',
+      ext: 'js',
+    })
+
+    expect(buildNotFoundTelemetryProps('/zh/missing-tool?token=secret#section', 'zh')).toEqual({
+      tool: 'not-found',
+      slug: 'zh-missing-tool',
+      locale: 'zh',
+    })
+
+    expect(
+      buildNotFoundTelemetryProps(
+        '/share/550e8400-e29b-41d4-a716-446655440000/orders/123456',
+        'ja',
+      ),
+    ).toEqual({
+      tool: 'not-found',
+      slug: 'share-id-orders-n',
+      locale: 'ja',
+    })
+
+    const longBucket = buildNotFoundTelemetryProps(
+      '/very/long/unknown/path/segment/alpha/beta/gamma/delta/epsilon/zeta',
+      'ko',
+    )
+    expect(longBucket.slug.length).toBeLessThanOrEqual(48)
+    expect(longBucket.slug.endsWith('-')).toBe(false)
+
+    expect(buildNotFoundTelemetryProps('/???', 'en')).toEqual({
+      tool: 'not-found',
+      slug: 'not-found',
+      locale: 'en',
+    })
+
+    const beacon = vi.fn<(url: string, data: BodyInit) => boolean>(() => true)
+    const record = trackFunnelEvent(
+      'not_found_view',
+      buildNotFoundTelemetryProps('/assets/non-existent-probe.js?x=1', 'zh'),
+      { hostname: 'moklu.app', sendBeacon: beacon },
+    )
+    expect(record.name).toBe('not_found_view')
+    expect(record.props).toEqual({
+      tool: 'not-found',
+      slug: 'assets-non-existent-probe-js',
+      locale: 'zh',
+      ext: 'js',
+    })
+    expect(beacon).toHaveBeenCalledTimes(1)
+    expect(beacon.mock.calls[0][0]).toBe('/_telemetry')
   })
 })

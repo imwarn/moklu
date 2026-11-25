@@ -1,9 +1,11 @@
 /**
- * [INPUT]: none (zero-dependency edge HTTP header, 120-route SSG matcher, explicit /en redirector, static-asset HTML-fallback detector, CDN-Cache-Control, and crawl-hygiene contract mirrored with public/_headers and src/seo/routes.ts; verified in index.test.ts)
- * [OUTPUT]: exports EDGE_SECURITY_HEADERS, isStaticNonHtmlAssetPath, isUnexpectedHtmlAssetFallback, resolveExplicitEnRedirectPath, isKnownSsgHtmlPath, isUnknownNonAssetPath, resolveEdgeCacheControl, resolveEdgeCdnCacheControl, resolveEdgeCacheTtlSeconds, and applyMokluEdgeHeaders
- * [POS]: single edge response-header, redirect, 404-status, and cache-policy module of workers/telemetry/src; attaches CSP, COOP, bfcache-safe Cache-Control, CDN-Cache-Control, static-asset soft-200 guards, and unknown-route HTTP 404 + X-Robots-Tag onto Coolify origin responses
+ * [INPUT]: none (zero-dependency edge HTTP header, 120-route SSG matcher, explicit /en redirector, static-asset HTML-fallback detector, HTML navigation & 4-locale 404.html resolver, CDN-Cache-Control, and crawl-hygiene contract mirrored with public/_headers and src/seo/routes.ts; verified in index.test.ts)
+ * [OUTPUT]: exports EdgeLocaleCode, EDGE_SECURITY_HEADERS, isStaticNonHtmlAssetPath, isUnexpectedHtmlAssetFallback, isHtmlDocumentNavigation, resolveEdgeNotFoundLocale, resolveOriginNotFoundHtmlPath, resolveExplicitEnRedirectPath, isKnownSsgHtmlPath, isUnknownNonAssetPath, resolveEdgeCacheControl, resolveEdgeCdnCacheControl, resolveEdgeCacheTtlSeconds, and applyMokluEdgeHeaders
+ * [POS]: single edge response-header, redirect, content-negotiated 404, and cache-policy module of workers/telemetry/src; attaches CSP, COOP, bfcache-safe Cache-Control, CDN-Cache-Control, static-asset soft-200 guards, and localized 404 HTML resolution onto Coolify origin responses
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
+
+export type EdgeLocaleCode = 'en' | 'zh' | 'ja' | 'ko'
 
 export const EDGE_SECURITY_HEADERS: Readonly<Record<string, string>> = {
   'X-Content-Type-Options': 'nosniff',
@@ -68,7 +70,9 @@ const KNOWN_ROUTE_SLUGS = new Set([
 const STATIC_NON_HTML_EXTENSION_RE =
   /\.(?:js|mjs|cjs|css|map|wasm|woff|woff2|ttf|otf|png|jpg|jpeg|webp|avif|gif|svg|ico|json|xml|txt|webmanifest|pdf|zip)$/i
 const HTML_CONTENT_TYPE_RE = /^\s*text\/html\b/i
+const HTML_ACCEPT_RE = /\btext\/html\b/i
 const EXPLICIT_EN_SLUG_RE = /^\/en\/([^/]+)\/?$/
+const ACCEPT_LANG_Q_RE = /^\s*q\s*=\s*([0-9]+(?:\.[0-9]+)?)\s*$/i
 
 function isNoStorePath(pathname: string): boolean {
   return NO_STORE_PATHS.has(pathname) || pathname === '/_telemetry' || pathname.startsWith('/_telemetry/')
@@ -98,6 +102,92 @@ export function isUnexpectedHtmlAssetFallback(
     typeof contentType === 'string' &&
     HTML_CONTENT_TYPE_RE.test(contentType)
   )
+}
+
+export function isHtmlDocumentNavigation(request: Pick<Request, 'method' | 'headers'>): boolean {
+  const method = request.method.toUpperCase()
+  if (method !== 'GET' && method !== 'HEAD') {
+    return false
+  }
+
+  const secFetchDest = (request.headers.get('sec-fetch-dest') ?? '').trim().toLowerCase()
+  const secFetchMode = (request.headers.get('sec-fetch-mode') ?? '').trim().toLowerCase()
+  const accept = request.headers.get('accept') ?? ''
+
+  if (secFetchDest && secFetchDest !== 'document' && secFetchDest !== 'iframe') {
+    return false
+  }
+  if (secFetchMode === 'navigate' || secFetchDest === 'document') {
+    return true
+  }
+  if (!secFetchMode && !secFetchDest) {
+    return HTML_ACCEPT_RE.test(accept)
+  }
+  return false
+}
+
+export function resolveEdgeNotFoundLocale(
+  pathname: string,
+  acceptLanguage: string | null,
+): EdgeLocaleCode {
+  const firstSegment = pathname.split(/[?#]/, 1)[0].toLowerCase().split('/').filter(Boolean)[0]
+  if (
+    firstSegment === 'zh' ||
+    firstSegment === 'ja' ||
+    firstSegment === 'ko' ||
+    firstSegment === 'en'
+  ) {
+    return firstSegment
+  }
+
+  if (!acceptLanguage) {
+    return 'en'
+  }
+
+  const weightedTags: Array<{ tag: string; q: number; index: number }> = []
+  const parts = acceptLanguage.split(',')
+  for (let index = 0; index < parts.length; index += 1) {
+    const [rawTag, ...params] = parts[index].trim().split(';')
+    const tag = rawTag.trim().toLowerCase()
+    if (!tag) continue
+    let q = 1
+    for (const param of params) {
+      const match = ACCEPT_LANG_Q_RE.exec(param)
+      if (match) {
+        const parsed = Number(match[1])
+        if (Number.isFinite(parsed)) {
+          q = parsed
+        }
+      }
+    }
+    if (q <= 0) continue
+    weightedTags.push({ tag, q, index })
+  }
+
+  weightedTags.sort((a, b) => b.q - a.q || a.index - b.index)
+
+  for (const { tag } of weightedTags) {
+    if (/^zh\b/i.test(tag)) return 'zh'
+    if (/^ja\b/i.test(tag)) return 'ja'
+    if (/^ko\b/i.test(tag)) return 'ko'
+    if (/^en\b/i.test(tag)) return 'en'
+  }
+
+  return 'en'
+}
+
+export function resolveOriginNotFoundHtmlPath(locale: EdgeLocaleCode): string {
+  switch (locale) {
+    case 'zh':
+      return '/zh/404.html'
+    case 'ja':
+      return '/ja/404.html'
+    case 'ko':
+      return '/ko/404.html'
+    case 'en':
+    default:
+      return '/404.html'
+  }
 }
 
 export function resolveExplicitEnRedirectPath(pathname: string): string | null {

@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on react (Suspense, lazy, useCallback, useEffect, useLayoutEffect, useMemo, useState), src/seo (InfoPageContent, NotFoundContent, SiteHeader, SeoLandingSections, SiteFooter, useSeoHead, getRouteCopy, buildLocalizedPath, ResolvedRoute), QuickWorkspace from @/workspace/QuickWorkspace, StudioHandoffPayload from @/workspace/types, lazy createToolsWorkspaceEngines from @/workspace/engineAdapter, dynamic import of @/bridge/studioHandoff (stageImagesIntoStudioAfterBootstrap), src/commercial/entitlements (isEffectivePro, useEntitlementStore), lazy-loaded @/commercial/PricingModal, src/theme/themeStore (applyDocumentTheme, useThemeStore), trackFunnelEvent from @/utils/telemetry, and PhoneModel from @/types
- * [OUTPUT]: exports ToolLandingPage component rendering the zero-splash above-the-fold QuickWorkspace, editorial InfoPageContent on /about|/privacy|/terms, or 4-locale NotFoundContent on fallback routes, plus localized SEO sections, pre-paint adaptive Light/Dark chrome sync, funnel telemetry, on-demand PricingModal, and lazy Studio handoff
+ * [INPUT]: depends on react (Suspense, lazy, useCallback, useEffect, useLayoutEffect, useMemo, useState), src/seo (InfoPageContent, NotFoundContent, SiteHeader, SeoLandingSections, SiteFooter, useSeoHead, getRouteCopy, buildLocalizedPath, ResolvedRoute), QuickWorkspace from @/workspace/QuickWorkspace, StudioHandoffPayload from @/workspace/types, lazy createToolsWorkspaceEngines from @/workspace/engineAdapter, dynamic import of @/bridge/studioHandoff (stageImagesIntoStudioAfterBootstrap), src/commercial/entitlements (isEffectivePro, useEntitlementStore), lazy-loaded @/commercial/PricingModal, src/theme/themeStore (applyDocumentTheme, useThemeStore), buildNotFoundTelemetryProps/trackFunnelEvent from @/utils/telemetry, and PhoneModel from @/types
+ * [OUTPUT]: exports ToolLandingPage component rendering the zero-splash above-the-fold QuickWorkspace, editorial InfoPageContent on /about|/privacy|/terms, or 4-locale NotFoundContent on fallback routes (emitting privacy-safe not_found_view telemetry), plus localized SEO sections, pre-paint adaptive Light/Dark chrome sync, funnel telemetry, on-demand PricingModal, and lazy Studio handoff
  * [POS]: primary landing page in src/pages; serves '/', all SEO tool routes, /about|/privacy|/terms, and 404 fallback routes across en/zh/ja/ko without loading Konva, Studio stores, unused tool panels, or unused canvas engines
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -19,7 +19,7 @@ import {
 } from '@/seo'
 import { applyDocumentTheme, useThemeStore } from '@/theme/themeStore'
 import type { PhoneModel } from '@/types'
-import { trackFunnelEvent } from '@/utils/telemetry'
+import { buildNotFoundTelemetryProps, trackFunnelEvent } from '@/utils/telemetry'
 import { QuickWorkspace } from '@/workspace/QuickWorkspace'
 import { createToolsWorkspaceEngines } from '@/workspace/engineAdapter'
 import type { StudioHandoffPayload as WorkspaceHandoffPayload } from '@/workspace/types'
@@ -86,14 +86,20 @@ export function ToolLandingPage({ route, onNavigate }: ToolLandingPageProps) {
     return () => media.removeEventListener('change', onChange)
   }, [syncSystemTheme])
 
+  const notFoundPath = typeof window !== 'undefined' ? window.location.pathname : '/404'
+
   useEffect(() => {
-    if (route.isInfoPage || route.isFallback) return
+    if (route.isFallback) {
+      trackFunnelEvent('not_found_view', buildNotFoundTelemetryProps(notFoundPath, route.locale))
+      return
+    }
+    if (route.isInfoPage) return
     trackFunnelEvent('tool_view', {
       tool: route.tool,
       slug: route.slug || 'home',
       locale: route.locale,
     })
-  }, [route.isFallback, route.isInfoPage, route.locale, route.slug, route.tool])
+  }, [notFoundPath, route.isFallback, route.isInfoPage, route.locale, route.slug, route.tool])
 
   const handleOpenProModal = useCallback(() => {
     trackFunnelEvent('pro_cta_clicked', {

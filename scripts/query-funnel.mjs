@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on node:child_process (execFileSync); invokes local Wrangler CLI against remote D1 database moklu-funnel
- * [OUTPUT]: CLI reporter printing N-day conversion funnel by tool/event, top landing slugs, and rejected file formats from Cloudflare D1
+ * [OUTPUT]: CLI reporter printing N-day conversion funnel by tool/event, top landing slugs, rejected file formats, and 404 not_found_view routes from Cloudflare D1
  * [POS]: zero-secret operational funnel analytics query script inside scripts/
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -34,6 +34,10 @@ const rejectedFormats = queryD1(
   `SELECT ext, format AS mime, SUM(total) AS rejected_count FROM funnel_daily WHERE day >= '${cutoffDate}' AND event = 'format_rejected' GROUP BY ext, format ORDER BY rejected_count DESC LIMIT 20;`,
 )
 
+const notFoundRoutes = queryD1(
+  `SELECT slug, locale, ext, SUM(total) AS not_found_count FROM funnel_daily WHERE day >= '${cutoffDate}' AND event = 'not_found_view' GROUP BY slug, locale, ext ORDER BY not_found_count DESC LIMIT 20;`,
+)
+
 console.log(
   JSON.stringify(
     {
@@ -43,6 +47,7 @@ console.log(
       funnelByTool,
       topSlugs,
       rejectedFormats,
+      notFoundRoutes,
     },
     null,
     2,

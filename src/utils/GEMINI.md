@@ -18,8 +18,8 @@ Pure domain engines, canvas-format projection, localization, rich-text rendering
 - `canvasFormats.locale-adjust.test.ts`: Vitest suite verifying 3-tier `localeAdjust` delta composition and base/format scope separation.
 - `canvasResize.ts`: Authoring canvas dimension presets, validation, and layer recenter/fit resizer (`CANVAS_PRESETS`, `validateCanvasDimensions`, `resizeCanvasLayers`).
 - `canvasResize.test.ts`: Vitest suite verifying canvas dimension validation and center/fit layer resizing.
-- `chunkRecovery.ts`: Deploy-rollover dynamic-import recovery guard and `vite:preloadError` listener (`isChunkLoadError`, `handleVitePreloadError`, `installChunkRecoveryListener`).
-- `chunkRecovery.test.ts`: Vitest suite verifying chunk-error detection, reload cooldown guards, and preload error handling.
+- `chunkRecovery.ts`: Deploy-rollover dynamic-import recovery guard and `vite:preloadError` + `unhandledrejection` listener (`isChunkLoadError`, `attemptChunkErrorRecovery`, `handleVitePreloadError`, `installChunkRecoveryListener`).
+- `chunkRecovery.test.ts`: Vitest suite verifying chunk-error detection, leaf dynamic-import `attemptChunkErrorRecovery`, reload cooldown guards, and preload/`unhandledrejection` handling.
 - `contentSync.ts`: Cross-family content synchronization planner (`CONTENT_SYNC_KEYS`, `planContentSync`) preserving layout, model, and fill independence.
 - `contentSync.test.ts`: Vitest suite verifying cross-family layer pairing and content-only sync plans.
 - `export.ts`: Konva stage-to-PNG rasterizer and browser download helper (`exportSlide`, `exportAllSlides`, `exportWholeGroup`, `exportGroupImages`, `downloadDataUrl`).
@@ -61,8 +61,8 @@ Pure domain engines, canvas-format projection, localization, rich-text rendering
 - `stageCapture.ts`: Exclusive Konva stage capture lock, overlay isolation, and image/font settle synchronizer (`acquireCaptureLock`, `withHiddenEditorOverlays`, `withIdentityTransform`, `waitForStageCaptureReady`).
 - `stageCapture.test.ts`: Vitest suite verifying capture lock exclusion, image classification, and stage settle synchronization.
 - `stageRegistry.ts`: Singleton Konva `Stage` registry (`registerStage`, `getStage`) bridging `StageCanvas` to non-canvas panels.
-- `telemetry.ts`: Privacy-first client-side funnel telemetry utility (`DEFAULT_MOKLU_TELEMETRY_ENDPOINT`, `FunnelEventName`, `resolveAnalyticsEndpoint`, `trackFunnelEvent`, `getRecentFunnelEvents`, `clearFunnelEvents`) stripping PII/filename/URL keys, retaining a bounded 100-event ring buffer, and dispatching same-origin `/_telemetry` beacons on `moklu.app` (or custom `VITE_ANALYTICS_ENDPOINT`).
-- `telemetry.test.ts`: Vitest suite verifying PII/filename/URL stripping, safe metadata retention, ring-buffer bounds, `moklu.app` same-origin endpoint resolution, and `sendBeacon` resilience.
+- `telemetry.ts`: Privacy-first client-side funnel telemetry utility (`DEFAULT_MOKLU_TELEMETRY_ENDPOINT`, `FunnelEventName`, `NotFoundTelemetryProps`, `buildNotFoundTelemetryProps`, `resolveAnalyticsEndpoint`, `trackFunnelEvent`, `getRecentFunnelEvents`, `clearFunnelEvents`) stripping PII/filename/URL keys, bucketing `not_found_view` paths safely, retaining a bounded 100-event ring buffer, and dispatching same-origin `/_telemetry` beacons on `moklu.app` (or custom `VITE_ANALYTICS_ENDPOINT`).
+- `telemetry.test.ts`: Vitest suite verifying PII/filename/URL stripping, safe metadata retention, `not_found_view` path/hash bucketing, ring-buffer bounds, `moklu.app` same-origin endpoint resolution, and `sendBeacon` resilience.
 - `templateAppearance.ts`: Selective style-only template applier (`DEFAULT_APPEARANCE_PARTS`, `applyTemplateAppearance`) preserving slide content and layout.
 - `templateAppearance.test.ts`: Vitest suite verifying selective background, typography, and phone appearance transfers.
 - `templateSlots.ts`: Slot-preserving template applier (`findScreenshotTarget`, `applyTemplateToCanvas`) rebinding existing screenshots onto scaled template layers.

@@ -1,7 +1,7 @@
 /**
  * [INPUT]: depends on vitest, node:child_process, node:fs/promises, node:os, node:path, node:util, react, and react-dom/server; depends on src/seo/* exports and scripts/prerender-seo.mjs
- * [OUTPUT]: automated unit and integration test suite for routing, 4-language copy uniqueness, 404 NotFoundContent & fallback head hygiene, active JSON-LD schemas, OG/Twitter head management, exact aria-current nav, subpage breadcrumbs, content-visibility sections, and SSG/404.html/sitemap output
- * [POS]: verification suite within src/seo validating both runtime SEO behavior and post-build static HTML/404.html/sitemap generation
+ * [OUTPUT]: automated unit and integration test suite for routing, 4-language copy uniqueness, 404 NotFoundContent, unprefixed fallback locale detection, fallback head hygiene, active JSON-LD schemas, OG/Twitter head management, exact aria-current nav, subpage breadcrumbs, content-visibility sections, and SSG/4-locale 404.html/sitemap output
+ * [POS]: verification suite within src/seo validating both runtime SEO behavior and post-build static HTML/4-locale 404.html/sitemap generation
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
@@ -48,6 +48,11 @@ import {
 } from './ssg.ts'
 import { renderRouteMarkup } from './ssrEntry.ts'
 import { NAV_TOOL_ORDER, isToolNavActive } from './navHelpers.ts'
+import {
+  applyPreferredFallbackLocale,
+  hasExplicitLocalePrefix,
+  inferFallbackLocale,
+} from './notFoundCopy.ts'
 
 const execFileAsync = promisify(execFile)
 
@@ -125,6 +130,50 @@ describe('SEO route registry and pathname resolution', () => {
     expect(fallback.locale).toBe('ja')
     expect(fallback.slug).toBe('')
     expect(fallback.isFallback).toBe(true)
+  })
+
+  it('matches browser preferred locale on unprefixed 404 URLs while honoring explicit locale prefixes', () => {
+    expect(hasExplicitLocalePrefix('/en/non-existent')).toBe(true)
+    expect(hasExplicitLocalePrefix('/zh/missing-tool')).toBe(true)
+    expect(hasExplicitLocalePrefix('/ja/404?ref=1')).toBe(true)
+    expect(hasExplicitLocalePrefix('/ko')).toBe(true)
+    expect(hasExplicitLocalePrefix('/assets/non-existent-probe.js')).toBe(false)
+    expect(hasExplicitLocalePrefix('/missing-page')).toBe(false)
+    expect(hasExplicitLocalePrefix('/')).toBe(false)
+
+    expect(inferFallbackLocale('/assets/non-existent-probe.js', ['zh-CN', 'en'])).toBe('zh')
+    expect(inferFallbackLocale('/assets/non-existent-probe.js', ['fr-FR', 'ja-JP'])).toBe('ja')
+    expect(inferFallbackLocale('/assets/non-existent-probe.js', ['ko-KR'])).toBe('ko')
+    expect(inferFallbackLocale('/assets/non-existent-probe.js', ['de-DE'])).toBe('en')
+    expect(inferFallbackLocale('/en/non-existent', ['zh-CN'])).toBe('en')
+    expect(inferFallbackLocale('/ja/non-existent', ['zh-CN'])).toBe('ja')
+
+    const zhProbeRoute = applyPreferredFallbackLocale(
+      resolvePathname('/assets/non-existent-probe.js'),
+      '/assets/non-existent-probe.js',
+      ['zh-CN', 'en'],
+    )
+    expect(zhProbeRoute.isFallback).toBe(true)
+    expect(zhProbeRoute.locale).toBe('zh')
+    expect(zhProbeRoute.path).toBe('/zh/')
+
+    const explicitEnRoute = applyPreferredFallbackLocale(
+      resolvePathname('/en/non-existent'),
+      '/en/non-existent',
+      ['zh-CN'],
+    )
+    expect(explicitEnRoute.isFallback).toBe(true)
+    expect(explicitEnRoute.locale).toBe('en')
+    expect(explicitEnRoute.path).toBe('/')
+
+    const validEnTool = applyPreferredFallbackLocale(
+      resolvePathname('/merge-images'),
+      '/merge-images',
+      ['zh-CN'],
+    )
+    expect(validEnTool.isFallback).toBe(false)
+    expect(validEnTool.locale).toBe('en')
+    expect(validEnTool.path).toBe('/merge-images/')
   })
 
   it('generates canonical URLs and 5 hreflang links with siteUrl override support', () => {
@@ -810,6 +859,8 @@ describe('Build-time SSG prerenderer, sitemap.xml, robots.txt, and CSP safety', 
         siteUrl: string
         routesWritten: number
         sitemapUrls: number
+        notFoundPath: string
+        notFoundPaths: string[]
         llmsPath: string
       }
 
@@ -817,6 +868,7 @@ describe('Build-time SSG prerenderer, sitemap.xml, robots.txt, and CSP safety', 
       expect(report.siteUrl).toBe('https://moklu.app')
       expect(report.routesWritten).toBe(120)
       expect(report.sitemapUrls).toBe(120)
+      expect(report.notFoundPaths).toHaveLength(4)
 
       // Spot-check key static route paths
       const spotChecks = [
@@ -862,24 +914,35 @@ describe('Build-time SSG prerenderer, sitemap.xml, robots.txt, and CSP safety', 
       expect(sitemap).not.toContain('<changefreq>')
       expect(sitemap).not.toContain('<priority>')
 
-      // Static dist/404.html is emitted with noindex, follow, NotFoundContent markup, and clean fallback head
-      const notFoundHtml = await readFile(path.join(tmpDir, '404.html'), 'utf8')
-      const enNotFound = getNotFoundCopy('en')
-      expect(notFoundHtml).toContain('<html lang="en" data-theme="light" data-surface="workspace">')
-      expect(notFoundHtml).toContain(`<title>${escapeHtml(enNotFound.title)}</title>`)
-      expect(notFoundHtml).toContain('<meta name="robots" content="noindex, follow" />')
-      expect(notFoundHtml).not.toContain('<link rel="canonical"')
-      expect(notFoundHtml).not.toContain('hreflang=')
-      expect(notFoundHtml).not.toContain('property="og:url"')
-      expect(notFoundHtml).not.toContain('property="og:locale:alternate"')
-      expect(notFoundHtml).toContain('data-testid="not-found-page"')
-      expect(notFoundHtml).not.toContain('data-testid="quick-workspace"')
-      const notFoundJsonLd = [
-        ...notFoundHtml.matchAll(
-          /<script type="application\/ld\+json" data-moklu-seo="jsonld">([\s\S]*?)<\/script>/g,
-        ),
-      ].map((m) => JSON.parse(m[1])['@type'] as string)
-      expect(notFoundJsonLd).toEqual(['Organization', 'WebSite'])
+      // All 4 localized 404.html files are emitted with noindex, follow, NotFoundContent markup, and clean fallback head
+      const localizedNotFoundFiles = [
+        { locale: 'en' as const, rel: '404.html', expectedLang: 'en' },
+        { locale: 'zh' as const, rel: path.join('zh', '404.html'), expectedLang: 'zh-CN' },
+        { locale: 'ja' as const, rel: path.join('ja', '404.html'), expectedLang: 'ja' },
+        { locale: 'ko' as const, rel: path.join('ko', '404.html'), expectedLang: 'ko' },
+      ]
+      for (const { locale, rel, expectedLang } of localizedNotFoundFiles) {
+        const notFoundHtml = await readFile(path.join(tmpDir, rel), 'utf8')
+        const localizedNotFound = getNotFoundCopy(locale)
+        expect(notFoundHtml).toContain(
+          `<html lang="${expectedLang}" data-theme="light" data-surface="workspace">`,
+        )
+        expect(notFoundHtml).toContain(`<title>${escapeHtml(localizedNotFound.title)}</title>`)
+        expect(notFoundHtml).toContain(escapeHtml(localizedNotFound.h1))
+        expect(notFoundHtml).toContain('<meta name="robots" content="noindex, follow" />')
+        expect(notFoundHtml).not.toContain('<link rel="canonical"')
+        expect(notFoundHtml).not.toContain('hreflang=')
+        expect(notFoundHtml).not.toContain('property="og:url"')
+        expect(notFoundHtml).not.toContain('property="og:locale:alternate"')
+        expect(notFoundHtml).toContain('data-testid="not-found-page"')
+        expect(notFoundHtml).not.toContain('data-testid="quick-workspace"')
+        const notFoundJsonLd = [
+          ...notFoundHtml.matchAll(
+            /<script type="application\/ld\+json" data-moklu-seo="jsonld">([\s\S]*?)<\/script>/g,
+          ),
+        ].map((m) => JSON.parse(m[1])['@type'] as string)
+        expect(notFoundJsonLd).toEqual(['Organization', 'WebSite'])
+      }
       expect(sitemap).toContain('xmlns:xhtml="http://www.w3.org/1999/xhtml"')
       expect(sitemap).toContain('hreflang="zh-Hans"')
       expect(sitemap).toContain('<loc>https://moklu.app/zh/id-card-watermark/</loc>')
