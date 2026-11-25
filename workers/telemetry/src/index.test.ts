@@ -151,9 +151,51 @@ describe('moklu-telemetry edge worker, cache policy & CSP header parity', () => 
       expect(call[1]).toEqual({
         cf: {
           cacheEverything: true,
+          cacheTtl: 60,
           cacheTtlByStatus: { '200-299': 60, '404': 0, '500-599': 0 },
         },
       })
+    }
+  })
+
+  it('populates and serves Cloudflare caches.default with MISS -> HIT across GET and HEAD', async () => {
+    const store = new Map<string, Response>()
+    const fakeCache = {
+      match: vi.fn(async (req: Request) => store.get(req.url)?.clone()),
+      put: vi.fn(async (req: Request, res: Response) => {
+        store.set(req.url, res.clone())
+      }),
+    }
+    vi.stubGlobal('caches', { default: fakeCache })
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('<!doctype html><html></html>', {
+        status: 200,
+        headers: { 'Content-Type': 'text/html; charset=utf-8' },
+      }),
+    )
+
+    try {
+      const first = await worker.fetch(new Request('https://moklu.app/', { method: 'HEAD' }), {})
+      expect(first.status).toBe(200)
+      expect(first.headers.get('cf-cache-status')).toBe('MISS')
+      expect(first.headers.get('cache-control')).toBe('public, no-cache')
+      expect(first.headers.get('cdn-cache-control')).toBe(
+        'public, s-maxage=60, stale-while-revalidate=86400',
+      )
+      expect(fetchSpy).toHaveBeenCalledTimes(1)
+      expect(fakeCache.put).toHaveBeenCalledTimes(1)
+
+      const second = await worker.fetch(new Request('https://moklu.app/', { method: 'HEAD' }), {})
+      expect(second.status).toBe(200)
+      expect(second.headers.get('cf-cache-status')).toBe('HIT')
+      expect(second.headers.get('cache-control')).toBe('public, no-cache')
+      expect(second.headers.get('cdn-cache-control')).toBe(
+        'public, s-maxage=60, stale-while-revalidate=86400',
+      )
+      expect(fetchSpy).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.unstubAllGlobals()
     }
   })
 
@@ -203,6 +245,7 @@ describe('moklu-telemetry edge worker, cache policy & CSP header parity', () => 
       expect(fetchSpy.mock.calls[idx][1]).toEqual({
         cf: {
           cacheEverything: true,
+          cacheTtl: testCase.ttl,
           cacheTtlByStatus: { '200-299': testCase.ttl, '404': 0, '500-599': 0 },
         },
       })
