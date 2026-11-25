@@ -246,8 +246,8 @@ export function ExportModal({ open, onClose, stageRef }: ExportModalProps) {
       showCloseButton={!isExporting}
       closeLabel={em.closeAria}
       maxWidth="max-w-5xl"
-      backdropClassName="fixed inset-0 z-[9999] flex items-center justify-center backdrop-blur-sm"
-      panelClassName="relative rounded-2xl border shadow-2xl w-full mx-3 sm:mx-4 h-[88dvh] max-h-[88dvh] flex flex-col overflow-hidden"
+      backdropClassName="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 backdrop-blur-sm"
+      panelClassName="relative rounded-2xl border shadow-2xl w-full h-[88dvh] max-h-[88dvh] flex flex-col overflow-hidden"
       header={<div className="px-4 sm:px-5 py-3.5 sm:py-4 pr-12 border-b border-[rgba(255,255,255,0.06)] shrink-0"><h2 className="text-base font-semibold text-[#e8e8f0]">{em.title}</h2><p className="text-xs text-[#6b6b7a] mt-0.5">{exportSummary}</p></div>}
       footerClassName="px-4 sm:px-6 py-3.5 sm:py-4 border-t border-[rgba(255,255,255,0.06)] shrink-0"
       footer={<>

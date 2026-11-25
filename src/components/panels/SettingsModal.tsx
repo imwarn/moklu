@@ -167,7 +167,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
       title={sm.title}
       closeLabel={sm.closeAria}
       maxWidth="max-w-5xl"
-      panelClassName="relative rounded-2xl border shadow-2xl w-full mx-3 sm:mx-4 h-[88dvh] max-h-[88dvh] flex flex-col overflow-hidden"
+      panelClassName="relative rounded-2xl border shadow-2xl w-full h-[88dvh] max-h-[88dvh] flex flex-col overflow-hidden"
       footerClassName="shrink-0 px-4 md:px-5 py-2.5 border-t border-[rgba(255,255,255,0.06)] flex flex-wrap items-center gap-x-3 gap-y-1"
       footer={(
         <>

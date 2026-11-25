@@ -46,9 +46,9 @@ export function ConfirmDialog({
       closeOnEscape={!busy}
       closeOnBackdrop={!busy}
       maxWidth="max-w-[400px]"
-      backdropClassName="fixed inset-0 z-[210] flex items-center justify-center backdrop-blur-[1px]"
+      backdropClassName="fixed inset-0 z-[210] flex items-center justify-center p-3 sm:p-4 backdrop-blur-[1px]"
       backdropStyle={{ background: 'rgba(0,0,0,0.6)' }}
-      panelClassName="relative mx-3 sm:mx-4 flex max-h-[90dvh] w-full flex-col overflow-y-auto rounded-[10px] border p-4 sm:p-6 shadow-2xl"
+      panelClassName="relative flex max-h-[90dvh] w-full flex-col overflow-y-auto rounded-[10px] border p-4 sm:p-6 shadow-2xl"
       panelStyle={{
         background: '#1c1c27',
         borderColor: 'rgba(255,255,255,0.12)',

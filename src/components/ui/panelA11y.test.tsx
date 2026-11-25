@@ -357,6 +357,7 @@ describe('Studio mobile narrow-screen responsive layout and accessibility', () =
 
     expect(settingsHtml).toContain('role="dialog"')
     expect(settingsHtml).toContain('aria-modal="true"')
+    expect(settingsHtml).toContain('p-3 sm:p-4')
     expect(settingsHtml).toContain('h-[88dvh]')
     expect(settingsHtml).toContain('flex-col md:flex-row')
     expect(settingsHtml).toContain('w-full md:w-44')
@@ -364,6 +365,7 @@ describe('Studio mobile narrow-screen responsive layout and accessibility', () =
     expect(settingsHtml).toContain('hidden md:block')
     expect(settingsHtml).toContain('p-4 md:p-6')
     expect(settingsHtml).toContain('flex-wrap')
+    expect(settingsHtml).not.toContain('>unknown<')
 
     const aiHtml = renderToStaticMarkup(
       <StudioLocaleProvider locale="zh">

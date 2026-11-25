@@ -213,26 +213,17 @@ VERDICT: FAIL — 8 blocking check(s).
 
 ---
 
-## 五、还没解决的：线上 SHA 是 `unknown`
+## 五、Coolify / Railpack 构建中的版本号与 Commit Hash（消除 `unknown`）
 
-`vite.config.ts` 用 `git rev-parse --short HEAD` 注入 `__GIT_HASH__`。线上 Settings 弹窗实测显示 **`v0.1.0` / `unknown`** —— 说明 **Coolify 构建环境里没有 `.git` 目录**，`execSync` 抛错后走了 `catch` 分支。
+`vite.config.ts` 按以下 4 级优先级解析 `__GIT_HASH__`（注入 Studio「设置」弹窗左下角）：
 
-这导致：**无法从生产确认部署的是哪个 commit**，回滚和验收溯源都缺一环。
+1. **PaaS 环境变量**：`SOURCE_COMMIT`、`COOLIFY_GIT_COMMIT_SHA`、`RAILWAY_GIT_COMMIT_SHA`、`CF_PAGES_COMMIT_SHA`、`VERCEL_GIT_COMMIT_SHA`、`GITHUB_SHA`、`COMMIT_REF`。
+2. **纯 Node 文件系统直读 `.git/HEAD`**：无需容器内安装 `git` 命令，直接读取 `.git/HEAD`、`refs/` 与 `packed-refs`（适配精简 Node 镜像保留了 `.git/` 但无 `git` 二进制的场景）。
+3. **本地 `git rev-parse --short HEAD`**。
+4. **UTC 构建日期戳兜底（`bYYYYMMDD`，如 `b20261125`）**：当 Coolify 为复用 Docker/BuildKit 层缓存而默认剥离 `.git/` 且不注入 `SOURCE_COMMIT` 时，自动回退为当日构建戳，不再显示 `unknown`。
 
-修法（任选）：
-
-1. Coolify 构建时保留 `.git`（clone 时不要 `--depth 1` 或设置 `GIT_DEPTH=0`）
-2. 构建前注入环境变量，`vite.config.ts` 优先读 `process.env.SOURCE_COMMIT`
-
-推荐 2，并把 SHA 同时写进一个 `/version.json`，方便 `curl` 直接查：
-
-```ts
-// vite.config.ts
-const gitHash = process.env.SOURCE_COMMIT?.slice(0, 7)
-  ?? execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim()
-```
-
-这样 `curl -s https://moklu.app/version.json` 就能确认线上版本，不用开浏览器点弹窗。
+> **若希望线上直接显示精确的 7 位 Git Commit SHA（而非 `bYYYYMMDD` 构建戳）**：
+> 打开 `Coolify Dashboard -> Application -> Advanced -> Build`，将 **Source commit availability** 切换为 **`Available during build only`**（注意：由于每次推送的 `SOURCE_COMMIT` 不同，开启后会按提交刷新构建缓存层；保持默认关闭则显示 `bYYYYMMDD` 并享受最快缓存命中）。
 
 ---
 

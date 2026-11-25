@@ -77,6 +77,7 @@ if [[ -n "$BUNDLE" ]]; then
     [[ -n "$VER" ]] && c_pass "app version" "$VER"
     if [[ -z "$SHA" ]]; then c_warn "deployed commit" "not found in Settings chunk"
     elif [[ "$SHA" == "unknown" ]]; then c_warn "deployed commit" "unknown — build has no .git (see docs §5)"
+    elif [[ "$SHA" =~ ^b[0-9]{8}$ ]]; then c_pass "deployed build stamp" "$SHA (enable Coolify Source commit availability for git SHA)"
     else c_pass "deployed commit" "$SHA"; fi
   else
     c_warn "deployed commit" "Settings chunk not referenced"

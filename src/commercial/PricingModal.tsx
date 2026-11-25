@@ -59,7 +59,7 @@ export function PricingModal({
       backdropStyle={{
         background: isLight ? 'rgba(24, 24, 27, 0.42)' : 'rgba(9, 9, 11, 0.72)',
       }}
-      panelClassName={`relative rounded-2xl border w-full mx-4 max-h-[90vh] flex flex-col overflow-hidden ${
+      panelClassName={`relative rounded-2xl border w-full max-h-[90dvh] flex flex-col overflow-hidden ${
         isLight
           ? 'text-zinc-900 shadow-[0_24px_60px_-20px_rgba(24,24,27,0.2)]'
           : 'text-zinc-100 shadow-[0_24px_60px_-20px_rgba(9,9,11,0.85)]'
