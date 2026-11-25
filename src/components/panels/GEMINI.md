@@ -11,7 +11,7 @@ Studio sidebars, bottom slide filmstrip, and workflow dialogs orchestrating laye
 - `ExportModal.tsx`: Batch multi-format and multi-locale PNG, ZIP, and directory export modal (`ExportModal`) coordinating offscreen stage captures.
 - `HelpModal.tsx`: Interactive Moklu user guide modal (`HelpModal`) rendering grouped chapters from `help/loadHelpChapters` via `help/HelpMarkdown`.
 - `LayersPanel.tsx`: Left Studio sidebar (`LayersPanel`) combining Insert layer triggers, `layers/AssetsSection`, and the `dnd-kit` sortable layer tree.
-- `PreviewModal.tsx`: Full-strip slide preview modal (`PreviewModal`) comparing rendered thumbnails across canvas formats and project content locales.
+- `PreviewModal.tsx`: Full-strip slide preview modal (`PreviewModal`) comparing rendered thumbnails across canvas formats, project content locales, and live-synced 3-tone (`dark` / `gray` / `light`) store shelf backdrops.
 - `ProjectsModal.tsx`: Local IndexedDB project manager (`ProjectsModal`) for switching, creating, renaming, importing, exporting `.moklu`/`.json` backups (updating `markProjectBackedUp`), and deleting projects with `Intl.RelativeTimeFormat` timestamps.
 - `PropertiesPanel.tsx`: Right Studio inspector (`PropertiesPanel`) hosting Layout/Style/Content tabs, alignment bar, copy/paste style, and dispatching to `src/components/properties/*`.
 - `QuickDesignModal.tsx`: Guided single-canvas mockup wizard (`QuickDesignModal`) launched from `Toolbar` with 2-level 13-device category selector and live `QuickDesignPreview`.

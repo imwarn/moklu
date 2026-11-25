@@ -19,9 +19,7 @@ import { CanvasTextEditor } from './CanvasTextEditor'
 import { StageLayerItem } from './stage/StageLayerItem'
 import {
   CANVAS_BACKDROP_PRESETS,
-  loadStoredCanvasBackdrop,
-  persistCanvasBackdrop,
-  type CanvasBackdropTone,
+  useCanvasBackdrop,
 } from './stage/backdropPresets'
 import { CanvasShadow, SeamGuides, StageChrome } from './stage/StageOverlays'
 import { resolveMultiDragStartPositions, type MultiDragStartEntry } from './stage/multiDrag'
@@ -53,11 +51,7 @@ interface StageCanvasProps { stageRef: React.RefObject<Konva.Stage | null> }
 
 export function StageCanvas({ stageRef }: StageCanvasProps) {
   const [zoomInput, setZoomInput] = useState<string | null>(null)
-  const [backdropTone, setBackdropTone] = useState<CanvasBackdropTone>(loadStoredCanvasBackdrop)
-  const handleBackdropChange = useCallback((next: CanvasBackdropTone) => {
-    setBackdropTone(next)
-    persistCanvasBackdrop(next)
-  }, [])
+  const [backdropTone, handleBackdropChange] = useCanvasBackdrop()
   const backdropPreset = CANVAS_BACKDROP_PRESETS[backdropTone]
   const multiDragRef = useRef<{
     draggingId: string

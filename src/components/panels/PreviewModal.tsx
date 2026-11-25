@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on useEditorStore from @/store; fillToCss, getLanguageName, canvasFormats, and panoGeometry utils; ModalShell/NumberInput/ToggleSwitch/SegmentedControl; useStudioLocale from @/i18n
- * [OUTPUT]: exports PreviewModal component for full-strip slide previews across formats and project content locales
+ * [INPUT]: depends on useEditorStore from @/store; fillToCss, getLanguageName, canvasFormats, and panoGeometry utils; ModalShell/NumberInput/ToggleSwitch/SegmentedControl; CANVAS_BACKDROP_PRESETS/useCanvasBackdrop from @/components/canvas/stage/backdropPresets; BackdropSwitcher from @/components/canvas/stage/StageOverlays; useStudioLocale from @/i18n
+ * [OUTPUT]: exports PreviewModal component for full-strip slide previews across formats, project content locales, and live-synced 3-tone shelf backdrops
  * [POS]: slide preview dialog within src/components/panels, mounted by StudioPage
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -12,6 +12,12 @@ import { getExportTargets, getFormatCanvasDims, getFormatFamilyKey, getFormatLab
 import type { BackgroundLayer, CanvasFormatId } from '@/types'
 import type { PreviewProgress, ThumbnailMap } from '@/hooks/useThumbnails'
 import { DEFAULT_PANO_COMPENSATION_PX, MAX_PANO_COMPENSATION_PX, normalizePanoCompensationPx } from '@/utils/panoGeometry'
+import {
+  CANVAS_BACKDROP_PRESETS,
+  useCanvasBackdrop,
+  type CanvasBackdropTone,
+} from '@/components/canvas/stage/backdropPresets'
+import { BackdropSwitcher } from '@/components/canvas/stage/StageOverlays'
 import { ModalShell } from '@/components/ui/ModalShell'
 import { NumberInput } from '@/components/ui/NumberInput'
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch'
@@ -29,6 +35,8 @@ interface PreviewModalProps {
   cancelCapture: () => void
   /** Locale to preview when the modal opens (defaults to the current editor locale). */
   initialLocale?: string
+  /** Optional tone override for deterministic SSR/unit tests; defaults to live Studio backdrop store. */
+  backdropTone?: CanvasBackdropTone
 }
 
 export function PreviewModal({
@@ -40,9 +48,13 @@ export function PreviewModal({
   captureAllHighRes,
   cancelCapture,
   initialLocale,
+  backdropTone: backdropToneOverride,
 }: PreviewModalProps) {
   const { t } = useStudioLocale()
   const pm = t.modals.preview
+  const [storedBackdropTone, setBackdropTone] = useCanvasBackdrop()
+  const backdropTone = backdropToneOverride ?? storedBackdropTone
+  const backdropPreset = CANVAS_BACKDROP_PRESETS[backdropTone]
   const project = useEditorStore((s) => s.project)
   const settings = project.settings
   const activeSlideGroupId = useEditorStore((s) => s.activeSlideGroupId)
@@ -162,7 +174,7 @@ export function PreviewModal({
             <h2 className="text-sm font-semibold text-[#f4f4f5]">{pm.title}</h2>
             {previewProgress.status === 'capturing' || previewProgress.status === 'preparing' ? (
               <div className="mt-1.5 w-48">
-                <div className="mb-1 flex items-center justify-between text-[10px] text-[#7d7a90]">
+                <div className="mb-1 flex items-center justify-between text-[10px] text-muted">
                   <span>{previewProgress.completedSlides > 0 ? pm.updatingPreviews : pm.generatingPreviews}</span>
                   <span>{previewProgress.completedSlides} / {previewProgress.totalSlides}</span>
                 </div>
@@ -176,12 +188,12 @@ export function PreviewModal({
                 >
                   <div className="h-full bg-accent transition-[width] duration-300 ease-out motion-reduce:transition-none" style={{ width: `${previewProgress.totalSlides ? (previewProgress.completedSlides / previewProgress.totalSlides) * 100 : 0}%` }} />
                 </div>
-                <p className="mt-1 text-[10px] text-[#7d7a90]">{previewProgress.completedSlides} / {previewProgress.totalSlides}{previewProgress.currentGroupName ? ` · ${previewProgress.currentGroupName}` : ''}</p>
+                <p className="mt-1 text-[10px] text-muted">{previewProgress.completedSlides} / {previewProgress.totalSlides}{previewProgress.currentGroupName ? ` · ${previewProgress.currentGroupName}` : ''}</p>
               </div>
             ) : previewProgress.status === 'error' ? (
               <p className="mt-1 rounded border border-[rgba(248,113,113,0.35)] bg-[rgba(248,113,113,0.08)] px-2 py-1 text-xs text-[#fca5a5]">{pm.generationFailed}</p>
             ) : (
-              <p className="mt-1 text-xs text-[#7d7a90]">
+              <p className="mt-1 text-xs text-muted">
                 {totalSlides} · {slideGroups.length}
               </p>
             )}
@@ -190,16 +202,16 @@ export function PreviewModal({
           <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2">
             {/* Platform selector */}
             {platformFormats.length > 1 && (
-              <SegmentedControl value={activeCanvasFormat} options={platformFormats.map((format) => ({ value: format, label: getFormatLabel(format, settings.customFormats) }))} onChange={selectFormat} className="flex max-w-full items-center gap-0.5 overflow-x-auto rounded-lg border border-[rgba(255,255,255,0.1)] p-1" optionClassName="shrink-0 whitespace-nowrap rounded-md px-2.5 py-1 text-[11px] transition-colors" activeClassName="bg-accent-soft text-accent-text font-bold" inactiveClassName="bg-transparent text-[#7d7a90] font-medium" />
+              <SegmentedControl value={activeCanvasFormat} options={platformFormats.map((format) => ({ value: format, label: getFormatLabel(format, settings.customFormats) }))} onChange={selectFormat} className="flex max-w-full items-center gap-0.5 overflow-x-auto rounded-lg border border-[rgba(255,255,255,0.1)] p-1" optionClassName="shrink-0 whitespace-nowrap rounded-md px-2.5 py-1 text-[11px] transition-colors" activeClassName="bg-accent-soft text-accent-text font-bold" inactiveClassName="bg-transparent text-muted font-medium" />
             )}
 
             {/* Locale selector */}
             {locales.length > 1 && (
-              <SegmentedControl value={activeLocale} options={locales.map((locale) => ({ value: locale, label: getLanguageName(locale), title: getLanguageName(locale) }))} onChange={selectLocale} className="flex max-w-full items-center gap-0.5 overflow-x-auto rounded-lg border border-[rgba(255,255,255,0.1)] p-1" optionClassName="shrink-0 whitespace-nowrap rounded-md px-2.5 py-1 text-[11px] transition-colors" activeClassName="bg-accent-soft text-accent-text font-bold" inactiveClassName="bg-transparent text-[#7d7a90] font-medium" />
+              <SegmentedControl value={activeLocale} options={locales.map((locale) => ({ value: locale, label: getLanguageName(locale), title: getLanguageName(locale) }))} onChange={selectLocale} className="flex max-w-full items-center gap-0.5 overflow-x-auto rounded-lg border border-[rgba(255,255,255,0.1)] p-1" optionClassName="shrink-0 whitespace-nowrap rounded-md px-2.5 py-1 text-[11px] transition-colors" activeClassName="bg-accent-soft text-accent-text font-bold" inactiveClassName="bg-transparent text-muted font-medium" />
             )}
 
             {hasPanoGroups && (
-              <label className="flex items-center gap-2 rounded-lg border border-[rgba(255,255,255,0.1)] px-2 py-1 text-[11px] text-[#8f90a3]">
+              <label className="flex items-center gap-2 rounded-lg border border-[rgba(255,255,255,0.1)] px-2 py-1 text-[11px] text-muted">
                 <ToggleSwitch
                   variant="checkbox"
                   checked={panoSettings.compensate}
@@ -224,15 +236,22 @@ export function PreviewModal({
                     if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
                     e.stopPropagation()
                   }}
-                  className="w-14 rounded border border-[rgba(255,255,255,0.12)] bg-[#0f0f13] px-1 py-0.5 text-right text-[#e8e8f0] disabled:opacity-40"
+                  className="w-14 rounded border border-[rgba(255,255,255,0.12)] bg-surface px-1 py-0.5 text-right text-[#e8e8f0] disabled:opacity-40"
                 />
                 <span>px</span>
               </label>
             )}
 
+            <BackdropSwitcher
+              value={backdropTone}
+              onChange={setBackdropTone}
+              testIdPrefix="preview-backdrop"
+              variant="pill"
+            />
+
             <button
               onClick={onClose}
-              className="rounded-md px-2 py-1 text-xl leading-none text-[#8d89a3] transition-colors hover:text-white"
+              className="rounded-md px-2 py-1 text-xl leading-none text-muted transition-colors hover:text-white"
               aria-label={pm.closeAria}
             >
               ×
@@ -242,7 +261,11 @@ export function PreviewModal({
     >
 
         {/* Filmstrip */}
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6">
+        <div
+          data-testid="preview-filmstrip-stage"
+          className="min-h-0 flex-1 overflow-y-auto px-4 py-4 transition-colors duration-200 sm:px-6 sm:py-6"
+          style={{ background: backdropPreset.bg }}
+        >
           <div className="overflow-x-auto pb-2">
             <div className="flex min-w-max items-start" style={{ gap: 0 }}>
               {flatSlides.map(({ group, slideIdx, globalNum: slideNum, isFirstInGroup, groupIndex }) => {
@@ -269,7 +292,7 @@ export function PreviewModal({
                         style={{
                           width: 1,
                           height: SLIDE_H,
-                          background: 'rgba(255,255,255,0.07)',
+                          background: backdropPreset.previewDivider,
                           flexShrink: 0,
                           alignSelf: 'flex-end',
                           marginLeft: 16,
@@ -289,7 +312,7 @@ export function PreviewModal({
                                 fontWeight: 500,
                                 textTransform: 'uppercase',
                                 letterSpacing: '0.18em',
-                                color: isActiveGroup ? 'var(--color-accent-text)' : 'var(--color-muted)',
+                                color: isActiveGroup ? backdropPreset.slideLabelColor : backdropPreset.previewInactiveLabel,
                                 whiteSpace: 'nowrap',
                               }}
                             >
@@ -301,8 +324,9 @@ export function PreviewModal({
                                   fontSize: 9,
                                   textTransform: 'uppercase',
                                   letterSpacing: '0.12em',
-                                  color: 'var(--color-accent-text)',
-                                  border: '1px solid color-mix(in srgb, var(--color-accent) 40%, transparent)',
+                                  color: backdropPreset.slideLabelColor,
+                                  background: backdropPreset.previewActiveBadgeBg,
+                                  border: `1px solid ${backdropPreset.previewActiveBadgeBorder}`,
                                   borderRadius: 999,
                                   padding: '1px 6px',
                                 }}
@@ -331,14 +355,12 @@ export function PreviewModal({
                           style={{
                             width: slideW,
                             height: SLIDE_H,
-                            borderColor: isActiveGroup ? 'color-mix(in srgb, var(--color-accent) 65%, transparent)' : 'rgba(255,255,255,0.1)',
+                            borderColor: isActiveGroup ? backdropPreset.previewActiveBorder : backdropPreset.previewCardBorder,
                             background:
                               highResThumb || navThumb
                                 ? 'var(--color-surface)'
                                 : `linear-gradient(160deg, color-mix(in srgb, var(--color-accent) 12%, transparent), rgba(15,15,19,0.3)), ${fallbackFill}`,
-                            boxShadow: isActiveGroup
-                              ? '0 0 0 1px color-mix(in srgb, var(--color-accent) 30%, transparent), 0 12px 48px rgba(0,0,0,0.55)'
-                              : '0 8px 32px rgba(0,0,0,0.4)',
+                            boxShadow: isActiveGroup ? backdropPreset.previewActiveShadow : backdropPreset.previewCardShadow,
                           }}
                         >
                           {highResThumb ? (
@@ -363,7 +385,7 @@ export function PreviewModal({
                         <span
                           style={{
                             fontSize: 11,
-                            color: isActiveGroup ? 'var(--color-accent-text)' : 'var(--color-muted)',
+                            color: isActiveGroup ? backdropPreset.slideLabelColor : backdropPreset.previewInactiveLabel,
                             marginTop: 6,
                             paddingLeft: 2,
                             lineHeight: 1,

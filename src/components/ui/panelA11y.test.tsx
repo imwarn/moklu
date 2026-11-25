@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on vitest, react, react-dom/server, @dnd-kit/core, @dnd-kit/sortable, useEditorStore, StudioLocaleProvider, studioTokens, contextMenu, ModalShell, SegmentedControl, SortableLayerRow, LayerContextMenu, SlideNavigator, LayersPanel, PropertiesPanel, SettingsModal, AiProviderSettings, HelpModal, TemplatesModal, QuickDesignModal, backdropPresets, and StageOverlays
- * [OUTPUT]: Vitest suite verifying Studio dark WCAG AA contrast, Neutral Zinc surface convergence, non-destructive canvas backdrop switcher, context menu viewport clamping and ARIA roles, layer row keyboard/touch action visibility, panel ARIA attributes, and narrow-screen mobile modal/drawer responsive classes
+ * [INPUT]: depends on vitest, react, react-dom/server, @dnd-kit/core, @dnd-kit/sortable, useEditorStore, StudioLocaleProvider, studioTokens, contextMenu, ModalShell, SegmentedControl, SortableLayerRow, LayerContextMenu, SlideNavigator, LayersPanel, PreviewModal, PropertiesPanel, SettingsModal, AiProviderSettings, HelpModal, TemplatesModal, QuickDesignModal, backdropPresets, and StageOverlays
+ * [OUTPUT]: Vitest suite verifying Studio dark WCAG AA contrast, Neutral Zinc surface convergence, non-destructive canvas & PreviewModal backdrop switcher, context menu viewport clamping and ARIA roles, layer row keyboard/touch action visibility, panel ARIA attributes, and narrow-screen mobile modal/drawer responsive classes
  * [POS]: automated UI accessibility, contrast, and mobile responsiveness regression suite inside src/components/ui
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -31,6 +31,7 @@ import { AiProviderSettings } from '@/components/ai/AiProviderSettings'
 import { HelpModal } from '@/components/panels/HelpModal'
 import { LayerContextMenu } from '@/components/panels/layers/LayerContextMenu'
 import { LayersPanel } from '@/components/panels/LayersPanel'
+import { PreviewModal } from '@/components/panels/PreviewModal'
 import { SortableChild, SortableGroup, SortableLayer } from '@/components/panels/layers/SortableLayerRow'
 import { PropertiesPanel } from '@/components/panels/PropertiesPanel'
 import { QuickDesignModal } from '@/components/panels/QuickDesignModal'
@@ -474,8 +475,36 @@ describe('Studio mobile narrow-screen responsive layout and accessibility', () =
     expect(chromeHtml).toContain('aria-checked="true"')
     expect(chromeHtml).toContain('画布底板预览: 商店白')
     expect(CANVAS_BACKDROP_PRESETS.light.bg).toBe('#f4f4f5')
+    expect(contrastRatio(CANVAS_BACKDROP_PRESETS.light.slideLabelColor, '#f4f4f5')).toBeGreaterThanOrEqual(4.5)
+    expect(contrastRatio(CANVAS_BACKDROP_PRESETS.light.previewInactiveLabel, '#f4f4f5')).toBeGreaterThanOrEqual(4.5)
+    expect(contrastRatio(CANVAS_BACKDROP_PRESETS.gray.slideLabelColor, '#52525b')).toBeGreaterThanOrEqual(4.5)
+    expect(contrastRatio(CANVAS_BACKDROP_PRESETS.gray.previewInactiveLabel, '#52525b')).toBeGreaterThanOrEqual(4.5)
     expect(STUDIO_BACKDROP_STORAGE_KEY).toBe('moklu:studio-backdrop')
     expect(loadStoredCanvasBackdrop()).toBe('dark')
     expect(() => persistCanvasBackdrop('gray')).not.toThrow()
+
+    const previewHtml = renderToStaticMarkup(
+      <StudioLocaleProvider locale="zh">
+        <PreviewModal
+          open
+          onClose={() => {}}
+          thumbnails={{}}
+          previewThumbs={{}}
+          isCapturingPreview={false}
+          previewProgress={{ status: 'idle', completedSlides: 0, totalSlides: 1, currentGroupName: null, source: 'cache' }}
+          captureAllHighRes={() => {}}
+          cancelCapture={() => {}}
+          backdropTone="light"
+        />
+      </StudioLocaleProvider>,
+    )
+
+    expect(previewHtml).toContain('data-testid="preview-backdrop-switcher"')
+    expect(previewHtml).toContain('data-testid="preview-backdrop-light"')
+    expect(previewHtml).toContain('data-testid="preview-filmstrip-stage"')
+    expect(previewHtml).toContain('background:#f4f4f5')
+    expect(previewHtml).toContain('color:#af3b14')
+    expect(previewHtml).not.toContain('#7d7a90')
+    expect(previewHtml).not.toContain('#18181f')
   })
 })

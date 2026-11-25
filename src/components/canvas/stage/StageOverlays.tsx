@@ -1,7 +1,7 @@
 /**
  * [INPUT]: depends on getPanoSlideX from @/utils/panoGeometry, SlideGroup type, AssetDropHighlight, STUDIO_COLORS from @/components/ui/studioTokens, CANVAS_BACKDROP_PRESETS/CanvasBackdropTone from ./backdropPresets, and useStudioLocale from @/i18n
- * [OUTPUT]: exports CanvasShadow, SeamGuides, and StageChrome canvas overlay components with AA contrast, non-destructive backdrop switcher, and accessible zoom/Fit/group-edit controls
- * [POS]: viewport chrome overlays rendered over StageCanvas inside src/components/canvas/stage
+ * [OUTPUT]: exports BackdropSwitcher, CanvasShadow, SeamGuides, and StageChrome canvas overlay components with AA contrast, non-destructive backdrop switcher, and accessible zoom/Fit/group-edit controls
+ * [POS]: viewport chrome overlays rendered over StageCanvas and shared backdrop pill used by PreviewModal inside src/components/canvas/stage
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 import { getPanoSlideX } from '@/utils/panoGeometry'
@@ -10,6 +10,66 @@ import { STUDIO_COLORS } from '@/components/ui/studioTokens'
 import type { AssetDropHighlight } from './useAssetDropTarget'
 import { CANVAS_BACKDROP_PRESETS, type CanvasBackdropTone } from './backdropPresets'
 import { useStudioLocale } from '@/i18n'
+
+export function BackdropSwitcher({
+  value,
+  onChange,
+  testIdPrefix = 'canvas-backdrop',
+  variant = 'inline',
+}: {
+  value: CanvasBackdropTone
+  onChange: (tone: CanvasBackdropTone) => void
+  testIdPrefix?: string
+  variant?: 'inline' | 'pill'
+}) {
+  const { t } = useStudioLocale()
+  const options: Array<{ id: CanvasBackdropTone; label: string }> = [
+    { id: 'dark', label: t.slides.backdropDark },
+    { id: 'gray', label: t.slides.backdropGray },
+    { id: 'light', label: t.slides.backdropLight },
+  ]
+  return (
+    <div
+      role="radiogroup"
+      aria-label={t.slides.backdropLabel}
+      data-testid={`${testIdPrefix}-switcher`}
+      className={variant === 'pill' ? 'flex items-center gap-1.5 rounded-lg border border-[rgba(255,255,255,0.1)] px-2.5 py-1.5' : undefined}
+      style={variant === 'inline' ? { display: 'flex', alignItems: 'center', gap: 5, padding: '0 2px' } : undefined}
+    >
+      {variant === 'pill' && (
+        <span className="mr-0.5 hidden text-[11px] text-muted sm:inline">{t.slides.backdropLabel}</span>
+      )}
+      {options.map((opt) => {
+        const active = value === opt.id
+        return (
+          <button
+            key={opt.id}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            aria-label={`${t.slides.backdropLabel}: ${opt.label}`}
+            title={`${t.slides.backdropLabel}: ${opt.label}`}
+            data-testid={`${testIdPrefix}-${opt.id}`}
+            onClick={(e) => {
+              e.stopPropagation()
+              onChange(opt.id)
+            }}
+            style={{
+              width: 14,
+              height: 14,
+              borderRadius: 999,
+              padding: 0,
+              cursor: 'pointer',
+              background: CANVAS_BACKDROP_PRESETS[opt.id].swatch,
+              border: active ? '2px solid var(--color-accent)' : '1px solid rgba(255,255,255,0.32)',
+              boxShadow: active ? '0 0 0 1px rgba(0,0,0,0.5)' : 'none',
+            }}
+          />
+        )
+      })}
+    </div>
+  )
+}
 
 interface StageOverlaysProps {
   group: SlideGroup
@@ -97,11 +157,6 @@ export function StageChrome({
 }: Pick<StageOverlaysProps, 'group' | 'effectiveCompensationPx' | 'displayHeight' | 'zoom' | 'viewportX' | 'viewportY' | 'editingGroupId' | 'exitGroupEdit' | 'setZoom' | 'zoomInput' | 'setZoomInput' | 'handleFit' | 'assetDropHighlight' | 'spaceDown' | 'backdropTone' | 'onChangeBackdrop'>) {
   const { t } = useStudioLocale()
   const preset = CANVAS_BACKDROP_PRESETS[backdropTone]
-  const backdropOptions: Array<{ id: CanvasBackdropTone; label: string }> = [
-    { id: 'dark', label: t.slides.backdropDark },
-    { id: 'gray', label: t.slides.backdropGray },
-    { id: 'light', label: t.slides.backdropLight },
-  ]
   return <>
     {group.numSlides > 1 && Array.from({ length: group.numSlides }, (_, i) => {
       const slideScreenW = Math.round(group.slideWidth * zoom)
@@ -118,33 +173,7 @@ export function StageChrome({
     <div style={{ position: 'absolute', bottom: 12, right: 12, display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(20,20,23,0.9)', backdropFilter: 'blur(8px)', borderRadius: 8, padding: '4px 8px', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 8px 24px rgba(0,0,0,0.28)', zIndex: 100, pointerEvents: 'all' }}>
       {onChangeBackdrop && (
         <>
-          <div role="radiogroup" aria-label={t.slides.backdropLabel} data-testid="canvas-backdrop-switcher" style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '0 2px' }}>
-            {backdropOptions.map((opt) => {
-              const active = backdropTone === opt.id
-              return (
-                <button
-                  key={opt.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={active}
-                  aria-label={`${t.slides.backdropLabel}: ${opt.label}`}
-                  title={`${t.slides.backdropLabel}: ${opt.label}`}
-                  data-testid={`canvas-backdrop-${opt.id}`}
-                  onClick={(e) => { e.stopPropagation(); onChangeBackdrop(opt.id) }}
-                  style={{
-                    width: 14,
-                    height: 14,
-                    borderRadius: 999,
-                    padding: 0,
-                    cursor: 'pointer',
-                    background: CANVAS_BACKDROP_PRESETS[opt.id].swatch,
-                    border: active ? '2px solid var(--color-accent)' : '1px solid rgba(255,255,255,0.32)',
-                    boxShadow: active ? '0 0 0 1px rgba(0,0,0,0.5)' : 'none',
-                  }}
-                />
-              )
-            })}
-          </div>
+          <BackdropSwitcher value={backdropTone} onChange={onChangeBackdrop} testIdPrefix="canvas-backdrop" variant="inline" />
           <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.12)', margin: '0 2px' }} />
         </>
       )}
