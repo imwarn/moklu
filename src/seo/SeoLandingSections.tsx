@@ -1,7 +1,7 @@
 /**
  * [INPUT]: depends on ResolvedRoute from ./types.ts; depends on TOOL_ROUTE_DEFINITIONS, buildLocalizedPath, and getRelatedRoutes from ./routes.ts; depends on getRouteCopy and getUiLabels from ./i18n.ts; depends on NAV_TOOL_ORDER and handleSpaLinkClick from ./navHelpers.ts; depends on getToolQuickFacts from ./quickFacts.ts
  * [OUTPUT]: exports SeoLandingSections component and SeoLandingSectionsProps type
- * [POS]: below-the-fold crawlable editorial and conversion sections within src/seo, rendering privacy proof banner, Quick Facts & capability boundaries, 4/8 vertical-rail How-To timeline, 1+2 asymmetric workflow bento, Studio + Pro conversion strip, 2-column related-tools index, category-grouped tool directory, and native details/summary FAQ accordion
+ * [POS]: below-the-fold crawlable editorial and conversion sections within src/seo, rendering subpage accessible breadcrumbs, content-visibility-deferred privacy proof banner, Quick Facts & capability boundaries, 4/8 vertical-rail How-To timeline, 1+2 asymmetric workflow bento, Studio + Pro conversion strip, 2-column related-tools index, category-grouped tool directory, and native details/summary FAQ accordion
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
@@ -33,9 +33,12 @@ export function SeoLandingSections({
   const isDark = theme === 'dark'
   const ui = getUiLabels(route.locale)
   const copy = getRouteCopy(route.locale, route.slug)
+  const homeCopy = getRouteCopy(route.locale, '')
   const quickFacts = getToolQuickFacts(route.locale, route)
   const relatedRoutes = getRelatedRoutes(route.slug, route.locale)
+  const homeHref = buildLocalizedPath(route.locale, '')
   const studioHref = buildLocalizedPath(route.locale, 'studio')
+  const deferredSectionCls = '[content-visibility:auto] [contain-intrinsic-size:auto_420px]'
 
   const headingCls = isDark ? 'text-zinc-50' : 'text-zinc-950'
   const mutedCls = 'text-muted'
@@ -59,11 +62,45 @@ export function SeoLandingSections({
   })).filter((group) => group.items.length > 0)
 
   return (
-    <div className="mx-auto max-w-7xl space-y-16 px-4 py-16 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+      {route.slug !== '' && (
+        <nav aria-label="Breadcrumbs" className="mb-6">
+          <ol className="flex flex-wrap items-center gap-1.5 text-xs">
+            <li className="inline-flex items-center gap-1.5">
+              <a
+                href={homeHref}
+                onClick={(event) => handleSpaLinkClick(event, homeHref, onNavigate)}
+                className={`rounded transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                  isDark
+                    ? 'text-muted hover:text-zinc-100'
+                    : 'text-muted hover:text-zinc-950'
+                }`}
+              >
+                {homeCopy.navLabel}
+              </a>
+              <span aria-hidden="true" className="select-none text-muted/60">
+                /
+              </span>
+            </li>
+            <li>
+              <a
+                href={route.path}
+                aria-current="page"
+                onClick={(event) => handleSpaLinkClick(event, route.path, onNavigate)}
+                className={`rounded font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${headingCls}`}
+              >
+                {copy.navLabel}
+              </a>
+            </li>
+          </ol>
+        </nav>
+      )}
+
+      <div className="space-y-16">
       {/* 1. Local-first Privacy Proof Banner (horizontal split callout; stacks 1-col < 768px) */}
       <section
         aria-label={ui.privacyBannerTitle}
-        className={`rounded-2xl border p-6 sm:p-8 ${
+        className={`${deferredSectionCls} rounded-2xl border p-6 sm:p-8 ${
           isDark
             ? 'border-success/25 bg-panel'
             : 'border-success/25 bg-panel shadow-[0_1px_3px_rgba(24,24,27,0.04)]'
@@ -129,7 +166,7 @@ export function SeoLandingSections({
       </section>
 
       {/* 1.5. Quick Facts & Capability Boundaries (2-col/3-col spec cards + boundary callout; 1-col < 768px) */}
-      <section aria-labelledby="seo-quick-facts-heading" className="space-y-6">
+      <section aria-labelledby="seo-quick-facts-heading" className={`${deferredSectionCls} space-y-6`}>
         <div className="max-w-2xl space-y-1.5">
           <h2 id="seo-quick-facts-heading" className={`text-2xl font-bold tracking-tight ${headingCls}`}>
             {quickFacts.heading}
@@ -171,10 +208,10 @@ export function SeoLandingSections({
         </div>
       </section>
 
-      {/* 2. 3-Step How-To Guide (asymmetric 4/8 split with vertical step rail; 1-col < 768px; matches HowTo JSON-LD verbatim) */}
+      {/* 2. 3-Step How-To Guide (asymmetric 4/8 split with vertical step rail; 1-col < 768px) */}
       <section
         aria-labelledby="seo-howto-heading"
-        className="grid grid-cols-1 gap-8 border-t border-border pt-12 md:grid-cols-12 md:gap-10"
+        className={`${deferredSectionCls} grid grid-cols-1 gap-8 border-t border-border pt-12 md:grid-cols-12 md:gap-10`}
       >
         <div className="space-y-2 md:col-span-4">
           <h2 id="seo-howto-heading" className={`text-2xl font-bold tracking-tight ${headingCls}`}>
@@ -215,7 +252,7 @@ export function SeoLandingSections({
       </section>
 
       {/* 3. Scenario Highlights (asymmetric 1+2 bento showcase with surface diversity; 1-col < 768px) */}
-      <section aria-labelledby="seo-highlights-heading" className="space-y-6">
+      <section aria-labelledby="seo-highlights-heading" className={`${deferredSectionCls} space-y-6`}>
         <div className="max-w-2xl space-y-1.5">
           <h2 id="seo-highlights-heading" className={`text-2xl font-bold tracking-tight ${headingCls}`}>
             {ui.highlightsHeading}
@@ -267,7 +304,7 @@ export function SeoLandingSections({
       {/* 4. Studio Multi-Layer Upgrade Banner (compact conversion strip; stacks < 768px) */}
       <section
         aria-label={ui.studioBannerTitle}
-        className={`flex flex-col items-start justify-between gap-5 rounded-2xl border p-6 md:flex-row md:items-center md:p-8 ${
+        className={`${deferredSectionCls} flex flex-col items-start justify-between gap-5 rounded-2xl border p-6 md:flex-row md:items-center md:p-8 ${
           isDark
             ? 'border-accent/30 bg-panel shadow-[0_12px_32px_-20px_rgba(9,9,11,0.75)]'
             : 'border-border bg-panel shadow-[0_12px_32px_-20px_rgba(24,24,27,0.1)]'
@@ -329,7 +366,7 @@ export function SeoLandingSections({
       </section>
 
       {/* 5. Related Tools Internal Cross-Links (2-column editorial link index, zero uppercase eyebrows; 1-col < 768px) */}
-      <section aria-labelledby="seo-related-heading" className="space-y-6">
+      <section aria-labelledby="seo-related-heading" className={`${deferredSectionCls} space-y-6`}>
         <div className="max-w-2xl space-y-1.5">
           <h2 id="seo-related-heading" className={`text-2xl font-bold tracking-tight ${headingCls}`}>
             {ui.relatedToolsHeading}
@@ -370,7 +407,7 @@ export function SeoLandingSections({
       </section>
 
       {/* 6. Complete Tool Directory (2-column category-grouped clusters; 1-col < 768px) */}
-      <section aria-labelledby="seo-directory-heading" className="space-y-6">
+      <section aria-labelledby="seo-directory-heading" className={`${deferredSectionCls} space-y-6`}>
         <div className="max-w-2xl space-y-1.5">
           <h2 id="seo-directory-heading" className={`text-2xl font-bold tracking-tight ${headingCls}`}>
             {ui.directoryHeading}
@@ -413,7 +450,7 @@ export function SeoLandingSections({
       </section>
 
       {/* 7. Native <details>/<summary> FAQ Accordion (100% answers in SSG DOM, matches FAQPage JSON-LD verbatim) */}
-      <section aria-labelledby="seo-faq-heading" className="space-y-6">
+      <section aria-labelledby="seo-faq-heading" className={`${deferredSectionCls} space-y-6`}>
         <div className="max-w-2xl space-y-1.5">
           <h2 id="seo-faq-heading" className={`text-2xl font-bold tracking-tight ${headingCls}`}>
             {ui.faqHeading}
@@ -455,6 +492,7 @@ export function SeoLandingSections({
           ))}
         </div>
       </section>
+      </div>
     </div>
   )
 }

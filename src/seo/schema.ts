@@ -1,7 +1,7 @@
 /**
  * [INPUT]: depends on ResolvedRoute, RouteCategory, and RouteCopy from ./types.ts; depends on buildCanonicalUrl, getHtmlLang, and getSiteUrl from ./routes.ts; depends on getRouteCopy from ./i18n.ts
  * [OUTPUT]: exports OrganizationSchema, WebSiteSchema, BreadcrumbListSchema, WebPageSchema, WebApplicationSchema, HowToSchema, FaqPageSchema, RouteStructuredData, buildOrganizationSchema, buildWebSiteSchema, buildBreadcrumbListSchema, buildWebPageSchema, buildWebApplicationSchema, buildHowToSchema, buildFaqPageSchema, buildRouteSchemas, buildRouteSchemaList, and serializeJsonLd
- * [POS]: pure Schema.org JSON-LD generator within src/seo, shared identically between client-side useSeoHead.ts and build-time scripts/prerender-seo.mjs
+ * [POS]: pure Schema.org JSON-LD generator within src/seo, shared identically between client-side useSeoHead.ts and build-time scripts/prerender-seo.mjs; buildRouteSchemaList emits only visible, Google-active schemas per route archetype (omitting deprecated HowTo, omitting 1-item BreadcrumbList on root hubs, and omitting FAQPage on Studio)
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
@@ -345,10 +345,17 @@ export function buildRouteSchemaList(
   | BreadcrumbListSchema
   | WebPageSchema
   | WebApplicationSchema
-  | HowToSchema
   | FaqPageSchema
 )[] {
   const schemas = buildRouteSchemas(route, siteUrl)
+  if (route.isStudio) {
+    return [
+      schemas.organization,
+      schemas.webSite,
+      schemas.breadcrumbList,
+      schemas.webApplication,
+    ] as const
+  }
   if (route.isInfoPage) {
     return [
       schemas.organization,
@@ -358,12 +365,19 @@ export function buildRouteSchemaList(
       schemas.faqPage,
     ] as const
   }
+  if (route.slug === '') {
+    return [
+      schemas.organization,
+      schemas.webSite,
+      schemas.webApplication,
+      schemas.faqPage,
+    ] as const
+  }
   return [
     schemas.organization,
     schemas.webSite,
     schemas.breadcrumbList,
     schemas.webApplication,
-    schemas.howTo,
     schemas.faqPage,
   ] as const
 }

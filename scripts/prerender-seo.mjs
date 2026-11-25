@@ -1,10 +1,11 @@
 /**
- * [INPUT]: depends on node:fs/promises, node:path, node:url, vite (build); depends on ALL_ROUTES and getSiteUrl from ../src/seo/routes.ts; depends on getRouteRelativeHtmlPath, renderRouteHtml, generateSitemapXml, generateRobotsTxt, and generateLlmsTxt from ../src/seo/ssg.ts; builds temporary SSR bundle from ../src/seo/ssrEntry.ts
- * [OUTPUT]: exports getRouteOutputPath and prerenderSeoDist; runs as post-build CLI writing 92 static localized index.html pages with full React-rendered markup, sitemap.xml, robots.txt, and llms.txt into dist/
+ * [INPUT]: depends on node:child_process, node:fs/promises, node:path, node:url, vite (build); depends on ALL_ROUTES and getSiteUrl from ../src/seo/routes.ts; depends on getRouteRelativeHtmlPath, renderRouteHtml, generateSitemapXml, generateRobotsTxt, and generateLlmsTxt from ../src/seo/ssg.ts; builds temporary SSR bundle from ../src/seo/ssrEntry.ts
+ * [OUTPUT]: exports getRouteOutputPath, resolveRouteLastmodMap, and prerenderSeoDist; runs as post-build CLI writing 120 static localized index.html pages with full React-rendered markup, git-derived lastmod sitemap.xml, robots.txt, and llms.txt into dist/
  * [POS]: post-build Node ESM SSG runner in scripts/, invoked after `vite build` to materialize zero-FOUC static HTML via react-dom/server renderToString
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
+import { execFileSync } from 'node:child_process'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -19,6 +20,81 @@ import {
 } from '../src/seo/ssg.ts'
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+
+const GROWTH_ROUTE_SLUGS = new Set([
+  'ipad-mockup',
+  'watch-mockup',
+  'stitch-screenshots',
+  'heic-to-jpg',
+  'remove-exif',
+  'compress-image-to-200kb',
+  'redact-screenshot',
+])
+
+const SECONDARY_TOOL_SLUGS = new Set([
+  'merge-photos-to-pdf',
+  'carousel-splitter',
+  'image-grid-splitter',
+  'compress-image',
+  'convert-image-format',
+  'png-to-webp',
+  'resize-image',
+  'crop-image',
+  'add-border-to-photo',
+  'id-card-watermark',
+])
+
+function getRouteLocaleSourceFiles(route) {
+  if (route.isInfoPage) {
+    return ['src/seo/locales/infoRoutes.ts', 'src/seo/locales/infoPages.ts']
+  }
+  if (GROWTH_ROUTE_SLUGS.has(route.slug)) {
+    return [`src/seo/locales/${route.locale}GrowthRoutes.ts`]
+  }
+  if (SECONDARY_TOOL_SLUGS.has(route.slug)) {
+    return [`src/seo/locales/${route.locale}Tools.ts`]
+  }
+  return [`src/seo/locales/${route.locale}.ts`]
+}
+
+function readGitCommitDate(relativePaths, fallbackDate) {
+  try {
+    const output = execFileSync(
+      'git',
+      ['log', '-1', '--format=%cs', '--', ...relativePaths],
+      {
+        cwd: REPO_ROOT,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      },
+    ).trim()
+    if (/^\d{4}-\d{2}-\d{2}$/.test(output)) {
+      return output
+    }
+  } catch {
+    // Shallow clone or isolated container without git history; fall back to today's UTC date.
+  }
+  return fallbackDate
+}
+
+export function resolveRouteLastmodMap(routes = ALL_ROUTES) {
+  const fallbackDate = new Date().toISOString().slice(0, 10)
+  const fileGroupCache = new Map()
+  const result = new Map()
+
+  for (const route of routes) {
+    const files = getRouteLocaleSourceFiles(route)
+    const cacheKey = files.join('|')
+    let date = fileGroupCache.get(cacheKey)
+    if (!date) {
+      date = readGitCommitDate(files, fallbackDate)
+      fileGroupCache.set(cacheKey, date)
+    }
+    result.set(route.path, date)
+  }
+
+  return result
+}
 
 export function getRouteOutputPath(distDir, route) {
   return path.join(distDir, ...getRouteRelativeHtmlPath(route))
@@ -88,7 +164,8 @@ export async function prerenderSeoDist({
     }
 
     const sitemapPath = path.join(distDir, 'sitemap.xml')
-    await writeFile(sitemapPath, generateSitemapXml(normalizedBase, lastmod), 'utf8')
+    const resolvedLastmod = lastmod ?? resolveRouteLastmodMap(ALL_ROUTES)
+    await writeFile(sitemapPath, generateSitemapXml(normalizedBase, resolvedLastmod), 'utf8')
 
     const robotsPath = path.join(distDir, 'robots.txt')
     await writeFile(robotsPath, generateRobotsTxt(normalizedBase), 'utf8')

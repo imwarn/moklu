@@ -1,13 +1,21 @@
 /**
- * [INPUT]: depends on node:fs/promises, vitest, ./headersPolicy, and ./index
- * [OUTPUT]: unit tests verifying byte-for-byte parity with public/_headers, origin passthrough header injection, /_telemetry/health, D1 rollup upsert, and security guards
+ * [INPUT]: depends on node:fs/promises, vitest, ../../../src/seo/routes, ./headersPolicy, and ./index
+ * [OUTPUT]: unit tests verifying byte-for-byte parity with public/_headers, 120-route SSG alignment with src/seo/routes.ts, cf.cacheEverything origin fetch options, CDN-Cache-Control, COOP, unknown-route X-Robots-Tag crawl hygiene, /_telemetry/health, D1 rollup upsert, and security guards
  * [POS]: deterministic Vitest suite for workers/telemetry/src
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
 import { readFile } from 'node:fs/promises'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { EDGE_SECURITY_HEADERS, resolveEdgeCacheControl } from './headersPolicy'
+import { ALL_ROUTES } from '../../../src/seo/routes'
+import {
+  EDGE_SECURITY_HEADERS,
+  isKnownSsgHtmlPath,
+  isUnknownNonAssetPath,
+  resolveEdgeCacheControl,
+  resolveEdgeCacheTtlSeconds,
+  resolveEdgeCdnCacheControl,
+} from './headersPolicy'
 import worker, { sanitizeEdgeDimension } from './index'
 
 function parsePublicHeadersFile(content: string): Record<string, Record<string, string>> {
@@ -29,12 +37,12 @@ function parsePublicHeadersFile(content: string): Record<string, Record<string, 
   return blocks
 }
 
-describe('moklu-telemetry edge worker & CSP header parity', () => {
+describe('moklu-telemetry edge worker, cache policy & CSP header parity', () => {
   afterEach(() => {
     vi.restoreAllMocks()
   })
 
-  it('stays byte-for-byte synchronized with public/_headers security & cache rules', async () => {
+  it('stays byte-for-byte synchronized with public/_headers security, Cache-Control, and CDN-Cache-Control rules', async () => {
     const raw = await readFile('public/_headers', 'utf8')
     const blocks = parsePublicHeadersFile(raw)
     const globalHeaders = blocks['/*']
@@ -42,37 +50,202 @@ describe('moklu-telemetry edge worker & CSP header parity', () => {
     for (const [name, value] of Object.entries(EDGE_SECURITY_HEADERS)) {
       expect(globalHeaders[name]).toBe(value)
     }
-    expect(resolveEdgeCacheControl('/', 200)).toBe(blocks['/']['Cache-Control'])
-    expect(resolveEdgeCacheControl('/index.html', 200)).toBe(blocks['/index.html']['Cache-Control'])
-    expect(resolveEdgeCacheControl('/healthz.txt', 200)).toBe(blocks['/healthz.txt']['Cache-Control'])
-    expect(resolveEdgeCacheControl('/assets/index-abc.js', 200)).toBe(blocks['/assets/*']['Cache-Control'])
+    expect(EDGE_SECURITY_HEADERS['Cross-Origin-Opener-Policy']).toBe('same-origin-allow-popups')
+    expect(globalHeaders['Cache-Control']).toBe('public, no-cache')
+
+    const mirroredPaths: Array<[string, string]> = [
+      ['/', '/'],
+      ['/index.html', '/index.html'],
+      ['/healthz.txt', '/healthz.txt'],
+      ['/healthz', '/healthz'],
+      ['/healthz/', '/healthz/'],
+      ['/healthz/index.html', '/healthz/index.html'],
+      ['/assets/index-abc.js', '/assets/*'],
+      ['/fb6946466b9027e3bbb1506815e0f52e.txt', '/fb6946466b9027e3bbb1506815e0f52e.txt'],
+      ['/logo.svg', '/logo.svg'],
+      ['/logo-light.svg', '/logo-light.svg'],
+      ['/logo-dark.svg', '/logo-dark.svg'],
+      ['/logo-mono.svg', '/logo-mono.svg'],
+      ['/favicon.svg', '/favicon.svg'],
+      ['/apple-touch-icon.png', '/apple-touch-icon.png'],
+      ['/og-image.png', '/og-image.png'],
+      ['/theme-init.js', '/theme-init.js'],
+      ['/sitemap.xml', '/sitemap.xml'],
+      ['/robots.txt', '/robots.txt'],
+      ['/llms.txt', '/llms.txt'],
+      ['/templates/social-card.json', '/templates/*'],
+    ]
+
+    for (const [samplePath, blockKey] of mirroredPaths) {
+      expect(resolveEdgeCacheControl(samplePath, 200)).toBe(blocks[blockKey]['Cache-Control'])
+      expect(resolveEdgeCdnCacheControl(samplePath, 200)).toBe(
+        blocks[blockKey]['CDN-Cache-Control'] ?? null,
+      )
+    }
+
+    expect(blocks['/theme-init.js']['X-Content-Type-Options']).toBe('nosniff')
     expect(resolveEdgeCacheControl('/assets/missing.js', 404)).toBe('no-store')
-    expect(resolveEdgeCacheControl('/fb6946466b9027e3bbb1506815e0f52e.txt', 200)).toBe(
-      blocks['/fb6946466b9027e3bbb1506815e0f52e.txt']['Cache-Control'],
-    )
+    expect(resolveEdgeCdnCacheControl('/assets/missing.js', 404)).toBeNull()
+    expect(resolveEdgeCacheControl('/', 500)).toBe('no-store')
+    expect(resolveEdgeCdnCacheControl('/', 500)).toBeNull()
   })
 
-  it('injects CSP and immutable/no-store Cache-Control onto proxied origin responses', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-      new Response('<!doctype html><html></html>', {
-        status: 200,
-        headers: { 'Content-Type': 'text/html; charset=utf-8' },
-      }),
-    )
+  it('recognizes all 120 localized SSG routes from src/seo/routes.ts with or without trailing slash', () => {
+    expect(ALL_ROUTES).toHaveLength(120)
 
-    const res = await worker.fetch(new Request('https://moklu.app/'), {})
-    expect(fetchSpy).toHaveBeenCalledTimes(1)
-    expect(res.status).toBe(200)
-    expect(res.headers.get('content-security-policy')).toContain("'wasm-unsafe-eval'")
-    expect(res.headers.get('x-frame-options')).toBe('DENY')
-    expect(res.headers.get('x-content-type-options')).toBe('nosniff')
-    expect(res.headers.get('cache-control')).toBe('no-cache, no-store, must-revalidate')
+    for (const route of ALL_ROUTES) {
+      const withSlash = route.path
+      const withoutSlash = withSlash.length > 1 ? withSlash.replace(/\/$/, '') : withSlash
+      for (const candidate of [withSlash, withoutSlash]) {
+        expect(isKnownSsgHtmlPath(candidate)).toBe(true)
+        expect(isUnknownNonAssetPath(candidate)).toBe(false)
+        expect(resolveEdgeCacheControl(candidate, 200)).toBe('public, no-cache')
+        expect(resolveEdgeCdnCacheControl(candidate, 200)).toBe(
+          'public, s-maxage=60, stale-while-revalidate=86400',
+        )
+        expect(resolveEdgeCacheTtlSeconds(candidate)).toBe(60)
+      }
+    }
+
+    expect(isKnownSsgHtmlPath('/studio/unknown-check')).toBe(false)
+    expect(isUnknownNonAssetPath('/studio/unknown-check')).toBe(true)
+    expect(isKnownSsgHtmlPath('/zh//merge-images/')).toBe(false)
+    expect(isUnknownNonAssetPath('/zh//merge-images/')).toBe(true)
+    expect(isUnknownNonAssetPath('/ja/non-existent-tool')).toBe(true)
+    expect(isUnknownNonAssetPath('/assets/index-abc.js')).toBe(false)
+    expect(isUnknownNonAssetPath('/theme-init.js')).toBe(false)
+    expect(isUnknownNonAssetPath('/healthz.txt')).toBe(false)
   })
 
-  it('responds 200 JSON with no-store and CSP on GET /_telemetry/health', async () => {
+  it('proxies known SSG HTML routes with bfcache-safe public, no-cache, CDN-Cache-Control, COOP, and cf.cacheEverything (60s)', async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(
+        async () =>
+          new Response('<!doctype html><html></html>', {
+            status: 200,
+            headers: { 'Content-Type': 'text/html; charset=utf-8' },
+          }),
+      )
+
+    for (const [method, url] of [
+      ['GET', 'https://moklu.app/'],
+      ['HEAD', 'https://moklu.app/zh/merge-images/'],
+      ['GET', 'https://moklu.app/studio/'],
+    ] as const) {
+      const res = await worker.fetch(new Request(url, { method }), {})
+      expect(res.status).toBe(200)
+      expect(res.headers.get('content-security-policy')).toContain("'wasm-unsafe-eval'")
+      expect(res.headers.get('x-frame-options')).toBe('DENY')
+      expect(res.headers.get('x-content-type-options')).toBe('nosniff')
+      expect(res.headers.get('cross-origin-opener-policy')).toBe('same-origin-allow-popups')
+      expect(res.headers.get('cache-control')).toBe('public, no-cache')
+      expect(res.headers.get('cdn-cache-control')).toBe(
+        'public, s-maxage=60, stale-while-revalidate=86400',
+      )
+      expect(res.headers.get('x-robots-tag')).toBeNull()
+    }
+
+    expect(fetchSpy).toHaveBeenCalledTimes(3)
+    for (const call of fetchSpy.mock.calls) {
+      expect(call[1]).toEqual({
+        cf: {
+          cacheEverything: true,
+          cacheTtlByStatus: { '200-299': 60, '404': 0, '500-599': 0 },
+        },
+      })
+    }
+  })
+
+  it('passes path-matched cf.cacheEverything TTLs for /assets/*, /theme-init.js, /sitemap.xml, and IndexNow key', async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async () => new Response('ok', { status: 200 }))
+
+    const cases: Array<{
+      path: string
+      ttl: number
+      cacheControl: string
+      cdnCacheControl: string
+    }> = [
+      {
+        path: '/assets/index-abc123.js',
+        ttl: 31536000,
+        cacheControl: 'public, max-age=31536000, immutable',
+        cdnCacheControl: 'public, max-age=31536000, immutable',
+      },
+      {
+        path: '/theme-init.js',
+        ttl: 3600,
+        cacheControl: 'public, max-age=3600',
+        cdnCacheControl: 'public, s-maxage=3600, stale-while-revalidate=86400',
+      },
+      {
+        path: '/sitemap.xml',
+        ttl: 3600,
+        cacheControl: 'public, max-age=3600',
+        cdnCacheControl: 'public, s-maxage=3600, stale-while-revalidate=86400',
+      },
+      {
+        path: '/fb6946466b9027e3bbb1506815e0f52e.txt',
+        ttl: 86400,
+        cacheControl: 'public, max-age=86400',
+        cdnCacheControl: 'public, s-maxage=86400',
+      },
+    ]
+
+    for (const [idx, testCase] of cases.entries()) {
+      const res = await worker.fetch(new Request(`https://moklu.app${testCase.path}`), {})
+      expect(res.status).toBe(200)
+      expect(res.headers.get('cache-control')).toBe(testCase.cacheControl)
+      expect(res.headers.get('cdn-cache-control')).toBe(testCase.cdnCacheControl)
+      expect(res.headers.get('x-robots-tag')).toBeNull()
+      expect(fetchSpy.mock.calls[idx][1]).toEqual({
+        cf: {
+          cacheEverything: true,
+          cacheTtlByStatus: { '200-299': testCase.ttl, '404': 0, '500-599': 0 },
+        },
+      })
+    }
+  })
+
+  it('preserves 200 SPA fallback on unknown routes with X-Robots-Tag: noindex, follow, Cache-Control: no-store, and no cf.cacheEverything', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
+      async () =>
+        new Response('<!doctype html><html></html>', {
+          status: 200,
+          headers: {
+            'Content-Type': 'text/html; charset=utf-8',
+            'CDN-Cache-Control': 'public, s-maxage=999',
+          },
+        }),
+    )
+
+    const unknownRes = await worker.fetch(new Request('https://moklu.app/studio/unknown-check'), {})
+    expect(unknownRes.status).toBe(200)
+    expect(unknownRes.headers.get('x-robots-tag')).toBe('noindex, follow')
+    expect(unknownRes.headers.get('cache-control')).toBe('no-store')
+    expect(unknownRes.headers.get('cdn-cache-control')).toBeNull()
+    expect(unknownRes.headers.get('cross-origin-opener-policy')).toBe('same-origin-allow-popups')
+    expect(fetchSpy.mock.calls[0]).toHaveLength(1)
+
+    const healthRes = await worker.fetch(new Request('https://moklu.app/healthz.txt'), {})
+    expect(healthRes.status).toBe(200)
+    expect(healthRes.headers.get('cache-control')).toBe('no-store')
+    expect(healthRes.headers.get('cdn-cache-control')).toBeNull()
+    expect(healthRes.headers.get('x-robots-tag')).toBeNull()
+    expect(fetchSpy.mock.calls[1]).toHaveLength(1)
+
+    const postRes = await worker.fetch(new Request('https://moklu.app/', { method: 'POST' }), {})
+    expect(postRes.status).toBe(200)
+    expect(fetchSpy.mock.calls[2]).toHaveLength(1)
+  })
+
+  it('responds 200 JSON with no-store, COOP, and CSP on GET /_telemetry/health', async () => {
     const res = await worker.fetch(new Request('https://moklu.app/_telemetry/health'), {})
     expect(res.status).toBe(200)
     expect(res.headers.get('cache-control')).toBe('no-store')
+    expect(res.headers.get('cross-origin-opener-policy')).toBe('same-origin-allow-popups')
     expect(res.headers.get('content-security-policy')).toContain("default-src 'self'")
     expect(await res.json()).toEqual({
       ok: true,

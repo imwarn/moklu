@@ -7,7 +7,7 @@ Accessible, zero-business-logic Studio UI primitives, dark-surface contrast toke
 - `contextMenu.ts`: Viewport clamping (`CONTEXT_MENU_MARGIN`, `MenuPosition`, `clampMenuPosition`, `placeContextMenu`, `useClampedMenuPosition`) and WAI-ARIA keyboard navigation (`useContextMenuKeyboard`) for floating menus.
 - `FileUploadButton.tsx`: Forward-ref file picker primitive (`FileUploadButton`) supporting button and keyboard/drag-and-drop dropzone variants with automatic input value reset.
 - `InlineEditableLabel.tsx`: Double-click or externally controlled inline-rename primitive (`InlineEditableLabel`) with Enter/Escape/blur commit handling and event propagation isolation.
-- `ModalShell.tsx`: Foundational accessible dialog shell (`ModalShell`) providing focus trapping, Escape dismissal, backdrop click handling, and AA-contrast close button.
+- `ModalShell.tsx`: Foundational accessible dialog shell (`ModalShell`) providing focus trapping, Escape dismissal, backdrop click handling, `overscroll-contain` scroll-chaining containment, and AA-contrast close button.
 - `NumberInput.tsx`: Numeric HTML input wrapper (`NumberInput`) emitting parsed numeric and raw string values via `onValueChange`.
 - `panelA11y.test.tsx`: Vitest accessibility and responsiveness suite verifying ARIA roles, keyboard interactions, AA contrast tokens, Neutral Zinc surface convergence, 3-tone canvas backdrop switcher, and narrow-screen mobile modal/drawer layout classes across Studio UI primitives and panels.
 - `SegmentedControl.tsx`: Accessible segmented option toggle (`SegmentedControl`, `SegmentedOption`) with WCAG AA inactive contrast.

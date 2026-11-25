@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on create from zustand; reads browser localStorage and matchMedia safely
- * [OUTPUT]: exports ThemePreference, ResolvedTheme, THEME_STORAGE_KEY, resolveTheme, readSystemPrefersDark, applyDocumentTheme, and useThemeStore
+ * [INPUT]: depends on create from zustand; reads browser localStorage and matchMedia safely; stays consistent with pre-paint resolution in public/theme-init.js
+ * [OUTPUT]: exports ThemePreference, ResolvedTheme, THEME_STORAGE_KEY, loadStoredThemePreference, resolveTheme, readSystemPrefersDark, applyDocumentTheme, and useThemeStore
  * [POS]: sole theme state store in src/theme; consumed by QuickWorkspace, SiteHeader, and ToolLandingPage while /studio keeps dark canvas chrome
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */

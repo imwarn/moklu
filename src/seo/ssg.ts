@@ -1,7 +1,7 @@
 /**
  * [INPUT]: depends on ResolvedRoute and RouteSlug from ./types.ts; depends on ALL_ROUTES, INFO_ROUTE_DEFINITIONS, LOCALE_CODES, TOOL_ROUTE_DEFINITIONS, buildCanonicalUrl, buildLocalizedPath, getHreflangLinks, getHtmlLang, and getSiteUrl from ./routes.ts; depends on getLocaleBundle, getOgLocale, getRouteCopy, and getUiLabels from ./i18n.ts; depends on MOKLU_GITHUB_URL, buildRouteSchemaList, and serializeJsonLd from ./schema.ts
  * [OUTPUT]: exports escapeHtml, getRouteRelativeHtmlPath, renderStudioSkeleton, renderRouteHtml, generateSitemapXml, generateRobotsTxt, and generateLlmsTxt
- * [POS]: pure, Node-agnostic SSG HTML/XML/Markdown string generator within src/seo, executed at build time by scripts/prerender-seo.mjs with rendered React markup and unit-tested by src/seo/seo.test.ts and src/seo/geo.test.ts
+ * [POS]: pure, Node-agnostic SSG HTML/XML/Markdown string generator within src/seo, emitting full OpenGraph/Twitter image dimensions & alternate locales, Schema.org JSON-LD, and lean per-route lastmod sitemap.xml for scripts/prerender-seo.mjs
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
@@ -89,6 +89,9 @@ function buildHeadTags(route: ResolvedRoute, siteUrl?: string): string {
   const canonicalUrl = buildCanonicalUrl(route.locale, route.slug, base)
   const ogImage = `${base}/og-image.png`
   const ogLocale = getOgLocale(route.locale)
+  const alternateOgLocales = LOCALE_CODES.filter((locale) => locale !== route.locale).map((locale) =>
+    getOgLocale(locale),
+  )
   const hreflangs = getHreflangLinks(route.slug, base)
   const schemas = buildRouteSchemaList(route, base)
 
@@ -104,14 +107,22 @@ function buildHeadTags(route: ResolvedRoute, siteUrl?: string): string {
     '<meta property="og:type" content="website" />',
     '<meta property="og:site_name" content="Moklu" />',
     `<meta property="og:locale" content="${escapeHtml(ogLocale)}" />`,
+    ...alternateOgLocales.map(
+      (altLocale) =>
+        `<meta property="og:locale:alternate" content="${escapeHtml(altLocale)}" data-moklu-seo="og-locale-alt" />`,
+    ),
     `<meta property="og:url" content="${escapeHtml(canonicalUrl)}" />`,
     `<meta property="og:title" content="${escapeHtml(copy.title)}" />`,
     `<meta property="og:description" content="${escapeHtml(copy.metaDescription)}" />`,
     `<meta property="og:image" content="${escapeHtml(ogImage)}" />`,
+    '<meta property="og:image:width" content="1200" />',
+    '<meta property="og:image:height" content="630" />',
+    `<meta property="og:image:alt" content="${escapeHtml(copy.title)}" />`,
     '<meta name="twitter:card" content="summary_large_image" />',
     `<meta name="twitter:title" content="${escapeHtml(copy.title)}" />`,
     `<meta name="twitter:description" content="${escapeHtml(copy.metaDescription)}" />`,
     `<meta name="twitter:image" content="${escapeHtml(ogImage)}" />`,
+    `<meta name="twitter:image:alt" content="${escapeHtml(copy.title)}" />`,
     ...schemas.map(
       (schema) =>
         `<script type="application/ld+json" data-moklu-seo="jsonld">${serializeJsonLd(schema)}</script>`,
@@ -156,12 +167,16 @@ export function renderRouteHtml(
 
 export function generateSitemapXml(
   siteUrl?: string,
-  lastmod = new Date().toISOString().slice(0, 10),
+  lastmod: string | ReadonlyMap<string, string> = new Date().toISOString().slice(0, 10),
 ): string {
   const base = getSiteUrl(siteUrl)
+  const fallbackLastmod =
+    typeof lastmod === 'string' ? lastmod : new Date().toISOString().slice(0, 10)
 
   const urlNodes = ALL_ROUTES.map((route) => {
     const loc = buildCanonicalUrl(route.locale, route.slug, base)
+    const routeLastmod =
+      typeof lastmod === 'string' ? lastmod : (lastmod.get(route.path) ?? fallbackLastmod)
     const alternates = getHreflangLinks(route.slug, base)
       .map(
         (alt) =>
@@ -172,9 +187,7 @@ export function generateSitemapXml(
     return [
       '  <url>',
       `    <loc>${escapeHtml(loc)}</loc>`,
-      `    <lastmod>${escapeHtml(lastmod)}</lastmod>`,
-      '    <changefreq>weekly</changefreq>',
-      `    <priority>${route.priority.toFixed(2)}</priority>`,
+      `    <lastmod>${escapeHtml(routeLastmod)}</lastmod>`,
       alternates,
       '  </url>',
     ].join('\n')

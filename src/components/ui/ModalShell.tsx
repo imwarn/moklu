@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on useEffect, useRef, CSSProperties, and ReactNode from react; depends on STUDIO_TEXT_MUTED_CLS from ./studioTokens
- * [OUTPUT]: exports accessible ModalShell dialog component with focus trapping, Escape dismissal, and AA-compliant close button contrast
+ * [OUTPUT]: exports accessible ModalShell dialog component with focus trapping, Escape dismissal, overscroll scroll-chaining containment, and AA-compliant close button contrast
  * [POS]: foundational modal shell inside src/components/ui used by Studio modals and landing PricingModal
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -115,8 +115,8 @@ export function ModalShell({
   footer,
   header,
   maxWidth = 'max-w-2xl',
-  backdropClassName = 'fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 backdrop-blur-sm',
-  panelClassName = 'relative rounded-2xl border shadow-2xl w-full max-h-[90dvh] flex flex-col overflow-hidden',
+  backdropClassName = 'fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 backdrop-blur-sm overscroll-contain',
+  panelClassName = 'relative rounded-2xl border shadow-2xl w-full max-h-[90dvh] flex flex-col overflow-hidden overscroll-contain',
   headerClassName = 'px-4 sm:px-5 py-3.5 sm:py-4 pr-12 border-b border-[rgba(255,255,255,0.06)] shrink-0',
   bodyClassName,
   footerClassName,

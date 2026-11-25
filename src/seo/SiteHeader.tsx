@@ -1,7 +1,7 @@
 /**
  * [INPUT]: depends on useEffect, useRef, useState from react; depends on ResolvedRoute from ./types.ts; depends on PRIMARY_TOOL_SLUGS, buildLocalizedPath, and getHreflangCode from ./routes.ts; depends on SUPPORTED_LOCALES and getUiLabels from ./i18n.ts; depends on NAV_TOOL_ORDER, handleSpaLinkClick, and isToolNavActive from ./navHelpers.ts
  * [OUTPUT]: exports SiteHeader component and SiteHeaderProps type
- * [POS]: top-level semantic site navigation bar within src/seo, rendering skip-to-content link, crawlable tool category nav, accessible mobile drawer, 4-locale switcher, theme toggle, Pro CTA, and Studio link
+ * [POS]: top-level semantic site navigation bar within src/seo, rendering skip-to-content link, crawlable tool category nav (exact-URL aria-current="page" separated from category pill highlight), accessible mobile drawer, 4-locale switcher, theme toggle, Pro CTA, and Studio link
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
@@ -144,7 +144,7 @@ export function SiteHeader({
                 <a
                   key={toolId}
                   href={href}
-                  aria-current={isActive ? 'page' : undefined}
+                  aria-current={route.slug === targetSlug ? 'page' : undefined}
                   onClick={(event) => handleSpaLinkClick(event, href, onNavigate)}
                   className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                     isActive
@@ -349,13 +349,14 @@ export function SiteHeader({
         >
           <div className="grid grid-cols-1 gap-1.5 min-[360px]:grid-cols-2">
             {NAV_TOOL_ORDER.map((toolId) => {
-              const href = buildLocalizedPath(route.locale, PRIMARY_TOOL_SLUGS[toolId])
+              const targetSlug = PRIMARY_TOOL_SLUGS[toolId]
+              const href = buildLocalizedPath(route.locale, targetSlug)
               const isActive = isToolNavActive(route, toolId)
               return (
                 <a
                   key={toolId}
                   href={href}
-                  aria-current={isActive ? 'page' : undefined}
+                  aria-current={route.slug === targetSlug ? 'page' : undefined}
                   onClick={(event) => {
                     setMobileOpen(false)
                     handleSpaLinkClick(event, href, onNavigate)

@@ -1,14 +1,10 @@
 /**
- * [INPUT]: depends on WorkspaceLocale and WorkspaceToolId from ./types; depends on EN, ZH, JA, KO dictionaries from ./locales/*
- * [OUTPUT]: exports WorkspaceStrings interface and getWorkspaceStrings(locale) for EN, ZH, JA, KO
- * [POS]: self-contained 4-language UI dictionary facade for src/workspace; enables standalone compilation without src/seo
+ * [INPUT]: depends on WorkspaceLocale, WorkspaceQuickTheme, and WorkspaceToolId from ./types; dynamically imports ./locales/{en,zh,ja,ko} on demand (with automatic top-level eager preload in SSR, Node, and Vitest)
+ * [OUTPUT]: exports WorkspaceStrings interface, hasWorkspaceLocale, preloadWorkspaceLocale, preloadAllWorkspaceLocales, and getWorkspaceStrings(locale) for EN, ZH, JA, KO
+ * [POS]: self-contained code-split 4-language UI dictionary registry for src/workspace; enables standalone compilation without src/seo
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 import type { WorkspaceLocale, WorkspaceQuickTheme, WorkspaceToolId } from './types'
-import { EN } from './locales/en'
-import { JA } from './locales/ja'
-import { KO } from './locales/ko'
-import { ZH } from './locales/zh'
 
 export interface WorkspaceStrings {
   tabs: Record<WorkspaceToolId, { label: string; short: string; description: string }>
@@ -241,8 +237,68 @@ export interface WorkspaceStrings {
   }
 }
 
-const DICTIONARIES: Record<WorkspaceLocale, WorkspaceStrings> = { en: EN, zh: ZH, ja: JA, ko: KO }
+const ALL_WORKSPACE_LOCALES: readonly WorkspaceLocale[] = ['en', 'zh', 'ja', 'ko']
+
+const workspaceLocaleRegistry = new Map<WorkspaceLocale, WorkspaceStrings>()
+const pendingWorkspaceLocaleLoads = new Map<WorkspaceLocale, Promise<WorkspaceStrings>>()
+
+function importWorkspaceLocale(locale: WorkspaceLocale): Promise<WorkspaceStrings> {
+  switch (locale) {
+    case 'zh':
+      return import('./locales/zh').then((m) => m.ZH)
+    case 'ja':
+      return import('./locales/ja').then((m) => m.JA)
+    case 'ko':
+      return import('./locales/ko').then((m) => m.KO)
+    case 'en':
+    default:
+      return import('./locales/en').then((m) => m.EN)
+  }
+}
+
+export function hasWorkspaceLocale(locale: WorkspaceLocale): boolean {
+  return workspaceLocaleRegistry.has(locale)
+}
+
+export function preloadWorkspaceLocale(locale: WorkspaceLocale): Promise<WorkspaceStrings> {
+  const cached = workspaceLocaleRegistry.get(locale)
+  if (cached) return Promise.resolve(cached)
+
+  const pending = pendingWorkspaceLocaleLoads.get(locale)
+  if (pending) return pending
+
+  const promise = importWorkspaceLocale(locale)
+    .then((strings) => {
+      workspaceLocaleRegistry.set(locale, strings)
+      return strings
+    })
+    .finally(() => {
+      pendingWorkspaceLocaleLoads.delete(locale)
+    })
+
+  pendingWorkspaceLocaleLoads.set(locale, promise)
+  return promise
+}
+
+export async function preloadAllWorkspaceLocales(): Promise<void> {
+  await Promise.all(ALL_WORKSPACE_LOCALES.map((locale) => preloadWorkspaceLocale(locale)))
+}
+
+// Eagerly register all 4 locales in Node, Vite SSR, and Vitest; Rolldown
+// dead-code-eliminates this branch (and its top-level await) in client builds.
+if (typeof import.meta.env === 'undefined' || import.meta.env.SSR || import.meta.env.MODE === 'test') {
+  await preloadAllWorkspaceLocales()
+}
 
 export function getWorkspaceStrings(locale: WorkspaceLocale): WorkspaceStrings {
-  return DICTIONARIES[locale] ?? EN
+  const strings =
+    workspaceLocaleRegistry.get(locale) ??
+    workspaceLocaleRegistry.get('en') ??
+    workspaceLocaleRegistry.values().next().value
+  if (!strings) {
+    throw new Error(
+      `Workspace locale "${locale}" is not loaded yet. Call preloadWorkspaceLocale("${locale}") before rendering.`,
+    )
+  }
+  return strings
 }

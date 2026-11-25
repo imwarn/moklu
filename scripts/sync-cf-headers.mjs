@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on node:fs/promises, node:os, node:path; reads public/_headers and local Wrangler OAuth config or CLOUDFLARE_API_TOKEN
- * [OUTPUT]: CLI script syncing public/_headers /* security & CSP response headers to moklu.app Cloudflare http_response_headers_transform phase ruleset
+ * [OUTPUT]: CLI script syncing public/_headers /* security, COOP, and CSP response headers to moklu.app Cloudflare http_response_headers_transform phase ruleset
  * [POS]: zero-drift edge security-header deployment tool inside scripts/ keeping Cloudflare Transform Rules aligned with public/_headers
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -15,6 +15,7 @@ const SYNCED_HEADER_NAMES = [
   'X-Content-Type-Options',
   'Referrer-Policy',
   'X-Frame-Options',
+  'Cross-Origin-Opener-Policy',
   'Permissions-Policy',
 ]
 

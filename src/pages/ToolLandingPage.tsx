@@ -1,7 +1,7 @@
 /**
- * [INPUT]: depends on react (Suspense, lazy, useCallback, useEffect, useLayoutEffect, useMemo, useState), src/seo (InfoPageContent, SiteHeader, SeoLandingSections, SiteFooter, useSeoHead, getRouteCopy, buildLocalizedPath, ResolvedRoute), src/workspace (QuickWorkspace, StudioHandoffPayload), src/workspace/engineAdapter (createToolsWorkspaceEngines), dynamic import of @/bridge/studioHandoff (stageImagesIntoStudioAfterBootstrap), src/commercial/entitlements (isEffectivePro, useEntitlementStore), lazy-loaded @/commercial/PricingModal, src/theme/themeStore (applyDocumentTheme, useThemeStore), trackFunnelEvent from @/utils/telemetry, and PhoneModel from @/types
+ * [INPUT]: depends on react (Suspense, lazy, useCallback, useEffect, useLayoutEffect, useMemo, useState), src/seo (InfoPageContent, SiteHeader, SeoLandingSections, SiteFooter, useSeoHead, getRouteCopy, buildLocalizedPath, ResolvedRoute), QuickWorkspace from @/workspace/QuickWorkspace, StudioHandoffPayload from @/workspace/types, lazy createToolsWorkspaceEngines from @/workspace/engineAdapter, dynamic import of @/bridge/studioHandoff (stageImagesIntoStudioAfterBootstrap), src/commercial/entitlements (isEffectivePro, useEntitlementStore), lazy-loaded @/commercial/PricingModal, src/theme/themeStore (applyDocumentTheme, useThemeStore), trackFunnelEvent from @/utils/telemetry, and PhoneModel from @/types
  * [OUTPUT]: exports ToolLandingPage component rendering the zero-splash above-the-fold QuickWorkspace (or editorial InfoPageContent on /about, /privacy, /terms), localized SEO sections, pre-paint adaptive Light/Dark chrome sync, funnel telemetry, on-demand PricingModal, and lazy Studio handoff
- * [POS]: primary landing page in src/pages; serves '/', all SEO tool routes, and /about, /privacy, /terms across en/zh/ja/ko without loading Konva or Studio stores
+ * [POS]: primary landing page in src/pages; serves '/', all SEO tool routes, and /about, /privacy, /terms across en/zh/ja/ko without loading Konva, Studio stores, unused tool panels, or unused canvas engines
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 import { Suspense, lazy, useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
@@ -19,8 +19,9 @@ import {
 import { applyDocumentTheme, useThemeStore } from '@/theme/themeStore'
 import type { PhoneModel } from '@/types'
 import { trackFunnelEvent } from '@/utils/telemetry'
-import { QuickWorkspace, type StudioHandoffPayload as WorkspaceHandoffPayload } from '@/workspace'
+import { QuickWorkspace } from '@/workspace/QuickWorkspace'
 import { createToolsWorkspaceEngines } from '@/workspace/engineAdapter'
+import type { StudioHandoffPayload as WorkspaceHandoffPayload } from '@/workspace/types'
 
 const PricingModal = lazy(() =>
   import('@/commercial/PricingModal').then((m) => ({ default: m.PricingModal })),

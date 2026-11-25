@@ -1,5 +1,5 @@
 /**
- * [INPUT]: depends on canvas & geometry helpers from ./canvasHelpers, single- and multi-page PDF builders from ./pdfHelper, vertical overlap detector & seam override resolver from ./stitchOverlap, and Merge* types from ./types
+ * [INPUT]: depends on canvas & geometry helpers from ./canvasHelpers, single- and multi-page PDF builders from ./pdfHelper, async main-thread-yielding vertical overlap detector & seam override resolver from ./stitchOverlap, and Merge* types from ./types
  * [OUTPUT]: exports computeMergeLayout and mergeImages for horizontal, vertical (with automatic overlap removal and per-seam manual overrides), and grid collages with cross-axis alignment, per-item 90deg rotation, per-image border strokes, and PNG/JPEG/WebP/single-or-multipage PDF export
  * [POS]: image stitching and collage composition engine within src/tools
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
@@ -23,7 +23,7 @@ import {
   createSinglePagePdfFromJpeg,
   type MultiPagePdfPageInput,
 } from './pdfHelper'
-import { applySeamOverlapOverrides, detectVerticalStitchOverlaps } from './stitchOverlap'
+import { applySeamOverlapOverrides, detectVerticalStitchOverlapsAsync } from './stitchOverlap'
 import type {
   CanvasContextLike,
   GridCellAspect,
@@ -416,7 +416,7 @@ export async function mergeImages(
   const isPdf = format === 'application/pdf'
   const overlapPlan =
     options.mode === 'vertical' && options.removeOverlap && items.length >= 2
-      ? detectVerticalStitchOverlaps(items, {
+      ? await detectVerticalStitchOverlapsAsync(items, {
           itemRotations: options.itemRotations,
           createCanvas: options.createCanvas,
         })

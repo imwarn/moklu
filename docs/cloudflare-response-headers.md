@@ -92,48 +92,53 @@ Moklu 的 Coolify Resource 为 **Application / Railpack（或历史 Nixpacks）/
    - Coolify 已部署新版后，设 `include_acceptance=true`、`require_csp=false`：加入 UI-01/02/03/04/05/07 等修复验收。**旧版线上站点不应运行这个门禁**。
 4. 不要将本地 `serve-headers` 的 CSP 测试通过，解释为 `moklu.app` 的 CSP 已上线。
 
-### 阶段 B：启用安全头（优先在 Cloudflare 边缘配置）
+### 阶段 B：启用安全头（Worker 边缘主执行 + Transform Rules 单一真相源说明）
 
-已完成 `npx wrangler login`（或配置 `CLOUDFLARE_API_TOKEN`）时，可直接运行仓库内置的零漂移同步脚本，将 `public/_headers` 的 `/*` 安全与 CSP 规则一键同步至 Cloudflare 边缘 **Response Header Transform Rule**（规则引用名 `moklu_security_headers`）：
+`public/_headers` 是仓库内唯一的响应头真相源，在线上按以下分层协同生效，避免重复定义或相互覆盖：
+
+1. **主执行层（`workers/telemetry` Edge Worker，路由 `moklu.app/*`）**：`workers/telemetry/src/headersPolicy.ts` 与 `public/_headers` 保持逐字节一致（由 `workers/telemetry/src/index.test.ts` 机械门禁校验），负责在 Coolify 源站前方统一注入 `Content-Security-Policy`、`Cross-Origin-Opener-Policy`、`X-Frame-Options`、`X-Content-Type-Options`、`Referrer-Policy`、`Permissions-Policy`，同时执行按路径分层的 `Cache-Control`、`CDN-Cache-Control`、`cf.cacheEverything` 边缘缓存以及未知非静态路径的 `X-Robots-Tag: noindex, follow` 抓取卫生策略。
+2. **补充/兜底层（Cloudflare Response Header Transform Rule，`scripts/sync-cf-headers.mjs`）**：当已完成 `npx wrangler login`（或配置 `CLOUDFLARE_API_TOKEN`）时，可运行零漂移同步脚本，将 `public/_headers` 的 `/*` 安全头（含 `Cross-Origin-Opener-Policy` 与 `Content-Security-Policy`）同步至 `moklu.app` 的 `http_response_headers_transform` 规则集（规则引用名 `moklu_security_headers`），作为 Worker 停用或旁路时的边缘安全头兜底。两者读取同一份 `public/_headers` 定义，**使用 `set` 覆写同名头而非叠加多个冲突 CSP**。
 
 ```bash
-npm run cf:sync-headers -- --dry-run   # 预览将同步的响应头
+npm run cf:sync-headers -- --dry-run   # 预览将同步的响应头（含 COOP 与 CSP）
 npm run cf:sync-headers                # 同步至 moklu.app 边缘规则集
-curl -sSI https://moklu.app/ | grep -i content-security-policy
+curl -sSI https://moklu.app/ | grep -iE 'content-security-policy|cross-origin-opener-policy|cache-control|cdn-cache-control'
 ```
 
 如果需要通过 Cloudflare Dashboard 手动核对，该脚本等价于为该域名创建 **Rules → Transform Rules → Modify Response Header**：
 
 - 匹配条件为 `http.host eq "moklu.app"`，而不是误影响其他项目域名；
-- 选择 **Set static**，按 `public/_headers` 中 `/*` 规则逐条填写 `X-Content-Type-Options`、`Referrer-Policy`、`X-Frame-Options`、`Permissions-Policy` 和 **完整** `Content-Security-Policy`；
+- 选择 **Set static**，按 `public/_headers` 中 `/*` 规则逐条填写 `X-Content-Type-Options`、`Referrer-Policy`、`X-Frame-Options`、`Cross-Origin-Opener-Policy`、`Permissions-Policy` 和 **完整** `Content-Security-Policy`；
 - 复制 **完整 CSP**，保存后用 `curl -sSI https://moklu.app/` 检查返回值，不要只相信控制台已保存；验证是否出现截断、重复 CSP 或其他规则覆盖；
-- 若当前 Cloudflare 套餐、权限或规则限制不允许配置完整 CSP，请改为**在应用自身静态服务器配置响应头**，而不是放宽 CSP 以掩盖限制。不同计划的额度和长度限制以 Dashboard 的校验及真实响应为准。
+- 若当前 Cloudflare 套餐、权限或规则限制不允许配置完整 CSP，请改为**通过 `workers/telemetry` Worker 或应用自身静态服务器配置响应头**，而不是放宽 CSP 以掩盖限制。不同计划的额度和长度限制以 Dashboard 的校验及真实响应为准。
 
 注意：不要同时在 Cloudflare 和 Coolify 源站设置互相冲突的 CSP；多个 CSP 响应头会同时被浏览器执行，不是“后者覆盖前者”。
 
-**不使用 Cloudflare Transform Rules 时：** 需要通过 Coolify 的 Dockerfile / 自定义构建配置，让**应用容器内**的 nginx 在 HTTP `80` 端口附加安全头；HTTPS 终止仍由 Coolify 反向代理处理。应保留实际正在运行的 SPA `try_files ... /index.html` 路由，以及现有 `root` 和代理端口。不要直接照抄示例中的 `/var/www/moklu/dist` 或假设存在 `/etc/nginx/snippets/moklu-headers.conf`。如果想用 `include`，必须在镜像里**先创建**对应片段文件，并在带 `add_header` 的每个 `location` 中包含它（nginx 的 `add_header` 存在继承陷阱）。修改后在容器中执行 `nginx -t`，再进行部署/重启；不要直接修改 Coolify 管理的宿主代理。
+**不使用 Cloudflare Worker / Transform Rules 时：** 需要通过 Coolify 的 Dockerfile / 自定义构建配置，让**应用容器内**的 nginx 在 HTTP `80` 端口附加安全头；HTTPS 终止仍由 Coolify 反向代理处理。应保留实际正在运行的 SPA `try_files ... /index.html` 路由，以及现有 `root` 和代理端口。不要直接照抄示例中的 `/var/www/moklu/dist` 或假设存在 `/etc/nginx/snippets/moklu-headers.conf`。如果想用 `include`，必须在镜像里**先创建**对应片段文件，并在带 `add_header` 的每个 `location` 中包含它（nginx 的 `add_header` 存在继承陷阱）。修改后在容器中执行 `nginx -t`，再进行部署/重启；不要直接修改 Coolify 管理的宿主代理。
 
 #### 接入 Cloudflare Web Analytics 时的边缘头同步要求
 
-启用 Cloudflare Web Analytics（详见 [`docs/analytics.md`](./analytics.md)）后，无论是通过 Cloudflare Dashboard **自动注入**还是构建期环境变量 `VITE_CF_BEACON_TOKEN` **手动注入**，都必须确保线上实际生效的 `Content-Security-Policy`（Cloudflare Transform Rules 或 Coolify 应用容器 nginx）同步包含最小放行集合：
+启用 Cloudflare Web Analytics（详见 [`docs/analytics.md`](./analytics.md)）后，无论是通过 Cloudflare Dashboard **自动注入**还是构建期环境变量 `VITE_CF_BEACON_TOKEN` **手动注入**，都必须确保线上实际生效的 `Content-Security-Policy`（`workers/telemetry` Worker、Cloudflare Transform Rules 或 Coolify 应用容器 nginx）同步包含最小放行集合：
 
 - `script-src` 增加 `https://static.cloudflareinsights.com`（允许加载外部 `beacon.min.js`，不需要放宽 `'unsafe-inline'`）
 - `connect-src` 增加 `https://cloudflareinsights.com`（允许浏览器发送 RUM / PV beacon 请求；若为同域 `/cdn-cgi/rum`，已由 `'self'` 放行）
 
-> 提示：修改 `public/_headers` 后，Coolify / Cloudflare 不会自动同步到线上边缘规则。若线上已启用严格 CSP，请务必同步更新 Cloudflare **Modify Response Header**（或容器 nginx）中的 `Content-Security-Policy` 值，再用 `curl -sSI https://moklu.app/` 与浏览器 DevTools 确认零 `securitypolicyviolation`。
+> 提示：修改 `public/_headers` 后，Coolify / Cloudflare 不会自动同步到线上边缘规则。若修改了安全头或缓存规则，请同步部署 `workers/telemetry`（并按需执行 `npm run cf:sync-headers`），再用 `curl -sSI https://moklu.app/` 与浏览器 DevTools 确认零 `securitypolicyviolation`。
 
-### 阶段 C：缓存与 HSTS
+### 阶段 C：浏览器 bfcache、Cloudflare 边缘缓存（`CDN-Cache-Control` + `cf.cacheEverything`）与 HSTS
 
-优先通过应用静态服务器或 Cloudflare Cache Rules 配置下面的浏览器缓存策略，**重新请求验证实际生效结果**：
+Moklu 采用「浏览器条件重验证 + Cloudflare 边缘短缓存 + 未知路由防软 404」三层缓存架构（由 `public/_headers` 声明并由 `workers/telemetry` 在边缘强制执行），彻底消除 HTML `no-store` 破坏浏览器 Back-Forward Cache（bfcache）以及 `cf-cache-status: DYNAMIC` 每次穿透源站的问题：
 
-| 路径 | 目标响应 |
-| --- | --- |
-| `/` 和 `/index.html` | `Cache-Control: no-cache, no-store, must-revalidate`，HTML 不做过期的边缘缓存 |
-| `/healthz.txt`、`/healthz`、`/healthz/`、`/healthz/index.html` | `Cache-Control: no-store`，轻量健康检查端点禁止任何代理/CDN 缓存 |
-| `/assets/*`（带内容哈希） | `Cache-Control: public, max-age=31536000, immutable` |
-| `/logo.svg` 等不带哈希的素材 | 短 TTL，如 `max-age=3600` |
+| 路径 | `Cache-Control`（浏览器） | `CDN-Cache-Control`（边缘） | Worker `cf.cacheEverything` | 额外策略 |
+| --- | --- | --- | --- | --- |
+| 120 条已知多语言 SSG HTML 路由（`/`、`/index.html` 及 `en`/`zh`/`ja`/`ko` × 30 slug，含/不含尾斜杠） | `public, no-cache`（保留 bfcache，同时强制 ETag 重验证防止发布后命中旧资源图） | `public, s-maxage=60, stale-while-revalidate=86400` | `GET`/`HEAD` 开启，`200-299: 60s`、`404/5xx: 0s` | 无 `X-Robots-Tag` |
+| `/assets/*`（内容哈希分包） | `public, max-age=31536000, immutable` | `public, max-age=31536000, immutable` | `GET`/`HEAD` 开启，`200-299: 31536000s` | 4xx/5xx 回退 `no-store` 并移除 `CDN-Cache-Control` |
+| 短 TTL 静态与爬虫文件（`/theme-init.js`、`/sitemap.xml`、`/robots.txt`、`/llms.txt`、`/logo*.svg`、`/favicon.svg`、`/apple-touch-icon.png`、`/og-image.png`、`/templates/*`） | `public, max-age=3600` | `public, s-maxage=3600, stale-while-revalidate=86400` | `GET`/`HEAD` 开启，`200-299: 3600s` | `/theme-init.js` 与 `/logo*.svg` 显式附带 `X-Content-Type-Options: nosniff` |
+| `/fb6946466b9027e3bbb1506815e0f52e.txt`（IndexNow 校验） | `public, max-age=86400` | `public, s-maxage=86400` | `GET`/`HEAD` 开启，`200-299: 86400s` | `X-Content-Type-Options: nosniff` |
+| `/healthz.txt`、`/healthz`、`/healthz/`、`/healthz/index.html`、`_telemetry*` | `no-store` | 移除/不输出 | 关闭（直透源站或 Worker 本地响应） | 禁止代理与 CDN 缓存 |
+| 未知非静态 SPA 回退路径（如 `/studio/unknown-check`、`/ja/non-existent`） | `no-store` | 移除/不输出 | 关闭（不写入边缘缓存） | 保持 HTTP 200 SPA 回退，同时注入 `X-Robots-Tag: noindex, follow` 防止软 404 污染索引 |
 
-Cloudflare 的 **Caching → Configuration → Browser Cache TTL**（或相应 Cache Rule）若覆盖源站缓存头，应调整为尊重源站策略或通过精确路径规则覆盖。修改之后分别验证 HTML 和 hashed 资源，不能只测试首页。
+Cloudflare 的 **Caching → Configuration → Browser Cache TTL** 应保持 **Respect Existing Headers**，避免默认 4 小时 TTL 覆盖源站与 Worker 的精确 `Cache-Control` 策略。上线后分别抽查 `/`、`/zh/merge-images/`、`/assets/index-*.js`、`/theme-init.js`、`/healthz.txt` 与 `/studio/unknown-check` 的响应头。
 
 HSTS 必须在确认目标域名及需要覆盖的子域名都能正常 HTTPS 后分阶段开启：先 `max-age=300`，观察后再扩大；`includeSubDomains` 和 `preload` **不要默认直接启用**。如果通过 Cloudflare 开启 HSTS，可使用 **SSL/TLS → Edge Certificates → HSTS**，具体可用性依你的 Cloudflare 配置为准。
 
@@ -363,9 +368,11 @@ curl -sSI https://moklu.app/studio/unknown-check
 
 - `Content-Security-Policy`（含 `script-src 'self' 'wasm-unsafe-eval' https://static.cloudflareinsights.com` 与受限 `connect-src`）
 - `X-Frame-Options: DENY`（与 CSP `frame-ancestors 'none'` 双重对齐）
+- `Cross-Origin-Opener-Policy: same-origin-allow-popups`（隔离跨源浏览上下文，同时保留合法弹窗与 OAuth/分享窗口互操作）
 - `X-Content-Type-Options: nosniff`
 - `Referrer-Policy: strict-origin-when-cross-origin`
-- `Permissions-Policy: camera=(), microphone=(), geolocation=()`
+- `Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()`
+- 按路径分层的 `Cache-Control`、`CDN-Cache-Control` 及未知非静态路径 `X-Robots-Tag: noindex, follow`
 
 ### 1. `'wasm-unsafe-eval'` 的真实安全边界
 
@@ -376,7 +383,7 @@ curl -sSI https://moklu.app/studio/unknown-check
 
 | 场景 | 表现 | 原因与处理方式 |
 | --- | --- | --- |
-| **Studio 自带 Key（BYOK）填写第三方 `Custom` 中转域名** | 浏览器在发包前直接拦截，`src/ai/client.ts` 给出明确 CSP 提示 | OpenAI / Google Gemini / OpenRouter 官方直连及 **Zero-Key 免 Key 复制粘贴翻译**均正常可用；若团队确需固定自建代理域名，需同步加入 `public/_headers`、`workers/telemetry/src/index.ts` 与 `CSP_CONNECT_ALLOWED_ORIGINS` 并执行 `node scripts/check-headers.mjs` |
+| **Studio 自带 Key（BYOK）填写第三方 `Custom` 中转域名** | 浏览器在发包前直接拦截，`src/ai/client.ts` 给出明确 CSP 提示 | OpenAI / Google Gemini / OpenRouter 官方直连及 **Zero-Key 免 Key 复制粘贴翻译**均正常可用；若团队确需固定自建代理域名，需同步加入 `public/_headers`、`workers/telemetry/src/headersPolicy.ts` 与 `CSP_CONNECT_ALLOWED_ORIGINS` 并执行 `node scripts/check-headers.mjs` |
 | **外部网站通过 `<iframe src="https://moklu.app/...">` 嵌入** | 浏览器拒绝渲染子框架 | `X-Frame-Options: DENY` + `frame-ancestors 'none'` 用于防御点击劫持（防止诱导用户在透明遮罩下处理含敏感信息的截图或证件）；若未来推出官方可嵌入 Widget，应仅为独立子路径（如 `/embed/*`）单独按域名白名单放开 `frame-ancestors` |
 
 > 补充说明：`Permissions-Policy: camera=(), microphone=(), geolocation=()` 仅禁用网页直接调用 `getUserMedia` / `navigator.geolocation` 硬件实时权限，**完全不影响** iOS Safari / Android Chrome 点击上传框时系统原生的「拍照或选择照片」选择器，也不影响本地读取图片二进制 EXIF/GPS 元数据。

@@ -1,11 +1,10 @@
 /**
- * [INPUT]: depends on Tailwind CSS v4 core (`tailwindcss`), `@fontsource-variable/geist`, and `@fontsource-variable/geist-mono`; reads `html[data-theme]` and `html[data-surface]` attributes set by themeStore and SSG
- * [OUTPUT]: provides self-hosted Geist + Geist Mono variable font faces, Tailwind v4 `@custom-variant dark` bound to `data-theme="dark"`, static light/dark Signal Orange + Neutral Zinc design tokens, scrollbar rules, and Studio loader animations
+ * [INPUT]: depends on Tailwind CSS v4 core (`tailwindcss`), `@fontsource-variable/geist`, and `@fontsource-variable/geist-mono`; reads `html[data-theme]` and `html[data-surface]` attributes set by public/theme-init.js, themeStore, and SSG
+ * [OUTPUT]: provides self-hosted Geist (upright) + Geist Mono variable font faces, `font-size-adjust: from-font` fallback normalization, Tailwind v4 `@custom-variant dark` bound to `data-theme="dark"`, root `color-scheme` and `accent-color`, static light/dark Signal Orange + Neutral Zinc design tokens, standard `scrollbar-color` with `@supports` WebKit fallback, and Studio loader animations
  * [POS]: global stylesheet entry imported by src/main.tsx and bundled into all workspace and Studio builds; mirrors hex values in src/theme/brand.ts
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 @import "@fontsource-variable/geist";
-@import "@fontsource-variable/geist/wght-italic.css";
 @import "@fontsource-variable/geist-mono";
 @import "tailwindcss";
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
@@ -33,8 +32,19 @@
   --color-danger: #b91c3c;
 }
 
+:root {
+  color-scheme: light;
+  accent-color: var(--color-accent);
+  --scrollbar-thumb: rgba(24, 24, 27, 0.22);
+  --scrollbar-track: transparent;
+}
+
 html[data-theme="dark"],
 html[data-surface="studio"] {
+  color-scheme: dark;
+  --scrollbar-thumb: rgba(244, 244, 245, 0.16);
+  --scrollbar-track: transparent;
+
   --color-surface: #09090b;
   --color-panel: #141417;
   --color-border: #27272a;
@@ -53,6 +63,11 @@ html[data-surface="studio"] {
 
 * { box-sizing: border-box; }
 
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
 html:not([data-surface="studio"]) {
   scroll-padding-top: 4.5rem;
   scroll-padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
@@ -67,36 +82,37 @@ body {
   background: var(--color-surface);
   color: #18181b;
   font-family: var(--font-sans);
+  font-size-adjust: from-font;
   overflow-y: auto;
-  color-scheme: light;
 }
 
 html[data-theme="dark"] body {
   background: var(--color-surface);
   color: #f4f4f5;
-  color-scheme: dark;
 }
 
 html[data-surface="studio"] body {
   background: var(--color-surface);
   color: #f4f4f5;
   overflow: hidden;
-  color-scheme: dark;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(24, 24, 27, 0.22); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(24, 24, 27, 0.38); }
-html[data-theme="dark"]::-webkit-scrollbar-thumb,
-html[data-theme="dark"] ::-webkit-scrollbar-thumb,
-html[data-surface="studio"]::-webkit-scrollbar-thumb,
-html[data-surface="studio"] ::-webkit-scrollbar-thumb { background: rgba(244, 244, 245, 0.16); }
-html[data-theme="dark"]::-webkit-scrollbar-thumb:hover,
-html[data-theme="dark"] ::-webkit-scrollbar-thumb:hover,
-html[data-surface="studio"]::-webkit-scrollbar-thumb:hover,
-html[data-surface="studio"] ::-webkit-scrollbar-thumb:hover { background: rgba(244, 244, 245, 0.28); }
+/* Legacy WebKit scrollbar fallback when standard scrollbar-color is unsupported */
+@supports not (scrollbar-color: auto) {
+  html { scrollbar-width: auto; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(24, 24, 27, 0.22); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(24, 24, 27, 0.38); }
+  html[data-theme="dark"]::-webkit-scrollbar-thumb,
+  html[data-theme="dark"] ::-webkit-scrollbar-thumb,
+  html[data-surface="studio"]::-webkit-scrollbar-thumb,
+  html[data-surface="studio"] ::-webkit-scrollbar-thumb { background: rgba(244, 244, 245, 0.16); }
+  html[data-theme="dark"]::-webkit-scrollbar-thumb:hover,
+  html[data-theme="dark"] ::-webkit-scrollbar-thumb:hover,
+  html[data-surface="studio"]::-webkit-scrollbar-thumb:hover,
+  html[data-surface="studio"] ::-webkit-scrollbar-thumb:hover { background: rgba(244, 244, 245, 0.28); }
+}
 
 @keyframes moklu-loader-enter {
   from { opacity: 0; transform: translateY(7px); }

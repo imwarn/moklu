@@ -88,9 +88,9 @@ export function isToolNavActive(
   toolId: ToolId,
 ): boolean {
   return (
+    route.slug !== '' &&
     !route.isStudio &&
     !route.isInfoPage &&
-    ((route.slug === '' && toolId === 'mockup') ||
-      (route.slug !== '' && route.tool === toolId))
+    route.tool === toolId
   )
 }

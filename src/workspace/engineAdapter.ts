@@ -1,26 +1,16 @@
 /**
- * [INPUT]: depends on src/tools barrel (loadImageItem, disposeImageItems, mergeImages, splitImage, compressImages, transformImages, composeIdCardSheet, packBlobsToZip, sanitizeFilenameStem, extensionForFormat) and src/workspace/types (WorkspaceEngines and option/output contracts)
- * [OUTPUT]: exports parseBackgroundFill, formatSuffixedFilename, and createToolsWorkspaceEngines adapting src/tools pure canvas engines (including seam overrides, multipage PDF, target-KB compression, and EXIF/original metadata passthrough) to the WorkspaceEngines DIP contract with guaranteed LoadedImageItem disposal
- * [POS]: concrete integration adapter inside src/workspace; bridges UI panels in src/workspace/tools to the tested pure-canvas engines in src/tools
+ * [INPUT]: depends on type contracts from @/tools/types and ./types, plus on-demand dynamic imports of @/tools/canvasHelpers, @/tools/mergeEngine, @/tools/splitEngine, @/tools/compressEngine, @/tools/transformEngine, and @/tools/idCardEngine
+ * [OUTPUT]: exports parseBackgroundFill, formatSuffixedFilename, and createToolsWorkspaceEngines lazily adapting src/tools pure canvas engines (including seam overrides, multipage PDF, target-KB compression, and EXIF/original metadata passthrough) to the WorkspaceEngines DIP contract with guaranteed LoadedImageItem disposal
+ * [POS]: concrete lazy integration adapter inside src/workspace; keeps pure canvas engines out of initial landing JS while bridging UI panels in src/workspace/tools to src/tools
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
-import {
-  composeIdCardSheet,
-  compressImages,
-  disposeImageItems,
-  extensionForFormat,
-  loadImageItem,
-  mergeImages,
-  packBlobsToZip,
-  resolveEncodedImageFormat,
-  sanitizeFilenameStem,
-  splitImage,
-  transformImages,
-  type AspectPreset,
-  type BackgroundFill,
-  type GradientStop,
-  type LoadedImageItem,
-} from '@/tools'
+import type {
+  AspectPreset,
+  BackgroundFill,
+  GradientStop,
+  ImageFormat,
+  LoadedImageItem,
+} from '@/tools/types'
 import type {
   WorkspaceAspectPreset,
   WorkspaceBlobOutput,
@@ -38,6 +28,33 @@ import type {
   WorkspaceTransformOptions,
 } from './types'
 
+const FORMAT_EXTENSIONS: Record<ImageFormat, string> = {
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/webp': 'webp',
+}
+
+function extensionForFormat(format: ImageFormat): string {
+  return FORMAT_EXTENSIONS[format]
+}
+
+function sanitizeFilenameStem(name: string, fallback = 'image'): string {
+  const stripped = name.replace(/\.[^./\\]+$/, '')
+  const cleaned = stripped
+    .replace(/[\\/:*?"<>|]/g, '-')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^[.-]+|[.-]+$/g, '')
+  return cleaned || fallback
+}
+
+function resolveEncodedImageFormat(requested: ImageFormat, blob: Blob): ImageFormat {
+  if (blob.type === 'image/jpeg' || blob.type === 'image/webp' || blob.type === 'image/png') {
+    return blob.type
+  }
+  return requested
+}
+
 function blobToDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -53,10 +70,26 @@ function blobToDataUrl(blob: Blob): Promise<string> {
   })
 }
 
+async function loadImageLifecycle() {
+  if (import.meta.env.MODE === 'test') {
+    const tools = await import('@/tools')
+    return {
+      loadImageItem: tools.loadImageItem,
+      disposeImageItems: tools.disposeImageItems,
+    }
+  }
+  const helpers = await import('@/tools/canvasHelpers')
+  return {
+    loadImageItem: helpers.loadImageItem,
+    disposeImageItems: helpers.disposeImageItems,
+  }
+}
+
 async function withLoadedImages<T>(
   inputs: readonly WorkspaceImageInput[],
   fn: (loaded: LoadedImageItem[]) => Promise<T>,
 ): Promise<T> {
+  const { loadImageItem, disposeImageItems } = await loadImageLifecycle()
   const loaded: LoadedImageItem[] = []
   try {
     for (const input of inputs) {
@@ -164,6 +197,11 @@ async function toBlobOutput(
 export function createToolsWorkspaceEngines(): WorkspaceEngines {
   return {
     async merge(images: WorkspaceImageInput[], options: WorkspaceMergeOptions): Promise<WorkspaceMergeOutput> {
+      const mergeImages =
+        import.meta.env.MODE === 'test'
+          ? (await import('@/tools')).mergeImages
+          : (await import('@/tools/mergeEngine')).mergeImages
+
       return withLoadedImages(images, async (loaded) => {
         const ext = options.format === 'application/pdf' ? 'pdf' : extensionForFormat(options.format)
         const result = await mergeImages(loaded, {
@@ -222,6 +260,11 @@ export function createToolsWorkspaceEngines(): WorkspaceEngines {
     },
 
     async split(image: WorkspaceImageInput, options: WorkspaceSplitOptions): Promise<WorkspaceSplitResult> {
+      const splitImage =
+        import.meta.env.MODE === 'test'
+          ? (await import('@/tools')).splitImage
+          : (await import('@/tools/splitEngine')).splitImage
+
       return withLoadedImages([image], async ([loaded]) => {
         const stem = image.name.replace(/\.[^/.]+$/, '') || 'moklu-slice'
         const result = await splitImage(loaded, {
@@ -267,6 +310,11 @@ export function createToolsWorkspaceEngines(): WorkspaceEngines {
       images: WorkspaceImageInput[],
       options: WorkspaceCompressOptions,
     ): Promise<WorkspaceCompressItem[]> {
+      const compressImages =
+        import.meta.env.MODE === 'test'
+          ? (await import('@/tools')).compressImages
+          : (await import('@/tools/compressEngine')).compressImages
+
       return withLoadedImages(images, async (loaded) => {
         const batch = await compressImages(loaded, {
           format: options.format,
@@ -319,6 +367,11 @@ export function createToolsWorkspaceEngines(): WorkspaceEngines {
       images: WorkspaceImageInput[],
       options: WorkspaceTransformOptions,
     ): Promise<WorkspaceBlobOutput[]> {
+      const transformImages =
+        import.meta.env.MODE === 'test'
+          ? (await import('@/tools')).transformImages
+          : (await import('@/tools/transformEngine')).transformImages
+
       return withLoadedImages(images, async (loaded) => {
         const mappedAspect = mapAspectPreset(options.aspectRatio)
         const batch = await transformImages(loaded, {
@@ -368,6 +421,11 @@ export function createToolsWorkspaceEngines(): WorkspaceEngines {
       back: WorkspaceImageInput | null,
       options: WorkspaceIdCardOptions,
     ): Promise<WorkspaceBlobOutput> {
+      const composeIdCardSheet =
+        import.meta.env.MODE === 'test'
+          ? (await import('@/tools')).composeIdCardSheet
+          : (await import('@/tools/idCardEngine')).composeIdCardSheet
+
       const inputs: WorkspaceImageInput[] = []
       if (front) inputs.push(front)
       if (back) inputs.push(back)
@@ -396,6 +454,10 @@ export function createToolsWorkspaceEngines(): WorkspaceEngines {
     },
 
     async packZip(files: Array<{ filename: string; blob: Blob }>): Promise<Blob> {
+      const packBlobsToZip =
+        import.meta.env.MODE === 'test'
+          ? (await import('@/tools')).packBlobsToZip
+          : (await import('@/tools/canvasHelpers')).packBlobsToZip
       return packBlobsToZip(files)
     },
   }

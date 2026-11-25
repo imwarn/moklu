@@ -1,7 +1,7 @@
 /**
  * [INPUT]: depends on createCanvas and get2dContext from ./canvasHelpers and overlap/canvas types from ./types
- * [OUTPUT]: exports computeRowProfile, detectPairOverlap, extractNormalizedRaster, detectVerticalStitchOverlaps, applySeamOverlapOverrides, and DEFAULT_ANALYSIS_WIDTH
- * [POS]: pure client-side 2D pixel overlap, fixed top/bottom bar detector, and manual seam-override resolver for vertical long-screenshot stitching in src/tools
+ * [OUTPUT]: exports computeRowProfile, detectPairOverlap, extractNormalizedRaster, detectVerticalStitchOverlaps, detectVerticalStitchOverlapsAsync, yieldToMain, applySeamOverlapOverrides, and DEFAULT_ANALYSIS_WIDTH
+ * [POS]: pure client-side 2D pixel overlap, fixed top/bottom bar detector, main-thread yielding async stitch analyzer, and manual seam-override resolver for vertical long-screenshot stitching in src/tools
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
@@ -333,6 +333,45 @@ export function extractNormalizedRaster(
 }
 
 const MIN_REMAINING_HEIGHT_PX = 16
+const LONG_TASK_BUDGET_MS = 50
+
+interface SchedulerWithYield {
+  yield?: () => Promise<void>
+}
+
+interface YieldDeadline {
+  deadline: number
+}
+
+function nowMs(): number {
+  return typeof performance !== 'undefined' && typeof performance.now === 'function'
+    ? performance.now()
+    : Date.now()
+}
+
+/**
+ * Yield control back to the browser main thread so input handling and rendering stay responsive
+ * during multi-frame pixel analysis (INP / break-up-long-tasks). Prefers `scheduler.yield()`
+ * when supported and falls back to `setTimeout(..., 0)` in browsers without it.
+ */
+export function yieldToMain(): Promise<void> {
+  if (typeof window === 'undefined') return Promise.resolve()
+  const sched = (globalThis as { scheduler?: SchedulerWithYield }).scheduler
+  if (typeof sched?.yield === 'function') {
+    return sched.yield()
+  }
+  return new Promise((resolve) => {
+    setTimeout(resolve, 0)
+  })
+}
+
+async function yieldIfOverBudget(budget: YieldDeadline): Promise<void> {
+  if (typeof window === 'undefined') return
+  if (nowMs() >= budget.deadline) {
+    await yieldToMain()
+    budget.deadline = nowMs() + LONG_TASK_BUDGET_MS
+  }
+}
 
 function emptyPlan(count: number): VerticalOverlapPlan {
   const seamCount = Math.max(0, count - 1)
@@ -393,14 +432,14 @@ export function applySeamOverlapOverrides(
   return { trims, seams }
 }
 
-/** Analyze adjacent pairs in a vertical stitch sequence and compute safe per-item pixel trims. */
-export function detectVerticalStitchOverlaps(
+function resolveAnalysisSetup(
   items: ReadonlyArray<LoadedImageItem>,
-  options: VerticalOverlapOptions = {},
-): VerticalOverlapPlan {
-  const count = items.length
-  if (count < 2) return emptyPlan(count)
-
+  options: VerticalOverlapOptions,
+): {
+  rotations: MergeRotation[]
+  sizes: Array<{ width: number; height: number }>
+  sampleWidth: number
+} {
   const rotations: MergeRotation[] = items.map((_, idx) => options.itemRotations?.[idx] ?? 0)
   const sizes = items.map((item, idx) => getEffectiveSize(item.width, item.height, rotations[idx]))
   const maxW = Math.max(16, Math.min(DEFAULT_ANALYSIS_WIDTH, Math.round(options.maxAnalysisWidth ?? DEFAULT_ANALYSIS_WIDTH)))
@@ -412,21 +451,21 @@ export function detectVerticalStitchOverlaps(
     sampleWidth = Math.max(16, Math.floor(MAX_ANALYSIS_HEIGHT / maxAspect))
   }
 
-  const rasters: RgbaRaster[] = []
-  for (let i = 0; i < count; i += 1) {
-    const raster = extractNormalizedRaster(items[i], sampleWidth, rotations[i], options.createCanvas)
-    if (!raster) return emptyPlan(count)
-    rasters.push(raster)
-  }
+  return { rotations, sizes, sampleWidth }
+}
 
+function finalizeVerticalOverlapPlan(
+  sizes: ReadonlyArray<{ width: number; height: number }>,
+  rasters: ReadonlyArray<RgbaRaster>,
+  seams: ReadonlyArray<PairOverlapMatch>,
+): VerticalOverlapPlan {
+  const count = sizes.length
   const trims: VerticalItemTrim[] = Array.from({ length: count }, () => ({ trimTop: 0, trimBottom: 0 }))
-  const seams: PairOverlapMatch[] = []
   const rawFixedTopPx: number[] = []
   const rawFixedBottomPx: number[] = []
 
   for (let i = 0; i < count - 1; i += 1) {
-    const match = detectPairOverlap(rasters[i], rasters[i + 1])
-    seams.push(match)
+    const match = seams[i]
     const fixedBottomPx =
       match.fixedBottom > 0 ? Math.round(match.fixedBottom * (sizes[i].height / rasters[i].height)) : 0
     const fixedTopPx =
@@ -459,5 +498,62 @@ export function detectVerticalStitchOverlaps(
     fixedBottomPx: Math.min(rawFixedBottomPx[i], trims[i].trimBottom),
   }))
 
-  return { trims, seams, seamInfos }
+  return { trims, seams: [...seams], seamInfos }
+}
+
+/** Analyze adjacent pairs in a vertical stitch sequence and compute safe per-item pixel trims. */
+export function detectVerticalStitchOverlaps(
+  items: ReadonlyArray<LoadedImageItem>,
+  options: VerticalOverlapOptions = {},
+): VerticalOverlapPlan {
+  const count = items.length
+  if (count < 2) return emptyPlan(count)
+
+  const { rotations, sizes, sampleWidth } = resolveAnalysisSetup(items, options)
+
+  const rasters: RgbaRaster[] = []
+  for (let i = 0; i < count; i += 1) {
+    const raster = extractNormalizedRaster(items[i], sampleWidth, rotations[i], options.createCanvas)
+    if (!raster) return emptyPlan(count)
+    rasters.push(raster)
+  }
+
+  const seams: PairOverlapMatch[] = []
+  for (let i = 0; i < count - 1; i += 1) {
+    seams.push(detectPairOverlap(rasters[i], rasters[i + 1]))
+  }
+
+  return finalizeVerticalOverlapPlan(sizes, rasters, seams)
+}
+
+/**
+ * Async variant of `detectVerticalStitchOverlaps` that periodically yields to the main thread
+ * (50ms task budget via `scheduler.yield()` / `setTimeout`) between raster extraction and pair
+ * matching so multi-screenshot stitches never trigger INP long-task freezes.
+ */
+export async function detectVerticalStitchOverlapsAsync(
+  items: ReadonlyArray<LoadedImageItem>,
+  options: VerticalOverlapOptions = {},
+): Promise<VerticalOverlapPlan> {
+  const count = items.length
+  if (count < 2) return emptyPlan(count)
+
+  const { rotations, sizes, sampleWidth } = resolveAnalysisSetup(items, options)
+  const budget: YieldDeadline = { deadline: nowMs() + LONG_TASK_BUDGET_MS }
+
+  const rasters: RgbaRaster[] = []
+  for (let i = 0; i < count; i += 1) {
+    await yieldIfOverBudget(budget)
+    const raster = extractNormalizedRaster(items[i], sampleWidth, rotations[i], options.createCanvas)
+    if (!raster) return emptyPlan(count)
+    rasters.push(raster)
+  }
+
+  const seams: PairOverlapMatch[] = []
+  for (let i = 0; i < count - 1; i += 1) {
+    await yieldIfOverBudget(budget)
+    seams.push(detectPairOverlap(rasters[i], rasters[i + 1]))
+  }
+
+  return finalizeVerticalOverlapPlan(sizes, rasters, seams)
 }

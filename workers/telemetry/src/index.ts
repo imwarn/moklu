@@ -1,11 +1,15 @@
 /**
- * [INPUT]: depends on WinterCG Fetch API, Cloudflare D1Database interface, and ./headersPolicy
+ * [INPUT]: depends on WinterCG Fetch API, Cloudflare D1Database interface, and ./headersPolicy (EDGE_SECURITY_HEADERS, applyMokluEdgeHeaders, resolveEdgeCacheTtlSeconds)
  * [OUTPUT]: exports D1DatabaseLike, TelemetryWorkerEnv, ExecutionContextLike, ALLOWED_FUNNEL_EVENTS, sanitizeEdgeDimension, and default Worker fetch handler
- * [POS]: edge entry point of workers/telemetry; serves moklu.app/_telemetry* zero-PII D1 funnel ingestion AND attaches public/_headers CSP & cache headers onto proxied Coolify origin responses
+ * [POS]: edge entry point of workers/telemetry; serves moklu.app/_telemetry* zero-PII D1 funnel ingestion AND proxies Coolify origin responses with Cloudflare cf.cacheEverything edge caching, public/_headers CSP/COOP, CDN-Cache-Control, and unknown-route noindex hygiene
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
-import { EDGE_SECURITY_HEADERS, applyMokluEdgeHeaders } from './headersPolicy'
+import {
+  EDGE_SECURITY_HEADERS,
+  applyMokluEdgeHeaders,
+  resolveEdgeCacheTtlSeconds,
+} from './headersPolicy'
 
 export interface D1PreparedStatementLike {
   bind: (...values: unknown[]) => {
@@ -30,7 +34,13 @@ interface CfRequestMetadata {
   country?: string
 }
 
+interface CfFetchCacheOptions {
+  cacheEverything: true
+  cacheTtlByStatus: Record<string, number>
+}
+
 type EdgeRequest = Request & { cf?: CfRequestMetadata }
+type CfRequestInit = RequestInit & { cf?: CfFetchCacheOptions }
 
 export const ALLOWED_FUNNEL_EVENTS = new Set<string>([
   'tool_view',
@@ -222,7 +232,24 @@ export default {
       return handleTelemetryEndpoint(request, env, ctx)
     }
 
-    const upstream = await fetch(request)
+    const method = request.method.toUpperCase()
+    const edgeCacheTtl =
+      method === 'GET' || method === 'HEAD' ? resolveEdgeCacheTtlSeconds(url.pathname) : null
+
+    const upstream =
+      edgeCacheTtl !== null
+        ? await fetch(request, {
+            cf: {
+              cacheEverything: true,
+              cacheTtlByStatus: {
+                '200-299': edgeCacheTtl,
+                '404': 0,
+                '500-599': 0,
+              },
+            },
+          } as CfRequestInit)
+        : await fetch(request)
+
     return applyMokluEdgeHeaders(upstream, url.pathname)
   },
 }

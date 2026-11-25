@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on vitest, node:fs/promises, node:path, react, react-dom/server, src/seo/* exports, and @/i18n getStudioDictionary
- * [OUTPUT]: automated GEO verification suite covering llms.txt non-HTML contract, native <details>/<summary> FAQ DOM parity, 9 Merge FAQs, Quick Facts & capability boundaries, /about /privacy /terms pages, Organization/WebSite/BreadcrumbList JSON-LD, zh-CN/zh-Hans tags, /merge-photos-to-pdf preset, and cross-file em-dash bans
+ * [OUTPUT]: automated GEO verification suite covering llms.txt non-HTML contract, native <details>/<summary> FAQ DOM parity, 9 Merge FAQs, Quick Facts & capability boundaries, /about /privacy /terms pages with visible breadcrumbs, route-archetype JSON-LD compliance, zh-CN/zh-Hans tags, /merge-photos-to-pdf preset, and cross-file em-dash bans
  * [POS]: dedicated GEO and E-E-A-T regression test suite within src/seo alongside seo.test.ts
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -148,6 +148,8 @@ describe('GEO deliverables: llms.txt, native details FAQ, Quick Facts, trust pag
         const markup = renderRouteMarkup(route)
         const copy = getRouteCopy(locale, slug)
         expect(markup).toContain(escapeHtml(copy.h1))
+        expect(markup).toContain('aria-label="Breadcrumbs"')
+        expect(markup).toContain(`href="${route.path}" aria-current="page"`)
         expect(markup).toContain(MOKLU_GITHUB_URL)
         expect(markup).toContain('<details')
         expect(markup).not.toContain('data-testid="quick-workspace"')
@@ -177,6 +179,27 @@ describe('GEO deliverables: llms.txt, native details FAQ, Quick Facts, trust pag
     expect(schemas.breadcrumbList.itemListElement[1].item).toBe('https://moklu.app/zh/merge-images/')
     expect(schemas.webApplication.applicationCategory).toBe('MultimediaApplication')
     expect(schemas.webApplication.inLanguage).toBe('zh-CN')
+
+    // Route-archetype compliance: no deprecated HowTo, no 1-item root hub BreadcrumbList, no hidden Studio FAQPage
+    expect(buildRouteSchemaList(resolvePathname('/zh/'), 'https://moklu.app').map((s) => s['@type'])).toEqual([
+      'Organization',
+      'WebSite',
+      'WebApplication',
+      'FAQPage',
+    ])
+    expect(buildRouteSchemaList(zhMergeRoute, 'https://moklu.app').map((s) => s['@type'])).toEqual([
+      'Organization',
+      'WebSite',
+      'BreadcrumbList',
+      'WebApplication',
+      'FAQPage',
+    ])
+    expect(buildRouteSchemaList(resolvePathname('/zh/studio'), 'https://moklu.app').map((s) => s['@type'])).toEqual([
+      'Organization',
+      'WebSite',
+      'BreadcrumbList',
+      'WebApplication',
+    ])
   })
 
   it('resolves /merge-photos-to-pdf with application/pdf and multipage pdfMode preset across all 4 locales', () => {

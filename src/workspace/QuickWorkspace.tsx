@@ -1,34 +1,132 @@
 /**
- * [INPUT]: depends on react, useThemeStore from @/theme/themeStore, isSupportedImageFile and readFileAsImageInput from ./canvasUtils, createDefaultWorkspaceEngines from ./defaultEngines, saveToolDraft and serializeDraftImages from ./draftStorage, getWorkspaceStrings from ./i18n, getWorkspaceThemeTokens from ./themeTokens, PrivacyBadge from ./uiPrimitives, all 6 tool panels from ./tools/*, and types from ./types
- * [OUTPUT]: exports QuickWorkspace component rendering the above-the-fold 6-tool instant workspace with global paste pulse highlight, multi-image paste switch-to-Merge banner, keyboard-navigable tablist, locale-preserving panel state, Light/Dark theming, 4-locale UI, and Studio handoff
+ * [INPUT]: depends on react, useThemeStore from @/theme/themeStore, saveToolDraft and serializeDraftImages from ./draftStorage, getWorkspaceStrings from ./i18n, getWorkspaceThemeTokens from ./themeTokens, PrivacyBadge from ./uiPrimitives, on-demand dynamic imports of the 6 tool panels in ./tools/*, ./defaultEngines, and ./canvasUtils, and types from ./types
+ * [OUTPUT]: exports QuickWorkspace component and tool preloader helpers (hasWorkspaceTool, preloadWorkspaceTool, preloadAllWorkspaceTools) rendering the above-the-fold 6-tool instant workspace with on-demand panel code-splitting, hover/focus chunk prefetching, global paste pulse highlight, multi-image paste switch-to-Merge banner, keyboard-navigable tablist, locale-preserving panel state, Light/Dark theming, 4-locale UI, and Studio handoff
  * [POS]: top-level UI entry point of src/workspace; mounted by ToolLandingPage and testable standalone via injected WorkspaceEngines
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
+import {
+  createElement,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentType,
+  type KeyboardEvent,
+  type ReactNode,
+} from 'react'
 import { useThemeStore } from '@/theme/themeStore'
-import { isSupportedImageFile, readFileAsImageInput } from './canvasUtils'
-import { createDefaultWorkspaceEngines } from './defaultEngines'
 import { saveToolDraft, serializeDraftImages } from './draftStorage'
 import { getWorkspaceStrings } from './i18n'
 import { getWorkspaceThemeTokens } from './themeTokens'
-import { CompressQuickTool } from './tools/CompressQuickTool'
-import { IdCardQuickTool } from './tools/IdCardQuickTool'
-import { MergeQuickTool } from './tools/MergeQuickTool'
-import { MockupQuickTool } from './tools/MockupQuickTool'
-import { ResizeQuickTool } from './tools/ResizeQuickTool'
-import { SplitQuickTool } from './tools/SplitQuickTool'
 import type {
   QuickWorkspaceProps,
   WorkspaceEngines,
   WorkspacePreset,
   WorkspaceToolId,
+  WorkspaceToolPanelProps,
 } from './types'
 import { PrivacyBadge } from './uiPrimitives'
 
 const TOOL_ORDER: WorkspaceToolId[] = ['mockup', 'merge', 'split', 'compress', 'resize', 'id-card']
 const SINGLE_IMAGE_TOOLS = new Set<WorkspaceToolId>(['mockup', 'split', 'id-card'])
+const SUPPORTED_IMAGE_EXT_RE = /\.(?:png|jpe?g|webp|gif|bmp|avif|svg|heic|heif)$/i
 
 const DEFAULT_PRESET: WorkspacePreset = { tool: 'mockup' }
+
+type WorkspaceToolComponent = ComponentType<WorkspaceToolPanelProps>
+
+const toolComponentRegistry = new Map<WorkspaceToolId, WorkspaceToolComponent>()
+const pendingToolLoads = new Map<WorkspaceToolId, Promise<WorkspaceToolComponent>>()
+
+function isSupportedClipboardImageFile(file: File): boolean {
+  if (file.type.toLowerCase().startsWith('image/')) return true
+  return SUPPORTED_IMAGE_EXT_RE.test(file.name)
+}
+
+function importToolComponent(toolId: WorkspaceToolId): Promise<WorkspaceToolComponent> {
+  switch (toolId) {
+    case 'mockup':
+      return import('./tools/MockupQuickTool').then((m) => m.MockupQuickTool)
+    case 'merge':
+      return import('./tools/MergeQuickTool').then((m) => m.MergeQuickTool)
+    case 'split':
+      return import('./tools/SplitQuickTool').then((m) => m.SplitQuickTool)
+    case 'compress':
+      return import('./tools/CompressQuickTool').then((m) => m.CompressQuickTool)
+    case 'resize':
+      return import('./tools/ResizeQuickTool').then((m) => m.ResizeQuickTool)
+    case 'id-card':
+      return import('./tools/IdCardQuickTool').then((m) => m.IdCardQuickTool)
+  }
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
+export function hasWorkspaceTool(toolId: WorkspaceToolId): boolean {
+  return toolComponentRegistry.has(toolId)
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
+export function preloadWorkspaceTool(toolId: WorkspaceToolId): Promise<WorkspaceToolComponent> {
+  const cached = toolComponentRegistry.get(toolId)
+  if (cached) return Promise.resolve(cached)
+
+  const pending = pendingToolLoads.get(toolId)
+  if (pending) return pending
+
+  const promise = importToolComponent(toolId)
+    .then((Component) => {
+      toolComponentRegistry.set(toolId, Component)
+      return Component
+    })
+    .finally(() => {
+      pendingToolLoads.delete(toolId)
+    })
+
+  pendingToolLoads.set(toolId, promise)
+  return promise
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
+export async function preloadAllWorkspaceTools(): Promise<void> {
+  await Promise.all(TOOL_ORDER.map((toolId) => preloadWorkspaceTool(toolId)))
+}
+
+// Eagerly register all 6 tool panels in Node, Vite SSR, and Vitest; Rolldown
+// dead-code-eliminates this branch (and its top-level await) in client builds.
+if (typeof import.meta.env === 'undefined' || import.meta.env.SSR || import.meta.env.MODE === 'test') {
+  await preloadAllWorkspaceTools()
+}
+
+function renderRegisteredToolPanel(
+  toolId: WorkspaceToolId,
+  panelKey: string,
+  props: WorkspaceToolPanelProps,
+): ReactNode {
+  const Component = toolComponentRegistry.get(toolId)
+  if (!Component) return null
+  return createElement(Component, { ...props, key: panelKey })
+}
+
+let defaultEnginesPromise: Promise<WorkspaceEngines> | null = null
+
+function loadDefaultWorkspaceEngines(): Promise<WorkspaceEngines> {
+  if (!defaultEnginesPromise) {
+    defaultEnginesPromise = import('./defaultEngines').then((m) => m.createDefaultWorkspaceEngines())
+  }
+  return defaultEnginesPromise
+}
+
+function createLazyDefaultWorkspaceEngines(): WorkspaceEngines {
+  return {
+    merge: async (images, options) => (await loadDefaultWorkspaceEngines()).merge(images, options),
+    split: async (image, options) => (await loadDefaultWorkspaceEngines()).split(image, options),
+    compress: async (images, options) => (await loadDefaultWorkspaceEngines()).compress(images, options),
+    transform: async (images, options) => (await loadDefaultWorkspaceEngines()).transform(images, options),
+    idCard: async (front, back, options) => (await loadDefaultWorkspaceEngines()).idCard(front, back, options),
+    packZip: async (files) => (await loadDefaultWorkspaceEngines()).packZip(files),
+  }
+}
 
 function ToolIcon({ tool }: { tool: WorkspaceToolId }): ReactNode {
   switch (tool) {
@@ -101,6 +199,29 @@ export function QuickWorkspace({
   const [pendingMergeFiles, setPendingMergeFiles] = useState<File[] | null>(null)
   const [switchingToMerge, setSwitchingToMerge] = useState(false)
   const [mergeHydrateNonce, setMergeHydrateNonce] = useState(0)
+  const [, setToolRegistryTick] = useState(0)
+  const [failedTool, setFailedTool] = useState<WorkspaceToolId | null>(null)
+
+  useEffect(() => {
+    if (toolComponentRegistry.has(activeTool)) return
+    let cancelled = false
+    void preloadWorkspaceTool(activeTool)
+      .then(() => {
+        if (!cancelled) {
+          setFailedTool((prev) => (prev === activeTool ? null : prev))
+          setToolRegistryTick((n) => n + 1)
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          console.error(`[Moklu] Failed to load workspace tool "${activeTool}":`, err)
+          setFailedTool(activeTool)
+        }
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [activeTool])
 
   const resolvedEngines = useMemo<WorkspaceEngines>(() => {
     if (
@@ -113,7 +234,7 @@ export function QuickWorkspace({
     ) {
       return engines as WorkspaceEngines
     }
-    const defaults = createDefaultWorkspaceEngines()
+    const defaults = createLazyDefaultWorkspaceEngines()
     return {
       merge: engines?.merge ?? defaults.merge,
       split: engines?.split ?? defaults.split,
@@ -125,10 +246,24 @@ export function QuickWorkspace({
   }, [engines])
 
   const selectTool = useCallback((nextTool: WorkspaceToolId) => {
+    void preloadWorkspaceTool(nextTool)
+    setFailedTool((prev) => (prev === nextTool ? null : prev))
     setTabOverride({ base: presetTool, tool: nextTool })
     setPendingMergeFiles(null)
     onToolChange?.(nextTool)
   }, [onToolChange, presetTool])
+
+  const handleRetryToolLoad = useCallback((toolId: WorkspaceToolId) => {
+    setFailedTool(null)
+    void preloadWorkspaceTool(toolId)
+      .then(() => {
+        setToolRegistryTick((n) => n + 1)
+      })
+      .catch((err) => {
+        console.error(`[Moklu] Retry failed for workspace tool "${toolId}":`, err)
+        setFailedTool(toolId)
+      })
+  }, [])
 
   // Global Cmd/Ctrl+V paste highlight pulse + multi-image switch-to-Merge prompt.
   useEffect(() => {
@@ -159,7 +294,7 @@ export function QuickWorkspace({
       for (const item of Array.from(items)) {
         if (item.kind !== 'file') continue
         const file = item.getAsFile()
-        if (file && isSupportedImageFile(file)) {
+        if (file && isSupportedClipboardImageFile(file)) {
           validFiles.push(file)
         }
       }
@@ -181,6 +316,10 @@ export function QuickWorkspace({
     if (targetTool === 'merge') {
       setSwitchingToMerge(true)
       try {
+        const [{ readFileAsImageInput }] = await Promise.all([
+          import('./canvasUtils'),
+          preloadWorkspaceTool('merge'),
+        ])
         const loaded = await Promise.all(files.map((file) => readFileAsImageInput(file)))
         await saveToolDraft('merge', {
           images: serializeDraftImages(loaded),
@@ -247,7 +386,7 @@ export function QuickWorkspace({
     activeTool === 'merge' ? String(mergeHydrateNonce) : '',
   ].join(':')
 
-  const panelProps = {
+  const panelProps: WorkspaceToolPanelProps = {
     preset: { ...preset, tool: activeTool },
     locale,
     theme: resolvedTheme,
@@ -322,6 +461,12 @@ export function QuickWorkspace({
                 aria-selected={selected}
                 aria-controls={`moklu-panel-${toolId}`}
                 tabIndex={selected ? 0 : -1}
+                onPointerEnter={() => {
+                  void preloadWorkspaceTool(toolId)
+                }}
+                onFocus={() => {
+                  void preloadWorkspaceTool(toolId)
+                }}
                 onClick={() => selectTool(toolId)}
                 onKeyDown={(e) => handleTabKeyDown(e, idx)}
                 className={`inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-[color,background-color,box-shadow] ${tokens.focusRing} ${
@@ -359,12 +504,29 @@ export function QuickWorkspace({
         role="tabpanel"
         aria-labelledby={`moklu-tab-${activeTool}`}
       >
-        {activeTool === 'mockup' && <MockupQuickTool key={panelKey} {...panelProps} />}
-        {activeTool === 'merge' && <MergeQuickTool key={panelKey} {...panelProps} />}
-        {activeTool === 'split' && <SplitQuickTool key={panelKey} {...panelProps} />}
-        {activeTool === 'compress' && <CompressQuickTool key={panelKey} {...panelProps} />}
-        {activeTool === 'resize' && <ResizeQuickTool key={panelKey} {...panelProps} />}
-        {activeTool === 'id-card' && <IdCardQuickTool key={panelKey} {...panelProps} />}
+        {renderRegisteredToolPanel(activeTool, panelKey, panelProps) ?? (
+          <div
+            role="status"
+            aria-live="polite"
+            data-testid="workspace-tool-loading"
+            className={`flex min-h-[380px] flex-col items-center justify-center gap-3 rounded-2xl border p-6 text-xs ${tokens.card} ${tokens.textMuted}`}
+          >
+            {failedTool === activeTool ? (
+              <>
+                <span>{s.common.exportError}</span>
+                <button
+                  type="button"
+                  onClick={() => handleRetryToolLoad(activeTool)}
+                  className={`inline-flex min-h-8 items-center rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${tokens.focusRing} ${tokens.buttonPrimary}`}
+                >
+                  {s.tabs[activeTool].short}
+                </button>
+              </>
+            ) : (
+              <span className="animate-pulse">{s.common.processing}</span>
+            )}
+          </div>
+        )}
       </div>
     </section>
   )

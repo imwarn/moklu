@@ -1,7 +1,7 @@
 /**
  * [INPUT]: depends on node:fs/promises and node:fs; reads public/_headers, public/healthz.txt, public/healthz/index.html, src/ai/providers.ts, and src/ai/client.ts
- * [OUTPUT]: CLI verifier exiting non-zero when required security headers, wasm-unsafe-eval / Cloudflare Web Analytics / AI provider CSP allowlists, healthcheck assets, or cache rules drift
- * [POS]: mechanical CSP, healthcheck, and response-header consistency gate inside scripts/
+ * [OUTPUT]: CLI verifier exiting non-zero when required security headers (including COOP), wasm-unsafe-eval / Cloudflare Web Analytics / AI provider CSP allowlists, healthcheck assets, bfcache-safe HTML Cache-Control, or CDN-Cache-Control rules drift
+ * [POS]: mechanical CSP, COOP, healthcheck, and response-header consistency gate inside scripts/
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 import { readFile, stat } from 'node:fs/promises'
@@ -38,6 +38,7 @@ const REQUIRED_HEADERS = [
   'X-Content-Type-Options',
   'Referrer-Policy',
   'X-Frame-Options',
+  'Cross-Origin-Opener-Policy',
   'Content-Security-Policy',
 ]
 for (const header of REQUIRED_HEADERS) {
@@ -120,19 +121,30 @@ if (!csp) {
   }
 }
 
-// Cache policy: the HTML shell must never be heuristically cached, hashed
-// assets must be immutable.
-const cacheFor = (pattern) => {
+// Cache policy: the HTML shell must revalidate without no-store (preserving browser bfcache),
+// hashed assets must be immutable, and CDN-Cache-Control must be declared on cacheable paths.
+const headerFor = (pattern, name) => {
   const rule = rules.find((r) => r.pattern === pattern)
-  return rule?.headers['Cache-Control'] ?? null
+  return rule?.headers[name] ?? null
 }
+const cacheFor = (pattern) => headerFor(pattern, 'Cache-Control')
 const htmlCache = cacheFor('/')
-if (!htmlCache || !/no-(cache|store)/.test(htmlCache)) {
-  failures.push(`/ must not be cached, got: ${htmlCache ?? '(none)'}`)
+if (!htmlCache || !/\bno-cache\b/.test(htmlCache) || /\bno-store\b/.test(htmlCache)) {
+  failures.push(`/ must use Cache-Control: public, no-cache (without no-store to preserve bfcache), got: ${htmlCache ?? '(none)'}`)
+}
+const htmlCdnCache = headerFor('/', 'CDN-Cache-Control')
+if (!htmlCdnCache || !/\bs-maxage=60\b/.test(htmlCdnCache)) {
+  failures.push(`/ must declare CDN-Cache-Control with s-maxage=60, got: ${htmlCdnCache ?? '(none)'}`)
 }
 const assetCache = cacheFor('/assets/*') ?? cacheFor('/*')
 if (!assetCache || !/immutable/.test(assetCache)) {
   failures.push(`/assets/* must be immutable, got: ${assetCache ?? '(none)'}`)
+}
+for (const staticPath of ['/theme-init.js', '/sitemap.xml', '/robots.txt', '/llms.txt']) {
+  const staticCache = cacheFor(staticPath)
+  if (!staticCache || !/\bmax-age=3600\b/.test(staticCache)) {
+    failures.push(`${staticPath} must declare Cache-Control: public, max-age=3600, got: ${staticCache ?? '(none)'}`)
+  }
 }
 
 // Healthcheck endpoints: lightweight static files must exist and never be cached.

@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on vite (defineConfig, loadEnv, Plugin), @vitejs/plugin-react, @tailwindcss/vite, node:fs, node:path, node:child_process, and node:module; reads GITHUB_PAGES, PaaS commit SHA env vars, .git/HEAD, and optional VITE_CF_BEACON_TOKEN
- * [OUTPUT]: exports Vite build configuration with @ alias (using import.meta.dirname), git/version defines (env SHA -> pure-fs .git/HEAD -> git CLI -> UTC build stamp fallback), conditional Cloudflare Web Analytics beacon injection, and client-only Rolldown codeSplitting isolating React, Konva, and DnD vendor chunks
+ * [OUTPUT]: exports Vite build configuration with @ alias (using import.meta.dirname), git/version defines (env SHA -> pure-fs .git/HEAD -> git CLI -> UTC build stamp fallback), client-only Geist Latin font preload plugin, low-priority body-injected Cloudflare Web Analytics beacon, and client-only Rolldown codeSplitting isolating React, Konva, and DnD vendor chunks
  * [POS]: root Vite bundler configuration powering dev, production client builds, and temporary SSR prerender builds
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -91,6 +91,34 @@ function getGitHash(): string {
   return getUtcBuildStamp()
 }
 
+const CRITICAL_FONT_ASSET_RE = /(?:^|\/)geist-latin-wght-normal-[^/]+\.woff2$/
+
+function criticalFontPreloadPlugin(): Plugin {
+  return {
+    name: 'moklu-critical-font-preload',
+    transformIndexHtml(_html, ctx) {
+      if (!ctx.bundle) return []
+      const fontAsset = Object.keys(ctx.bundle).find((fileName) =>
+        CRITICAL_FONT_ASSET_RE.test(fileName),
+      )
+      if (!fontAsset) return []
+      return [
+        {
+          tag: 'link',
+          attrs: {
+            rel: 'preload',
+            href: `${base}${fontAsset.replace(/^\/+/, '')}`,
+            as: 'font',
+            type: 'font/woff2',
+            crossorigin: true,
+          },
+          injectTo: 'head',
+        },
+      ]
+    },
+  }
+}
+
 function cloudflareWebAnalyticsPlugin(token: string): Plugin {
   return {
     name: 'moklu-cloudflare-web-analytics',
@@ -101,10 +129,11 @@ function cloudflareWebAnalyticsPlugin(token: string): Plugin {
           tag: 'script',
           attrs: {
             defer: true,
+            fetchpriority: 'low',
             src: 'https://static.cloudflareinsights.com/beacon.min.js',
             'data-cf-beacon': JSON.stringify({ token }),
           },
-          injectTo: 'head',
+          injectTo: 'body',
         },
       ]
     },
@@ -121,7 +150,12 @@ export default defineConfig(({ mode, isSsrBuild }) => {
       __APP_VERSION__: JSON.stringify(pkg.version),
       __GIT_HASH__: JSON.stringify(getGitHash()),
     },
-    plugins: [react(), tailwindcss(), cloudflareWebAnalyticsPlugin(cfBeaconToken)],
+    plugins: [
+      react(),
+      tailwindcss(),
+      ...(!isSsrBuild ? [criticalFontPreloadPlugin()] : []),
+      cloudflareWebAnalyticsPlugin(cfBeaconToken),
+    ],
     resolve: {
       alias: {
         '@': path.resolve(import.meta.dirname, './src'),

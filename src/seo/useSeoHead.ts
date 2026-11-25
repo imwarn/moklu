@@ -1,13 +1,19 @@
 /**
- * [INPUT]: depends on useEffect from react; depends on ResolvedRoute from ./types.ts; depends on buildCanonicalUrl, getHreflangLinks, getHtmlLang, and getSiteUrl from ./routes.ts; depends on getOgLocale and getRouteCopy from ./i18n.ts; depends on buildRouteSchemaList and serializeJsonLd from ./schema.ts
+ * [INPUT]: depends on useEffect from react; depends on ResolvedRoute from ./types.ts; depends on LOCALE_CODES, buildCanonicalUrl, getHreflangLinks, getHtmlLang, and getSiteUrl from ./routes.ts; depends on getOgLocale and getRouteCopy from ./i18n.ts; depends on buildRouteSchemaList and serializeJsonLd from ./schema.ts
  * [OUTPUT]: exports applySeoHead and useSeoHead
- * [POS]: runtime document <head> synchronizer within src/seo, updating title, lang (`zh-CN` for Chinese), meta, canonical, OG/Twitter tags, hreflang alternates (`zh-Hans`), and JSON-LD scripts on SPA navigation
+ * [POS]: runtime document <head> synchronizer within src/seo, updating title, lang (`zh-CN`), meta, conditional canonical (removed on noindex fallback routes), full OG/Twitter image & alternate-locale tags, hreflang alternates (`zh-Hans`), and JSON-LD scripts without node leaks on SPA navigation
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
 import { useEffect } from 'react'
 import type { ResolvedRoute } from './types.ts'
-import { buildCanonicalUrl, getHreflangLinks, getHtmlLang, getSiteUrl } from './routes.ts'
+import {
+  LOCALE_CODES,
+  buildCanonicalUrl,
+  getHreflangLinks,
+  getHtmlLang,
+  getSiteUrl,
+} from './routes.ts'
 import { getOgLocale, getRouteCopy } from './i18n.ts'
 import { buildRouteSchemaList, serializeJsonLd } from './schema.ts'
 
@@ -60,22 +66,39 @@ export function applySeoHead(
   // Primary meta
   upsertMeta(doc, 'name', 'description', copy.metaDescription)
   upsertMeta(doc, 'name', 'robots', route.isFallback ? 'noindex, follow' : 'index, follow')
-  upsertCanonical(doc, canonicalUrl)
+  if (route.isFallback) {
+    doc.head.querySelector('link[rel="canonical"]')?.remove()
+  } else {
+    upsertCanonical(doc, canonicalUrl)
+  }
 
   // Open Graph
   upsertMeta(doc, 'property', 'og:type', 'website')
   upsertMeta(doc, 'property', 'og:site_name', 'Moklu')
   upsertMeta(doc, 'property', 'og:locale', ogLocale)
+  replaceManagedNodes(doc, 'meta[property="og:locale:alternate"]')
+  for (const altLocale of LOCALE_CODES) {
+    if (altLocale === route.locale) continue
+    const meta = doc.createElement('meta')
+    meta.setAttribute('property', 'og:locale:alternate')
+    meta.setAttribute('content', getOgLocale(altLocale))
+    meta.setAttribute(MANAGED_ATTR, 'og-locale-alt')
+    doc.head.appendChild(meta)
+  }
   upsertMeta(doc, 'property', 'og:url', canonicalUrl)
   upsertMeta(doc, 'property', 'og:title', copy.title)
   upsertMeta(doc, 'property', 'og:description', copy.metaDescription)
   upsertMeta(doc, 'property', 'og:image', ogImage)
+  upsertMeta(doc, 'property', 'og:image:width', '1200')
+  upsertMeta(doc, 'property', 'og:image:height', '630')
+  upsertMeta(doc, 'property', 'og:image:alt', copy.title)
 
   // Twitter / X Card
   upsertMeta(doc, 'name', 'twitter:card', 'summary_large_image')
   upsertMeta(doc, 'name', 'twitter:title', copy.title)
   upsertMeta(doc, 'name', 'twitter:description', copy.metaDescription)
   upsertMeta(doc, 'name', 'twitter:image', ogImage)
+  upsertMeta(doc, 'name', 'twitter:image:alt', copy.title)
 
   // Alternate hreflang links
   replaceManagedNodes(doc, 'link[rel="alternate"][hreflang]')

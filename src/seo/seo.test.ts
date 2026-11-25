@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on vitest, node:fs/promises, node:os, node:path, react, and react-dom/server; depends on src/seo/* exports and scripts/prerender-seo.mjs
- * [OUTPUT]: automated unit and integration test suite for routing, 4-language copy uniqueness, JSON-LD schemas, head management, React chrome rendering, and SSG output
+ * [INPUT]: depends on vitest, node:child_process, node:fs/promises, node:os, node:path, node:util, react, and react-dom/server; depends on src/seo/* exports and scripts/prerender-seo.mjs
+ * [OUTPUT]: automated unit and integration test suite for routing, 4-language copy uniqueness, active JSON-LD schemas, OG/Twitter/fallback head management, exact aria-current nav, subpage breadcrumbs, content-visibility sections, and SSG/sitemap output
  * [POS]: verification suite within src/seo validating both runtime SEO behavior and post-build static HTML/sitemap generation
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -288,7 +288,31 @@ describe('Structured data JSON-LD and DOM head synchronization', () => {
     expect(schemas.faqPage['@type']).toBe('FAQPage')
     expect(schemas.faqPage.mainEntity).toHaveLength(4)
 
-    expect(buildRouteSchemaList(route, 'https://moklu.app')).toHaveLength(6)
+    expect(buildRouteSchemaList(route, 'https://moklu.app').map((s) => s['@type'])).toEqual([
+      'Organization',
+      'WebSite',
+      'BreadcrumbList',
+      'WebApplication',
+      'FAQPage',
+    ])
+
+    // Root hub omits 1-item BreadcrumbList and deprecated HowTo
+    const rootHubRoute = resolvePathname('/')
+    expect(buildRouteSchemaList(rootHubRoute, 'https://moklu.app').map((s) => s['@type'])).toEqual([
+      'Organization',
+      'WebSite',
+      'WebApplication',
+      'FAQPage',
+    ])
+
+    // Studio routes omit hidden FAQPage and deprecated HowTo
+    const studioRoute = resolvePathname('/studio')
+    expect(buildRouteSchemaList(studioRoute, 'https://moklu.app').map((s) => s['@type'])).toEqual([
+      'Organization',
+      'WebSite',
+      'BreadcrumbList',
+      'WebApplication',
+    ])
 
     const serialized = serializeJsonLd({ danger: '</script><script>alert(1)</script>' })
     expect(serialized).not.toContain('</script>')
@@ -363,21 +387,64 @@ describe('Structured data JSON-LD and DOM head synchronization', () => {
     } as unknown as Document
 
     applySeoHead(mockDoc, resolvePathname('/browser-mockup'), 'https://moklu.app')
+    const enBrowserCopy = getRouteCopy('en', 'browser-mockup')
     expect(mockDoc.documentElement.lang).toBe('en')
     expect(mockDoc.title).toContain('Browser Mockup')
     expect(headChildren.filter((el) => el.attrs.rel === 'alternate')).toHaveLength(5)
-    expect(headChildren.filter((el) => el.attrs.type === 'application/ld+json')).toHaveLength(6)
+    expect(headChildren.filter((el) => el.attrs.type === 'application/ld+json')).toHaveLength(5)
+    expect(headChildren.find((el) => el.attrs.property === 'og:image:width')?.attrs.content).toBe('1200')
+    expect(headChildren.find((el) => el.attrs.property === 'og:image:height')?.attrs.content).toBe('630')
+    expect(headChildren.find((el) => el.attrs.property === 'og:image:alt')?.attrs.content).toBe(
+      enBrowserCopy.title,
+    )
+    expect(headChildren.find((el) => el.attrs.name === 'twitter:image:alt')?.attrs.content).toBe(
+      enBrowserCopy.title,
+    )
+    expect(
+      headChildren
+        .filter((el) => el.attrs.property === 'og:locale:alternate')
+        .map((el) => el.attrs.content),
+    ).toEqual(['zh_CN', 'ja_JP', 'ko_KR'])
 
     // Transition to Korean route and verify zero stale duplicates
     applySeoHead(mockDoc, resolvePathname('/ko/merge-images'), 'https://moklu.app')
+    const koMergeCopy = getRouteCopy('ko', 'merge-images')
     expect(mockDoc.documentElement.lang).toBe('ko')
-    expect(mockDoc.title).toBe(getRouteCopy('ko', 'merge-images').title)
+    expect(mockDoc.title).toBe(koMergeCopy.title)
     expect(headChildren.filter((el) => el.attrs.rel === 'canonical')).toHaveLength(1)
     expect(headChildren.find((el) => el.attrs.rel === 'canonical')?.attrs.href).toBe(
       'https://moklu.app/ko/merge-images/',
     )
     expect(headChildren.filter((el) => el.attrs.rel === 'alternate')).toHaveLength(5)
-    expect(headChildren.filter((el) => el.attrs.type === 'application/ld+json')).toHaveLength(6)
+    expect(headChildren.filter((el) => el.attrs.type === 'application/ld+json')).toHaveLength(5)
+    expect(
+      headChildren
+        .filter((el) => el.attrs.property === 'og:locale:alternate')
+        .map((el) => el.attrs.content),
+    ).toEqual(['en_US', 'zh_CN', 'ja_JP'])
+    expect(headChildren.find((el) => el.attrs.property === 'og:image:alt')?.attrs.content).toBe(
+      koMergeCopy.title,
+    )
+    expect(headChildren.find((el) => el.attrs.name === 'twitter:image:alt')?.attrs.content).toBe(
+      koMergeCopy.title,
+    )
+
+    // Fallback route removes canonical instead of conflicting with noindex
+    applySeoHead(mockDoc, resolvePathname('/ja/non-existent-route'), 'https://moklu.app')
+    expect(headChildren.find((el) => el.attrs.name === 'robots')?.attrs.content).toBe(
+      'noindex, follow',
+    )
+    expect(headChildren.filter((el) => el.attrs.rel === 'canonical')).toHaveLength(0)
+
+    // Navigating back to a valid route restores canonical and indexable robots
+    applySeoHead(mockDoc, resolvePathname('/ja/merge-images'), 'https://moklu.app')
+    expect(headChildren.find((el) => el.attrs.name === 'robots')?.attrs.content).toBe(
+      'index, follow',
+    )
+    expect(headChildren.filter((el) => el.attrs.rel === 'canonical')).toHaveLength(1)
+    expect(headChildren.find((el) => el.attrs.rel === 'canonical')?.attrs.href).toBe(
+      'https://moklu.app/ja/merge-images/',
+    )
   })
 })
 
@@ -433,6 +500,20 @@ describe('SEO UI chrome SSR rendering', () => {
       expect(headerHtml).not.toContain('transition-all')
       expect(sectionsHtml).not.toContain('dark:divide-white/10')
       expect(sectionsHtml).toContain(theme === 'dark' ? 'divide-white/10' : 'divide-zinc-200/70')
+      // Every below-the-fold <section> defers off-screen rendering via content-visibility
+      const sectionTags = [...sectionsHtml.matchAll(/<section\b[^>]*>/g)].map((m) => m[0])
+      expect(sectionTags.length).toBeGreaterThanOrEqual(7)
+      for (const tag of sectionTags) {
+        expect(tag).toContain('[content-visibility:auto]')
+        expect(tag).toContain('[contain-intrinsic-size:auto_420px]')
+      }
+      if (route.slug === '') {
+        expect(sectionsHtml).not.toContain('aria-label="Breadcrumbs"')
+      } else {
+        expect(sectionsHtml).toContain('aria-label="Breadcrumbs"')
+        expect(sectionsHtml).toContain(`href="${buildLocalizedPath(route.locale, '')}"`)
+        expect(sectionsHtml).toContain(`href="${route.path}" aria-current="page"`)
+      }
       expect(footerHtml).toMatch(/hreflang="en"/i)
       expect(footerHtml).toMatch(/hreflang="zh-Hans"/i)
       expect(footerHtml).toMatch(/hreflang="ja"/i)
@@ -440,13 +521,14 @@ describe('SEO UI chrome SSR rendering', () => {
     }
   })
 
-  it('computes active tool navigation state consistently for home, tool, and studio routes', () => {
+  it('computes active tool navigation state consistently and emits aria-current="page" only on exact URL matches', () => {
+    const noop = () => {}
     const home = resolvePathname('/')
-    expect(isToolNavActive(home, 'mockup')).toBe(true)
+    expect(isToolNavActive(home, 'mockup')).toBe(false)
     expect(isToolNavActive(home, 'merge')).toBe(false)
 
     const zhHome = resolvePathname('/zh')
-    expect(isToolNavActive(zhHome, 'mockup')).toBe(true)
+    expect(isToolNavActive(zhHome, 'mockup')).toBe(false)
     expect(isToolNavActive(zhHome, 'id-card')).toBe(false)
 
     const merge = resolvePathname('/zh/stitch-images-vertically')
@@ -456,6 +538,40 @@ describe('SEO UI chrome SSR rendering', () => {
     const studio = resolvePathname('/studio')
     expect(isToolNavActive(studio, 'mockup')).toBe(false)
     expect(isToolNavActive(studio, 'merge')).toBe(false)
+
+    // Homepage emits zero aria-current="page" in primary nav
+    const homeHeader = renderToStaticMarkup(
+      createElement(SiteHeader, {
+        route: home,
+        theme: 'light',
+        onNavigate: noop,
+        onToggleTheme: noop,
+      }),
+    )
+    expect(homeHeader).not.toContain('aria-current="page"')
+
+    // Secondary mockup route highlights category pill visually without false aria-current="page" on /browser-mockup/
+    const iphoneHeader = renderToStaticMarkup(
+      createElement(SiteHeader, {
+        route: resolvePathname('/iphone-mockup'),
+        theme: 'light',
+        onNavigate: noop,
+        onToggleTheme: noop,
+      }),
+    )
+    expect(iphoneHeader).toContain('bg-accent-soft text-accent-text')
+    expect(iphoneHeader).not.toContain('aria-current="page"')
+
+    // Primary tool route emits aria-current="page" on its exact link
+    const browserHeader = renderToStaticMarkup(
+      createElement(SiteHeader, {
+        route: resolvePathname('/browser-mockup'),
+        theme: 'light',
+        onNavigate: noop,
+        onToggleTheme: noop,
+      }),
+    )
+    expect(browserHeader).toContain('href="/browser-mockup/" aria-current="page"')
   })
 
   it('renders below-the-fold Pro CTA in SeoLandingSections and semantic success active Pro state', () => {
@@ -524,7 +640,21 @@ describe('Build-time SSG prerenderer, sitemap.xml, robots.txt, and CSP safety', 
     expect(rendered).toContain(`<title>${copy.title}</title>`)
     expect(rendered).toContain('<link rel="canonical" href="https://moklu.app/ja/merge-images/" />')
     expect(rendered).toContain('<meta property="og:image" content="https://moklu.app/og-image.png" />')
+    expect(rendered).toContain('<meta property="og:image:width" content="1200" />')
+    expect(rendered).toContain('<meta property="og:image:height" content="630" />')
+    expect(rendered).toContain(`<meta property="og:image:alt" content="${escapeHtml(copy.title)}" />`)
     expect(rendered).toContain('<meta name="twitter:image" content="https://moklu.app/og-image.png" />')
+    expect(rendered).toContain(`<meta name="twitter:image:alt" content="${escapeHtml(copy.title)}" />`)
+    expect(rendered).toContain(
+      '<meta property="og:locale:alternate" content="en_US" data-moklu-seo="og-locale-alt" />',
+    )
+    expect(rendered).toContain(
+      '<meta property="og:locale:alternate" content="zh_CN" data-moklu-seo="og-locale-alt" />',
+    )
+    expect(rendered).toContain(
+      '<meta property="og:locale:alternate" content="ko_KR" data-moklu-seo="og-locale-alt" />',
+    )
+    expect(rendered).not.toContain('<meta property="og:locale:alternate" content="ja_JP"')
     expect(rendered).toContain('hreflang="x-default" href="https://moklu.app/merge-images/"')
     expect(rendered).toContain(copy.h1)
     expect(rendered).toContain(copy.faqs[0].question)
@@ -535,14 +665,14 @@ describe('Build-time SSG prerenderer, sitemap.xml, robots.txt, and CSP safety', 
 
     // Strict CSP check: EVERY <script> tag must either have src= or type="application/ld+json"
     const scriptTags = [...rendered.matchAll(/<script\b([^>]*)>/gi)].map((m) => m[1])
-    expect(scriptTags.length).toBe(7) // 1 Vite module bundle + 6 JSON-LD blocks
+    expect(scriptTags.length).toBe(6) // 1 Vite module bundle + 5 JSON-LD blocks (no deprecated HowTo)
     for (const attrs of scriptTags) {
       const isExternal = /\bsrc="/i.test(attrs)
       const isJsonLd = /\btype="application\/ld\+json"/i.test(attrs)
       expect(isExternal || isJsonLd).toBe(true)
     }
 
-    // Studio routes emit a styled dark skeleton without loading Konva
+    // Studio routes emit a styled dark skeleton without loading Konva or hidden FAQ/HowTo JSON-LD
     const studioRoute = resolvePathname('/studio')
     const studioHtml = renderRouteHtml(
       SAMPLE_DIST_TEMPLATE,
@@ -553,10 +683,14 @@ describe('Build-time SSG prerenderer, sitemap.xml, robots.txt, and CSP safety', 
     expect(studioHtml).toContain('<html lang="en" data-theme="dark" data-surface="studio">')
     expect(studioHtml).toContain('data-testid="studio-ssg-skeleton"')
     expect(studioHtml).not.toContain('data-ssg-shell')
+    expect(studioHtml).not.toContain('"@type":"FAQPage"')
+    expect(studioHtml).not.toContain('"@type":"HowTo"')
 
     // Re-rendering an already prerendered page stays idempotent
     const rerendered = renderRouteHtml(rendered, route, 'https://moklu.app', markup)
     expect(rerendered.match(/<link rel="canonical"/g)?.length).toBe(1)
+    expect(rerendered.match(/property="og:image:width"/g)?.length).toBe(1)
+    expect(rerendered.match(/property="og:locale:alternate"/g)?.length).toBe(3)
     expect(rerendered.match(/data-testid="tool-landing-page"/g)?.length).toBe(1)
   })
 
@@ -628,6 +762,8 @@ describe('Build-time SSG prerenderer, sitemap.xml, robots.txt, and CSP safety', 
       const sitemap = await readFile(path.join(tmpDir, 'sitemap.xml'), 'utf8')
       expect(sitemap).toBe(generateSitemapXml('https://moklu.app', '2026-11-23'))
       expect(sitemap.match(/<url>/g)?.length).toBe(120)
+      expect(sitemap).not.toContain('<changefreq>')
+      expect(sitemap).not.toContain('<priority>')
       expect(sitemap).toContain('xmlns:xhtml="http://www.w3.org/1999/xhtml"')
       expect(sitemap).toContain('hreflang="zh-Hans"')
       expect(sitemap).toContain('<loc>https://moklu.app/zh/id-card-watermark/</loc>')
@@ -638,6 +774,34 @@ describe('Build-time SSG prerenderer, sitemap.xml, robots.txt, and CSP safety', 
       expect(sitemap).toContain('<loc>https://moklu.app/ko/remove-exif/</loc>')
       for (const match of sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)) {
         expect(match[1].endsWith('/'), `sitemap loc ${match[1]} must end with /`).toBe(true)
+      }
+
+      // Per-route lastmod map support and git-derived dates in prerender-seo.mjs
+      const perRouteSitemap = generateSitemapXml(
+        'https://moklu.app',
+        new Map([
+          ['/', '2026-11-20'],
+          ['/zh/merge-images/', '2026-11-21'],
+        ]),
+      )
+      expect(perRouteSitemap).toContain(
+        '<loc>https://moklu.app/</loc>\n    <lastmod>2026-11-20</lastmod>',
+      )
+      expect(perRouteSitemap).toContain(
+        '<loc>https://moklu.app/zh/merge-images/</loc>\n    <lastmod>2026-11-21</lastmod>',
+      )
+      expect(perRouteSitemap).not.toContain('<changefreq>')
+      expect(perRouteSitemap).not.toContain('<priority>')
+
+      const { stdout: gitLastmodJson } = await execFileAsync(process.execPath, [
+        '--input-type=module',
+        '-e',
+        `import { resolveRouteLastmodMap } from ${JSON.stringify(path.resolve('scripts/prerender-seo.mjs'))}; console.log(JSON.stringify(Object.fromEntries(resolveRouteLastmodMap())));`,
+      ])
+      const gitLastmodRecord = JSON.parse(gitLastmodJson) as Record<string, string>
+      expect(Object.keys(gitLastmodRecord)).toHaveLength(120)
+      for (const dateValue of Object.values(gitLastmodRecord)) {
+        expect(dateValue).toMatch(/^\d{4}-\d{2}-\d{2}$/)
       }
 
       const robots = await readFile(path.join(tmpDir, 'robots.txt'), 'utf8')

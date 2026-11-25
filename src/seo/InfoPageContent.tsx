@@ -1,7 +1,7 @@
 /**
  * [INPUT]: depends on InfoPageSlug and ResolvedRoute from ./types.ts; depends on buildLocalizedPath and getRelatedRoutes from ./routes.ts; depends on getRouteCopy and getUiLabels from ./i18n.ts; depends on INFO_ROUTE_SLUGS and handleSpaLinkClick from ./navHelpers.ts; depends on getInfoPageDocument from ./locales/infoPages.ts
  * [OUTPUT]: exports InfoPageContent component and InfoPageContentProps type
- * [POS]: dedicated editorial renderer within src/seo for /about, /privacy, and /terms trust pages across all 4 locales, consumed by ToolLandingPage.tsx
+ * [POS]: dedicated editorial renderer within src/seo for /about, /privacy, and /terms trust pages across all 4 locales, including accessible breadcrumbs, cross-navigation, GitHub verification, and native details/summary FAQ, consumed by ToolLandingPage.tsx
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
@@ -30,6 +30,7 @@ export function InfoPageContent({
   const isDark = theme === 'dark'
   const ui = getUiLabels(route.locale)
   const copy = getRouteCopy(route.locale, route.slug)
+  const homeCopy = getRouteCopy(route.locale, '')
   const infoSlug = toInfoSlug(route.slug)
   const doc = getInfoPageDocument(route.locale, infoSlug)
   const relatedRoutes = getRelatedRoutes(route.slug, route.locale)
@@ -43,6 +44,36 @@ export function InfoPageContent({
     <div className="mx-auto max-w-4xl space-y-12 px-4 py-12 sm:px-6 lg:px-8">
       {/* Header */}
       <header className="space-y-4 border-b border-border pb-8">
+        <nav aria-label="Breadcrumbs">
+          <ol className="flex flex-wrap items-center gap-1.5 text-xs">
+            <li className="inline-flex items-center gap-1.5">
+              <a
+                href={homeHref}
+                onClick={(event) => handleSpaLinkClick(event, homeHref, onNavigate)}
+                className={`rounded transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                  isDark
+                    ? 'text-muted hover:text-zinc-100'
+                    : 'text-muted hover:text-zinc-950'
+                }`}
+              >
+                {homeCopy.navLabel}
+              </a>
+              <span aria-hidden="true" className="select-none text-muted/60">
+                /
+              </span>
+            </li>
+            <li>
+              <a
+                href={route.path}
+                aria-current="page"
+                onClick={(event) => handleSpaLinkClick(event, route.path, onNavigate)}
+                className={`rounded font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${headingCls}`}
+              >
+                {copy.navLabel}
+              </a>
+            </li>
+          </ol>
+        </nav>
         <div className="flex flex-wrap items-center gap-3">
           <span className="inline-flex items-center rounded-full border border-accent/30 bg-accent-soft px-2.5 py-0.5 text-[11px] font-semibold tracking-wide text-accent-text">
             {copy.badge}
