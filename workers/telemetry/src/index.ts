@@ -1,7 +1,7 @@
 /**
  * [INPUT]: depends on WinterCG Fetch/Cache APIs, Cloudflare D1Database interface, and ./headersPolicy (EDGE_SECURITY_HEADERS, applyMokluEdgeHeaders, resolveEdgeCacheTtlSeconds)
  * [OUTPUT]: exports D1DatabaseLike, TelemetryWorkerEnv, ExecutionContextLike, ALLOWED_FUNNEL_EVENTS, sanitizeEdgeDimension, and default Worker fetch handler
- * [POS]: edge entry point of workers/telemetry; serves moklu.app/_telemetry* zero-PII D1 funnel ingestion AND proxies Coolify origin responses with Cloudflare caches.default + cf.cacheEverything edge caching, public/_headers CSP/COOP, CDN-Cache-Control, and unknown-route noindex hygiene
+ * [POS]: edge entry point of workers/telemetry; serves moklu.app/_telemetry* zero-PII D1 funnel ingestion AND proxies Coolify origin responses with isolated Cloudflare Cache API (`caches.open`) + `cf.cacheEverything` edge caching, public/_headers CSP/COOP, CDN-Cache-Control, and unknown-route noindex hygiene
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
@@ -37,42 +37,44 @@ interface CfRequestMetadata {
 interface CfFetchCacheOptions {
   cacheEverything: true
   cacheTtl: number
-  cacheTtlByStatus: Record<string, number>
 }
 
-interface CfCacheStorageLike {
+interface EdgeCacheStorageLike {
+  open?: (cacheName: string) => Promise<Cache>
   default?: Cache
 }
 
 type EdgeRequest = Request & { cf?: CfRequestMetadata }
 type CfRequestInit = RequestInit & { cf?: CfFetchCacheOptions }
 
-function getEdgeCache(): Cache | undefined {
-  return (globalThis as { caches?: CfCacheStorageLike }).caches?.default
+const EDGE_CACHE_NAME = 'moklu-edge-v1'
+
+async function openEdgeCache(): Promise<Cache | undefined> {
+  const storage = (globalThis as { caches?: EdgeCacheStorageLike }).caches
+  if (!storage) return undefined
+  if (typeof storage.open === 'function') {
+    return storage.open(EDGE_CACHE_NAME)
+  }
+  return storage.default
 }
 
 function buildEdgeCacheKey(url: URL): Request {
-  return new Request(`${url.origin}${url.pathname}`, { method: 'GET' })
-}
-
-function toHeadResponse(response: Response): Response {
-  void response.body?.cancel()
-  return new Response(null, {
-    status: response.status,
-    statusText: response.statusText,
-    headers: new Headers(response.headers),
+  const normalizedPath = url.pathname === '/' ? '/__root__' : url.pathname
+  return new Request(`${url.origin}/assets/__moklu_edge_cache__${normalizedPath}`, {
+    method: 'GET',
   })
 }
 
-function buildCacheStorageResponse(response: Response, ttlSeconds: number): Response {
-  const headers = new Headers(response.headers)
-  headers.set('Cache-Control', `public, max-age=${ttlSeconds}, s-maxage=${ttlSeconds}`)
-  headers.delete('Set-Cookie')
-  return new Response(response.clone().body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers,
-  })
+function buildCacheStorageHeaders(source: Headers, ttlSeconds: number): Headers {
+  const headers = new Headers()
+  const contentType = source.get('content-type')
+  if (contentType) headers.set('Content-Type', contentType)
+  const etag = source.get('etag')
+  if (etag) headers.set('ETag', etag)
+  const lastModified = source.get('last-modified')
+  if (lastModified) headers.set('Last-Modified', lastModified)
+  headers.set('Cache-Control', `public, max-age=${ttlSeconds}`)
+  return headers
 }
 
 export const ALLOWED_FUNNEL_EVENTS = new Set<string>([
@@ -274,7 +276,7 @@ export default {
       return applyMokluEdgeHeaders(upstream, url.pathname)
     }
 
-    const edgeCache = getEdgeCache()
+    const edgeCache = await openEdgeCache()
     const cacheKey = buildEdgeCacheKey(url)
     if (edgeCache) {
       const cached = await edgeCache.match(cacheKey)
@@ -282,12 +284,19 @@ export default {
         const hitResponse = applyMokluEdgeHeaders(cached, url.pathname)
         const hitHeaders = new Headers(hitResponse.headers)
         hitHeaders.set('CF-Cache-Status', 'HIT')
-        const finalHit = new Response(hitResponse.body, {
+        if (method === 'HEAD') {
+          void hitResponse.body?.cancel()
+          return new Response(null, {
+            status: hitResponse.status,
+            statusText: hitResponse.statusText,
+            headers: hitHeaders,
+          })
+        }
+        return new Response(hitResponse.body, {
           status: hitResponse.status,
           statusText: hitResponse.statusText,
           headers: hitHeaders,
         })
-        return method === 'HEAD' ? toHeadResponse(finalHit) : finalHit
       }
     }
 
@@ -297,38 +306,65 @@ export default {
       cf: {
         cacheEverything: true,
         cacheTtl: edgeCacheTtl,
-        cacheTtlByStatus: {
-          '200-299': edgeCacheTtl,
-          '404': 0,
-          '500-599': 0,
-        },
       },
     } as CfRequestInit)
 
     const edgeResponse = applyMokluEdgeHeaders(upstream, url.pathname)
+
     if (edgeCache && edgeResponse.status === 200) {
-      const cacheable = buildCacheStorageResponse(edgeResponse, edgeCacheTtl)
-      const putPromise = edgeCache.put(cacheKey, cacheable).catch(() => undefined)
+      const cacheHeaders = buildCacheStorageHeaders(edgeResponse.headers, edgeCacheTtl)
+      if (method === 'HEAD') {
+        const bodyBytes = await edgeResponse.arrayBuffer()
+        const cacheable = new Response(bodyBytes, {
+          status: 200,
+          headers: cacheHeaders,
+        })
+        await edgeCache.put(cacheKey, cacheable).catch((err) => {
+          console.error('[moklu-edge-cache] HEAD put failed', String(err))
+        })
+        const missHeaders = new Headers(edgeResponse.headers)
+        if (missHeaders.get('cf-cache-status') !== 'HIT') {
+          missHeaders.set('CF-Cache-Status', 'MISS')
+        }
+        return new Response(null, {
+          status: edgeResponse.status,
+          statusText: edgeResponse.statusText,
+          headers: missHeaders,
+        })
+      }
+
+      const cacheable = new Response(edgeResponse.clone().body, {
+        status: 200,
+        headers: cacheHeaders,
+      })
+      const putPromise = edgeCache.put(cacheKey, cacheable).catch((err) => {
+        console.error('[moklu-edge-cache] GET put failed', String(err))
+      })
       if (ctx?.waitUntil) {
         ctx.waitUntil(putPromise)
       } else {
         await putPromise
       }
-    }
-
-    if (edgeCache) {
       const missHeaders = new Headers(edgeResponse.headers)
       if (missHeaders.get('cf-cache-status') !== 'HIT') {
         missHeaders.set('CF-Cache-Status', 'MISS')
       }
-      const tracked = new Response(edgeResponse.body, {
+      return new Response(edgeResponse.body, {
         status: edgeResponse.status,
         statusText: edgeResponse.statusText,
         headers: missHeaders,
       })
-      return method === 'HEAD' ? toHeadResponse(tracked) : tracked
     }
 
-    return method === 'HEAD' ? toHeadResponse(edgeResponse) : edgeResponse
+    if (method === 'HEAD') {
+      void edgeResponse.body?.cancel()
+      return new Response(null, {
+        status: edgeResponse.status,
+        statusText: edgeResponse.statusText,
+        headers: new Headers(edgeResponse.headers),
+      })
+    }
+
+    return edgeResponse
   },
 }

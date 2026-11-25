@@ -152,13 +152,14 @@ describe('moklu-telemetry edge worker, cache policy & CSP header parity', () => 
         cf: {
           cacheEverything: true,
           cacheTtl: 60,
-          cacheTtlByStatus: { '200-299': 60, '404': 0, '500-599': 0 },
         },
       })
     }
+    // HEAD requests normalize to GET for upstream cache warmup/hits while returning empty body
+    expect((fetchSpy.mock.calls[1][0] as Request).method).toBe('GET')
   })
 
-  it('populates and serves Cloudflare caches.default with MISS -> HIT across GET and HEAD', async () => {
+  it('caches GET and HEAD responses in isolated caches.open namespace with MISS -> HIT transition', async () => {
     const store = new Map<string, Response>()
     const fakeCache = {
       match: vi.fn(async (req: Request) => store.get(req.url)?.clone()),
@@ -166,12 +167,12 @@ describe('moklu-telemetry edge worker, cache policy & CSP header parity', () => 
         store.set(req.url, res.clone())
       }),
     }
-    vi.stubGlobal('caches', { default: fakeCache })
+    vi.stubGlobal('caches', { open: vi.fn(async () => fakeCache) })
 
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response('<!doctype html><html></html>', {
         status: 200,
-        headers: { 'Content-Type': 'text/html; charset=utf-8' },
+        headers: { 'Content-Type': 'text/html; charset=utf-8', Vary: 'Accept-Encoding' },
       }),
     )
 
@@ -246,7 +247,6 @@ describe('moklu-telemetry edge worker, cache policy & CSP header parity', () => 
         cf: {
           cacheEverything: true,
           cacheTtl: testCase.ttl,
-          cacheTtlByStatus: { '200-299': testCase.ttl, '404': 0, '500-599': 0 },
         },
       })
     }
