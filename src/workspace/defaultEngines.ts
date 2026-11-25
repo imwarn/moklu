@@ -6,7 +6,6 @@
  */
 import {
   applySeamOverlapOverrides,
-  canEncodeCanvasFormat,
   createMultiPagePdfFromJpegs,
   createSinglePagePdfFromJpeg,
   type MultiPagePdfPageInput,
@@ -484,7 +483,7 @@ async function splitFallback(
 
 function renderCompressedCanvas(img: HTMLImageElement, w: number, h: number, format: WorkspaceCompressOptions['format']): HTMLCanvasElement {
   const { canvas, ctx } = createCanvas2d(w, h)
-  if (format === 'image/jpeg' || (format === 'image/webp' && !canEncodeCanvasFormat('image/webp'))) {
+  if (format === 'image/jpeg') {
     ctx.fillStyle = '#ffffff'
     ctx.fillRect(0, 0, w, h)
   }

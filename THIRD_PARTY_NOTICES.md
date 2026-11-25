@@ -49,6 +49,7 @@ License metadata below is verified against each installed package's `package.jso
 | `@dnd-kit/sortable` | `^10.0.0` | `MIT` | Sortable preset for dnd-kit (`https://github.com/clauderic/dnd-kit`). |
 | `@dnd-kit/utilities` | `^3.2.2` | `MIT` | Utility helpers for dnd-kit (`https://github.com/clauderic/dnd-kit`). |
 | `jszip` | `^3.10.1` | `(MIT OR GPL-3.0-or-later)` | Client-side ZIP archive generator (`https://github.com/Stuk/jszip`); used by Moklu under the **MIT** license option. |
+| `@jsquash/webp` | `^1.5.0` | `Apache-2.0` | Client-side libwebp WASM encoder (`https://github.com/jamsinclair/jSquash`), repackaged from Google Squoosh (`libwebp`, BSD-3-Clause). Dynamically loaded via `import('@jsquash/webp/encode')` with bundled local `.wasm` assets only when native Canvas WebP encoding is unavailable (e.g. iOS Safari / WebKit). |
 | `heic-to` | `^1.6.7` | `LGPL-3.0` | Client-side HEIC/HEIF decoder (`https://github.com/hoppergee/heic-to`), bundling Emscripten-compiled `libheif` 1.23.7 (`https://github.com/strukturag/libheif`, LGPL-3.0) and `libde265` (LGPL-3.0). Dynamically loaded via `import('heic-to/csp')` (zero `eval`/`new Function`) only when native browser HEIC decoding is unavailable. |
 | `react` | `^19.2.6` | `MIT` | UI runtime (`https://github.com/facebook/react`). |
 | `react-dom` | `^19.2.6` | `MIT` | React DOM & SSR renderer (`https://github.com/facebook/react`). |
@@ -102,3 +103,14 @@ Moklu supports local, zero-upload HEIC/HEIF decoding in browsers that lack nativ
 - **Dynamic Separation**: `src/tools/heicDecoder.ts` attempts native browser decoding (`createImageBitmap` / `HTMLImageElement`) first and only loads `import('heic-to/csp')` as a separate lazy ESM chunk on demand. The main application bundle carries 0 KB of `heic-to` code.
 - **CSP Compliance**: Moklu strictly uses the `heic-to/csp` entry point (compiled with `USE_UNSAFE_EVAL=0`, containing zero `eval` or `new Function` calls) alongside `'wasm-unsafe-eval'` in `public/_headers` while keeping `'unsafe-eval'` forbidden.
 - **LGPL-3.0 Compliance**: Full LGPL-3.0 license text is distributed in `node_modules/heic-to/LICENSE`. Because Moklu is open-source (MIT) and dynamically imports `heic-to` as a replaceable npm package, users may freely inspect, modify, or relink `heic-to` / `libheif` via `package.json` and `npm run build`.
+
+---
+
+## 6. Dynamic Apache-2.0 WebP WASM Encoder Provenance (`@jsquash/webp` / `libwebp`)
+
+Moklu supports local, zero-upload WebP encoding in browsers whose `HTMLCanvasElement.toBlob('image/webp')` falls back to uncompressed PNG (e.g. iOS Safari / WebKit) by dynamically importing `@jsquash/webp/encode` (`@jsquash/webp@^1.5.0`, **Apache License 2.0**, bundling `libwebp`, **BSD-3-Clause**):
+
+- **Upstream Repository**: `https://github.com/jamsinclair/jSquash` (repackaged from Google Squoosh wrapping `https://github.com/webmproject/libwebp`).
+- **Dynamic Separation**: `src/tools/canvasHelpers.ts` and `src/workspace/canvasUtils.ts` use native browser Canvas WebP encoding first and only call `src/tools/webpEncoder.ts` on fallback. Native-WebP browsers never download the lazy JS or `.wasm` chunks, and the main bundle carries 0 KB of `@jsquash/webp`.
+- **CSP Compliance**: Local `.wasm` binaries (`webp_enc.wasm` and `webp_enc_simd.wasm`) are bundled as same-origin Vite assets under `dist/assets/` with zero `eval`, zero `new Function`, and zero external CDN fetches, running under `script-src 'self' 'wasm-unsafe-eval'` and `connect-src 'self'`.
+- **License Text**: Full Apache-2.0 license text is distributed in `node_modules/@jsquash/webp/LICENSE`.

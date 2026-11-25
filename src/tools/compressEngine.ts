@@ -6,7 +6,6 @@
  */
 
 import {
-  canEncodeCanvasFormat,
   canvasToBlob,
   clampCanvasDimensions,
   clampQuality,
@@ -74,10 +73,7 @@ function renderItemToCanvas(
   const canvas = createCanvas(width, height, options.createCanvas)
   const ctx = get2dContext(canvas)
 
-  if (
-    options.format === 'image/jpeg' ||
-    (options.format === 'image/webp' && !canEncodeCanvasFormat('image/webp'))
-  ) {
+  if (options.format === 'image/jpeg') {
     fillBackground(ctx, width, height, options.background ?? '#ffffff')
   }
 

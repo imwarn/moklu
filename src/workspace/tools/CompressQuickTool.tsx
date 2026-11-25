@@ -1,12 +1,12 @@
 /**
- * [INPUT]: depends on react, ModalShell from @/components/ui/ModalShell, canEncodeCanvasFormat/isHeicFile from @/tools, trackFunnelEvent from @/utils/telemetry, BeforeAfterSlider from ./BeforeAfterSlider, p1ToolsLocale from ../locales/p1ToolsLocale, canvasUtils, draftStorage, i18n, themeTokens, uiPrimitives, useDebouncedValue, useToolDraft, and workspace types
- * [OUTPUT]: exports ExifPrivacyBanner, CompressPreviewModal, and CompressQuickTool supporting quality-slider vs target-KB binary-search compression, Safari WebP-to-JPEG capability fallback, container-query responsive item cards, auto-downscale fallback toggle, HEIC/EXIF ingestion & inspector banner, interactive Before/After split slider with 200% zoom, clipboard copy, telemetry, draft auto-save, and ZIP download
+ * [INPUT]: depends on react, ModalShell from @/components/ui/ModalShell, isHeicFile from @/tools, trackFunnelEvent from @/utils/telemetry, BeforeAfterSlider from ./BeforeAfterSlider, p1ToolsLocale from ../locales/p1ToolsLocale, canvasUtils, draftStorage, i18n, themeTokens, uiPrimitives, useDebouncedValue, useToolDraft, and workspace types
+ * [OUTPUT]: exports ExifPrivacyBanner, CompressPreviewModal, and CompressQuickTool supporting quality-slider vs target-KB binary-search compression, lazy WASM WebP encoding with JPEG fallback notice on error, container-query responsive item cards, auto-downscale fallback toggle, HEIC/EXIF ingestion & inspector banner, interactive Before/After split slider with 200% zoom, clipboard copy, telemetry, draft auto-save, and ZIP download
  * [POS]: local batch image compressor, target-KB optimizer, and EXIF stripper panel inside src/workspace/tools; delegates encoding to injected engines.compress
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { ModalShell } from '@/components/ui/ModalShell'
-import { canEncodeCanvasFormat, isHeicFile } from '@/tools'
+import { isHeicFile } from '@/tools'
 import { trackFunnelEvent } from '@/utils/telemetry'
 import {
   copyImageToClipboard, createDemoImageInput, formatBytes, loadHtmlImage,
@@ -53,10 +53,6 @@ const TARGET_KB_PRESETS = [
 function clampTargetKb(raw: number): number {
   if (!Number.isFinite(raw)) return 200
   return Math.max(10, Math.min(10240, Math.round(raw)))
-}
-
-function preferredLossyFormat(): WorkspaceImageFormat {
-  return canEncodeCanvasFormat('image/webp') ? 'image/webp' : 'image/jpeg'
 }
 
 async function createRasterCompressDemoInput(variant: DemoVariant, filename: string): Promise<WorkspaceImageInput> {
@@ -277,13 +273,8 @@ export function CompressQuickTool({ preset, locale, theme, engines }: WorkspaceT
   const [compressMode, setCompressMode] = useState<CompressMode>(initialTargetMode ? 'target-kb' : 'quality')
   const [targetKb, setTargetKb] = useState<number>(() => clampTargetKb(preset.targetSizeKb ?? 200))
   const [preserveOriginalDimensions, setPreserveOriginalDimensions] = useState<boolean>(false)
-  const [format, setFormat] = useState<WorkspaceImageFormat>(() =>
-    rawInitialFormat === 'image/webp' && !canEncodeCanvasFormat('image/webp') ? 'image/jpeg' : rawInitialFormat,
-  )
+  const [format, setFormat] = useState<WorkspaceImageFormat>(rawInitialFormat)
   const [pngAutoSwitched, setPngAutoSwitched] = useState<boolean>(initialPngSwitched)
-  const [webpFallbackNote, setWebpFallbackNote] = useState<boolean>(
-    () => rawInitialFormat === 'image/webp' && !canEncodeCanvasFormat('image/webp'),
-  )
   const [qualityPercent, setQualityPercent] = useState<number>(82)
   const [maxWidthKey, setMaxWidthKey] = useState<string>('0')
   const [results, setResults] = useState<WorkspaceCompressItem[]>([])
@@ -309,11 +300,8 @@ export function CompressQuickTool({ preset, locale, theme, engines }: WorkspaceT
     if (typeof cfg.preserveOriginalDimensions === 'boolean') setPreserveOriginalDimensions(cfg.preserveOriginalDimensions)
     if (cfg.format === 'image/png' || cfg.format === 'image/jpeg' || cfg.format === 'image/webp') {
       if (cfg.compressMode === 'target-kb' && cfg.format === 'image/png') {
-        setFormat(preferredLossyFormat())
+        setFormat('image/webp')
         setPngAutoSwitched(true)
-      } else if (cfg.format === 'image/webp' && !canEncodeCanvasFormat('image/webp')) {
-        setFormat('image/jpeg')
-        setWebpFallbackNote(true)
       } else {
         setFormat(cfg.format)
       }
@@ -333,10 +321,8 @@ export function CompressQuickTool({ preset, locale, theme, engines }: WorkspaceT
   const handleModeChange = (nextMode: CompressMode) => {
     setCompressMode(nextMode)
     if (nextMode === 'target-kb' && format === 'image/png') {
-      const lossy = preferredLossyFormat()
-      setFormat(lossy)
+      setFormat('image/webp')
       setPngAutoSwitched(true)
-      if (lossy === 'image/jpeg') setWebpFallbackNote(true)
     } else if (nextMode === 'quality') {
       setPngAutoSwitched(false)
     }
@@ -344,20 +330,11 @@ export function CompressQuickTool({ preset, locale, theme, engines }: WorkspaceT
 
   const handleFormatChange = (nextFormat: WorkspaceImageFormat) => {
     if (compressMode === 'target-kb' && nextFormat === 'image/png') {
-      const lossy = preferredLossyFormat()
-      setFormat(lossy)
+      setFormat('image/webp')
       setPngAutoSwitched(true)
-      if (lossy === 'image/jpeg') setWebpFallbackNote(true)
-      return
-    }
-    if (nextFormat === 'image/webp' && !canEncodeCanvasFormat('image/webp')) {
-      setPngAutoSwitched(false)
-      setFormat('image/jpeg')
-      setWebpFallbackNote(true)
       return
     }
     setPngAutoSwitched(false)
-    setWebpFallbackNote(false)
     setFormat(nextFormat)
   }
 
@@ -429,6 +406,8 @@ export function CompressQuickTool({ preset, locale, theme, engines }: WorkspaceT
   }, [images, format, debouncedQualityPercent, maxWidthKey, compressMode, debouncedTargetKb, preserveOriginalDimensions, engines, s.compress.compressError])
 
   const activeResults = images.length > 0 ? results : []
+  const webpFallbackNote =
+    format === 'image/webp' && activeResults.some((item) => item.mimeType === 'image/jpeg')
   const previewItem = previewId ? activeResults.find((item) => item.id === previewId) ?? null : null
   const totalOriginal = activeResults.reduce((acc, item) => acc + item.originalBytes, 0)
   const totalOutput = activeResults.reduce((acc, item) => acc + item.outputBytes, 0)

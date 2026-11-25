@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on vitest, jszip, ./canvasHelpers, and ./testHelpers
- * [OUTPUT]: unit tests covering canvas clamping, object-fit math, background fills, offline image loader disposal, and ZIP archiving
+ * [INPUT]: depends on vitest, jszip, ./canvasHelpers, ./webpEncoder, and ./testHelpers
+ * [OUTPUT]: unit tests covering canvas clamping, object-fit math, background fills, WebKit WASM WebP & JPEG fallback encoding, offline image loader disposal, and ZIP archiving
  * [POS]: unit test suite for src/tools/canvasHelpers.ts
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -26,6 +26,8 @@ import {
   resolveEncodedImageFormat,
 } from './canvasHelpers'
 import { createRecordingCanvasFactory } from './testHelpers'
+import type { CanvasContextLike } from './types'
+import { resetWebpWasmEncoderCache, setWebpWasmEncoderOverride } from './webpEncoder'
 
 const TINY_PNG_DATA_URL =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='
@@ -33,6 +35,7 @@ const TINY_PNG_DATA_URL =
 describe('canvasHelpers', () => {
   afterEach(() => {
     resetCanvasFormatProbeCache()
+    resetWebpWasmEncoderCache()
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
   })
@@ -122,7 +125,43 @@ describe('canvasHelpers', () => {
     expect(blob.size).toBe(decoded.size)
   })
 
-  it('detects WebKit silent WebP-to-PNG fallback and re-encodes as lossy image/jpeg', async () => {
+  it('encodes real image/webp via lazy WASM when WebKit silently falls back to PNG and getImageData is available', async () => {
+    const wasmSpy = vi.fn(async (_img, opts: { quality: number }) => {
+      expect(opts.quality).toBe(82)
+      return new Uint8Array(310).buffer
+    })
+    setWebpWasmEncoderOverride(wasmSpy)
+
+    const calls: Array<{ type: string; quality?: number }> = []
+    const getImageData = vi.fn((_sx: number, _sy: number, sw: number, sh: number) => ({
+      width: sw,
+      height: sh,
+      data: new Uint8ClampedArray(sw * sh * 4),
+    }))
+    const safariWithPixels = {
+      width: 16,
+      height: 12,
+      getContext: () => ({ getImageData } as unknown as CanvasContextLike),
+      toBlob(cb: (blob: Blob | null) => void, type = 'image/png', quality?: number) {
+        calls.push({ type, quality })
+        if (type === 'image/webp') {
+          cb(new Blob([new Uint8Array(9_870)], { type: 'image/png' }))
+          return
+        }
+        cb(new Blob([new Uint8Array(420)], { type }))
+      },
+    }
+
+    const encoded = await canvasToBlob(safariWithPixels, 'image/webp', 0.82)
+    expect(calls).toEqual([{ type: 'image/webp', quality: 0.82 }])
+    expect(getImageData).toHaveBeenCalledWith(0, 0, 16, 12)
+    expect(wasmSpy).toHaveBeenCalledTimes(1)
+    expect(encoded.type).toBe('image/webp')
+    expect(encoded.size).toBe(310)
+    expect(resolveEncodedImageFormat('image/webp', encoded)).toBe('image/webp')
+  })
+
+  it('detects WebKit silent WebP-to-PNG fallback and falls back to lossy image/jpeg when getImageData or WASM is unavailable', async () => {
     expect(canEncodeCanvasFormat('image/png')).toBe(true)
     expect(canEncodeCanvasFormat('image/jpeg')).toBe(true)
     expect(
@@ -160,6 +199,37 @@ describe('canvasHelpers', () => {
     expect(encoded.type).toBe('image/jpeg')
     expect(encoded.size).toBe(420)
     expect(resolveEncodedImageFormat('image/webp', encoded)).toBe('image/jpeg')
+
+    // Also verify WASM rejection degrades cleanly to image/jpeg.
+    setWebpWasmEncoderOverride(async () => {
+      throw new Error('WASM blocked')
+    })
+    const wasmErrorCalls: string[] = []
+    const safariWithFailingWasm = {
+      width: 8,
+      height: 8,
+      getContext: () =>
+        ({
+          getImageData: (_sx: number, _sy: number, sw: number, sh: number) => ({
+            width: sw,
+            height: sh,
+            data: new Uint8ClampedArray(sw * sh * 4),
+          }),
+        }) as unknown as CanvasContextLike,
+      toBlob(cb: (blob: Blob | null) => void, type = 'image/png') {
+        wasmErrorCalls.push(type)
+        if (type === 'image/webp') {
+          cb(new Blob([new Uint8Array(4_096)], { type: 'image/png' }))
+          return
+        }
+        cb(new Blob([new Uint8Array(280)], { type }))
+      },
+    }
+
+    const degraded = await canvasToBlob(safariWithFailingWasm, 'image/webp', 0.8)
+    expect(wasmErrorCalls).toEqual(['image/webp', 'image/jpeg'])
+    expect(degraded.type).toBe('image/jpeg')
+    expect(degraded.size).toBe(280)
   })
 
   it('packs Blobs and Uint8Arrays into a valid JSZip archive with deduplicated safe filenames', async () => {

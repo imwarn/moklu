@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on jszip for ZIP archiving and shared canvas/image types from ./types
- * [OUTPUT]: exports canvas creation, safe clamping, image loading/disposal, rounded-rect clipping, background fill, object-fit math, canvas format capability detection, canvas-to-Blob (with WebKit WebP-to-JPEG fallback), byte formatting, and ZIP packing helpers
+ * [INPUT]: depends on jszip for ZIP archiving, encodeWebpWithWasm from ./webpEncoder, and shared canvas/image types from ./types
+ * [OUTPUT]: exports canvas creation, safe clamping, image loading/disposal, rounded-rect clipping, background fill, object-fit math, canvas format capability detection, canvas-to-Blob (with lazy WASM WebP fallback before JPEG fallback), byte formatting, and ZIP packing helpers
  * [POS]: shared low-level canvas & binary utility module of src/tools; consumed by all five image processing engines
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -18,6 +18,7 @@ import type {
   Rect,
   ZipFileEntry,
 } from './types'
+import { encodeWebpWithWasm } from './webpEncoder'
 
 export const MAX_CANVAS_DIMENSION = 8192
 export const MAX_CANVAS_PIXELS = 64_000_000
@@ -435,20 +436,87 @@ async function encodeCanvasOnce(
   throw new Error('Canvas implementation provides neither convertToBlob, toBlob, nor toDataURL.')
 }
 
+function isBrowserCanvasElement(canvas: CanvasLike): boolean {
+  if (typeof HTMLCanvasElement !== 'undefined' && canvas instanceof HTMLCanvasElement) {
+    return true
+  }
+  if (typeof OffscreenCanvas !== 'undefined' && canvas instanceof OffscreenCanvas) {
+    return true
+  }
+  return false
+}
+
+async function tryEncodeCanvasWebpWithWasm(
+  canvas: CanvasLike,
+  effectiveQuality: number | undefined,
+): Promise<Blob | null> {
+  if (canvas.width <= 0 || canvas.height <= 0) return null
+  try {
+    const ctx = canvas.getContext('2d')
+    if (!ctx || typeof ctx.getImageData !== 'function') return null
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+    const blob = await encodeWebpWithWasm(imageData, { quality: effectiveQuality })
+    return blob.size > 0 && blob.type === 'image/webp' ? blob : null
+  } catch {
+    return null
+  }
+}
+
+async function encodeCanvasJpegFallback(
+  canvas: CanvasLike,
+  effectiveQuality: number | undefined,
+): Promise<Blob> {
+  if (
+    isBrowserCanvasElement(canvas) &&
+    typeof document !== 'undefined' &&
+    typeof document.createElement === 'function'
+  ) {
+    try {
+      const flat = document.createElement('canvas')
+      flat.width = canvas.width
+      flat.height = canvas.height
+      const flatCtx = flat.getContext('2d')
+      if (flatCtx) {
+        flatCtx.fillStyle = '#ffffff'
+        flatCtx.fillRect(0, 0, flat.width, flat.height)
+        flatCtx.drawImage(canvas as unknown as CanvasImageSource, 0, 0)
+        return encodeCanvasOnce(flat as unknown as CanvasLike, 'image/jpeg', effectiveQuality)
+      }
+    } catch {
+      // Fall through to encoding the original canvas directly.
+    }
+  }
+  return encodeCanvasOnce(canvas, 'image/jpeg', effectiveQuality)
+}
+
 export async function canvasToBlob(
   canvas: CanvasLike,
   format: ImageFormat = 'image/png',
   quality?: number,
 ): Promise<Blob> {
   const effectiveQuality = format === 'image/png' ? undefined : clampQuality(quality)
-  const blob = await encodeCanvasOnce(canvas, format, effectiveQuality)
 
-  // Guard against WebKit / iOS Safari silently falling back from image/webp to huge uncompressed image/png.
-  if (format === 'image/webp' && blob.type === 'image/png') {
-    return encodeCanvasOnce(canvas, 'image/jpeg', effectiveQuality)
+  if (format === 'image/webp') {
+    // Fast-path on real browser canvases (e.g. iOS Safari / WebKit) where native WebP encode
+    // is unavailable: skip creating a wasted huge PNG and encode directly via lazy WASM WebP.
+    if (isBrowserCanvasElement(canvas) && !canEncodeCanvasFormat('image/webp')) {
+      const wasmBlob = await tryEncodeCanvasWebpWithWasm(canvas, effectiveQuality)
+      if (wasmBlob) return wasmBlob
+      return encodeCanvasJpegFallback(canvas, effectiveQuality)
+    }
+
+    const blob = await encodeCanvasOnce(canvas, 'image/webp', effectiveQuality)
+    if (blob.type !== 'image/png') {
+      return blob
+    }
+
+    // Guard against WebKit / iOS Safari silently falling back from image/webp to uncompressed image/png.
+    const wasmBlob = await tryEncodeCanvasWebpWithWasm(canvas, effectiveQuality)
+    if (wasmBlob) return wasmBlob
+    return encodeCanvasJpegFallback(canvas, effectiveQuality)
   }
 
-  return blob
+  return encodeCanvasOnce(canvas, format, effectiveQuality)
 }
 
 // ============================================================================
