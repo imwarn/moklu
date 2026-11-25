@@ -402,6 +402,10 @@ export const KO_STUDIO: StudioDictionary = {
     fit: '맞춤',
     fitTitle: '화면에 캔버스 맞추기',
     panModeHint: '✋ 이동 모드: 드래그하여 이동',
+    backdropLabel: '캔버스 배경 미리보기',
+    backdropDark: '다크룸',
+    backdropGray: '중성 그레이',
+    backdropLight: '스토어 라이트',
   },
   modals: {
     quickDesign: {

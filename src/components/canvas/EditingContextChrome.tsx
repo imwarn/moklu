@@ -98,8 +98,8 @@ export function HorizontalScrollAffordance({
       <div ref={scrollRef} className={`h-full min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${className}`}>
         {children}
       </div>
-      {edges.start && <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-0 z-10 w-7 bg-gradient-to-r from-[#18181f] via-[#18181f]/90 to-transparent" />}
-      {edges.end && <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 z-10 flex w-9 items-center justify-end bg-gradient-to-l from-[#18181f] via-[#18181f]/90 to-transparent pr-1 text-xs text-[#8d8997]">›</span>}
+      {edges.start && <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-0 z-10 w-7 bg-gradient-to-r from-panel via-panel/90 to-transparent" />}
+      {edges.end && <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 z-10 flex w-9 items-center justify-end bg-gradient-to-l from-panel via-panel/90 to-transparent pr-1 text-xs text-muted">›</span>}
     </div>
   )
 }

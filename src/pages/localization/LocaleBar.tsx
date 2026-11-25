@@ -52,9 +52,9 @@ export function LocaleBar({
   const tl = t.modals.localization
 
   return (
-    <section className="border-b border-white/8 bg-[#18181f]/86 px-4 py-3 sm:px-8 sm:py-4 backdrop-blur-xl shrink-0">
+    <section className="border-b border-border bg-panel/90 px-4 py-3 sm:px-8 sm:py-4 backdrop-blur-xl shrink-0">
       <div className="flex flex-wrap items-start gap-3">
-        <div className="pt-2 text-xs font-medium uppercase tracking-[0.22em] text-[#6b6b7a] shrink-0">{tl.languagesLabel}</div>
+        <div className="pt-2 text-xs font-medium uppercase tracking-[0.22em] text-muted shrink-0">{tl.languagesLabel}</div>
         <div className="flex flex-1 flex-wrap gap-2 items-center">
           {locales.map((locale) => {
             const progress = progressByLocale.get(locale) ?? { complete: 0, total: 0 }

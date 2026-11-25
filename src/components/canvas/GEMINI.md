@@ -22,7 +22,7 @@ Konva interactive stage, polymorphic layer renderer, concrete device/text/shape/
 - `PhoneNode.tsx`: Device/browser mockup renderer (`PhoneNode`) compositing clipped screenshots, screen borders, `PhoneStatusBar`, and SVG frames.
 - `PhoneStatusBar.tsx`: Non-interactive vector iOS/Android status bar (`PhoneStatusBar`) rendering 9:41 time, signal bars, Wi-Fi arcs, battery, and optional solid backdrop.
 - `ShapeNode.tsx`: Vector shape Konva renderer (`ShapeNode`) supporting rectangles, ellipses, arrows, and parametric polygon/star/cross/check paths with live transform vertex updates.
-- `StageCanvas.tsx`: Primary Konva editing viewport (`StageCanvas`) composing `stage/` hooks, multi-drag, transformers, `CanvasTextEditor`, and `StageOverlays`.
+- `StageCanvas.tsx`: Primary Konva editing viewport (`StageCanvas`) composing `stage/` hooks, multi-drag, transformers, persistent non-destructive canvas backdrop surround preview, `CanvasTextEditor`, and `StageOverlays`.
 - `TextNode.tsx`: Plain and offscreen-rasterized rich-text Konva renderer (`TextNode`) implementing box-only resizing and double-click edit activation.
 - `ThumbnailStage.tsx`: Non-interactive scaled Konva stage (`ThumbnailStage`) used for offscreen slide thumbnail rasterization.
 - `stage/`: `StageCanvas` interaction hooks (`useStageViewport`, `useStageGeometry`, `useSelectionTransformers`, `useRubberBandSelection`, `useAssetDropTarget`), `StageLayerItem`, `StageOverlays`, and `multiDrag`.

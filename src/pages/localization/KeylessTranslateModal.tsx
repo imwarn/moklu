@@ -121,8 +121,8 @@ function KeylessTranslateDialog({
       maxWidth="max-w-4xl"
       backdropStyle={{ background: 'rgba(0, 0, 0, 0.72)' }}
       panelStyle={{
-        background: '#18181f',
-        borderColor: 'rgba(255, 255, 255, 0.1)',
+        background: 'var(--color-panel)',
+        borderColor: 'var(--color-border)',
         maxHeight: '88dvh',
       }}
     >

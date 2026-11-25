@@ -405,6 +405,10 @@ export const EN_STUDIO: StudioDictionary = {
     fit: 'Fit',
     fitTitle: 'Fit canvas in view',
     panModeHint: '✋ Pan mode: drag to move',
+    backdropLabel: 'Canvas backdrop preview',
+    backdropDark: 'Darkroom',
+    backdropGray: 'Neutral gray',
+    backdropLight: 'Store light',
   },
   modals: {
     quickDesign: {

@@ -304,7 +304,7 @@ export function EditingContextBar() {
   })
 
   return (
-    <div className={`relative ${actionsOpen ? 'z-40' : 'z-20'} h-11 shrink-0 border-b border-[rgba(255,255,255,0.07)] bg-[#18181f] px-3`}>
+    <div className={`relative ${actionsOpen ? 'z-40' : 'z-20'} h-11 shrink-0 border-b border-border bg-panel px-3`}>
       <div className="flex h-full min-w-0 items-stretch">
         <section className="flex min-w-0 flex-1 items-stretch" aria-label={t.context.canvasFormatAria}>
           <div className="mr-1.5 hidden shrink-0 items-center gap-1.5 lg:flex">
@@ -661,7 +661,7 @@ export function EditingContextAlert() {
   const localeLabel = getLanguageName(activeLocale)
 
   return (
-    <div className="flex h-9 shrink-0 items-center justify-center border-b border-[rgba(255,255,255,0.08)] bg-[#18181f] px-3">
+    <div className="flex h-9 shrink-0 items-center justify-center border-b border-border bg-panel px-3">
       <div className="flex min-w-0 max-w-full items-center justify-center gap-3">
         <div className="flex shrink-0 items-center gap-1.5" aria-hidden="true">
           {isFormatScoped && <span className="h-1.5 w-1.5 rounded-full bg-[#f59e0b] shadow-[0_0_7px_rgba(245,158,11,0.75)]" />}

@@ -1,10 +1,10 @@
 /**
- * [INPUT]: depends on react (Suspense, lazy, useCallback, useEffect, useMemo, useState), src/seo (InfoPageContent, SiteHeader, SeoLandingSections, SiteFooter, useSeoHead, getRouteCopy, buildLocalizedPath, ResolvedRoute), src/workspace (QuickWorkspace, StudioHandoffPayload), src/workspace/engineAdapter (createToolsWorkspaceEngines), dynamic import of @/bridge/studioHandoff (stageImagesIntoStudioAfterBootstrap), src/commercial/entitlements (isEffectivePro, useEntitlementStore), lazy-loaded @/commercial/PricingModal, src/theme/themeStore (applyDocumentTheme, useThemeStore), trackFunnelEvent from @/utils/telemetry, and PhoneModel from @/types
- * [OUTPUT]: exports ToolLandingPage component rendering the zero-splash above-the-fold QuickWorkspace (or editorial InfoPageContent on /about, /privacy, /terms), localized SEO sections, adaptive Light/Dark chrome, funnel telemetry, on-demand PricingModal, and lazy Studio handoff
+ * [INPUT]: depends on react (Suspense, lazy, useCallback, useEffect, useLayoutEffect, useMemo, useState), src/seo (InfoPageContent, SiteHeader, SeoLandingSections, SiteFooter, useSeoHead, getRouteCopy, buildLocalizedPath, ResolvedRoute), src/workspace (QuickWorkspace, StudioHandoffPayload), src/workspace/engineAdapter (createToolsWorkspaceEngines), dynamic import of @/bridge/studioHandoff (stageImagesIntoStudioAfterBootstrap), src/commercial/entitlements (isEffectivePro, useEntitlementStore), lazy-loaded @/commercial/PricingModal, src/theme/themeStore (applyDocumentTheme, useThemeStore), trackFunnelEvent from @/utils/telemetry, and PhoneModel from @/types
+ * [OUTPUT]: exports ToolLandingPage component rendering the zero-splash above-the-fold QuickWorkspace (or editorial InfoPageContent on /about, /privacy, /terms), localized SEO sections, pre-paint adaptive Light/Dark chrome sync, funnel telemetry, on-demand PricingModal, and lazy Studio handoff
  * [POS]: primary landing page in src/pages; serves '/', all SEO tool routes, and /about, /privacy, /terms across en/zh/ja/ko without loading Konva or Studio stores
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
-import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react'
+import { Suspense, lazy, useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { isEffectivePro, useEntitlementStore } from '@/commercial/entitlements'
 import {
   InfoPageContent,
@@ -47,6 +47,8 @@ function toPhoneModel(value?: string): PhoneModel | undefined {
   return VALID_PHONE_MODELS.has(value as PhoneModel) ? (value as PhoneModel) : undefined
 }
 
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect
+
 export interface ToolLandingPageProps {
   route: ResolvedRoute
   onNavigate: (path: string) => void
@@ -68,8 +70,8 @@ export function ToolLandingPage({ route, onNavigate }: ToolLandingPageProps) {
   const copy = getRouteCopy(route.locale, route.slug)
   const isDark = resolvedTheme === 'dark'
 
-  // Sync Light/Dark document theme and listen to OS preference changes.
-  useEffect(() => {
+  // Sync Light/Dark document theme synchronously before paint so returning from dark /studio never flashes.
+  useIsomorphicLayoutEffect(() => {
     applyDocumentTheme(resolvedTheme, 'workspace')
     document.documentElement.dataset.surface = 'workspace'
   }, [resolvedTheme])

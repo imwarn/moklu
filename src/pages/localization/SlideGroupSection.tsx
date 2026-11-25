@@ -82,7 +82,7 @@ export function SlideGroupSection({
 
   return (
     <section
-      className="overflow-hidden rounded-[24px] border border-white/8 bg-[#18181f] shadow-[0_24px_80px_rgba(0,0,0,0.28)]"
+      className="overflow-hidden rounded-[24px] border border-border bg-panel shadow-[0_24px_80px_rgba(0,0,0,0.28)]"
     >
       {/* Section header */}
       <button
@@ -136,7 +136,7 @@ export function SlideGroupSection({
               className="grid gap-3 pr-6 pb-3 text-xs font-semibold uppercase tracking-[0.18em] text-[#78798b]"
               style={{ gridTemplateColumns }}
             >
-              <div className="py-2 pl-4 pr-3 md:sticky md:left-0 z-10 bg-[#18181f]">{tl.layerColumn}</div>
+              <div className="py-2 pl-4 pr-3 md:sticky md:left-0 z-10 bg-panel">{tl.layerColumn}</div>
               {locales.map((locale) => (
                 <div
                   key={locale}
@@ -147,7 +147,7 @@ export function SlideGroupSection({
                 >
                   <span>{getLanguageName(locale)}</span>
                   <span className="font-mono text-[10px] opacity-60">{locale}</span>
-                  {locale === defaultLocale && <span className="text-[9px] text-[#6b6b7a]">{tl.defaultBadgeParen}</span>}
+                  {locale === defaultLocale && <span className="text-[9px] text-muted">{tl.defaultBadgeParen}</span>}
                 </div>
               ))}
             </div>
@@ -165,7 +165,7 @@ export function SlideGroupSection({
                     style={{ gridTemplateColumns }}
                   >
                     {/* Layer column — sticky left on md+ */}
-                    <div className="md:sticky md:left-0 z-10 flex h-full flex-col pl-4" style={{ background: '#18181f' }}>
+                    <div className="md:sticky md:left-0 z-10 flex h-full flex-col pl-4 bg-panel">
                       <div className="flex min-h-[80px] flex-1 flex-col justify-between rounded-xl border border-white/8 bg-white/[0.02] px-4 py-3 mb-3">
                         <div className="flex items-start gap-3" style={{ paddingLeft: row.depth * 16 }}>
                           <div
@@ -184,7 +184,7 @@ export function SlideGroupSection({
                               {row.layerName}
                             </button>
                             <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                              <span className="text-[10px] uppercase tracking-[0.14em] text-[#6b6b7a]">
+                              <span className="text-[10px] uppercase tracking-[0.14em] text-muted">
                                 {t.properties.layerTypes[row.layerType] ?? row.layerType}
                               </span>
                               {platformBadge && (

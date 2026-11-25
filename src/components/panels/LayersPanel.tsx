@@ -287,8 +287,8 @@ export function LayersPanel() {
 
   // ── Insert toolbar ───────────────────────────────────────────────────────────
 
-  const panelBg = '#18181f'
-  const borderColor = 'rgba(255,255,255,0.06)'
+  const panelBg = 'var(--color-panel)'
+  const borderColor = 'var(--color-border)'
   const handleInsertToolClick = (key: string) => {
     if (key === 'phone') addPhone()
     else if (key === 'text') addText()
@@ -316,7 +316,7 @@ export function LayersPanel() {
       {/* Insert toolbar */}
       <div className="px-3 pt-3 pb-2 shrink-0 border-b" style={{ borderColor }}>
         <div className="mb-3 flex items-center justify-between">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#6b6b7a]">{t.layers.insert}</span>
+          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted">{t.layers.insert}</span>
         </div>
 
         {selectedLayerIds.length > 0 && (
@@ -350,16 +350,16 @@ export function LayersPanel() {
           updateLayer={updateLayer}
         />
 
-        <div className="mt-3 h-px w-full bg-[rgba(255,255,255,0.06)]" />
+        <div className="mt-3 h-px w-full bg-border" />
         <div className="pt-2">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#6b6b7a]">{t.layers.layers}</span>
+          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted">{t.layers.layers}</span>
         </div>
       </div>
 
       {/* Layer list */}
       <div className="flex-1 overflow-y-auto">
         {layers.length === 0 && (
-          <p className="text-xs text-[#6b6b7a] px-3 py-4 text-center">{t.layers.noLayersYet}</p>
+          <p className="text-xs text-muted px-3 py-4 text-center">{t.layers.noLayersYet}</p>
         )}
 
         <DndContext
@@ -442,7 +442,7 @@ export function LayersPanel() {
             <span className="flex-1 text-xs truncate" style={{ color: selection?.layerId === backgroundLayer.id ? '#e8e8f0' : '#b0b0c4' }}>
               {backgroundLayer.name}
             </span>
-            <span className="flex h-5 w-5 shrink-0 items-center justify-center" style={{ color: '#6b6b7a' }} title={t.layers.backgroundLockedTitle}>
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center text-muted" title={t.layers.backgroundLockedTitle}>
               <LockIcon size={12} />
             </span>
           </div>

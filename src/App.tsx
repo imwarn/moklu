@@ -1,13 +1,16 @@
 /**
- * [INPUT]: depends on react (lazy, Suspense, useCallback, useEffect, useState), resolvePathname/buildLocalizedPath/useSeoHead from @/seo, ChunkErrorBoundary from @/components/common/ChunkErrorBoundary, ToolLandingPage from @/pages/ToolLandingPage, lazy-loaded StudioPage from @/pages/StudioPage, and Studio-only dynamic import of @/utils/fonts
- * [OUTPUT]: exports default App SPA router mapping '/' and localized SEO tool slugs to ToolLandingPage and '/studio' (plus '/<locale>/studio') to lazy-loaded StudioPage wrapped in ChunkErrorBoundary
+ * [INPUT]: depends on react (lazy, Suspense, useCallback, useEffect, useLayoutEffect, useState), resolvePathname/buildLocalizedPath/useSeoHead from @/seo, applyDocumentTheme from @/theme/themeStore, ChunkErrorBoundary from @/components/common/ChunkErrorBoundary, ToolLandingPage from @/pages/ToolLandingPage, lazy-loaded StudioPage from @/pages/StudioPage, and Studio-only dynamic import of @/utils/fonts
+ * [OUTPUT]: exports default App SPA router mapping '/' and localized SEO tool slugs to ToolLandingPage and '/studio' (plus '/<locale>/studio') to lazy-loaded StudioPage with pre-paint dark theme lock wrapped in ChunkErrorBoundary
  * [POS]: root router shell of src/; ensures landing routes render instantaneously without loading Konva, Studio stores, or editor font sheets
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
-import { Suspense, lazy, useCallback, useEffect, useState } from 'react'
+import { Suspense, lazy, useCallback, useEffect, useLayoutEffect, useState } from 'react'
 import { buildLocalizedPath, resolvePathname, useSeoHead, type ResolvedRoute } from '@/seo'
+import { applyDocumentTheme } from '@/theme/themeStore'
 import { ChunkErrorBoundary } from '@/components/common/ChunkErrorBoundary'
 import { ToolLandingPage } from '@/pages/ToolLandingPage'
+
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect
 
 const StudioPage = lazy(() =>
   import('@/pages/StudioPage').then((m) => ({ default: m.StudioPage })),
@@ -28,6 +31,11 @@ function StudioRouteShell({
   useSeoHead(route)
   const homeHref = buildLocalizedPath(route.locale, '')
 
+  useIsomorphicLayoutEffect(() => {
+    applyDocumentTheme('dark', 'studio')
+    document.documentElement.dataset.surface = 'studio'
+  }, [])
+
   useEffect(() => {
     void import('@/utils/fonts').then((m) => m.loadGoogleFonts())
   }, [])
@@ -40,7 +48,7 @@ function StudioRouteShell({
     >
       <Suspense
         fallback={
-          <div className="flex h-screen w-screen items-center justify-center bg-surface text-sm text-muted">
+          <div className="flex h-[100dvh] w-full items-center justify-center bg-[#09090b] text-sm text-[#a1a1aa]">
             Loading Moklu Studio…
           </div>
         }

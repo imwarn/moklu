@@ -402,6 +402,10 @@ export const JA_STUDIO: StudioDictionary = {
     fit: '画面に合わせる',
     fitTitle: 'キャンバスを画面に合わせる',
     panModeHint: '✋ パンモード：ドラッグで移動',
+    backdropLabel: '背景プレビュー',
+    backdropDark: 'ダーク',
+    backdropGray: 'グレー',
+    backdropLight: 'ストア白',
   },
   modals: {
     quickDesign: {

@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on react, react-konva, konva, zustand useShallow, useEditorStore, useAssetStore, BRAND from @/theme/brand, resolveGroupView from @/utils/canvasFormats, getEffectivePano, studioTokens, multiDrag helper, and stage sub-hooks/overlays
- * [OUTPUT]: exports StageCanvas component with blur-safe Ctrl tracking and view-resolved multi-layer drag
+ * [OUTPUT]: exports StageCanvas component with blur-safe Ctrl tracking, view-resolved multi-layer drag, and persistent non-destructive canvas backdrop preview tone
  * [POS]: primary Konva editing viewport inside src/components/canvas mounted by StudioPage
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -17,6 +17,12 @@ import type { Layer as AppLayer, BackgroundLayer } from '@/types'
 import { STUDIO_TEXT_MUTED_CLS } from '@/components/ui/studioTokens'
 import { CanvasTextEditor } from './CanvasTextEditor'
 import { StageLayerItem } from './stage/StageLayerItem'
+import {
+  CANVAS_BACKDROP_PRESETS,
+  loadStoredCanvasBackdrop,
+  persistCanvasBackdrop,
+  type CanvasBackdropTone,
+} from './stage/backdropPresets'
 import { CanvasShadow, SeamGuides, StageChrome } from './stage/StageOverlays'
 import { resolveMultiDragStartPositions, type MultiDragStartEntry } from './stage/multiDrag'
 import { useAssetDropTarget } from './stage/useAssetDropTarget'
@@ -47,6 +53,12 @@ interface StageCanvasProps { stageRef: React.RefObject<Konva.Stage | null> }
 
 export function StageCanvas({ stageRef }: StageCanvasProps) {
   const [zoomInput, setZoomInput] = useState<string | null>(null)
+  const [backdropTone, setBackdropTone] = useState<CanvasBackdropTone>(loadStoredCanvasBackdrop)
+  const handleBackdropChange = useCallback((next: CanvasBackdropTone) => {
+    setBackdropTone(next)
+    persistCanvasBackdrop(next)
+  }, [])
+  const backdropPreset = CANVAS_BACKDROP_PRESETS[backdropTone]
   const multiDragRef = useRef<{
     draggingId: string
     startX: number
@@ -188,29 +200,29 @@ export function StageCanvas({ stageRef }: StageCanvasProps) {
 
   const gridLines: React.ReactNode[] = []
   if (showGrid) {
-    for (let x = 0; x <= totalWidth; x += 100) gridLines.push(<Line key={`gx-${x}`} points={[x, 0, x, totalHeight]} stroke="rgba(255,255,255,0.06)" strokeWidth={1} listening={false} />)
-    for (let y = 0; y <= totalHeight; y += 100) gridLines.push(<Line key={`gy-${y}`} points={[0, y, totalWidth, y]} stroke="rgba(255,255,255,0.06)" strokeWidth={1} listening={false} />)
+    for (let x = 0; x <= totalWidth; x += 100) gridLines.push(<Line key={`gx-${x}`} points={[x, 0, x, totalHeight]} stroke={backdropPreset.gridStroke} strokeWidth={1} listening={false} />)
+    for (let y = 0; y <= totalHeight; y += 100) gridLines.push(<Line key={`gy-${y}`} points={[0, y, totalWidth, y]} stroke={backdropPreset.gridStroke} strokeWidth={1} listening={false} />)
   }
   const renderStageLayerItem = (layer: AppLayer) => <StageLayerItem key={layer.id} layer={layer} isSelected={selection?.layerId === layer.id && !editingGroupId} isEditing={layer.type === 'group' && editingGroupId === layer.id} selectedChildId={editingGroupId === layer.id ? (selection?.layerId ?? null) : null} canvasWidth={totalWidth} canvasHeight={totalHeight} ctrlRef={ctrlRef} selectedAccentIndex={selection?.layerId === layer.id ? selectedAccentIndex : null} />
 
-  return <div ref={containerRef} style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', cursor: spaceDown ? (isPanning ? 'grabbing' : 'grab') : 'default' }} onMouseDown={handleContainerMouseDown} onDragOver={handleAssetDragOver} onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setAssetDropHighlight(null) }} onDrop={(e) => { void handleAssetDrop(e) }}>
+  return <div ref={containerRef} style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', background: backdropPreset.bg, transition: 'background-color 180ms ease', cursor: spaceDown ? (isPanning ? 'grabbing' : 'grab') : 'default' }} onMouseDown={handleContainerMouseDown} onDragOver={handleAssetDragOver} onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setAssetDropHighlight(null) }} onDrop={(e) => { void handleAssetDrop(e) }}>
     {!group ? <div className={`flex items-center justify-center w-full h-full ${STUDIO_TEXT_MUTED_CLS} text-sm`}>No slide group selected</div> : containerSize.w > 0 && <>
-      <CanvasShadow group={group} viewportX={viewportX} viewportY={viewportY} displayWidth={displayWidth} displayHeight={displayHeight} />
+      <CanvasShadow group={group} viewportX={viewportX} viewportY={viewportY} displayWidth={displayWidth} displayHeight={displayHeight} backdropTone={backdropTone} />
       <Stage ref={stageRef} width={containerSize.w} height={containerSize.h} scaleX={zoom} scaleY={zoom} x={viewportX} y={viewportY} onClick={handleStageClick} onTap={handleStageClick} onMouseDown={handleStageMouseDown} onMouseMove={handleStageMouseMove} onMouseUp={handleStageMouseUp} style={{ position: 'absolute', top: 0, left: 0 }}>
         <Layer name="editor-export-overlay" listening={false}>{gridLines}</Layer>
         <Layer>{group.layers.filter((layer) => layer.type === 'background').map(renderStageLayerItem)}</Layer>
         <Layer listening={!selectedBackgroundLayer} onDragStart={handleContentLayerDragStart} onDragMove={handleContentLayerDragMove} onDragEnd={handleContentLayerDragEnd}>{group.layers.filter((layer) => layer.type !== 'background').map(renderStageLayerItem)}</Layer>
         <Layer name="editor-export-overlay">
-          <Transformer ref={groupOutlineRef} enabledAnchors={[]} rotateEnabled={false} borderStroke="rgba(255,255,255,0.65)" borderStrokeWidth={1.5} borderDash={[6, 4]} anchorSize={0} listening={false} />
+          <Transformer ref={groupOutlineRef} enabledAnchors={[]} rotateEnabled={false} borderStroke={backdropPreset.groupOutline} borderStrokeWidth={1.5} borderDash={[6, 4]} anchorSize={0} listening={false} />
           {rbRect && rbRect.w > 2 && rbRect.h > 2 && <Rect x={rbRect.x} y={rbRect.y} width={rbRect.w} height={rbRect.h} fill={BRAND.selectionFill} stroke={BRAND.selectionStroke} strokeWidth={1 / zoom} dash={[4 / zoom, 3 / zoom]} listening={false} />}
           <Transformer ref={transformerRef} keepRatio={!selectedLayerIsText} boundBoxFunc={(oldBox, newBox) => newBox.width < 20 || newBox.height < 20 ? oldBox : newBox} enabledAnchors={['top-left', 'top-center', 'top-right', 'middle-right', 'middle-left', 'bottom-left', 'bottom-center', 'bottom-right']} rotateEnabled={true} borderStroke={BRAND.selectionStroke} borderStrokeWidth={2} anchorFill={BRAND.accent} anchorStroke={BRAND.anchorStroke} anchorSize={10} anchorCornerRadius={3} rotateAnchorOffset={40} />
           <Transformer ref={accentTransformerRef} keepRatio={false} enabledAnchors={['top-left', 'top-center', 'top-right', 'middle-right', 'middle-left', 'bottom-left', 'bottom-center', 'bottom-right']} rotateEnabled={false} borderStroke={BRAND.selectionStroke} borderStrokeWidth={2} anchorFill={BRAND.accent} anchorStroke={BRAND.anchorStroke} anchorSize={10} anchorCornerRadius={3} />
         </Layer>
       </Stage>
       {/* Visual-only DOM separators never appear in Stage exports. */}
-      <SeamGuides group={group} showSeamGuides={showSeamGuides} panoCompensate={panoCompensate} visualGapPx={visualGapPx} effectiveCompensationPx={effectiveCompensationPx} totalHeight={totalHeight} zoom={zoom} viewportX={viewportX} viewportY={viewportY} />
+      <SeamGuides group={group} showSeamGuides={showSeamGuides} panoCompensate={panoCompensate} visualGapPx={visualGapPx} effectiveCompensationPx={effectiveCompensationPx} totalHeight={totalHeight} zoom={zoom} viewportX={viewportX} viewportY={viewportY} backdropTone={backdropTone} />
       {editingTextId && <CanvasTextEditor stageRef={stageRef} />}
-      <StageChrome group={group} effectiveCompensationPx={effectiveCompensationPx} displayHeight={displayHeight} zoom={zoom} viewportX={viewportX} viewportY={viewportY} editingGroupId={editingGroupId} exitGroupEdit={exitGroupEdit} setZoom={setZoom} zoomInput={zoomInput} setZoomInput={setZoomInput} handleFit={handleFit} assetDropHighlight={assetDropHighlight} spaceDown={spaceDown} />
+      <StageChrome group={group} effectiveCompensationPx={effectiveCompensationPx} displayHeight={displayHeight} zoom={zoom} viewportX={viewportX} viewportY={viewportY} editingGroupId={editingGroupId} exitGroupEdit={exitGroupEdit} setZoom={setZoom} zoomInput={zoomInput} setZoomInput={setZoomInput} handleFit={handleFit} assetDropHighlight={assetDropHighlight} spaceDown={spaceDown} backdropTone={backdropTone} onChangeBackdrop={handleBackdropChange} />
     </>}
   </div>
 }

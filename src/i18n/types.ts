@@ -407,6 +407,10 @@ export interface StudioDictionary {
     fit: string
     fitTitle: string
     panModeHint: string
+    backdropLabel: string
+    backdropDark: string
+    backdropGray: string
+    backdropLight: string
   }
   modals: {
     quickDesign: {

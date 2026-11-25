@@ -98,7 +98,7 @@ export function RichTextToolbar({
       </div>
 
       <div className="mt-2 flex items-center gap-2">
-        <label className="text-[10px] text-[#6b6b7a] uppercase tracking-wider">Weight</label>
+        <label className="text-[10px] text-muted uppercase tracking-wider">Weight</label>
         <select
           value={rangeStyle.fontWeight === 'mixed' ? '' : rangeStyle.fontWeight}
           onChange={(e) => api.applyPatch({ fontWeight: Number(e.target.value) })}
@@ -123,7 +123,7 @@ export function RichTextToolbar({
           <button
             type="button"
             onClick={() => api.applyPatch({ fill: null })}
-            className="mt-2 text-[10px] text-[#6b6b7a] hover:text-[#e8e8f0] transition-colors"
+            className="mt-2 text-[10px] text-muted hover:text-[#e8e8f0] transition-colors"
           >
             ↺ Use layer fill
           </button>

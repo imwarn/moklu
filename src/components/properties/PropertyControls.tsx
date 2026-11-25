@@ -29,7 +29,7 @@ import {
 
 const inputCls =
   'bg-surface border border-[rgba(255,255,255,0.1)] rounded px-2 py-1 text-sm text-[#e8e8f0] w-full focus:outline-none focus:border-accent/60'
-const labelCls = 'text-[11px] text-[#6b6b7a] mb-1 block uppercase tracking-[0.08em]'
+const labelCls = 'text-[11px] text-muted mb-1 block uppercase tracking-[0.08em]'
 const rowCls = 'flex gap-2 mb-3'
 const fieldCls = 'flex-1 min-w-0'
 
@@ -154,7 +154,7 @@ function AddBrandColorButton({ currentColor }: { currentColor: string }) {
         type="button"
         title={t.properties.addBrand}
         onClick={() => { setAdding(true); setName('') }}
-        className="text-[10px] px-1.5 py-0.5 rounded border border-dashed border-[rgba(255,255,255,0.2)] text-[#6b6b7a] hover:text-[#e8e8f0] hover:border-[rgba(255,255,255,0.4)] transition-colors"
+        className="text-[10px] px-1.5 py-0.5 rounded border border-dashed border-[rgba(255,255,255,0.2)] text-muted hover:text-[#e8e8f0] hover:border-[rgba(255,255,255,0.4)] transition-colors"
       >
         {t.properties.addBrand}
       </button>
@@ -189,7 +189,7 @@ function AddBrandColorButton({ currentColor }: { currentColor: string }) {
       <button
         type="button"
         onClick={() => setAdding(false)}
-        className="text-[10px] text-[#6b6b7a] hover:text-[#e8e8f0]"
+        className="text-[10px] text-muted hover:text-[#e8e8f0]"
       >
         ✕
       </button>

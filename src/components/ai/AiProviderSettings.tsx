@@ -15,7 +15,7 @@ import { formatMessage, splitMessageTemplate, useStudioLocale } from '@/i18n'
 const inputCls =
   'bg-surface border border-[rgba(255,255,255,0.1)] rounded px-3 py-2 text-sm text-[#e8e8f0] w-full focus:outline-none focus:border-accent/60'
 const monoInputCls = `${inputCls} font-mono`
-const labelCls = 'text-[11px] text-[#6b6b7a] mb-1 block uppercase tracking-[0.08em]'
+const labelCls = 'text-[11px] text-muted mb-1 block uppercase tracking-[0.08em]'
 
 export function AiProviderSettings() {
   const { t } = useStudioLocale()
@@ -189,7 +189,7 @@ export function AiProviderSettings() {
             className={monoInputCls}
             autoComplete="off"
           />
-          <p className="mt-1 text-[11px] text-[#4a4a5a] leading-relaxed">
+          <p className="mt-1 text-[11px] text-muted leading-relaxed">
             {ta.baseUrlHint}
           </p>
         </div>
@@ -206,7 +206,7 @@ export function AiProviderSettings() {
           autoComplete="off"
         />
         {activeProvider.keyUrl && (
-          <p className="mt-1 text-[11px] text-[#4a4a5a] leading-relaxed break-words">
+          <p className="mt-1 text-[11px] text-muted leading-relaxed break-words">
             {splitMessageTemplate(ta.getKeyFrom).map((part, idx) => (
               <Fragment key={idx}>
                 {part.type === 'token' && part.key === 'link' ? (
@@ -256,10 +256,10 @@ export function AiProviderSettings() {
       <div className="mb-4 rounded-xl border border-[rgba(255,255,255,0.08)] p-3 bg-[rgba(255,255,255,0.02)]">
         <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
           <label className={labelCls + ' !mb-0'}>{ta.modelLabel}</label>
-          <span className="text-[10px] text-[#6b6b7a]">{modelStatus}</span>
+          <span className="text-[10px] text-muted">{modelStatus}</span>
         </div>
         {!hasActiveKey ? (
-          <p className="rounded-lg border border-[rgba(255,255,255,0.08)] px-3 py-4 text-xs text-[#6b6b7a] text-center">
+          <p className="rounded-lg border border-[rgba(255,255,255,0.08)] px-3 py-4 text-xs text-muted text-center">
             {formatMessage(ta.addKeyHint, { provider: activeProviderLabel })}
           </p>
         ) : (
@@ -273,7 +273,7 @@ export function AiProviderSettings() {
               autoComplete="off"
             />
             {loadingModels ? (
-              <p className="rounded-lg border border-[rgba(255,255,255,0.08)] px-3 py-4 text-xs text-[#6b6b7a] text-center">
+              <p className="rounded-lg border border-[rgba(255,255,255,0.08)] px-3 py-4 text-xs text-muted text-center">
                 {formatMessage(ta.loadingModels, { provider: activeProviderLabel })}
               </p>
             ) : activeModelError ? (
@@ -312,11 +312,11 @@ export function AiProviderSettings() {
                       }`}
                     >
                       <span className="block text-xs font-medium break-words">{model.name}</span>
-                      <span className="block text-[11px] font-mono text-[#6b6b7a] break-all">{model.id}</span>
-                      {model.description && <span className="block text-[10px] text-[#4a4a5a] line-clamp-2 mt-0.5">{model.description}</span>}
+                      <span className="block text-[11px] font-mono text-muted break-all">{model.id}</span>
+                      {model.description && <span className="block text-[10px] text-muted/80 line-clamp-2 mt-0.5">{model.description}</span>}
                     </button>
                   )) : (
-                    <p className="px-3 py-4 text-xs text-[#6b6b7a] text-center">{ta.noMatchingModels}</p>
+                    <p className="px-3 py-4 text-xs text-muted text-center">{ta.noMatchingModels}</p>
                   )}
                 </div>
               </>

@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on vitest, react, react-dom/server, @dnd-kit/core, @dnd-kit/sortable, useEditorStore, StudioLocaleProvider, studioTokens, contextMenu, ModalShell, SegmentedControl, SortableLayerRow, LayerContextMenu, SlideNavigator, LayersPanel, PropertiesPanel, SettingsModal, AiProviderSettings, HelpModal, TemplatesModal, and QuickDesignModal
- * [OUTPUT]: Vitest suite verifying Studio dark WCAG AA contrast, context menu viewport clamping and ARIA roles, layer row keyboard/touch action visibility, panel ARIA attributes, and narrow-screen mobile modal/drawer responsive classes
+ * [INPUT]: depends on vitest, react, react-dom/server, @dnd-kit/core, @dnd-kit/sortable, useEditorStore, StudioLocaleProvider, studioTokens, contextMenu, ModalShell, SegmentedControl, SortableLayerRow, LayerContextMenu, SlideNavigator, LayersPanel, PropertiesPanel, SettingsModal, AiProviderSettings, HelpModal, TemplatesModal, QuickDesignModal, backdropPresets, and StageOverlays
+ * [OUTPUT]: Vitest suite verifying Studio dark WCAG AA contrast, Neutral Zinc surface convergence, non-destructive canvas backdrop switcher, context menu viewport clamping and ARIA roles, layer row keyboard/touch action visibility, panel ARIA attributes, and narrow-screen mobile modal/drawer responsive classes
  * [POS]: automated UI accessibility, contrast, and mobile responsiveness regression suite inside src/components/ui
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -37,6 +37,13 @@ import { QuickDesignModal } from '@/components/panels/QuickDesignModal'
 import { SettingsModal } from '@/components/panels/SettingsModal'
 import { SlideNavigator } from '@/components/panels/SlideNavigator'
 import { TemplatesModal } from '@/components/panels/TemplatesModal'
+import {
+  CANVAS_BACKDROP_PRESETS,
+  STUDIO_BACKDROP_STORAGE_KEY,
+  loadStoredCanvasBackdrop,
+  persistCanvasBackdrop,
+} from '@/components/canvas/stage/backdropPresets'
+import { StageChrome } from '@/components/canvas/stage/StageOverlays'
 import { clampMenuPosition, placeContextMenu } from './contextMenu'
 import { ModalShell } from './ModalShell'
 import { SegmentedControl } from './SegmentedControl'
@@ -420,5 +427,55 @@ describe('Studio mobile narrow-screen responsive layout and accessibility', () =
     )
 
     expect(panelsHtml).toContain('max-w-[calc(100vw-2.5rem)]')
+    expect(panelsHtml).toContain('var(--color-panel)')
+    expect(panelsHtml).not.toContain('#18181f')
+    expect(panelsHtml).not.toContain('#6b6b7a')
+  })
+
+  it('converges AiProviderSettings onto AA contrast tokens and renders accessible 3-tone canvas backdrop switcher', () => {
+    const aiHtml = renderToStaticMarkup(
+      <StudioLocaleProvider locale="en">
+        <AiProviderSettings />
+      </StudioLocaleProvider>,
+    )
+    expect(aiHtml).not.toContain('#6b6b7a')
+    expect(aiHtml).not.toContain('#4a4a5a')
+
+    const baseGroup = useEditorStore.getState().project.slideGroups[0]
+    const onChangeBackdrop = vi.fn()
+    const chromeHtml = renderToStaticMarkup(
+      <StudioLocaleProvider locale="zh">
+        <StageChrome
+          group={baseGroup}
+          effectiveCompensationPx={0}
+          displayHeight={600}
+          zoom={0.5}
+          viewportX={40}
+          viewportY={40}
+          editingGroupId={null}
+          exitGroupEdit={() => {}}
+          setZoom={() => {}}
+          zoomInput={null}
+          setZoomInput={() => {}}
+          handleFit={() => {}}
+          assetDropHighlight={null}
+          spaceDown={false}
+          backdropTone="light"
+          onChangeBackdrop={onChangeBackdrop}
+        />
+      </StudioLocaleProvider>,
+    )
+
+    expect(chromeHtml).toContain('data-testid="canvas-backdrop-switcher"')
+    expect(chromeHtml).toContain('role="radiogroup"')
+    expect(chromeHtml).toContain('data-testid="canvas-backdrop-dark"')
+    expect(chromeHtml).toContain('data-testid="canvas-backdrop-gray"')
+    expect(chromeHtml).toContain('data-testid="canvas-backdrop-light"')
+    expect(chromeHtml).toContain('aria-checked="true"')
+    expect(chromeHtml).toContain('画布底板预览: 商店白')
+    expect(CANVAS_BACKDROP_PRESETS.light.bg).toBe('#f4f4f5')
+    expect(STUDIO_BACKDROP_STORAGE_KEY).toBe('moklu:studio-backdrop')
+    expect(loadStoredCanvasBackdrop()).toBe('dark')
+    expect(() => persistCanvasBackdrop('gray')).not.toThrow()
   })
 })

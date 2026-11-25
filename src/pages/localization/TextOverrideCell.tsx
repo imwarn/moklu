@@ -118,7 +118,7 @@ export function TextOverrideCell({
           background: isActiveColumn ? 'color-mix(in srgb, var(--color-accent) 6%, transparent)' : 'rgba(255,255,255,0.015)',
         }}
       >
-        <div className="mb-2 text-xs leading-5 text-[#6b6b7a]">
+        <div className="mb-2 text-xs leading-5 text-muted">
           {formatMessage(tl.inherits, { text: truncate(row.defaultText ?? '', 60) })}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -194,9 +194,9 @@ export function TextOverrideCell({
 
         {/* Backdrop plate: the row above sits on the real slide background (by design),
             but these controls are UI chrome, not part of the contrast test — keep them legible. */}
-        <div className="mt-2 flex items-center justify-between rounded-md bg-[#18181f]/70 px-1.5 py-1 backdrop-blur-sm">
+        <div className="mt-2 flex items-center justify-between rounded-md bg-panel/80 px-1.5 py-1 backdrop-blur-sm">
           {isDefaultLocale ? (
-            <span className="text-[10px] text-[#6b6b7a]">{tl.baseContent}</span>
+            <span className="text-[10px] text-muted">{tl.baseContent}</span>
           ) : mode === 'auto' && (
             <button
               type="button"

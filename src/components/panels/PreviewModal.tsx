@@ -154,8 +154,8 @@ export function PreviewModal({
       maxWidth="max-w-[96vw] sm:max-w-[90vw]"
       backdropClassName="fixed inset-0 z-[9999] flex items-center justify-center bg-[#08080c] p-2.5 sm:p-6"
       backdropStyle={undefined}
-      panelClassName="flex max-h-[90dvh] w-full flex-col overflow-hidden rounded-xl border bg-[#18181f] shadow-2xl"
-      panelStyle={{ borderColor: 'rgba(255,255,255,0.08)' }}
+      panelClassName="flex max-h-[90dvh] w-full flex-col overflow-hidden rounded-xl border bg-panel shadow-2xl"
+      panelStyle={{ borderColor: 'var(--color-border)' }}
       showCloseButton={false}
       header={<div className="flex flex-wrap items-center justify-between gap-3 border-b border-[rgba(255,255,255,0.08)] px-4 py-3 sm:px-6 sm:py-4">
           <div>

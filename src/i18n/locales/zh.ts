@@ -402,6 +402,10 @@ export const ZH_STUDIO: StudioDictionary = {
     fit: '适应',
     fitTitle: '缩放画布以适应视口',
     panModeHint: '✋ 抓手模式：拖拽移动画布',
+    backdropLabel: '画布底板预览',
+    backdropDark: '暗房黑',
+    backdropGray: '中性灰',
+    backdropLight: '商店白',
   },
   modals: {
     quickDesign: {

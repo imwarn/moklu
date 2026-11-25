@@ -3,7 +3,7 @@
 
 ## Member list
 - `main.tsx`: Tick-0 browser mount entry point, `vite:preloadError` auto-recovery (`installChunkRecoveryListener`), Studio-only on-demand dynamic loading of `@/store/projects` (`ensureProjectsBootstrapped`) and `@/utils/fonts` (`loadGoogleFonts`), and headless ExportApp switch.
-- `App.tsx`: Lightweight History API SPA router routing `/` and localized SEO/info/tool slugs to `ToolLandingPage` and `/studio` to lazy-loaded `StudioPage` (with on-demand Studio font loader inside `StudioRouteShell`) wrapped in `ChunkErrorBoundary`.
+- `App.tsx`: Lightweight History API SPA router routing `/` and localized SEO/info/tool slugs to `ToolLandingPage` and `/studio` to lazy-loaded `StudioPage` (with layout-effect dark surface sync, dark Suspense shell, and on-demand Studio font loader inside `StudioRouteShell`) wrapped in `ChunkErrorBoundary`.
 - `config.ts`: Canonical site config exporting `SITE_URL` (`https://moklu.app`), `BRAND_NAME` (`Moklu`), and `getPixelDeckConfig()`.
 - `index.css`: Self-hosted Geist & Geist Mono font imports, Tailwind v4 `@theme static` Signal Orange + Neutral Zinc semantic tokens (`surface`/`panel`/`border`/`muted`/`accent*`/`success`/`warning`/`danger`), `@custom-variant dark` bound to `[data-theme="dark"]`, and adaptive Light/Dark vs Studio body/scrollbar rules.
 - `globals.d.ts`: Build-time Vite constant declarations (`__APP_VERSION__`, `__GIT_HASH__`).

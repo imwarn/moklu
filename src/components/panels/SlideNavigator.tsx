@@ -417,7 +417,7 @@ export function SlideNavigator({ thumbnails, staleGroupIds, stageRef, onCaptureT
   }
 
   const THUMB_H = 44
-  const borderColor = 'rgba(255,255,255,0.06)'
+  const borderColor = 'var(--color-border)'
 
   // ─── Drag-and-drop ───────────────────────────────────────────────────────
   const sensors = useSensors(
@@ -440,7 +440,7 @@ export function SlideNavigator({ thumbnails, staleGroupIds, stageRef, onCaptureT
   return (
     <footer
       className="min-h-20 flex flex-wrap items-center gap-3 px-3 py-2 shrink-0 border-t"
-      style={{ background: '#18181f', borderColor }}
+      style={{ background: 'var(--color-panel)', borderColor }}
     >
       {/* Width follows the responsive LayersPanel width, less this footer's 12px inset. */}
       <div className="flex w-full shrink-0 flex-col gap-1.5 border-b border-[rgba(255,255,255,0.06)] pb-2 sm:w-[196px] sm:border-b-0 sm:border-r sm:pb-0 sm:pr-3 min-[1440px]:w-[212px]">
