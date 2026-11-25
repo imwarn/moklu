@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on types, routes, i18n, schema, useSeoHead, quickFacts, InfoPageContent, SiteHeader, SeoLandingSections, and SiteFooter within src/seo
- * [OUTPUT]: re-exports the complete public SEO, i18n, schema, head-management, Quick Facts, trust info page, and UI chrome API for src/App.tsx and src/pages/*
+ * [INPUT]: depends on types, routes, i18n, notFoundCopy, schema, useSeoHead, quickFacts, InfoPageContent, NotFoundContent, SiteHeader, SeoLandingSections, and SiteFooter within src/seo
+ * [OUTPUT]: re-exports the complete public SEO, i18n, schema, head-management, Quick Facts, trust info page, 404 Not Found view, and UI chrome API for src/App.tsx and src/pages/*
  * [POS]: sole external entry barrel for the src/seo module
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -93,6 +93,12 @@ export { getToolQuickFacts } from './quickFacts.ts'
 
 export type { InfoPageContentProps } from './InfoPageContent.tsx'
 export { InfoPageContent } from './InfoPageContent.tsx'
+
+export type { NotFoundCopy } from './notFoundCopy.ts'
+export { getNotFoundCopy } from './notFoundCopy.ts'
+
+export type { NotFoundContentProps } from './NotFoundContent.tsx'
+export { NotFoundContent } from './NotFoundContent.tsx'
 
 export type { SiteHeaderProps } from './SiteHeader.tsx'
 export { SiteHeader } from './SiteHeader.tsx'

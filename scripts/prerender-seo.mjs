@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on node:child_process, node:fs/promises, node:path, node:url, vite (build); depends on ALL_ROUTES and getSiteUrl from ../src/seo/routes.ts; depends on getRouteRelativeHtmlPath, renderRouteHtml, generateSitemapXml, generateRobotsTxt, and generateLlmsTxt from ../src/seo/ssg.ts; builds temporary SSR bundle from ../src/seo/ssrEntry.ts
- * [OUTPUT]: exports getRouteOutputPath, resolveRouteLastmodMap, and prerenderSeoDist; runs as post-build CLI writing 120 static localized index.html pages with full React-rendered markup, git-derived lastmod sitemap.xml, robots.txt, and llms.txt into dist/
+ * [INPUT]: depends on node:child_process, node:fs/promises, node:path, node:url, vite (build); depends on ALL_ROUTES, getSiteUrl, and resolvePathname from ../src/seo/routes.ts; depends on getRouteRelativeHtmlPath, renderRouteHtml, generateSitemapXml, generateRobotsTxt, and generateLlmsTxt from ../src/seo/ssg.ts; builds temporary SSR bundle from ../src/seo/ssrEntry.ts
+ * [OUTPUT]: exports getRouteOutputPath, resolveRouteLastmodMap, and prerenderSeoDist; runs as post-build CLI writing 120 static localized index.html pages plus dist/404.html with full React-rendered markup, git-derived lastmod sitemap.xml, robots.txt, and llms.txt into dist/
  * [POS]: post-build Node ESM SSG runner in scripts/, invoked after `vite build` to materialize zero-FOUC static HTML via react-dom/server renderToString
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -10,7 +10,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { build as viteBuild } from 'vite'
-import { ALL_ROUTES, getSiteUrl } from '../src/seo/routes.ts'
+import { ALL_ROUTES, getSiteUrl, resolvePathname } from '../src/seo/routes.ts'
 import {
   generateLlmsTxt,
   generateRobotsTxt,
@@ -163,6 +163,17 @@ export async function prerenderSeoDist({
       writtenFiles.push(outputPath)
     }
 
+    const notFoundRoute = resolvePathname('/404')
+    const notFoundBodyHtml = renderMarkup(notFoundRoute)
+    const notFoundHtml = renderRouteHtml(
+      templateHtml,
+      notFoundRoute,
+      normalizedBase,
+      notFoundBodyHtml,
+    )
+    const notFoundPath = path.join(distDir, '404.html')
+    await writeFile(notFoundPath, notFoundHtml, 'utf8')
+
     const sitemapPath = path.join(distDir, 'sitemap.xml')
     const resolvedLastmod = lastmod ?? resolveRouteLastmodMap(ALL_ROUTES)
     await writeFile(sitemapPath, generateSitemapXml(normalizedBase, resolvedLastmod), 'utf8')
@@ -178,6 +189,7 @@ export async function prerenderSeoDist({
       siteUrl: normalizedBase,
       routesWritten: writtenFiles.length,
       sitemapUrls: ALL_ROUTES.length,
+      notFoundPath,
       sitemapPath,
       robotsPath,
       llmsPath,

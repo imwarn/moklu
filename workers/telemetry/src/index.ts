@@ -1,14 +1,17 @@
 /**
- * [INPUT]: depends on WinterCG Fetch/Cache APIs, Cloudflare D1Database interface, and ./headersPolicy (EDGE_SECURITY_HEADERS, applyMokluEdgeHeaders, resolveEdgeCacheTtlSeconds)
+ * [INPUT]: depends on WinterCG Fetch/Cache APIs, Cloudflare D1Database interface, and ./headersPolicy (EDGE_SECURITY_HEADERS, applyMokluEdgeHeaders, isStaticNonHtmlAssetPath, isUnexpectedHtmlAssetFallback, resolveEdgeCacheTtlSeconds, resolveExplicitEnRedirectPath)
  * [OUTPUT]: exports D1DatabaseLike, TelemetryWorkerEnv, ExecutionContextLike, ALLOWED_FUNNEL_EVENTS, sanitizeEdgeDimension, and default Worker fetch handler
- * [POS]: edge entry point of workers/telemetry; serves moklu.app/_telemetry* zero-PII D1 funnel ingestion AND proxies Coolify origin responses with isolated Cloudflare Cache API (`caches.open`) + `cf.cacheEverything` edge caching, public/_headers CSP/COOP, CDN-Cache-Control, and unknown-route noindex hygiene
+ * [POS]: edge entry point of workers/telemetry; serves moklu.app/_telemetry* zero-PII D1 funnel ingestion, canonical 301 /en redirects, static-asset soft-200 HTML fallback rejection (404 text/plain, never cached), and Coolify origin proxying with isolated Cloudflare Cache API (`caches.open('moklu-edge-v2')`) + `cf.cacheEverything`, public/_headers CSP/COOP, CDN-Cache-Control, and unknown-route HTTP 404 + noindex hygiene
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
 import {
   EDGE_SECURITY_HEADERS,
   applyMokluEdgeHeaders,
+  isStaticNonHtmlAssetPath,
+  isUnexpectedHtmlAssetFallback,
   resolveEdgeCacheTtlSeconds,
+  resolveExplicitEnRedirectPath,
 } from './headersPolicy'
 
 export interface D1PreparedStatementLike {
@@ -47,7 +50,27 @@ interface EdgeCacheStorageLike {
 type EdgeRequest = Request & { cf?: CfRequestMetadata }
 type CfRequestInit = RequestInit & { cf?: CfFetchCacheOptions }
 
-const EDGE_CACHE_NAME = 'moklu-edge-v1'
+const EDGE_CACHE_NAME = 'moklu-edge-v2'
+
+function buildStaticAssetNotFoundResponse(method: string): Response {
+  return new Response(method === 'HEAD' ? null : 'Not Found', {
+    status: 404,
+    statusText: 'Not Found',
+    headers: {
+      ...EDGE_SECURITY_HEADERS,
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Cache-Control': 'no-store',
+      'X-Robots-Tag': 'noindex, nofollow',
+    },
+  })
+}
+
+function shouldRejectStaticAssetUpstream(pathname: string, upstream: Response): boolean {
+  if (isUnexpectedHtmlAssetFallback(pathname, upstream.headers.get('content-type'))) {
+    return true
+  }
+  return isStaticNonHtmlAssetPath(pathname) && upstream.status >= 400
+}
 
 async function openEdgeCache(): Promise<Cache | undefined> {
   const storage = (globalThis as { caches?: EdgeCacheStorageLike }).caches
@@ -269,11 +292,40 @@ export default {
 
     const method = request.method.toUpperCase()
     const isReadMethod = method === 'GET' || method === 'HEAD'
+
+    if (isReadMethod) {
+      const redirectPath = resolveExplicitEnRedirectPath(url.pathname)
+      if (redirectPath) {
+        return new Response(null, {
+          status: 301,
+          statusText: 'Moved Permanently',
+          headers: {
+            ...EDGE_SECURITY_HEADERS,
+            Location: `${url.origin}${redirectPath}${url.search}`,
+            'Cache-Control': 'public, max-age=3600',
+          },
+        })
+      }
+    }
+
     const edgeCacheTtl = isReadMethod ? resolveEdgeCacheTtlSeconds(url.pathname) : null
 
     if (edgeCacheTtl === null) {
       const upstream = await fetch(request)
-      return applyMokluEdgeHeaders(upstream, url.pathname)
+      if (shouldRejectStaticAssetUpstream(url.pathname, upstream)) {
+        void upstream.body?.cancel()
+        return buildStaticAssetNotFoundResponse(method)
+      }
+      const edgeResponse = applyMokluEdgeHeaders(upstream, url.pathname)
+      if (method === 'HEAD') {
+        void edgeResponse.body?.cancel()
+        return new Response(null, {
+          status: edgeResponse.status,
+          statusText: edgeResponse.statusText,
+          headers: new Headers(edgeResponse.headers),
+        })
+      }
+      return edgeResponse
     }
 
     const edgeCache = await openEdgeCache()
@@ -281,6 +333,10 @@ export default {
     if (edgeCache) {
       const cached = await edgeCache.match(cacheKey)
       if (cached) {
+        if (shouldRejectStaticAssetUpstream(url.pathname, cached)) {
+          void cached.body?.cancel()
+          return buildStaticAssetNotFoundResponse(method)
+        }
         const hitResponse = applyMokluEdgeHeaders(cached, url.pathname)
         const hitHeaders = new Headers(hitResponse.headers)
         hitHeaders.set('CF-Cache-Status', 'HIT')
@@ -308,6 +364,11 @@ export default {
         cacheTtl: edgeCacheTtl,
       },
     } as CfRequestInit)
+
+    if (shouldRejectStaticAssetUpstream(url.pathname, upstream)) {
+      void upstream.body?.cancel()
+      return buildStaticAssetNotFoundResponse(method)
+    }
 
     const edgeResponse = applyMokluEdgeHeaders(upstream, url.pathname)
 

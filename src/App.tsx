@@ -1,7 +1,7 @@
 /**
  * [INPUT]: depends on react (lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState), resolvePathname/buildLocalizedPath/useSeoHead from @/seo, hasSeoLocale/preloadSeoLocale from @/seo/i18n, hasWorkspaceLocale/preloadWorkspaceLocale from @/workspace/i18n, hasWorkspaceTool/preloadWorkspaceTool from @/workspace/QuickWorkspace, applyDocumentTheme from @/theme/themeStore, ChunkErrorBoundary from @/components/common/ChunkErrorBoundary, ToolLandingPage from @/pages/ToolLandingPage, lazy-loaded StudioPage from @/pages/StudioPage, and Studio-only dynamic import of @/utils/fonts
- * [OUTPUT]: exports default App SPA router mapping '/' and localized SEO tool slugs to ToolLandingPage and '/studio' (plus '/<locale>/studio') to lazy-loaded StudioPage with pre-navigation locale/tool chunk preloading, race-safe transitions, and pre-paint dark theme lock wrapped in ChunkErrorBoundary
- * [POS]: root router shell of src/; ensures landing routes render instantaneously without loading Konva, Studio stores, editor font sheets, or inactive locales/tools
+ * [OUTPUT]: exports default App SPA router mapping '/', localized SEO/info/404 fallback slugs to ToolLandingPage and '/studio' (plus '/<locale>/studio') to lazy-loaded StudioPage with pre-navigation locale/tool chunk preloading (skipping QuickWorkspace chunks on Studio/info/404 fallback routes), race-safe transitions, and pre-paint dark theme lock wrapped in ChunkErrorBoundary
+ * [POS]: root router shell of src/; ensures landing and 404 routes render instantaneously without loading Konva, Studio stores, editor font sheets, or inactive locales/tools
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 import { Suspense, lazy, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
@@ -26,7 +26,7 @@ function readCurrentPathname(): string {
 
 function needsRoutePreload(route: ResolvedRoute): boolean {
   if (!hasSeoLocale(route.locale)) return true
-  if (!route.isStudio && !route.isInfoPage) {
+  if (!route.isStudio && !route.isInfoPage && !route.isFallback) {
     if (!hasWorkspaceLocale(route.locale) || !hasWorkspaceTool(route.tool)) {
       return true
     }
@@ -39,7 +39,7 @@ async function preloadRouteAssets(route: ResolvedRoute): Promise<void> {
   if (!hasSeoLocale(route.locale)) {
     tasks.push(preloadSeoLocale(route.locale))
   }
-  if (!route.isStudio && !route.isInfoPage) {
+  if (!route.isStudio && !route.isInfoPage && !route.isFallback) {
     if (!hasWorkspaceLocale(route.locale)) {
       tasks.push(preloadWorkspaceLocale(route.locale))
     }

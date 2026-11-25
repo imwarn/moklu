@@ -1,7 +1,7 @@
 /**
  * [INPUT]: depends on react (StrictMode, lazy, Suspense), react-dom/client (createRoot), ./index.css, ./App.tsx, resolvePathname from @/seo/routes, preloadSeoLocale from @/seo/i18n, preloadWorkspaceLocale from @/workspace/i18n, preloadWorkspaceTool from @/workspace/QuickWorkspace, installChunkRecoveryListener from @/utils/chunkRecovery, and Studio-only dynamic imports of @/store/projects and @/utils/fonts
- * [OUTPUT]: installs Vite preloadError auto-recovery, preloads only the active route's locale dictionary and QuickWorkspace tool panel before mounting the Moklu SPA (or headless ExportApp when window.__EXPORT_CONFIG__ is present), and loads Studio project bootstrap and Google Fonts only on /studio routes
- * [POS]: browser application entry point of src/; keeps initial landing JS free of inactive locales, unused tool panels, Studio stores, and editor font bundles while preventing hydration flash on pre-rendered SSG pages
+ * [OUTPUT]: installs Vite preloadError auto-recovery, preloads only the active route's locale dictionary (and QuickWorkspace locale/tool chunks on tool routes, skipping them on Studio/info/404 fallback routes) before mounting the Moklu SPA (or headless ExportApp when window.__EXPORT_CONFIG__ is present), and loads Studio project bootstrap and Google Fonts only on /studio routes
+ * [POS]: browser application entry point of src/; keeps initial landing and 404 JS free of inactive locales, unused tool panels, Studio stores, and editor font bundles while preventing hydration flash on pre-rendered SSG pages
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 import { StrictMode, lazy, Suspense } from 'react'
@@ -40,7 +40,7 @@ async function bootstrapClientApp(): Promise<void> {
     // landing routes stay lightweight and defer Studio bootstrap until handoff or Studio navigation.
     void import('@/store/projects').then((m) => m.ensureProjectsBootstrapped())
     void import('@/utils/fonts').then((m) => m.loadGoogleFonts())
-  } else if (!initialRoute.isInfoPage) {
+  } else if (!initialRoute.isInfoPage && !initialRoute.isFallback) {
     tasks.push(
       preloadWorkspaceLocale(initialRoute.locale),
       preloadWorkspaceTool(initialRoute.tool),

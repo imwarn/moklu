@@ -1,13 +1,14 @@
 /**
- * [INPUT]: depends on react (Suspense, lazy, useCallback, useEffect, useLayoutEffect, useMemo, useState), src/seo (InfoPageContent, SiteHeader, SeoLandingSections, SiteFooter, useSeoHead, getRouteCopy, buildLocalizedPath, ResolvedRoute), QuickWorkspace from @/workspace/QuickWorkspace, StudioHandoffPayload from @/workspace/types, lazy createToolsWorkspaceEngines from @/workspace/engineAdapter, dynamic import of @/bridge/studioHandoff (stageImagesIntoStudioAfterBootstrap), src/commercial/entitlements (isEffectivePro, useEntitlementStore), lazy-loaded @/commercial/PricingModal, src/theme/themeStore (applyDocumentTheme, useThemeStore), trackFunnelEvent from @/utils/telemetry, and PhoneModel from @/types
- * [OUTPUT]: exports ToolLandingPage component rendering the zero-splash above-the-fold QuickWorkspace (or editorial InfoPageContent on /about, /privacy, /terms), localized SEO sections, pre-paint adaptive Light/Dark chrome sync, funnel telemetry, on-demand PricingModal, and lazy Studio handoff
- * [POS]: primary landing page in src/pages; serves '/', all SEO tool routes, and /about, /privacy, /terms across en/zh/ja/ko without loading Konva, Studio stores, unused tool panels, or unused canvas engines
+ * [INPUT]: depends on react (Suspense, lazy, useCallback, useEffect, useLayoutEffect, useMemo, useState), src/seo (InfoPageContent, NotFoundContent, SiteHeader, SeoLandingSections, SiteFooter, useSeoHead, getRouteCopy, buildLocalizedPath, ResolvedRoute), QuickWorkspace from @/workspace/QuickWorkspace, StudioHandoffPayload from @/workspace/types, lazy createToolsWorkspaceEngines from @/workspace/engineAdapter, dynamic import of @/bridge/studioHandoff (stageImagesIntoStudioAfterBootstrap), src/commercial/entitlements (isEffectivePro, useEntitlementStore), lazy-loaded @/commercial/PricingModal, src/theme/themeStore (applyDocumentTheme, useThemeStore), trackFunnelEvent from @/utils/telemetry, and PhoneModel from @/types
+ * [OUTPUT]: exports ToolLandingPage component rendering the zero-splash above-the-fold QuickWorkspace, editorial InfoPageContent on /about|/privacy|/terms, or 4-locale NotFoundContent on fallback routes, plus localized SEO sections, pre-paint adaptive Light/Dark chrome sync, funnel telemetry, on-demand PricingModal, and lazy Studio handoff
+ * [POS]: primary landing page in src/pages; serves '/', all SEO tool routes, /about|/privacy|/terms, and 404 fallback routes across en/zh/ja/ko without loading Konva, Studio stores, unused tool panels, or unused canvas engines
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 import { Suspense, lazy, useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { isEffectivePro, useEntitlementStore } from '@/commercial/entitlements'
 import {
   InfoPageContent,
+  NotFoundContent,
   SeoLandingSections,
   SiteFooter,
   SiteHeader,
@@ -86,13 +87,13 @@ export function ToolLandingPage({ route, onNavigate }: ToolLandingPageProps) {
   }, [syncSystemTheme])
 
   useEffect(() => {
-    if (route.isInfoPage) return
+    if (route.isInfoPage || route.isFallback) return
     trackFunnelEvent('tool_view', {
       tool: route.tool,
       slug: route.slug || 'home',
       locale: route.locale,
     })
-  }, [route.isInfoPage, route.locale, route.slug, route.tool])
+  }, [route.isFallback, route.isInfoPage, route.locale, route.slug, route.tool])
 
   const handleOpenProModal = useCallback(() => {
     trackFunnelEvent('pro_cta_clicked', {
@@ -145,7 +146,13 @@ export function ToolLandingPage({ route, onNavigate }: ToolLandingPageProps) {
       />
 
       <main id="main-content" tabIndex={-1} className="flex-1 focus:outline-none">
-        {route.isInfoPage ? (
+        {route.isFallback ? (
+          <NotFoundContent
+            route={route}
+            theme={resolvedTheme}
+            onNavigate={onNavigate}
+          />
+        ) : route.isInfoPage ? (
           <InfoPageContent
             route={route}
             theme={resolvedTheme}

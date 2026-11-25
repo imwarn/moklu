@@ -96,7 +96,7 @@ Moklu 的 Coolify Resource 为 **Application / Railpack（或历史 Nixpacks）/
 
 `public/_headers` 是仓库内唯一的响应头真相源，在线上按以下分层协同生效，避免重复定义或相互覆盖：
 
-1. **主执行层（`workers/telemetry` Edge Worker，路由 `moklu.app/*`）**：`workers/telemetry/src/headersPolicy.ts` 与 `public/_headers` 保持逐字节一致（由 `workers/telemetry/src/index.test.ts` 机械门禁校验），负责在 Coolify 源站前方统一注入 `Content-Security-Policy`、`Cross-Origin-Opener-Policy`、`X-Frame-Options`、`X-Content-Type-Options`、`Referrer-Policy`、`Permissions-Policy`，同时执行按路径分层的 `Cache-Control`、`CDN-Cache-Control`、`cf.cacheEverything` 边缘缓存以及未知非静态路径的 `X-Robots-Tag: noindex, follow` 抓取卫生策略。
+1. **主执行层（`workers/telemetry` Edge Worker，路由 `moklu.app/*`）**：`workers/telemetry/src/headersPolicy.ts` 与 `public/_headers` 保持逐字节一致（由 `workers/telemetry/src/index.test.ts` 机械门禁校验），负责在 Coolify 源站前方统一注入 `Content-Security-Policy`、`Cross-Origin-Opener-Policy`、`X-Frame-Options`、`X-Content-Type-Options`、`Referrer-Policy`、`Permissions-Policy`，同时执行按路径分层的 `Cache-Control`、`CDN-Cache-Control`、`cf.cacheEverything` 边缘缓存（隔离命名空间 `moklu-edge-v2`）、静态资源软 200 HTML 回退拦截（直接转为 `404 text/plain` 且不入缓存）、显式 `/en` 与 `/en/<slug>` 的规范 `301` 重定向，以及未知非静态路径的真实 HTTP `404` 状态码 + `X-Robots-Tag: noindex, follow` 抓取卫生策略。
 2. **补充/兜底层（Cloudflare Response Header Transform Rule，`scripts/sync-cf-headers.mjs`）**：当已完成 `npx wrangler login`（或配置 `CLOUDFLARE_API_TOKEN`）时，可运行零漂移同步脚本，将 `public/_headers` 的 `/*` 安全头（含 `Cross-Origin-Opener-Policy` 与 `Content-Security-Policy`）同步至 `moklu.app` 的 `http_response_headers_transform` 规则集（规则引用名 `moklu_security_headers`），作为 Worker 停用或旁路时的边缘安全头兜底。两者读取同一份 `public/_headers` 定义，**使用 `set` 覆写同名头而非叠加多个冲突 CSP**。
 
 ```bash
@@ -131,14 +131,15 @@ Moklu 采用「浏览器条件重验证 + Cloudflare 边缘短缓存 + 未知路
 
 | 路径 | `Cache-Control`（浏览器） | `CDN-Cache-Control`（边缘） | Worker `cf.cacheEverything` | 额外策略 |
 | --- | --- | --- | --- | --- |
-| 120 条已知多语言 SSG HTML 路由（`/`、`/index.html` 及 `en`/`zh`/`ja`/`ko` × 30 slug，含/不含尾斜杠） | `public, no-cache`（保留 bfcache，同时强制 ETag 重验证防止发布后命中旧资源图） | `public, s-maxage=60, stale-while-revalidate=86400` | `GET`/`HEAD` 开启，`200-299: 60s`、`404/5xx: 0s` | 无 `X-Robots-Tag` |
-| `/assets/*`（内容哈希分包） | `public, max-age=31536000, immutable` | `public, max-age=31536000, immutable` | `GET`/`HEAD` 开启，`200-299: 31536000s` | 4xx/5xx 回退 `no-store` 并移除 `CDN-Cache-Control` |
-| 短 TTL 静态与爬虫文件（`/theme-init.js`、`/sitemap.xml`、`/robots.txt`、`/llms.txt`、`/logo*.svg`、`/favicon.svg`、`/apple-touch-icon.png`、`/og-image.png`、`/templates/*`） | `public, max-age=3600` | `public, s-maxage=3600, stale-while-revalidate=86400` | `GET`/`HEAD` 开启，`200-299: 3600s` | `/theme-init.js` 与 `/logo*.svg` 显式附带 `X-Content-Type-Options: nosniff` |
-| `/fb6946466b9027e3bbb1506815e0f52e.txt`（IndexNow 校验） | `public, max-age=86400` | `public, s-maxage=86400` | `GET`/`HEAD` 开启，`200-299: 86400s` | `X-Content-Type-Options: nosniff` |
+| 120 条已知多语言 SSG HTML 路由（`/`、`/index.html` 及 `en`/`zh`/`ja`/`ko` × 30 slug，含/不含尾斜杠） | `public, no-cache`（保留 bfcache，同时强制 ETag 重验证防止发布后命中旧资源图） | `public, s-maxage=60, stale-while-revalidate=86400` | `GET`/`HEAD` 开启，`200-299: 60s`（`moklu-edge-v2`） | 无 `X-Robots-Tag` |
+| 显式英文前缀路径（`/en`、`/en/`、`/en/<known-slug>`） | `public, max-age=3600` | 不输出 | 不穿透源站，边缘直接响应 `301 Moved Permanently` | 重定向至规范路径 `/` 或 `/<slug>/`（保留 query string）并附带全部安全头；`/en/<unknown>` 走下方未知路由 `404` |
+| `/assets/*`（内容哈希分包）与静态非 HTML 资源扩展名（`.js`/`.css`/`.wasm`/`.png` 等） | `public, max-age=31536000, immutable`（仅 `/assets/*` 合法 200） | `public, max-age=31536000, immutable`（仅 `/assets/*` 合法 200） | `GET`/`HEAD` 开启，`200: 31536000s`（仅合法非 HTML 响应入 `moklu-edge-v2`） | 若 Coolify SPA `try_files` 返回 `200 text/html` 或上游返回 `>= 400`，立即取消响应体、**绝不写入边缘缓存**，并转为 `404 text/plain; charset=utf-8` + `Cache-Control: no-store` + `X-Robots-Tag: noindex, nofollow` |
+| 短 TTL 静态与爬虫文件（`/theme-init.js`、`/sitemap.xml`、`/robots.txt`、`/llms.txt`、`/logo*.svg`、`/favicon.svg`、`/apple-touch-icon.png`、`/og-image.png`、`/templates/*`） | `public, max-age=3600` | `public, s-maxage=3600, stale-while-revalidate=86400` | `GET`/`HEAD` 开启，`200: 3600s`（仅合法非 HTML 响应入缓存） | `/theme-init.js` 与 `/logo*.svg` 显式附带 `X-Content-Type-Options: nosniff`；若源站误返 `text/html` 同样转为 `404 text/plain` |
+| `/fb6946466b9027e3bbb1506815e0f52e.txt`（IndexNow 校验） | `public, max-age=86400` | `public, s-maxage=86400` | `GET`/`HEAD` 开启，`200: 86400s` | `X-Content-Type-Options: nosniff` |
 | `/healthz.txt`、`/healthz`、`/healthz/`、`/healthz/index.html`、`_telemetry*` | `no-store` | 移除/不输出 | 关闭（直透源站或 Worker 本地响应） | 禁止代理与 CDN 缓存 |
-| 未知非静态 SPA 回退路径（如 `/studio/unknown-check`、`/ja/non-existent`） | `no-store` | 移除/不输出 | 关闭（不写入边缘缓存） | 保持 HTTP 200 SPA 回退，同时注入 `X-Robots-Tag: noindex, follow` 防止软 404 污染索引 |
+| 未知非静态路径（如 `/studio/unknown-check`、`/ja/non-existent`、`/merge-image`） | `no-store` | 移除/不输出 | 关闭（不写入边缘缓存） | 保留源站 SPA HTML 响应体供浏览器渲染 4 语种 404 UI，同时在边缘将 HTTP 状态码改写为真实 **`404 Not Found`** 并注入 `X-Robots-Tag: noindex, follow` 彻底消除软 404 |
 
-Cloudflare 的 **Caching → Configuration → Browser Cache TTL** 应保持 **Respect Existing Headers**，避免默认 4 小时 TTL 覆盖源站与 Worker 的精确 `Cache-Control` 策略。上线后分别抽查 `/`、`/zh/merge-images/`、`/assets/index-*.js`、`/theme-init.js`、`/healthz.txt` 与 `/studio/unknown-check` 的响应头。
+Cloudflare 的 **Caching → Configuration → Browser Cache TTL** 应保持 **Respect Existing Headers**，避免默认 4 小时 TTL 覆盖源站与 Worker 的精确 `Cache-Control` 策略。上线后分别抽查 `/`、`/zh/merge-images/`、`/en/merge-images`（`301`）、`/assets/index-*.js`（`200 immutable`）、`/assets/missing.js`（`404 text/plain`）、`/theme-init.js`、`/healthz.txt` 与 `/studio/unknown-check`（`404 text/html`）的响应头。
 
 HSTS 必须在确认目标域名及需要覆盖的子域名都能正常 HTTPS 后分阶段开启：先 `max-age=300`，观察后再扩大；`includeSubDomains` 和 `preload` **不要默认直接启用**。如果通过 Cloudflare 开启 HSTS，可使用 **SSL/TLS → Edge Certificates → HSTS**，具体可用性依你的 Cloudflare 配置为准。
 
@@ -313,8 +314,14 @@ curl -sSI https://moklu.app/en/tools/merge-images/
 curl -sSi https://moklu.app/healthz.txt
 curl -sSi https://moklu.app/healthz/
 
-# 3. 未知前端路由回退 SPA index.html（返回 200）
+# 3. 未知前端路由返回真实 HTTP 404（保留 SPA HTML + X-Robots-Tag: noindex, follow）
 curl -sSI https://moklu.app/studio/unknown-check
+
+# 4. 缺失静态资源拦截 Coolify 软 200 回退，返回 404 text/plain + no-store
+curl -sSI https://moklu.app/assets/missing.js
+
+# 5. 显式 /en 路径 301 重定向至规范路径
+curl -sSI https://moklu.app/en/merge-images
 ```
 
 ---
@@ -372,7 +379,7 @@ curl -sSI https://moklu.app/studio/unknown-check
 - `X-Content-Type-Options: nosniff`
 - `Referrer-Policy: strict-origin-when-cross-origin`
 - `Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()`
-- 按路径分层的 `Cache-Control`、`CDN-Cache-Control` 及未知非静态路径 `X-Robots-Tag: noindex, follow`
+- 按路径分层的 `Cache-Control`、`CDN-Cache-Control`、静态资源软 200 HTML 回退拦截（`404 text/plain`）、显式 `/en` `301` 重定向及未知非静态路径真实 HTTP `404` + `X-Robots-Tag: noindex, follow`
 
 ### 1. `'wasm-unsafe-eval'` 的真实安全边界
 

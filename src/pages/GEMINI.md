@@ -2,7 +2,7 @@
 > L2 | Parent: ../GEMINI.md
 
 ## Member list
-- `ToolLandingPage.tsx`: Zero-splash SEO landing page wiring `SiteHeader`, `QuickWorkspace` (imported directly from `@/workspace/QuickWorkspace`) with lazy `createToolsWorkspaceEngines()`, `SeoLandingSections`, `SiteFooter`, lazy-loaded `PricingModal`, and on-demand dynamic `stageImagesIntoStudio()` handoff.
+- `ToolLandingPage.tsx`: Zero-splash SEO landing page wiring `SiteHeader`, `NotFoundContent` on fallback 404 routes (skipping `tool_view` telemetry), `InfoPageContent` on `/about`/`/privacy`/`/terms`, `QuickWorkspace` (imported directly from `@/workspace/QuickWorkspace`) with lazy `createToolsWorkspaceEngines()`, `SeoLandingSections`, `SiteFooter`, lazy-loaded `PricingModal`, and on-demand dynamic `stageImagesIntoStudio()` handoff.
 - `StudioPage.tsx`: Lazy-loaded full Konva multi-layer editor containing canvas, layers/properties panels, mobile drawers, slide navigator, keyboard shortcuts, localization mode with Suspense skeleton, and `← Tools` home link.
 - `studioShortcuts.ts`: Pure keyboard shortcut command resolver and locked/background layer mutability guards consumed by `StudioPage.tsx`.
 - `studioShortcuts.test.ts`: Vitest unit tests covering case-insensitive shortcuts, view gating, mobile drawer Escape handling, and locked/background layer protection.

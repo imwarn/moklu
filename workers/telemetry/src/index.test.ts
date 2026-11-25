@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on node:fs/promises, vitest, ../../../src/seo/routes, ./headersPolicy, and ./index
- * [OUTPUT]: unit tests verifying byte-for-byte parity with public/_headers, 120-route SSG alignment with src/seo/routes.ts, cf.cacheEverything origin fetch options, CDN-Cache-Control, COOP, unknown-route X-Robots-Tag crawl hygiene, /_telemetry/health, D1 rollup upsert, and security guards
+ * [OUTPUT]: unit tests verifying byte-for-byte parity with public/_headers, 120-route SSG alignment with src/seo/routes.ts, static-asset soft-200 HTML fallback poisoning guard (404 text/plain, never cached in moklu-edge-v2), canonical 301 /en redirects, unknown-route HTTP 404 + X-Robots-Tag crawl hygiene, cf.cacheEverything origin fetch options, CDN-Cache-Control, COOP, /_telemetry/health, D1 rollup upsert, and security guards
  * [POS]: deterministic Vitest suite for workers/telemetry/src
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -11,10 +11,13 @@ import { ALL_ROUTES } from '../../../src/seo/routes'
 import {
   EDGE_SECURITY_HEADERS,
   isKnownSsgHtmlPath,
+  isStaticNonHtmlAssetPath,
+  isUnexpectedHtmlAssetFallback,
   isUnknownNonAssetPath,
   resolveEdgeCacheControl,
   resolveEdgeCacheTtlSeconds,
   resolveEdgeCdnCacheControl,
+  resolveExplicitEnRedirectPath,
 } from './headersPolicy'
 import worker, { sanitizeEdgeDimension } from './index'
 
@@ -115,6 +118,35 @@ describe('moklu-telemetry edge worker, cache policy & CSP header parity', () => 
     expect(isUnknownNonAssetPath('/assets/index-abc.js')).toBe(false)
     expect(isUnknownNonAssetPath('/theme-init.js')).toBe(false)
     expect(isUnknownNonAssetPath('/healthz.txt')).toBe(false)
+    expect(isUnknownNonAssetPath('/missing.js')).toBe(false)
+
+    // Static non-HTML asset path detection and HTML fallback poisoning detection
+    expect(isStaticNonHtmlAssetPath('/assets/missing.js')).toBe(true)
+    expect(isStaticNonHtmlAssetPath('/assets/no-ext')).toBe(true)
+    expect(isStaticNonHtmlAssetPath('/templates/social.json')).toBe(true)
+    expect(isStaticNonHtmlAssetPath('/foo/bar.WASM')).toBe(true)
+    expect(isStaticNonHtmlAssetPath('/foo/bar.webp')).toBe(true)
+    expect(isStaticNonHtmlAssetPath('/manifest.webmanifest')).toBe(true)
+    expect(isStaticNonHtmlAssetPath('/healthz')).toBe(false)
+    expect(isStaticNonHtmlAssetPath('/healthz/index.html')).toBe(false)
+    expect(isStaticNonHtmlAssetPath('/studio/index.html')).toBe(false)
+    expect(isStaticNonHtmlAssetPath('/zh/merge-images/')).toBe(false)
+
+    expect(isUnexpectedHtmlAssetFallback('/assets/missing.js', 'text/html; charset=utf-8')).toBe(true)
+    expect(isUnexpectedHtmlAssetFallback('/assets/missing.js', '  TEXT/HTML ')).toBe(true)
+    expect(isUnexpectedHtmlAssetFallback('/assets/index-abc.js', 'application/javascript')).toBe(false)
+    expect(isUnexpectedHtmlAssetFallback('/studio/', 'text/html; charset=utf-8')).toBe(false)
+    expect(isUnexpectedHtmlAssetFallback('/healthz/index.html', 'text/html; charset=utf-8')).toBe(false)
+
+    // Explicit /en canonical 301 redirect resolution
+    expect(resolveExplicitEnRedirectPath('/en')).toBe('/')
+    expect(resolveExplicitEnRedirectPath('/en/')).toBe('/')
+    expect(resolveExplicitEnRedirectPath('/en/merge-images')).toBe('/merge-images/')
+    expect(resolveExplicitEnRedirectPath('/en/merge-images/')).toBe('/merge-images/')
+    expect(resolveExplicitEnRedirectPath('/en/studio')).toBe('/studio/')
+    expect(resolveExplicitEnRedirectPath('/en/non-existent')).toBeNull()
+    expect(resolveExplicitEnRedirectPath('/en/tools/merge-images/')).toBeNull()
+    expect(resolveExplicitEnRedirectPath('/zh/merge-images/')).toBeNull()
   })
 
   it('proxies known SSG HTML routes with bfcache-safe public, no-cache, CDN-Cache-Control, COOP, and cf.cacheEverything (60s)', async () => {
@@ -159,7 +191,7 @@ describe('moklu-telemetry edge worker, cache policy & CSP header parity', () => 
     expect((fetchSpy.mock.calls[1][0] as Request).method).toBe('GET')
   })
 
-  it('caches GET and HEAD responses in isolated caches.open namespace with MISS -> HIT transition', async () => {
+  it('caches GET and HEAD responses in isolated caches.open(moklu-edge-v2) namespace with MISS -> HIT transition', async () => {
     const store = new Map<string, Response>()
     const fakeCache = {
       match: vi.fn(async (req: Request) => store.get(req.url)?.clone()),
@@ -167,7 +199,8 @@ describe('moklu-telemetry edge worker, cache policy & CSP header parity', () => 
         store.set(req.url, res.clone())
       }),
     }
-    vi.stubGlobal('caches', { open: vi.fn(async () => fakeCache) })
+    const openSpy = vi.fn(async () => fakeCache)
+    vi.stubGlobal('caches', { open: openSpy })
 
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response('<!doctype html><html></html>', {
@@ -184,6 +217,7 @@ describe('moklu-telemetry edge worker, cache policy & CSP header parity', () => 
       expect(first.headers.get('cdn-cache-control')).toBe(
         'public, s-maxage=60, stale-while-revalidate=86400',
       )
+      expect(openSpy).toHaveBeenCalledWith('moklu-edge-v2')
       expect(fetchSpy).toHaveBeenCalledTimes(1)
       expect(fakeCache.put).toHaveBeenCalledTimes(1)
 
@@ -200,10 +234,147 @@ describe('moklu-telemetry edge worker, cache policy & CSP header parity', () => 
     }
   })
 
+  it('rejects /assets/* soft-200 HTML fallbacks and upstream 4xx with 404 text/plain, no-store, and never poisons moklu-edge-v2 cache', async () => {
+    const store = new Map<string, Response>()
+    const fakeCache = {
+      match: vi.fn(async (req: Request) => store.get(req.url)?.clone()),
+      put: vi.fn(async (req: Request, res: Response) => {
+        store.set(req.url, res.clone())
+      }),
+    }
+    const openSpy = vi.fn(async () => fakeCache)
+    vi.stubGlobal('caches', { open: openSpy })
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const targetUrl = typeof input === 'string' ? input : (input as Request).url
+      if (targetUrl.endsWith('/assets/index-abc.js')) {
+        return new Response('console.log("ok")', {
+          status: 200,
+          headers: { 'Content-Type': 'application/javascript; charset=utf-8' },
+        })
+      }
+      if (targetUrl.endsWith('/assets/missing.css')) {
+        return new Response('upstream missing', {
+          status: 404,
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+        })
+      }
+      // Simulates Coolify Caddy/Nginx SPA try_files returning 200 text/html for missing static assets
+      return new Response('<!doctype html><html><body>SPA shell</body></html>', {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+          'CDN-Cache-Control': 'public, max-age=31536000, immutable',
+        },
+      })
+    })
+
+    try {
+      // Missing hashed asset returning 200 text/html -> 404 text/plain, NOT cached
+      const missingGet = await worker.fetch(new Request('https://moklu.app/assets/missing.js'), {})
+      expect(missingGet.status).toBe(404)
+      expect(missingGet.headers.get('content-type')).toBe('text/plain; charset=utf-8')
+      expect(missingGet.headers.get('cache-control')).toBe('no-store')
+      expect(missingGet.headers.get('cdn-cache-control')).toBeNull()
+      expect(missingGet.headers.get('x-robots-tag')).toBe('noindex, nofollow')
+      expect(missingGet.headers.get('content-security-policy')).toContain("default-src 'self'")
+      expect(missingGet.headers.get('x-content-type-options')).toBe('nosniff')
+      expect(await missingGet.text()).toBe('Not Found')
+      expect(fakeCache.put).not.toHaveBeenCalled()
+
+      // HEAD on missing hashed asset -> 404 text/plain with empty body, NOT cached
+      const missingHead = await worker.fetch(
+        new Request('https://moklu.app/assets/missing.js', { method: 'HEAD' }),
+        {},
+      )
+      expect(missingHead.status).toBe(404)
+      expect(missingHead.headers.get('content-type')).toBe('text/plain; charset=utf-8')
+      expect(missingHead.headers.get('cache-control')).toBe('no-store')
+      expect(missingHead.headers.get('x-robots-tag')).toBe('noindex, nofollow')
+      expect(await missingHead.text()).toBe('')
+      expect(fakeCache.put).not.toHaveBeenCalled()
+
+      // Upstream 404 on /assets/* -> clean 404 text/plain, NOT cached
+      const missingCss = await worker.fetch(new Request('https://moklu.app/assets/missing.css'), {})
+      expect(missingCss.status).toBe(404)
+      expect(missingCss.headers.get('content-type')).toBe('text/plain; charset=utf-8')
+      expect(missingCss.headers.get('cache-control')).toBe('no-store')
+      expect(missingCss.headers.get('x-robots-tag')).toBe('noindex, nofollow')
+      expect(fakeCache.put).not.toHaveBeenCalled()
+
+      // Non-/assets/ static extension returning 200 text/html -> clean 404 text/plain
+      const rootMissingJs = await worker.fetch(new Request('https://moklu.app/missing.js'), {})
+      expect(rootMissingJs.status).toBe(404)
+      expect(rootMissingJs.headers.get('content-type')).toBe('text/plain; charset=utf-8')
+      expect(rootMissingJs.headers.get('cache-control')).toBe('no-store')
+      expect(rootMissingJs.headers.get('x-robots-tag')).toBe('noindex, nofollow')
+      expect(fakeCache.put).not.toHaveBeenCalled()
+
+      // Valid /assets/index-abc.js (application/javascript) -> 200 immutable + MISS -> HIT in moklu-edge-v2
+      const validFirst = await worker.fetch(new Request('https://moklu.app/assets/index-abc.js'), {})
+      expect(validFirst.status).toBe(200)
+      expect(validFirst.headers.get('cache-control')).toBe('public, max-age=31536000, immutable')
+      expect(validFirst.headers.get('cdn-cache-control')).toBe('public, max-age=31536000, immutable')
+      expect(validFirst.headers.get('cf-cache-status')).toBe('MISS')
+      expect(await validFirst.text()).toBe('console.log("ok")')
+      expect(openSpy).toHaveBeenCalledWith('moklu-edge-v2')
+      expect(fakeCache.put).toHaveBeenCalledTimes(1)
+
+      const fetchCountAfterValidFirst = fetchSpy.mock.calls.length
+      const validSecond = await worker.fetch(new Request('https://moklu.app/assets/index-abc.js'), {})
+      expect(validSecond.status).toBe(200)
+      expect(validSecond.headers.get('cache-control')).toBe('public, max-age=31536000, immutable')
+      expect(validSecond.headers.get('cf-cache-status')).toBe('HIT')
+      expect(fetchSpy).toHaveBeenCalledTimes(fetchCountAfterValidFirst)
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('returns canonical 301 redirects for explicit /en and /en/<known-slug> before origin fetch while letting /en/non-existent 404', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('<!doctype html><html><body>404 UI</body></html>', {
+        status: 200,
+        headers: { 'Content-Type': 'text/html; charset=utf-8' },
+      }),
+    )
+
+    const redirectCases: Array<[string, string, string]> = [
+      ['GET', 'https://moklu.app/en', 'https://moklu.app/'],
+      ['GET', 'https://moklu.app/en/?utm_source=test', 'https://moklu.app/?utm_source=test'],
+      ['GET', 'https://moklu.app/en/merge-images', 'https://moklu.app/merge-images/'],
+      ['HEAD', 'https://moklu.app/en/merge-images/?ref=nav', 'https://moklu.app/merge-images/?ref=nav'],
+    ]
+
+    for (const [method, url, expectedLocation] of redirectCases) {
+      const res = await worker.fetch(new Request(url, { method }), {})
+      expect(res.status).toBe(301)
+      expect(res.headers.get('location')).toBe(expectedLocation)
+      expect(res.headers.get('cache-control')).toBe('public, max-age=3600')
+      expect(res.headers.get('content-security-policy')).toContain("default-src 'self'")
+      expect(res.headers.get('cross-origin-opener-policy')).toBe('same-origin-allow-popups')
+    }
+    expect(fetchSpy).not.toHaveBeenCalled()
+
+    // /en/non-existent falls through to origin and returns real HTTP 404 HTML
+    const invalidEn = await worker.fetch(new Request('https://moklu.app/en/non-existent'), {})
+    expect(invalidEn.status).toBe(404)
+    expect(invalidEn.headers.get('x-robots-tag')).toBe('noindex, follow')
+    expect(invalidEn.headers.get('cache-control')).toBe('no-store')
+    expect(await invalidEn.text()).toContain('404 UI')
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+  })
+
   it('passes path-matched cf.cacheEverything TTLs for /assets/*, /theme-init.js, /sitemap.xml, and IndexNow key', async () => {
     const fetchSpy = vi
       .spyOn(globalThis, 'fetch')
-      .mockImplementation(async () => new Response('ok', { status: 200 }))
+      .mockImplementation(
+        async () =>
+          new Response('ok', {
+            status: 200,
+            headers: { 'Content-Type': 'application/javascript; charset=utf-8' },
+          }),
+      )
 
     const cases: Array<{
       path: string
@@ -252,36 +423,70 @@ describe('moklu-telemetry edge worker, cache policy & CSP header parity', () => 
     }
   })
 
-  it('preserves 200 SPA fallback on unknown routes with X-Robots-Tag: noindex, follow, Cache-Control: no-store, and no cf.cacheEverything', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
-      async () =>
-        new Response('<!doctype html><html></html>', {
+  it('returns real HTTP 404 on unknown non-asset routes while preserving HTML body, X-Robots-Tag: noindex, follow, no-store, and no caching', async () => {
+    const fakeCache = {
+      match: vi.fn(async () => undefined),
+      put: vi.fn(async () => undefined),
+    }
+    vi.stubGlobal('caches', { open: vi.fn(async () => fakeCache) })
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const targetUrl = typeof input === 'string' ? input : (input as Request).url
+      if (targetUrl.endsWith('/healthz.txt')) {
+        return new Response('ok\n', {
           status: 200,
-          headers: {
-            'Content-Type': 'text/html; charset=utf-8',
-            'CDN-Cache-Control': 'public, s-maxage=999',
-          },
-        }),
-    )
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+        })
+      }
+      return new Response('<!doctype html><html><body>Moklu 404 Shell</body></html>', {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+          'CDN-Cache-Control': 'public, s-maxage=999',
+        },
+      })
+    })
 
-    const unknownRes = await worker.fetch(new Request('https://moklu.app/studio/unknown-check'), {})
-    expect(unknownRes.status).toBe(200)
-    expect(unknownRes.headers.get('x-robots-tag')).toBe('noindex, follow')
-    expect(unknownRes.headers.get('cache-control')).toBe('no-store')
-    expect(unknownRes.headers.get('cdn-cache-control')).toBeNull()
-    expect(unknownRes.headers.get('cross-origin-opener-policy')).toBe('same-origin-allow-popups')
-    expect(fetchSpy.mock.calls[0]).toHaveLength(1)
+    try {
+      for (const unknownUrl of [
+        'https://moklu.app/studio/unknown-check',
+        'https://moklu.app/zh/unknown',
+        'https://moklu.app/merge-image',
+      ]) {
+        const unknownRes = await worker.fetch(new Request(unknownUrl), {})
+        expect(unknownRes.status).toBe(404)
+        expect(unknownRes.headers.get('content-type')).toBe('text/html; charset=utf-8')
+        expect(unknownRes.headers.get('x-robots-tag')).toBe('noindex, follow')
+        expect(unknownRes.headers.get('cache-control')).toBe('no-store')
+        expect(unknownRes.headers.get('cdn-cache-control')).toBeNull()
+        expect(unknownRes.headers.get('cross-origin-opener-policy')).toBe('same-origin-allow-popups')
+        expect(await unknownRes.text()).toContain('Moklu 404 Shell')
+      }
 
-    const healthRes = await worker.fetch(new Request('https://moklu.app/healthz.txt'), {})
-    expect(healthRes.status).toBe(200)
-    expect(healthRes.headers.get('cache-control')).toBe('no-store')
-    expect(healthRes.headers.get('cdn-cache-control')).toBeNull()
-    expect(healthRes.headers.get('x-robots-tag')).toBeNull()
-    expect(fetchSpy.mock.calls[1]).toHaveLength(1)
+      const headUnknown = await worker.fetch(
+        new Request('https://moklu.app/studio/unknown-check', { method: 'HEAD' }),
+        {},
+      )
+      expect(headUnknown.status).toBe(404)
+      expect(headUnknown.headers.get('x-robots-tag')).toBe('noindex, follow')
+      expect(headUnknown.headers.get('cache-control')).toBe('no-store')
+      expect(await headUnknown.text()).toBe('')
+      expect(fakeCache.put).not.toHaveBeenCalled()
+      expect(fetchSpy.mock.calls[0]).toHaveLength(1)
 
-    const postRes = await worker.fetch(new Request('https://moklu.app/', { method: 'POST' }), {})
-    expect(postRes.status).toBe(200)
-    expect(fetchSpy.mock.calls[2]).toHaveLength(1)
+      const healthRes = await worker.fetch(new Request('https://moklu.app/healthz.txt'), {})
+      expect(healthRes.status).toBe(200)
+      expect(healthRes.headers.get('cache-control')).toBe('no-store')
+      expect(healthRes.headers.get('cdn-cache-control')).toBeNull()
+      expect(healthRes.headers.get('x-robots-tag')).toBeNull()
+      expect(await healthRes.text()).toBe('ok\n')
+
+      const postRes = await worker.fetch(new Request('https://moklu.app/', { method: 'POST' }), {})
+      expect(postRes.status).toBe(200)
+      expect(fetchSpy.mock.calls[fetchSpy.mock.calls.length - 1]).toHaveLength(1)
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 
   it('responds 200 JSON with no-store, COOP, and CSP on GET /_telemetry/health', async () => {

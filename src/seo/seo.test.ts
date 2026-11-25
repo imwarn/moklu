@@ -1,7 +1,7 @@
 /**
  * [INPUT]: depends on vitest, node:child_process, node:fs/promises, node:os, node:path, node:util, react, and react-dom/server; depends on src/seo/* exports and scripts/prerender-seo.mjs
- * [OUTPUT]: automated unit and integration test suite for routing, 4-language copy uniqueness, active JSON-LD schemas, OG/Twitter/fallback head management, exact aria-current nav, subpage breadcrumbs, content-visibility sections, and SSG/sitemap output
- * [POS]: verification suite within src/seo validating both runtime SEO behavior and post-build static HTML/sitemap generation
+ * [OUTPUT]: automated unit and integration test suite for routing, 4-language copy uniqueness, 404 NotFoundContent & fallback head hygiene, active JSON-LD schemas, OG/Twitter head management, exact aria-current nav, subpage breadcrumbs, content-visibility sections, and SSG/404.html/sitemap output
+ * [POS]: verification suite within src/seo validating both runtime SEO behavior and post-build static HTML/404.html/sitemap generation
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
@@ -17,6 +17,8 @@ import {
   ALL_ROUTES,
   DEFAULT_SITE_URL,
   LOCALE_CODES,
+  NotFoundContent,
+  PRIMARY_TOOL_SLUGS,
   ROUTE_DEFINITIONS,
   ROUTE_SLUGS,
   SeoLandingSections,
@@ -28,6 +30,7 @@ import {
   buildRouteSchemaList,
   buildRouteSchemas,
   getHreflangLinks,
+  getNotFoundCopy,
   getRouteCopy,
   getSiteUrl,
   getUiLabels,
@@ -44,7 +47,7 @@ import {
   renderStudioSkeleton,
 } from './ssg.ts'
 import { renderRouteMarkup } from './ssrEntry.ts'
-import { isToolNavActive } from './navHelpers.ts'
+import { NAV_TOOL_ORDER, isToolNavActive } from './navHelpers.ts'
 
 const execFileAsync = promisify(execFile)
 
@@ -429,14 +432,45 @@ describe('Structured data JSON-LD and DOM head synchronization', () => {
       koMergeCopy.title,
     )
 
-    // Fallback route removes canonical instead of conflicting with noindex
+    // Fallback route uses localized 404 metadata, removes canonical/hreflang/og:url/og:locale:alternate, and emits only Organization + WebSite JSON-LD
     applySeoHead(mockDoc, resolvePathname('/ja/non-existent-route'), 'https://moklu.app')
+    const jaNotFoundCopy = getNotFoundCopy('ja')
+    expect(mockDoc.documentElement.lang).toBe('ja')
+    expect(mockDoc.title).toBe(jaNotFoundCopy.title)
+    expect(headChildren.find((el) => el.attrs.name === 'description')?.attrs.content).toBe(
+      jaNotFoundCopy.metaDescription,
+    )
     expect(headChildren.find((el) => el.attrs.name === 'robots')?.attrs.content).toBe(
       'noindex, follow',
     )
     expect(headChildren.filter((el) => el.attrs.rel === 'canonical')).toHaveLength(0)
+    expect(headChildren.filter((el) => el.attrs.rel === 'alternate')).toHaveLength(0)
+    expect(headChildren.filter((el) => el.attrs.property === 'og:url')).toHaveLength(0)
+    expect(headChildren.filter((el) => el.attrs.property === 'og:locale:alternate')).toHaveLength(0)
+    expect(headChildren.find((el) => el.attrs.property === 'og:title')?.attrs.content).toBe(
+      jaNotFoundCopy.title,
+    )
+    expect(headChildren.find((el) => el.attrs.property === 'og:description')?.attrs.content).toBe(
+      jaNotFoundCopy.metaDescription,
+    )
+    expect(headChildren.find((el) => el.attrs.property === 'og:image:alt')?.attrs.content).toBe(
+      jaNotFoundCopy.title,
+    )
+    expect(headChildren.find((el) => el.attrs.name === 'twitter:title')?.attrs.content).toBe(
+      jaNotFoundCopy.title,
+    )
+    expect(headChildren.find((el) => el.attrs.name === 'twitter:description')?.attrs.content).toBe(
+      jaNotFoundCopy.metaDescription,
+    )
+    expect(headChildren.find((el) => el.attrs.name === 'twitter:image:alt')?.attrs.content).toBe(
+      jaNotFoundCopy.title,
+    )
+    const fallbackJsonLd = headChildren
+      .filter((el) => el.attrs.type === 'application/ld+json')
+      .map((el) => JSON.parse(el.textContent)['@type'] as string)
+    expect(fallbackJsonLd).toEqual(['Organization', 'WebSite'])
 
-    // Navigating back to a valid route restores canonical and indexable robots
+    // Navigating back to a valid route restores canonical, hreflang, og:url, og:locale:alternate, and indexable robots
     applySeoHead(mockDoc, resolvePathname('/ja/merge-images'), 'https://moklu.app')
     expect(headChildren.find((el) => el.attrs.name === 'robots')?.attrs.content).toBe(
       'index, follow',
@@ -445,6 +479,12 @@ describe('Structured data JSON-LD and DOM head synchronization', () => {
     expect(headChildren.find((el) => el.attrs.rel === 'canonical')?.attrs.href).toBe(
       'https://moklu.app/ja/merge-images/',
     )
+    expect(headChildren.filter((el) => el.attrs.rel === 'alternate')).toHaveLength(5)
+    expect(headChildren.find((el) => el.attrs.property === 'og:url')?.attrs.content).toBe(
+      'https://moklu.app/ja/merge-images/',
+    )
+    expect(headChildren.filter((el) => el.attrs.property === 'og:locale:alternate')).toHaveLength(3)
+    expect(headChildren.filter((el) => el.attrs.type === 'application/ld+json')).toHaveLength(5)
   })
 })
 
@@ -602,6 +642,62 @@ describe('SEO UI chrome SSR rendering', () => {
     )
     expect(proSections).toContain(escapeHtml(ui.proActive))
     expect(proSections).toContain('border-success/40')
+  })
+
+  it('renders 4-locale NotFoundContent with 6 primary tool links, zero QuickWorkspace, and zero em-dashes', () => {
+    const noop = () => {}
+    for (const locale of LOCALE_CODES) {
+      const route = resolvePathname(locale === 'en' ? '/non-existent-page' : `/${locale}/non-existent-page`)
+      expect(route.isFallback).toBe(true)
+
+      const copy = getNotFoundCopy(locale)
+      for (const value of [
+        copy.title,
+        copy.metaDescription,
+        copy.badge,
+        copy.h1,
+        copy.description,
+        copy.homeCta,
+        copy.studioCta,
+        copy.toolsHeading,
+      ]) {
+        expect(value.trim().length).toBeGreaterThan(0)
+        expect(value, `${locale} 404 copy contains em-dash: ${value}`).not.toContain('—')
+      }
+      expect(copy.studioCta).toBe(getUiLabels(locale).openStudio)
+
+      const html = renderToStaticMarkup(
+        createElement(NotFoundContent, {
+          route,
+          theme: locale === 'zh' || locale === 'ko' ? 'dark' : 'light',
+          onNavigate: noop,
+        }),
+      )
+
+      expect(html).toContain('data-testid="not-found-page"')
+      expect(html).not.toContain('data-testid="quick-workspace"')
+      expect(html).not.toContain('—')
+      expect(html).toContain(escapeHtml(copy.h1))
+      expect(html).toContain(escapeHtml(copy.homeCta))
+      expect(html).toContain(escapeHtml(copy.studioCta))
+      expect(html).toContain(`href="${buildLocalizedPath(locale, '')}"`)
+      expect(html).toContain(`href="${buildLocalizedPath(locale, 'studio')}"`)
+
+      for (const toolId of NAV_TOOL_ORDER) {
+        const slug = PRIMARY_TOOL_SLUGS[toolId]
+        const toolHref = buildLocalizedPath(locale, slug)
+        const toolCopy = getRouteCopy(locale, slug)
+        expect(html).toContain(`href="${toolHref}"`)
+        expect(html).toContain(escapeHtml(toolCopy.navLabel))
+        expect(html).toContain(escapeHtml(toolCopy.badge))
+      }
+
+      // Full page SSR via renderRouteMarkup renders NotFoundContent inside ToolLandingPage without QuickWorkspace
+      const fullMarkup = renderRouteMarkup(route)
+      expect(fullMarkup).toContain('data-testid="tool-landing-page"')
+      expect(fullMarkup).toContain('data-testid="not-found-page"')
+      expect(fullMarkup).not.toContain('data-testid="quick-workspace"')
+    }
   })
 
   it('aligns Tailwind v4 dark variant to data-theme="dark" and defines light/dark scrollbars in src/index.css', async () => {
@@ -762,8 +858,28 @@ describe('Build-time SSG prerenderer, sitemap.xml, robots.txt, and CSP safety', 
       const sitemap = await readFile(path.join(tmpDir, 'sitemap.xml'), 'utf8')
       expect(sitemap).toBe(generateSitemapXml('https://moklu.app', '2026-11-23'))
       expect(sitemap.match(/<url>/g)?.length).toBe(120)
+      expect(sitemap).not.toContain('/404')
       expect(sitemap).not.toContain('<changefreq>')
       expect(sitemap).not.toContain('<priority>')
+
+      // Static dist/404.html is emitted with noindex, follow, NotFoundContent markup, and clean fallback head
+      const notFoundHtml = await readFile(path.join(tmpDir, '404.html'), 'utf8')
+      const enNotFound = getNotFoundCopy('en')
+      expect(notFoundHtml).toContain('<html lang="en" data-theme="light" data-surface="workspace">')
+      expect(notFoundHtml).toContain(`<title>${escapeHtml(enNotFound.title)}</title>`)
+      expect(notFoundHtml).toContain('<meta name="robots" content="noindex, follow" />')
+      expect(notFoundHtml).not.toContain('<link rel="canonical"')
+      expect(notFoundHtml).not.toContain('hreflang=')
+      expect(notFoundHtml).not.toContain('property="og:url"')
+      expect(notFoundHtml).not.toContain('property="og:locale:alternate"')
+      expect(notFoundHtml).toContain('data-testid="not-found-page"')
+      expect(notFoundHtml).not.toContain('data-testid="quick-workspace"')
+      const notFoundJsonLd = [
+        ...notFoundHtml.matchAll(
+          /<script type="application\/ld\+json" data-moklu-seo="jsonld">([\s\S]*?)<\/script>/g,
+        ),
+      ].map((m) => JSON.parse(m[1])['@type'] as string)
+      expect(notFoundJsonLd).toEqual(['Organization', 'WebSite'])
       expect(sitemap).toContain('xmlns:xhtml="http://www.w3.org/1999/xhtml"')
       expect(sitemap).toContain('hreflang="zh-Hans"')
       expect(sitemap).toContain('<loc>https://moklu.app/zh/id-card-watermark/</loc>')

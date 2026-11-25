@@ -1,7 +1,7 @@
 /**
- * [INPUT]: none (zero-dependency edge HTTP header, 120-route SSG matcher, CDN-Cache-Control, and crawl-hygiene contract mirrored with public/_headers and src/seo/routes.ts; verified in index.test.ts)
- * [OUTPUT]: exports EDGE_SECURITY_HEADERS, isKnownSsgHtmlPath, isUnknownNonAssetPath, resolveEdgeCacheControl, resolveEdgeCdnCacheControl, resolveEdgeCacheTtlSeconds, and applyMokluEdgeHeaders
- * [POS]: single edge response-header and cache-policy module of workers/telemetry/src; attaches CSP, COOP, bfcache-safe Cache-Control, CDN-Cache-Control, and unknown-route X-Robots-Tag onto Coolify origin responses
+ * [INPUT]: none (zero-dependency edge HTTP header, 120-route SSG matcher, explicit /en redirector, static-asset HTML-fallback detector, CDN-Cache-Control, and crawl-hygiene contract mirrored with public/_headers and src/seo/routes.ts; verified in index.test.ts)
+ * [OUTPUT]: exports EDGE_SECURITY_HEADERS, isStaticNonHtmlAssetPath, isUnexpectedHtmlAssetFallback, resolveExplicitEnRedirectPath, isKnownSsgHtmlPath, isUnknownNonAssetPath, resolveEdgeCacheControl, resolveEdgeCdnCacheControl, resolveEdgeCacheTtlSeconds, and applyMokluEdgeHeaders
+ * [POS]: single edge response-header, redirect, 404-status, and cache-policy module of workers/telemetry/src; attaches CSP, COOP, bfcache-safe Cache-Control, CDN-Cache-Control, static-asset soft-200 guards, and unknown-route HTTP 404 + X-Robots-Tag onto Coolify origin responses
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
@@ -65,6 +65,11 @@ const KNOWN_ROUTE_SLUGS = new Set([
   'terms',
 ])
 
+const STATIC_NON_HTML_EXTENSION_RE =
+  /\.(?:js|mjs|cjs|css|map|wasm|woff|woff2|ttf|otf|png|jpg|jpeg|webp|avif|gif|svg|ico|json|xml|txt|webmanifest|pdf|zip)$/i
+const HTML_CONTENT_TYPE_RE = /^\s*text\/html\b/i
+const EXPLICIT_EN_SLUG_RE = /^\/en\/([^/]+)\/?$/
+
 function isNoStorePath(pathname: string): boolean {
   return NO_STORE_PATHS.has(pathname) || pathname === '/_telemetry' || pathname.startsWith('/_telemetry/')
 }
@@ -75,6 +80,36 @@ function isShortTtlStaticPath(pathname: string): boolean {
 
 function isKnownStaticAssetPath(pathname: string): boolean {
   return pathname.startsWith('/assets/') || isShortTtlStaticPath(pathname) || pathname === INDEXNOW_KEY_PATH
+}
+
+export function isStaticNonHtmlAssetPath(pathname: string): boolean {
+  if (isKnownStaticAssetPath(pathname)) {
+    return true
+  }
+  return STATIC_NON_HTML_EXTENSION_RE.test(pathname)
+}
+
+export function isUnexpectedHtmlAssetFallback(
+  pathname: string,
+  contentType: string | null,
+): boolean {
+  return (
+    isStaticNonHtmlAssetPath(pathname) &&
+    typeof contentType === 'string' &&
+    HTML_CONTENT_TYPE_RE.test(contentType)
+  )
+}
+
+export function resolveExplicitEnRedirectPath(pathname: string): string | null {
+  if (pathname === '/en' || pathname === '/en/') {
+    return '/'
+  }
+  const match = EXPLICIT_EN_SLUG_RE.exec(pathname)
+  if (!match) {
+    return null
+  }
+  const slug = match[1]
+  return KNOWN_ROUTE_SLUGS.has(slug) ? `/${slug}/` : null
 }
 
 export function isKnownSsgHtmlPath(pathname: string): boolean {
@@ -96,7 +131,7 @@ export function isKnownSsgHtmlPath(pathname: string): boolean {
 }
 
 export function isUnknownNonAssetPath(pathname: string): boolean {
-  return !isNoStorePath(pathname) && !isKnownStaticAssetPath(pathname) && !isKnownSsgHtmlPath(pathname)
+  return !isNoStorePath(pathname) && !isStaticNonHtmlAssetPath(pathname) && !isKnownSsgHtmlPath(pathname)
 }
 
 export function resolveEdgeCacheControl(pathname: string, status: number): string {
@@ -157,26 +192,31 @@ export function resolveEdgeCacheTtlSeconds(pathname: string): number | null {
 }
 
 export function applyMokluEdgeHeaders(upstream: Response, pathname: string): Response {
+  const unknownNonAsset = isUnknownNonAssetPath(pathname)
+  const shouldRewriteTo404 = unknownNonAsset && upstream.status === 200
+  const status = shouldRewriteTo404 ? 404 : upstream.status
+  const statusText = shouldRewriteTo404 ? 'Not Found' : upstream.statusText
+
   const headers = new Headers(upstream.headers)
   for (const [name, value] of Object.entries(EDGE_SECURITY_HEADERS)) {
     headers.set(name, value)
   }
-  headers.set('Cache-Control', resolveEdgeCacheControl(pathname, upstream.status))
+  headers.set('Cache-Control', resolveEdgeCacheControl(pathname, status))
 
-  const cdnCacheControl = resolveEdgeCdnCacheControl(pathname, upstream.status)
+  const cdnCacheControl = resolveEdgeCdnCacheControl(pathname, status)
   if (cdnCacheControl) {
     headers.set('CDN-Cache-Control', cdnCacheControl)
   } else {
     headers.delete('CDN-Cache-Control')
   }
 
-  if (isUnknownNonAssetPath(pathname)) {
+  if (unknownNonAsset) {
     headers.set('X-Robots-Tag', 'noindex, follow')
   }
 
   return new Response(upstream.body, {
-    status: upstream.status,
-    statusText: upstream.statusText,
+    status,
+    statusText,
     headers,
   })
 }

@@ -1,7 +1,7 @@
 /**
  * [INPUT]: depends on node:http, node:fs/promises, and node:path; reads public/_headers and serves built static files from ROOT (default dist/)
- * [OUTPUT]: local HTTP static server applying public/_headers rules with SPA fallback and MIME mapping (including text/plain for .txt healthcheck/crawler files)
- * [POS]: CI and local preview static server in scripts/, exercising public/_headers before deployment
+ * [OUTPUT]: local HTTP static server applying public/_headers rules with real HTTP 404 document fallback (dist/404.html or dist/index.html with no-store + X-Robots-Tag: noindex, follow), 404 text/plain for missing static assets, and MIME mapping
+ * [POS]: CI and local preview static server in scripts/, exercising public/_headers and edge 404 semantics before deployment
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 import { createServer } from 'node:http'
@@ -63,44 +63,91 @@ function matches(pattern, pathname) {
 // sources drift, and a stale dist copy silently tests the previous policy.
 const rules = parseHeaders(await readFile('public/_headers', 'utf8'))
 
+async function resolveDocumentFallbackFile(root) {
+  const notFoundPath = join(root, '404.html')
+  try {
+    if ((await stat(notFoundPath)).isFile()) return notFoundPath
+  } catch {
+    // Fall back to SPA shell if dist/404.html has not been generated yet.
+  }
+  return join(root, 'index.html')
+}
+
+function buildHeadersForPath(pathname) {
+  const headers = {}
+  for (const rule of rules) {
+    if (!matches(rule.pattern, pathname)) continue
+    Object.assign(headers, rule.headers)
+  }
+  return headers
+}
+
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`)
   const pathname = url.pathname
+  const isHead = (req.method ?? 'GET').toUpperCase() === 'HEAD'
 
-  // A SPA fallback: unknown document routes serve index.html, unknown asset
-  // paths keep their 404 so a missing bundle cannot look like a soft success.
+  // Unknown document routes serve dist/404.html (falling back to dist/index.html)
+  // with real HTTP 404 + no-store + X-Robots-Tag: noindex, follow; unknown static
+  // asset paths return 404 text/plain so a missing bundle never looks like a 200.
   let filePath = normalize(join(ROOT, pathname))
   if (!filePath.startsWith(normalize(ROOT))) {
-    res.writeHead(403).end('forbidden')
+    res.writeHead(403).end(isHead ? undefined : 'forbidden')
     return
   }
+
+  let isDocumentFallback = false
   try {
     if ((await stat(filePath)).isDirectory()) filePath = join(filePath, 'index.html')
   } catch {
-    if (extname(pathname)) {
-      res.writeHead(404, { 'Content-Type': 'text/plain' }).end('not found')
+    if (extname(pathname) || pathname.startsWith('/assets/')) {
+      const headers = buildHeadersForPath('/*')
+      delete headers['CDN-Cache-Control']
+      headers['Content-Type'] = 'text/plain; charset=utf-8'
+      headers['Cache-Control'] = 'no-store'
+      headers['X-Robots-Tag'] = 'noindex, nofollow'
+      res.writeHead(404, headers).end(isHead ? undefined : 'Not Found')
       return
     }
-    filePath = join(ROOT, 'index.html')
+    isDocumentFallback = true
+    filePath = await resolveDocumentFallbackFile(ROOT)
   }
 
   let body
   try {
     body = await readFile(filePath)
   } catch {
-    res.writeHead(404, { 'Content-Type': 'text/plain' }).end('not found')
-    return
+    if (!isDocumentFallback && !extname(pathname) && !pathname.startsWith('/assets/')) {
+      isDocumentFallback = true
+      filePath = await resolveDocumentFallbackFile(ROOT)
+      try {
+        body = await readFile(filePath)
+      } catch {
+        res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' }).end(isHead ? undefined : 'Not Found')
+        return
+      }
+    } else {
+      const headers = buildHeadersForPath('/*')
+      delete headers['CDN-Cache-Control']
+      headers['Content-Type'] = 'text/plain; charset=utf-8'
+      headers['Cache-Control'] = 'no-store'
+      headers['X-Robots-Tag'] = 'noindex, nofollow'
+      res.writeHead(404, headers).end(isHead ? undefined : 'Not Found')
+      return
+    }
   }
 
-  const headers = {}
-  for (const rule of rules) {
-    if (!matches(rule.pattern, pathname)) continue
-    Object.assign(headers, rule.headers)
-  }
+  const headers = buildHeadersForPath(pathname)
   const type = MIME[extname(filePath)]
   if (type && !headers['Content-Type']) headers['Content-Type'] = type
 
-  res.writeHead(200, headers).end(body)
+  if (isDocumentFallback) {
+    headers['Cache-Control'] = 'no-store'
+    delete headers['CDN-Cache-Control']
+    headers['X-Robots-Tag'] = 'noindex, follow'
+  }
+
+  res.writeHead(isDocumentFallback ? 404 : 200, headers).end(isHead ? undefined : body)
 })
 
 server.listen(PORT, () => console.log(`serving ${ROOT} on http://localhost:${PORT} with _headers applied`))

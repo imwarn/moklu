@@ -1,7 +1,7 @@
 /**
- * [INPUT]: depends on ResolvedRoute and RouteSlug from ./types.ts; depends on ALL_ROUTES, INFO_ROUTE_DEFINITIONS, LOCALE_CODES, TOOL_ROUTE_DEFINITIONS, buildCanonicalUrl, buildLocalizedPath, getHreflangLinks, getHtmlLang, and getSiteUrl from ./routes.ts; depends on getLocaleBundle, getOgLocale, getRouteCopy, and getUiLabels from ./i18n.ts; depends on MOKLU_GITHUB_URL, buildRouteSchemaList, and serializeJsonLd from ./schema.ts
+ * [INPUT]: depends on ResolvedRoute and RouteSlug from ./types.ts; depends on ALL_ROUTES, INFO_ROUTE_DEFINITIONS, LOCALE_CODES, TOOL_ROUTE_DEFINITIONS, buildCanonicalUrl, buildLocalizedPath, getHreflangLinks, getHtmlLang, and getSiteUrl from ./routes.ts; depends on getLocaleBundle, getOgLocale, getRouteCopy, and getUiLabels from ./i18n.ts; depends on MOKLU_GITHUB_URL, buildOrganizationSchema, buildRouteSchemaList, buildWebSiteSchema, and serializeJsonLd from ./schema.ts; depends on getNotFoundCopy from ./notFoundCopy.ts
  * [OUTPUT]: exports escapeHtml, getRouteRelativeHtmlPath, renderStudioSkeleton, renderRouteHtml, generateSitemapXml, generateRobotsTxt, and generateLlmsTxt
- * [POS]: pure, Node-agnostic SSG HTML/XML/Markdown string generator within src/seo, emitting full OpenGraph/Twitter image dimensions & alternate locales, Schema.org JSON-LD, and lean per-route lastmod sitemap.xml for scripts/prerender-seo.mjs
+ * [POS]: pure, React-free, Node-agnostic SSG HTML/XML/Markdown string generator within src/seo, emitting full OpenGraph/Twitter image dimensions & alternate locales, fallback 404 noindex head hygiene, Schema.org JSON-LD, and lean per-route lastmod sitemap.xml for scripts/prerender-seo.mjs
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
@@ -23,7 +23,14 @@ import {
   getRouteCopy,
   getUiLabels,
 } from './i18n.ts'
-import { MOKLU_GITHUB_URL, buildRouteSchemaList, serializeJsonLd } from './schema.ts'
+import {
+  MOKLU_GITHUB_URL,
+  buildOrganizationSchema,
+  buildRouteSchemaList,
+  buildWebSiteSchema,
+  serializeJsonLd,
+} from './schema.ts'
+import { getNotFoundCopy } from './notFoundCopy.ts'
 
 export function escapeHtml(value: string): string {
   return value
@@ -86,20 +93,25 @@ function stripManagedHeadTags(html: string): string {
 function buildHeadTags(route: ResolvedRoute, siteUrl?: string): string {
   const base = getSiteUrl(siteUrl)
   const copy = getRouteCopy(route.locale, route.slug)
+  const notFoundCopy = route.isFallback ? getNotFoundCopy(route.locale) : null
+  const headTitle = notFoundCopy ? notFoundCopy.title : copy.title
+  const headDescription = notFoundCopy ? notFoundCopy.metaDescription : copy.metaDescription
   const canonicalUrl = buildCanonicalUrl(route.locale, route.slug, base)
   const ogImage = `${base}/og-image.png`
   const ogLocale = getOgLocale(route.locale)
-  const alternateOgLocales = LOCALE_CODES.filter((locale) => locale !== route.locale).map((locale) =>
-    getOgLocale(locale),
-  )
-  const hreflangs = getHreflangLinks(route.slug, base)
-  const schemas = buildRouteSchemaList(route, base)
+  const alternateOgLocales = route.isFallback
+    ? []
+    : LOCALE_CODES.filter((locale) => locale !== route.locale).map((locale) => getOgLocale(locale))
+  const hreflangs = route.isFallback ? [] : getHreflangLinks(route.slug, base)
+  const schemas = route.isFallback
+    ? [buildOrganizationSchema(base), buildWebSiteSchema(route, base)]
+    : buildRouteSchemaList(route, base)
 
   const lines = [
-    `<title>${escapeHtml(copy.title)}</title>`,
-    `<meta name="description" content="${escapeHtml(copy.metaDescription)}" />`,
-    '<meta name="robots" content="index, follow" />',
-    `<link rel="canonical" href="${escapeHtml(canonicalUrl)}" />`,
+    `<title>${escapeHtml(headTitle)}</title>`,
+    `<meta name="description" content="${escapeHtml(headDescription)}" />`,
+    `<meta name="robots" content="${route.isFallback ? 'noindex, follow' : 'index, follow'}" />`,
+    ...(route.isFallback ? [] : [`<link rel="canonical" href="${escapeHtml(canonicalUrl)}" />`]),
     ...hreflangs.map(
       (alt) =>
         `<link rel="alternate" hreflang="${escapeHtml(alt.hreflang)}" href="${escapeHtml(alt.href)}" data-moklu-seo="hreflang" />`,
@@ -111,18 +123,18 @@ function buildHeadTags(route: ResolvedRoute, siteUrl?: string): string {
       (altLocale) =>
         `<meta property="og:locale:alternate" content="${escapeHtml(altLocale)}" data-moklu-seo="og-locale-alt" />`,
     ),
-    `<meta property="og:url" content="${escapeHtml(canonicalUrl)}" />`,
-    `<meta property="og:title" content="${escapeHtml(copy.title)}" />`,
-    `<meta property="og:description" content="${escapeHtml(copy.metaDescription)}" />`,
+    ...(route.isFallback ? [] : [`<meta property="og:url" content="${escapeHtml(canonicalUrl)}" />`]),
+    `<meta property="og:title" content="${escapeHtml(headTitle)}" />`,
+    `<meta property="og:description" content="${escapeHtml(headDescription)}" />`,
     `<meta property="og:image" content="${escapeHtml(ogImage)}" />`,
     '<meta property="og:image:width" content="1200" />',
     '<meta property="og:image:height" content="630" />',
-    `<meta property="og:image:alt" content="${escapeHtml(copy.title)}" />`,
+    `<meta property="og:image:alt" content="${escapeHtml(headTitle)}" />`,
     '<meta name="twitter:card" content="summary_large_image" />',
-    `<meta name="twitter:title" content="${escapeHtml(copy.title)}" />`,
-    `<meta name="twitter:description" content="${escapeHtml(copy.metaDescription)}" />`,
+    `<meta name="twitter:title" content="${escapeHtml(headTitle)}" />`,
+    `<meta name="twitter:description" content="${escapeHtml(headDescription)}" />`,
     `<meta name="twitter:image" content="${escapeHtml(ogImage)}" />`,
-    `<meta name="twitter:image:alt" content="${escapeHtml(copy.title)}" />`,
+    `<meta name="twitter:image:alt" content="${escapeHtml(headTitle)}" />`,
     ...schemas.map(
       (schema) =>
         `<script type="application/ld+json" data-moklu-seo="jsonld">${serializeJsonLd(schema)}</script>`,
