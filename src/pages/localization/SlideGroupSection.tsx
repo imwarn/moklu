@@ -88,7 +88,7 @@ export function SlideGroupSection({
       <button
         type="button"
         onClick={onToggleCollapse}
-        className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left transition hover:bg-white/[0.03]"
+        className="flex w-full flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5 text-left transition hover:bg-white/[0.03]"
       >
         <div className="flex items-center gap-3">
           <span className="text-sm text-[#d4d4d8]">{collapsed ? '▸' : '▾'}</span>
@@ -136,7 +136,7 @@ export function SlideGroupSection({
               className="grid gap-3 pr-6 pb-3 text-xs font-semibold uppercase tracking-[0.18em] text-[#78798b]"
               style={{ gridTemplateColumns }}
             >
-              <div className="py-2 pl-4 pr-3 sticky left-0 z-10 bg-[#18181f]">{tl.layerColumn}</div>
+              <div className="py-2 pl-4 pr-3 md:sticky md:left-0 z-10 bg-[#18181f]">{tl.layerColumn}</div>
               {locales.map((locale) => (
                 <div
                   key={locale}
@@ -164,8 +164,8 @@ export function SlideGroupSection({
                     className="grid gap-3"
                     style={{ gridTemplateColumns }}
                   >
-                    {/* Layer column — sticky left */}
-                    <div className="sticky left-0 z-10 flex h-full flex-col pl-4" style={{ background: '#18181f' }}>
+                    {/* Layer column — sticky left on md+ */}
+                    <div className="md:sticky md:left-0 z-10 flex h-full flex-col pl-4" style={{ background: '#18181f' }}>
                       <div className="flex min-h-[80px] flex-1 flex-col justify-between rounded-xl border border-white/8 bg-white/[0.02] px-4 py-3 mb-3">
                         <div className="flex items-start gap-3" style={{ paddingLeft: row.depth * 16 }}>
                           <div

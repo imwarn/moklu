@@ -215,14 +215,14 @@ function QuickDesignDialog({ activeGroup, onClose }: { activeGroup: SlideGroup |
 
   const controlClass = 'w-full rounded-lg border border-white/15 bg-[#222330] px-3 py-2 text-sm text-white'
   return (
-    <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/70 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
-      <section ref={dialogRef} tabIndex={-1} onKeyDown={handleDialogKeyDown} role="dialog" aria-modal="true" aria-labelledby="quick-design-title" aria-describedby="quick-design-description" className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-white/10 bg-[#18181f] p-6 text-[#f5f5f8] shadow-2xl">
+    <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/70 p-3 sm:p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <section ref={dialogRef} tabIndex={-1} onKeyDown={handleDialogKeyDown} role="dialog" aria-modal="true" aria-labelledby="quick-design-title" aria-describedby="quick-design-description" className="max-h-[90dvh] w-full max-w-xl overflow-y-auto rounded-2xl border border-white/10 bg-[#18181f] p-4 sm:p-6 text-[#f5f5f8] shadow-2xl">
         <div className="mb-5 flex items-start justify-between gap-4">
-          <div>
-            <h2 id="quick-design-title" className="text-xl font-semibold">{q.title}</h2>
+          <div className="min-w-0">
+            <h2 id="quick-design-title" className="text-lg sm:text-xl font-semibold">{q.title}</h2>
             <p id="quick-design-description" className="mt-1 text-sm text-[#aaaabc]">{q.description}</p>
           </div>
-          <button type="button" onClick={onClose} className="text-xl text-[#aaaabc] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" aria-label={q.closeAria}>×</button>
+          <button type="button" onClick={onClose} className="shrink-0 text-xl text-[#aaaabc] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" aria-label={q.closeAria}>×</button>
         </div>
         <div
           role="group"
@@ -240,7 +240,7 @@ function QuickDesignDialog({ activeGroup, onClose }: { activeGroup: SlideGroup |
             : 'border-white/20 bg-white/[0.035]'}`}
         >
           <div className="mb-2 font-semibold">{q.step1} <span className="font-normal text-white/50">{q.optional}</span></div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-3">
             {previewUrl && <img src={previewUrl} alt={q.chooseScreenshot} className="h-16 w-24 shrink-0 rounded border border-white/10 bg-black/20 object-contain" />}
             <div className="min-w-0 flex-1">
               <label className="block cursor-pointer">
@@ -287,24 +287,24 @@ function QuickDesignDialog({ activeGroup, onClose }: { activeGroup: SlideGroup |
           <label className="text-xs text-[#aeb0c3]">{q.height}<input className={controlClass + ' mt-1'} type="number" min={240} max={4096} value={customHeight} onChange={(e) => setCustomHeight(e.target.value)} /></label>
         </div>}
         <div className="mt-5 text-xs font-semibold uppercase tracking-widest text-[#aeb0c3]">{q.step3}</div>
-        <div className="mt-3 grid grid-cols-3 gap-3">
+        <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3">
           {(Object.entries(QUICK_THEMES) as [QuickTheme, (typeof QUICK_THEMES)[QuickTheme]][]).map(([id, value]) =>
             <button type="button" key={id} aria-pressed={theme === id} onClick={() => setTheme(id)}
-              className={`rounded-xl border p-2 text-left transition-colors ${theme === id ? 'border-accent bg-accent-soft' : 'border-white/10 hover:border-white/30'}`}>
+              className={`min-w-0 rounded-xl border p-2 text-left transition-colors ${theme === id ? 'border-accent bg-accent-soft' : 'border-white/10 hover:border-white/30'}`}>
               <span className="block h-14 rounded-lg" style={{ background: `linear-gradient(140deg, ${value.top}, ${value.bottom})` }} />
-              <span className="mt-2 block text-xs">{value.label}</span>
+              <span className="mt-2 block truncate text-xs">{value.label}</span>
             </button>
           )}
         </div>
         <fieldset className="mt-5">
           <legend className="text-xs font-semibold uppercase tracking-widest text-[#aeb0c3]">{q.screenshotFraming}</legend>
-          <div className="mt-2 grid grid-cols-3 gap-2">
+          <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
             {([
               ['cover', q.coverLabel, q.coverHint],
               ['contain', q.containLabel, q.containHint],
               ['fill', q.stretchLabel, q.stretchHint],
             ] as const).map(([value, label, hint]) => (
-              <label key={value} className={`cursor-pointer rounded-lg border px-2 py-2.5 text-center text-xs ${screenshotFit === value
+              <label key={value} className={`min-w-0 cursor-pointer rounded-lg border px-2 py-2.5 text-center text-xs ${screenshotFit === value
                 ? 'border-accent bg-accent-soft text-white'
                 : 'border-white/10 text-[#aeb0c3] hover:border-white/30'}`}>
                 <input type="radio" name="quick-screenshot-fit" className="sr-only"
@@ -325,7 +325,7 @@ function QuickDesignDialog({ activeGroup, onClose }: { activeGroup: SlideGroup |
           <strong className="text-white">{q.noteHeading}</strong> {q.noteBody}
           <span className="mt-1 block text-muted">{q.noteSub}</span>
         </div>
-        <div className="mt-4 flex justify-end gap-2">
+        <div className="mt-4 flex flex-wrap justify-end gap-2">
           <button type="button" onClick={onClose} className="rounded-lg border border-white/15 px-4 py-2 text-sm">{t.common.cancel}</button>
           <button type="button" onClick={() => { void apply() }} disabled={!activeGroup || applying} className="rounded-lg bg-accent-strong px-5 py-2 text-sm font-semibold text-accent-fg hover:bg-accent-strong/90 disabled:opacity-50">{applying ? q.preparing : imageFile || existingShot ? q.applyEdit : q.startEmpty}</button>
         </div>

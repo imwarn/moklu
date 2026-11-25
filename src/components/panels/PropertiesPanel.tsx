@@ -557,7 +557,7 @@ export function PropertiesPanel() {
   const borderColor = 'rgba(255,255,255,0.06)'
 
   return (
-    <aside data-properties-panel className="h-full w-64 shrink-0 flex flex-col overflow-hidden min-[1440px]:w-72" style={{ background: '#18181f', borderLeft: `1px solid ${borderColor}` }}>
+    <aside data-properties-panel className="h-full w-64 max-w-[calc(100vw-2.5rem)] shrink-0 flex flex-col overflow-hidden lg:max-w-none min-[1440px]:w-72" style={{ background: '#18181f', borderLeft: `1px solid ${borderColor}` }}>
       <div className="shrink-0 border-b px-3 py-2" style={{ borderColor }}>
         <div className="flex items-center justify-between">
           <span className={`text-xs font-semibold uppercase tracking-wider ${STUDIO_TEXT_MUTED_CLS}`}>{t.properties.title}</span>

@@ -123,14 +123,14 @@ function KeylessTranslateDialog({
       panelStyle={{
         background: '#18181f',
         borderColor: 'rgba(255, 255, 255, 0.1)',
-        maxHeight: '88vh',
+        maxHeight: '88dvh',
       }}
     >
-      <div className="grid grid-cols-1 gap-5 overflow-y-auto p-5 md:grid-cols-2">
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-y-auto p-4 sm:gap-5 sm:p-5 md:grid-cols-2">
         {/* Left Track: BYOK Auto Mode */}
         <section
           data-testid="keyless-track-byok"
-          className="flex flex-col justify-between rounded-xl border border-white/10 bg-white/[0.025] p-5"
+          className="flex min-w-0 flex-col justify-between rounded-xl border border-white/10 bg-white/[0.025] p-4 sm:p-5"
         >
           <div>
             <div className="mb-2 flex items-center justify-between gap-2">
@@ -181,7 +181,7 @@ function KeylessTranslateDialog({
         {/* Right Track: Zero-Key Web AI Copy/Paste Mode */}
         <section
           data-testid="keyless-track-zero-key"
-          className="flex flex-col gap-3.5 rounded-xl border border-accent/35 bg-accent/[0.05] p-5"
+          className="flex min-w-0 flex-col gap-3.5 rounded-xl border border-accent/35 bg-accent/[0.05] p-4 sm:p-5"
         >
           <div>
             <h3 className="text-sm font-semibold text-white">{lm.keylessZeroKeyHeading}</h3>

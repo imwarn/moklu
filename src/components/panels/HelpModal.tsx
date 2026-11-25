@@ -44,9 +44,9 @@ export function HelpModal({ open, onClose }: HelpModalProps) {
       title={hm.title}
       closeLabel={hm.closeAria}
       maxWidth="max-w-[1120px]"
-      backdropClassName="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-5"
+      backdropClassName="fixed inset-0 z-[9999] flex items-center justify-center p-2.5 sm:p-5"
       backdropStyle={{ background: 'rgba(4,4,7,0.72)', backdropFilter: 'blur(6px)' }}
-      panelClassName="relative w-full h-[92vh] sm:h-[88vh] flex flex-col overflow-hidden rounded-2xl border shadow-2xl"
+      panelClassName="relative w-full h-[90dvh] sm:h-[88dvh] max-h-[90dvh] flex flex-col overflow-hidden rounded-2xl border shadow-2xl"
       panelStyle={{
         background: 'var(--color-panel)',
         borderColor: 'var(--color-border)',
@@ -54,12 +54,12 @@ export function HelpModal({ open, onClose }: HelpModalProps) {
       }}
       closeButtonClassName="absolute top-4 right-4 z-10 text-muted hover:text-[#e8e8f0] transition-colors text-base w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[rgba(255,255,255,0.07)]"
       header={(
-        <header className="relative shrink-0 overflow-hidden border-b border-[rgba(255,255,255,0.07)] px-5 py-4 sm:px-6">
+        <header className="relative shrink-0 overflow-hidden border-b border-[rgba(255,255,255,0.07)] px-4 py-3.5 sm:px-6 sm:py-4">
           <div className="relative flex items-center gap-3 pr-10">
             <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-accent/30 bg-accent-soft text-accent-text">
               <span aria-hidden="true" className="text-base">?</span>
             </div>
-            <div>
+            <div className="min-w-0">
               <h2 className="text-[15px] font-semibold tracking-[-0.01em] text-[#f0eff8]">
                 {hm.title}
               </h2>
@@ -74,7 +74,7 @@ export function HelpModal({ open, onClose }: HelpModalProps) {
         </header>
       )}
     >
-      <div className="flex min-h-0 flex-1">
+      <div className="flex flex-col md:flex-row min-h-0 flex-1">
         <aside className="hidden w-[230px] shrink-0 flex-col border-r border-[rgba(255,255,255,0.06)] bg-[#131318] md:flex">
           <div className="border-b border-[rgba(255,255,255,0.055)] p-3">
             <label className="relative block">
@@ -137,10 +137,10 @@ export function HelpModal({ open, onClose }: HelpModalProps) {
           </div>
         </aside>
 
-        <main className="flex min-w-0 flex-1 flex-col bg-[#18181f]">
+        <main className="flex min-w-0 min-h-0 flex-1 flex-col bg-[#18181f]">
           <div className="shrink-0 border-b border-[rgba(255,255,255,0.06)] bg-[#15151b] px-4 py-2.5 md:hidden">
-            <label className="flex items-center gap-3">
-              <span className="text-[10px] font-semibold tracking-[0.12em] text-[#575765]">{hm.sectionsLabel}</span>
+            <label className="flex min-w-0 items-center gap-2.5">
+              <span className="shrink-0 text-[10px] font-semibold tracking-[0.12em] text-[#575765]">{hm.sectionsLabel}</span>
               <select
                 value={activeId}
                 onChange={(event) => selectSection(event.target.value as HelpSectionId)}
@@ -157,16 +157,16 @@ export function HelpModal({ open, onClose }: HelpModalProps) {
           </div>
 
           <div ref={contentRef} className="min-h-0 flex-1 overflow-y-auto scroll-smooth">
-            <article className="mx-auto max-w-[760px] px-5 py-7 sm:px-8 sm:py-9 lg:px-10 lg:py-10">
-              <div className="mb-7 flex items-start gap-4 border-b border-[rgba(255,255,255,0.065)] pb-6">
+            <article className="mx-auto max-w-[760px] min-w-0 break-words px-4 py-5 sm:px-8 sm:py-9 lg:px-10 lg:py-10">
+              <div className="mb-6 sm:mb-7 flex items-start gap-3 sm:gap-4 border-b border-[rgba(255,255,255,0.065)] pb-5 sm:pb-6">
                 <span className="mt-0.5 font-mono text-[11px] font-medium tracking-[0.12em] text-accent-text">
                   {String(activeSection.number).padStart(2, '0')}
                 </span>
-                <div>
+                <div className="min-w-0">
                   <p className="mb-2 text-[9px] font-semibold tracking-[0.18em] text-[#565664]">
                     {activeSection.group}
                   </p>
-                  <h3 className="text-[22px] font-semibold leading-tight tracking-[-0.025em] text-[#f0eff8] sm:text-2xl">
+                  <h3 className="text-xl font-semibold leading-tight tracking-[-0.025em] text-[#f0eff8] sm:text-2xl">
                     {activeSection.title}
                   </h3>
                 </div>
@@ -176,7 +176,7 @@ export function HelpModal({ open, onClose }: HelpModalProps) {
                 <HelpMarkdown source={activeSection.body} />
               </div>
 
-              <div className="mt-10 flex items-center justify-between gap-3 border-t border-[rgba(255,255,255,0.06)] pt-5">
+              <div className="mt-10 flex flex-wrap items-center justify-between gap-2 border-t border-[rgba(255,255,255,0.06)] pt-5">
                 <button
                   type="button"
                   disabled={activeIndex === 0}

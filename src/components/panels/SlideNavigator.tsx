@@ -443,7 +443,7 @@ export function SlideNavigator({ thumbnails, staleGroupIds, stageRef, onCaptureT
       style={{ background: '#18181f', borderColor }}
     >
       {/* Width follows the responsive LayersPanel width, less this footer's 12px inset. */}
-      <div className="flex w-[196px] shrink-0 flex-col gap-1.5 border-r border-[rgba(255,255,255,0.06)] pr-3 min-[1440px]:w-[212px]">
+      <div className="flex w-full shrink-0 flex-col gap-1.5 border-b border-[rgba(255,255,255,0.06)] pb-2 sm:w-[196px] sm:border-b-0 sm:border-r sm:pb-0 sm:pr-3 min-[1440px]:w-[212px]">
         <div className={STUDIO_SECTION_LABEL_CLS}>{t.slides.title}</div>
         {activeGroup && (
           <div className="flex items-center gap-1.5">
@@ -540,7 +540,7 @@ export function SlideNavigator({ thumbnails, staleGroupIds, stageRef, onCaptureT
         </button>
       </div>
 
-      <div className="ml-auto flex items-center gap-2 shrink-0 border-l border-[rgba(255,255,255,0.06)] pl-3">
+      <div className="ml-auto flex items-center gap-2 shrink-0 sm:border-l border-[rgba(255,255,255,0.06)] sm:pl-3">
         <button
           type="button"
           onClick={onOpenPreview}

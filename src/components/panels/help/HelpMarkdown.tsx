@@ -53,7 +53,7 @@ export function HelpMarkdown({ source }: { source: string }) {
           const value = String(children).replace(/\n$/, '')
           if (value.includes('\n')) {
             return (
-              <code className={`block whitespace-pre-wrap rounded-lg border border-[rgba(255,255,255,0.08)] bg-surface p-3 font-mono text-[11px] leading-5 text-[#e4e4e7] ${className ?? ''}`}>
+              <code className={`block overflow-x-auto whitespace-pre-wrap break-words rounded-lg border border-[rgba(255,255,255,0.08)] bg-surface p-3 font-mono text-[11px] leading-5 text-[#e4e4e7] ${className ?? ''}`}>
                 {value}
               </code>
             )
@@ -62,7 +62,7 @@ export function HelpMarkdown({ source }: { source: string }) {
         },
         pre: ({ children }) => <pre className="my-4">{children}</pre>,
         table: ({ children }) => (
-          <div className="overflow-hidden rounded-xl border border-[rgba(255,255,255,0.07)]">
+          <div className="overflow-x-auto rounded-xl border border-[rgba(255,255,255,0.07)]">
             <table className="w-full border-collapse text-[12px]">{children}</table>
           </div>
         ),

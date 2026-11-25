@@ -247,9 +247,9 @@ export function ExportModal({ open, onClose, stageRef }: ExportModalProps) {
       closeLabel={em.closeAria}
       maxWidth="max-w-5xl"
       backdropClassName="fixed inset-0 z-[9999] flex items-center justify-center backdrop-blur-sm"
-      panelClassName="relative rounded-2xl border shadow-2xl w-full mx-4 h-[85vh] flex flex-col overflow-hidden"
-      header={<div className="px-5 py-4 border-b border-[rgba(255,255,255,0.06)] shrink-0"><h2 className="text-base font-semibold text-[#e8e8f0]">{em.title}</h2><p className="text-xs text-[#6b6b7a] mt-0.5">{exportSummary}</p></div>}
-      footerClassName="px-6 py-4 border-t border-[rgba(255,255,255,0.06)] shrink-0"
+      panelClassName="relative rounded-2xl border shadow-2xl w-full mx-3 sm:mx-4 h-[88dvh] max-h-[88dvh] flex flex-col overflow-hidden"
+      header={<div className="px-4 sm:px-5 py-3.5 sm:py-4 pr-12 border-b border-[rgba(255,255,255,0.06)] shrink-0"><h2 className="text-base font-semibold text-[#e8e8f0]">{em.title}</h2><p className="text-xs text-[#6b6b7a] mt-0.5">{exportSummary}</p></div>}
+      footerClassName="px-4 sm:px-6 py-3.5 sm:py-4 border-t border-[rgba(255,255,255,0.06)] shrink-0"
       footer={<>
         {isExporting && exportProgress && (() => {
           const isIndeterminate = exportProgress.phase === 'zipping' || exportProgress.phase === 'downloading'
@@ -273,7 +273,7 @@ export function ExportModal({ open, onClose, stageRef }: ExportModalProps) {
             </div>
           </div>
         })()}
-        {isExporting ? <div className="flex gap-2">
+        {isExporting ? <div className="flex flex-wrap gap-2">
           <button disabled className="flex-1 rounded-lg bg-accent-strong px-3 py-2.5 text-sm font-medium text-accent-fg disabled:opacity-40 disabled:cursor-not-allowed">
             {exportProgress?.phase === 'rendering'
               ? `${exportProgress.completed}/${exportProgress.total} (${Math.round((exportProgress.completed / Math.max(exportProgress.total, 1)) * 100)}%)…`
@@ -302,11 +302,11 @@ export function ExportModal({ open, onClose, stageRef }: ExportModalProps) {
       </>}
     >
         {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-5 sm:space-y-6">
           {/* Scope */}
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6b6b7a] mb-3">{em.scope}</p>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {[
                 { value: 'project' as const, label: em.allGroups, help: `${project.slideGroups.length}` },
                 { value: 'current-group' as const, label: em.currentGroup, help: activeGroup?.name ?? em.currentGroup },
@@ -315,7 +315,7 @@ export function ExportModal({ open, onClose, stageRef }: ExportModalProps) {
                   key={item.value}
                   type="button"
                   onClick={() => setExportScope(item.value)}
-                  className={`text-left rounded border px-2.5 py-2 transition-colors ${exportScope === item.value
+                  className={`min-w-0 text-left rounded border px-2.5 py-2 transition-colors ${exportScope === item.value
                     ? 'border-accent bg-accent-soft text-white'
                     : 'border-[rgba(255,255,255,0.08)] text-[#a6a7b8] hover:border-[rgba(255,255,255,0.18)]'}`}
                 >
@@ -350,7 +350,7 @@ export function ExportModal({ open, onClose, stageRef }: ExportModalProps) {
                   return (
                     <label
                       key={formatId}
-                      className="flex items-center gap-2 px-1 py-0.5 rounded cursor-pointer transition-colors hover:bg-[rgba(255,255,255,0.04)]"
+                      className="flex flex-wrap items-center gap-x-2 gap-y-1 px-1 py-0.5 rounded cursor-pointer transition-colors hover:bg-[rgba(255,255,255,0.04)]"
                     >
                       <input
                         type="checkbox"
@@ -358,7 +358,7 @@ export function ExportModal({ open, onClose, stageRef }: ExportModalProps) {
                         onChange={() => toggleExportFormat(formatId)}
                         className="accent-accent w-3 h-3 shrink-0"
                       />
-                      <span className="text-[11px] text-[#e8e8f0] flex-1 truncate">
+                      <span className="min-w-0 text-[11px] text-[#e8e8f0] flex-1 truncate">
                         {getFormatLabel(formatId, project.settings.customFormats)}
                       </span>
                       <span className="text-[10px] text-[#6b6b7a] shrink-0">
@@ -409,7 +409,7 @@ export function ExportModal({ open, onClose, stageRef }: ExportModalProps) {
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6b6b7a] mb-3">{em.panoGroups}</p>
               <div className="rounded border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2">
-                <label className="flex items-center gap-2 text-[11px] text-[#a6a7b8]">
+                <label className="flex flex-wrap items-center gap-2 text-[11px] text-[#a6a7b8]">
                   <ToggleSwitch
                     variant="checkbox"
                     checked={compensatePanoExport}
@@ -441,7 +441,7 @@ export function ExportModal({ open, onClose, stageRef }: ExportModalProps) {
           {/* Output */}
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#6b6b7a] mb-3">{em.output}</p>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {[
                 { value: 'zip' as const, label: 'ZIP', help: em.zipHelp },
                 { value: 'folder' as const, label: em.folder, help: folderSupported ? em.folderHelp : 'Chrome/Edge' },
@@ -454,7 +454,7 @@ export function ExportModal({ open, onClose, stageRef }: ExportModalProps) {
                     type="button"
                     disabled={disabled}
                     onClick={() => setExportOutput(item.value)}
-                    className={`text-left rounded border px-2 py-1.5 transition-colors ${exportOutput === item.value
+                    className={`min-w-0 text-left rounded border px-2 py-1.5 transition-colors ${exportOutput === item.value
                       ? 'border-accent bg-accent-soft text-white'
                       : 'border-[rgba(255,255,255,0.08)] text-[#8f90a3] hover:text-white'} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
                   >

@@ -151,13 +151,13 @@ export function PreviewModal({
     <ModalShell
       open={open}
       onClose={onClose}
-      maxWidth="max-w-[90vw]"
-      backdropClassName="fixed inset-0 z-[9999] flex items-center justify-center bg-[#08080c] p-6"
+      maxWidth="max-w-[96vw] sm:max-w-[90vw]"
+      backdropClassName="fixed inset-0 z-[9999] flex items-center justify-center bg-[#08080c] p-2.5 sm:p-6"
       backdropStyle={undefined}
-      panelClassName="flex max-h-[90vh] w-full flex-col overflow-hidden rounded-xl border bg-[#18181f] shadow-2xl"
+      panelClassName="flex max-h-[90dvh] w-full flex-col overflow-hidden rounded-xl border bg-[#18181f] shadow-2xl"
       panelStyle={{ borderColor: 'rgba(255,255,255,0.08)' }}
       showCloseButton={false}
-      header={<div className="flex flex-wrap items-center justify-between gap-3 border-b border-[rgba(255,255,255,0.08)] px-6 py-4">
+      header={<div className="flex flex-wrap items-center justify-between gap-3 border-b border-[rgba(255,255,255,0.08)] px-4 py-3 sm:px-6 sm:py-4">
           <div>
             <h2 className="text-sm font-semibold text-[#f4f4f5]">{pm.title}</h2>
             {previewProgress.status === 'capturing' || previewProgress.status === 'preparing' ? (
@@ -187,15 +187,15 @@ export function PreviewModal({
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2">
             {/* Platform selector */}
             {platformFormats.length > 1 && (
-              <SegmentedControl value={activeCanvasFormat} options={platformFormats.map((format) => ({ value: format, label: getFormatLabel(format, settings.customFormats) }))} onChange={selectFormat} className="flex items-center gap-0.5 rounded-lg border border-[rgba(255,255,255,0.1)] p-1" optionClassName="rounded-md px-2.5 py-1 text-[11px] transition-colors" activeClassName="bg-accent-soft text-accent-text font-bold" inactiveClassName="bg-transparent text-[#7d7a90] font-medium" />
+              <SegmentedControl value={activeCanvasFormat} options={platformFormats.map((format) => ({ value: format, label: getFormatLabel(format, settings.customFormats) }))} onChange={selectFormat} className="flex max-w-full items-center gap-0.5 overflow-x-auto rounded-lg border border-[rgba(255,255,255,0.1)] p-1" optionClassName="shrink-0 whitespace-nowrap rounded-md px-2.5 py-1 text-[11px] transition-colors" activeClassName="bg-accent-soft text-accent-text font-bold" inactiveClassName="bg-transparent text-[#7d7a90] font-medium" />
             )}
 
             {/* Locale selector */}
             {locales.length > 1 && (
-              <SegmentedControl value={activeLocale} options={locales.map((locale) => ({ value: locale, label: getLanguageName(locale), title: getLanguageName(locale) }))} onChange={selectLocale} className="flex items-center gap-0.5 rounded-lg border border-[rgba(255,255,255,0.1)] p-1" optionClassName="rounded-md px-2.5 py-1 text-[11px] transition-colors" activeClassName="bg-accent-soft text-accent-text font-bold" inactiveClassName="bg-transparent text-[#7d7a90] font-medium" />
+              <SegmentedControl value={activeLocale} options={locales.map((locale) => ({ value: locale, label: getLanguageName(locale), title: getLanguageName(locale) }))} onChange={selectLocale} className="flex max-w-full items-center gap-0.5 overflow-x-auto rounded-lg border border-[rgba(255,255,255,0.1)] p-1" optionClassName="shrink-0 whitespace-nowrap rounded-md px-2.5 py-1 text-[11px] transition-colors" activeClassName="bg-accent-soft text-accent-text font-bold" inactiveClassName="bg-transparent text-[#7d7a90] font-medium" />
             )}
 
             {hasPanoGroups && (
@@ -242,7 +242,7 @@ export function PreviewModal({
     >
 
         {/* Filmstrip */}
-        <div className="overflow-y-auto px-6 py-6">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6">
           <div className="overflow-x-auto pb-2">
             <div className="flex min-w-max items-start" style={{ gap: 0 }}>
               {flatSlides.map(({ group, slideIdx, globalNum: slideNum, isFirstInGroup, groupIndex }) => {

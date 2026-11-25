@@ -324,7 +324,7 @@ export function StudioPage({ locale = 'en', onNavigate }: StudioPageProps) {
       locale={locale}
       onChangeLocale={(next) => onNavigate?.(buildLocalizedPath(next, 'studio'))}
     >
-      <div className="w-screen h-screen flex flex-col overflow-hidden bg-surface">
+      <div className="w-full h-[100dvh] flex flex-col overflow-hidden bg-surface">
         <ConfirmDialog
           open={conflictNotice !== null}
           title={t.studio.conflictTitle}
@@ -398,7 +398,7 @@ export function StudioPage({ locale = 'en', onNavigate }: StudioPageProps) {
             )}
 
             {/* Layers panel — always visible on desktop, slide-over drawer on mobile */}
-            <aside aria-label={t.studio.layersSidebarAria} className={`z-20 h-full shrink-0 lg:static lg:block ${mobilePanel === 'layers' ? 'absolute inset-y-0 left-0 block shadow-2xl' : 'hidden'}`}>
+            <aside aria-label={t.studio.layersSidebarAria} className={`z-20 h-full max-w-[calc(100vw-2.5rem)] shrink-0 lg:static lg:block lg:max-w-none ${mobilePanel === 'layers' ? 'absolute inset-y-0 left-0 block shadow-2xl' : 'hidden'}`}>
               <LayersPanel />
             </aside>
 
@@ -464,7 +464,7 @@ export function StudioPage({ locale = 'en', onNavigate }: StudioPageProps) {
             </main>
 
             {/* Properties panel — always visible */}
-            <aside aria-label={t.studio.propertiesSidebarAria} className={`z-20 h-full shrink-0 lg:static lg:block ${mobilePanel === 'properties' ? 'absolute inset-y-0 right-0 block shadow-2xl' : 'hidden'}`}>
+            <aside aria-label={t.studio.propertiesSidebarAria} className={`z-20 h-full max-w-[calc(100vw-2.5rem)] shrink-0 lg:static lg:block lg:max-w-none ${mobilePanel === 'properties' ? 'absolute inset-y-0 right-0 block shadow-2xl' : 'hidden'}`}>
               <PropertiesPanel />
             </aside>
           </div>

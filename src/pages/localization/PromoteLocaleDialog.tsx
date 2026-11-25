@@ -46,8 +46,8 @@ export function PromoteLocaleDialog({
       onClose={onCancel}
       title={tl.promoteTitle}
       maxWidth="max-w-2xl"
-      bodyClassName="px-6 py-5"
-      footerClassName="flex items-center justify-end gap-3 border-t border-white/8 bg-[#14141b] px-6 py-4"
+      bodyClassName="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5"
+      footerClassName="flex flex-wrap items-center justify-end gap-2 sm:gap-3 border-t border-white/8 bg-[#14141b] px-4 py-3.5 sm:px-6 sm:py-4 shrink-0"
       footer={(
         <>
           <button

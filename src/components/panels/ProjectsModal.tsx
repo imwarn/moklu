@@ -183,13 +183,15 @@ export function ProjectsModal({ open, onClose }: ProjectsModalProps) {
         }}
         maxWidth="max-w-lg"
         backdropClassName="fixed inset-0 z-[200] flex items-center justify-center backdrop-blur-sm"
-        panelStyle={{ background: '#18181f', borderColor: 'rgba(255,255,255,0.1)', maxHeight: '75vh', boxShadow: '0 24px 80px rgba(0,0,0,0.6)' }}
+        panelStyle={{ background: '#18181f', borderColor: 'rgba(255,255,255,0.1)', maxHeight: '85dvh', boxShadow: '0 24px 80px rgba(0,0,0,0.6)' }}
         showCloseButton={false}
         header={<div
             style={{
-              padding: '18px 20px 12px',
+              padding: '14px 16px 12px',
               borderBottom: '1px solid rgba(255,255,255,0.07)',
               display: 'flex',
+              flexWrap: 'wrap',
+              gap: 8,
               alignItems: 'center',
               justifyContent: 'space-between',
             }}
@@ -271,7 +273,7 @@ export function ProjectsModal({ open, onClose }: ProjectsModalProps) {
                 background: 'rgba(255,255,255,0.02)',
               }}
             >
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
                 <input
                   ref={newNameInputRef}
                   value={newName}
@@ -286,7 +288,8 @@ export function ProjectsModal({ open, onClose }: ProjectsModalProps) {
                   }}
                   placeholder={pm.namePlaceholder}
                   style={{
-                    flex: 1,
+                    flex: '1 1 160px',
+                    minWidth: 0,
                     background: 'rgba(255,255,255,0.08)',
                     border: `1px solid ${newNameError ? '#f87171' : 'rgba(255,255,255,0.1)'}`,
                     borderRadius: 6,
@@ -456,7 +459,7 @@ export function ProjectsModal({ open, onClose }: ProjectsModalProps) {
 
                   {/* Actions */}
                   <div
-                    style={{ display: 'flex', gap: 4 }}
+                    style={{ display: 'flex', gap: 4, flexShrink: 0, whiteSpace: 'nowrap' }}
                     onClick={(e) => e.stopPropagation()}
                   >
                     <button

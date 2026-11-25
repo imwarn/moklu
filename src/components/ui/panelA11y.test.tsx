@@ -1,7 +1,7 @@
 /**
- * [INPUT]: depends on vitest, react, react-dom/server, @dnd-kit/core, @dnd-kit/sortable, useEditorStore, StudioLocaleProvider, studioTokens, contextMenu, ModalShell, SegmentedControl, SortableLayerRow, LayerContextMenu, SlideNavigator, PropertiesPanel, and SettingsModal
- * [OUTPUT]: Vitest suite verifying Studio dark WCAG AA contrast, context menu viewport clamping and ARIA roles, layer row keyboard/touch action visibility, and panel ARIA attributes
- * [POS]: automated UI accessibility and contrast regression suite inside src/components/ui
+ * [INPUT]: depends on vitest, react, react-dom/server, @dnd-kit/core, @dnd-kit/sortable, useEditorStore, StudioLocaleProvider, studioTokens, contextMenu, ModalShell, SegmentedControl, SortableLayerRow, LayerContextMenu, SlideNavigator, LayersPanel, PropertiesPanel, SettingsModal, AiProviderSettings, HelpModal, TemplatesModal, and QuickDesignModal
+ * [OUTPUT]: Vitest suite verifying Studio dark WCAG AA contrast, context menu viewport clamping and ARIA roles, layer row keyboard/touch action visibility, panel ARIA attributes, and narrow-screen mobile modal/drawer responsive classes
+ * [POS]: automated UI accessibility, contrast, and mobile responsiveness regression suite inside src/components/ui
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 import { createRef } from 'react'
@@ -27,11 +27,16 @@ vi.mock('@/store', async () => {
 })
 import type { GroupLayer, Layer, TextLayer } from '@/types'
 import { labelCls } from '@/components/properties/panelConstants'
+import { AiProviderSettings } from '@/components/ai/AiProviderSettings'
+import { HelpModal } from '@/components/panels/HelpModal'
 import { LayerContextMenu } from '@/components/panels/layers/LayerContextMenu'
+import { LayersPanel } from '@/components/panels/LayersPanel'
 import { SortableChild, SortableGroup, SortableLayer } from '@/components/panels/layers/SortableLayerRow'
 import { PropertiesPanel } from '@/components/panels/PropertiesPanel'
+import { QuickDesignModal } from '@/components/panels/QuickDesignModal'
 import { SettingsModal } from '@/components/panels/SettingsModal'
 import { SlideNavigator } from '@/components/panels/SlideNavigator'
+import { TemplatesModal } from '@/components/panels/TemplatesModal'
 import { clampMenuPosition, placeContextMenu } from './contextMenu'
 import { ModalShell } from './ModalShell'
 import { SegmentedControl } from './SegmentedControl'
@@ -339,5 +344,79 @@ describe('SlideNavigator and PropertiesPanel ARIA labels and pressed states', ()
         selection: prevSelection,
       })
     }
+  })
+})
+
+describe('Studio mobile narrow-screen responsive layout and accessibility', () => {
+  it('stacks SettingsModal navigation horizontally on mobile and uses container-query provider cards in AiProviderSettings', () => {
+    const settingsHtml = renderToStaticMarkup(
+      <StudioLocaleProvider locale="zh">
+        <SettingsModal open onClose={() => {}} />
+      </StudioLocaleProvider>,
+    )
+
+    expect(settingsHtml).toContain('role="dialog"')
+    expect(settingsHtml).toContain('aria-modal="true"')
+    expect(settingsHtml).toContain('h-[88dvh]')
+    expect(settingsHtml).toContain('flex-col md:flex-row')
+    expect(settingsHtml).toContain('w-full md:w-44')
+    expect(settingsHtml).toContain('overflow-x-auto md:overflow-y-auto')
+    expect(settingsHtml).toContain('hidden md:block')
+    expect(settingsHtml).toContain('p-4 md:p-6')
+    expect(settingsHtml).toContain('flex-wrap')
+
+    const aiHtml = renderToStaticMarkup(
+      <StudioLocaleProvider locale="zh">
+        <AiProviderSettings />
+      </StudioLocaleProvider>,
+    )
+
+    expect(aiHtml).toContain('@container')
+    expect(aiHtml).toContain('grid-cols-1 @[300px]:grid-cols-2 md:grid-cols-4')
+    expect(aiHtml).toContain('min-w-0 break-words')
+    expect(aiHtml).toContain('OpenRouter')
+  })
+
+  it('renders HelpModal, TemplatesModal, QuickDesignModal, and side panels with dvh and narrow-screen clamping', () => {
+    const helpHtml = renderToStaticMarkup(
+      <StudioLocaleProvider locale="en">
+        <HelpModal open onClose={() => {}} />
+      </StudioLocaleProvider>,
+    )
+
+    expect(helpHtml).toContain('role="dialog"')
+    expect(helpHtml).toContain('aria-modal="true"')
+    expect(helpHtml).toContain('h-[90dvh]')
+    expect(helpHtml).toContain('flex-col md:flex-row')
+    expect(helpHtml).toContain('md:hidden')
+    expect(helpHtml).toContain('<select')
+
+    const templatesHtml = renderToStaticMarkup(
+      <StudioLocaleProvider locale="en">
+        <TemplatesModal open onClose={() => {}} />
+      </StudioLocaleProvider>,
+    )
+
+    expect(templatesHtml).toContain('max-w-[680px]')
+    expect(templatesHtml).toContain('max-h-[88dvh]')
+    expect(templatesHtml).not.toContain('width:680px')
+
+    const quickHtml = renderToStaticMarkup(
+      <StudioLocaleProvider locale="en">
+        <QuickDesignModal open onClose={() => {}} />
+      </StudioLocaleProvider>,
+    )
+
+    expect(quickHtml).toContain('role="dialog"')
+    expect(quickHtml).toContain('max-h-[90dvh]')
+
+    const panelsHtml = renderToStaticMarkup(
+      <StudioLocaleProvider locale="en">
+        <LayersPanel />
+        <PropertiesPanel />
+      </StudioLocaleProvider>,
+    )
+
+    expect(panelsHtml).toContain('max-w-[calc(100vw-2.5rem)]')
   })
 })

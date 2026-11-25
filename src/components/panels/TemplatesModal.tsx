@@ -147,19 +147,20 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
       open={open}
       onClose={onClose}
       onEscape={() => exportOpen ? setExportOpen(false) : onClose()}
-      maxWidth=""
-      backdropClassName="fixed inset-0 z-[200] flex items-center justify-center"
+      maxWidth="max-w-[680px]"
+      backdropClassName="fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-4"
       backdropStyle={{ background: 'rgba(0,0,0,0.6)' }}
-      panelClassName=""
-      panelStyle={{ width: 680, maxHeight: '80vh', background: '#18181f', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, display: 'flex', flexDirection: 'column', boxShadow: '0 24px 80px rgba(0,0,0,0.6)', overflow: 'hidden' }}
+      panelClassName="relative w-full max-h-[88dvh] flex flex-col overflow-hidden rounded-xl border shadow-2xl"
+      panelStyle={{ background: '#18181f', borderColor: 'rgba(255,255,255,0.1)', boxShadow: '0 24px 80px rgba(0,0,0,0.6)' }}
       showCloseButton={false}
       header={<div
           style={{
-            padding: '14px 16px 14px 20px',
+            padding: '12px 16px',
             borderBottom: exportOpen
               ? 'none'
               : '1px solid rgba(255,255,255,0.07)',
             display: 'flex',
+            flexWrap: 'wrap',
             alignItems: 'center',
             gap: 8,
             flexShrink: 0,
@@ -169,6 +170,7 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
           <span
             style={{
               flex: 1,
+              minWidth: 0,
               fontSize: 14,
               fontWeight: 600,
               color: '#e8e8f0',
@@ -280,7 +282,7 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
           </div>
         </div>}
       footerClassName=""
-      footer={<div style={{ padding: '10px 20px', borderTop: '1px solid rgba(255,255,255,0.07)', fontSize: 11, color: '#4a4a5a', textAlign: 'center', flexShrink: 0 }}>Add templates to <code style={{ background: 'rgba(255,255,255,0.04)', padding: '1px 4px', borderRadius: 3 }}>public/templates/</code> to include them in the gallery</div>}
+      footer={<div style={{ padding: '10px 16px', borderTop: '1px solid rgba(255,255,255,0.07)', fontSize: 11, color: '#4a4a5a', textAlign: 'center', flexShrink: 0, wordBreak: 'break-word' }}>Add templates to <code style={{ background: 'rgba(255,255,255,0.04)', padding: '1px 4px', borderRadius: 3 }}>public/templates/</code> to include them in the gallery</div>}
     >
 
         {/* ── Export panel (inline collapsible) ──────────────── */}
@@ -318,7 +320,7 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
             </p>
 
             {/* Form: Name + Category in one row */}
-            <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
+            <div className="mb-2.5 flex flex-col gap-2.5 sm:flex-row">
               <label
                 style={{
                   flex: 2,
@@ -548,7 +550,7 @@ export function TemplatesModal({ open, onClose }: TemplatesModalProps) {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(min(180px, 100%), 1fr))',
                 gap: 12,
               }}
             >

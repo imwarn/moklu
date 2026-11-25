@@ -22,7 +22,7 @@ export function ApiKeysModal({ open, onClose }: ApiKeysModalProps) {
       onClose={onClose}
       maxWidth="max-w-2xl"
       backdropStyle={{ background: 'rgba(0,0,0,0.6)' }}
-      panelClassName="rounded-2xl border shadow-2xl w-full mx-4 p-6 max-h-[90vh] overflow-y-auto"
+      panelClassName="rounded-2xl border shadow-2xl w-full mx-3 sm:mx-4 p-4 sm:p-6 max-h-[90dvh] overflow-y-auto"
       showCloseButton={false}
     >
         <div className="flex items-center justify-between mb-5">

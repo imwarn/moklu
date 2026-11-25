@@ -81,22 +81,22 @@ function CanvasSizeDialog({ group, onClose }: { group: SlideGroup | undefined; o
 
   const inputCls = 'mt-1 w-full rounded-lg border border-white/15 bg-[#222330] px-3 py-2 text-sm text-white focus:border-accent focus:outline-none'
   return (
-    <div className="fixed inset-0 z-[9001] flex items-center justify-center bg-black/70 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
-      <section role="dialog" aria-modal="true" aria-labelledby="canvas-size-title" className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#18181f] p-6 text-[#f5f5f8] shadow-2xl">
+    <div className="fixed inset-0 z-[9001] flex items-center justify-center bg-black/70 p-3 sm:p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <section role="dialog" aria-modal="true" aria-labelledby="canvas-size-title" className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-2xl border border-white/10 bg-[#18181f] p-4 sm:p-6 text-[#f5f5f8] shadow-2xl">
         <div className="flex items-start justify-between gap-4">
-          <div>
-            <h2 id="canvas-size-title" className="text-xl font-semibold">{c.title}</h2>
+          <div className="min-w-0">
+            <h2 id="canvas-size-title" className="text-lg sm:text-xl font-semibold">{c.title}</h2>
             <p className="mt-1 text-sm text-[#aeb0c3]">{c.description}</p>
           </div>
-          <button type="button" onClick={onClose} className="text-xl text-[#aaaabc]" aria-label={c.closeAria}>×</button>
+          <button type="button" onClick={onClose} className="shrink-0 text-xl text-[#aaaabc]" aria-label={c.closeAria}>×</button>
         </div>
         <div className="mt-5 grid grid-cols-3 gap-2 sm:grid-cols-5">
           {CANVAS_PRESETS.map((preset) => (
             <button type="button" key={preset.id} onClick={() => { setWidth(String(preset.width)); setHeight(String(preset.height)); setError(null) }}
               aria-pressed={preset.id === selectedPreset?.id}
-              className={`rounded-lg border px-2 py-3 text-center transition-colors ${preset.id === selectedPreset?.id ? 'border-accent bg-accent-soft' : 'border-white/10 bg-white/[0.025] hover:border-white/30'}`}>
+              className={`min-w-0 rounded-lg border px-2 py-3 text-center transition-colors ${preset.id === selectedPreset?.id ? 'border-accent bg-accent-soft' : 'border-white/10 bg-white/[0.025] hover:border-white/30'}`}>
               <span className="block text-sm font-semibold">{preset.id}</span>
-              <span className="mt-1 block text-[10px] text-[#aeb0c3]">{preset.label}</span>
+              <span className="mt-1 block truncate text-[10px] text-[#aeb0c3]">{preset.label}</span>
             </button>
           ))}
         </div>
@@ -120,7 +120,7 @@ function CanvasSizeDialog({ group, onClose }: { group: SlideGroup | undefined; o
           </label>
         </fieldset>
         {error && <p role="alert" className="mt-3 text-xs text-red-400">{error}</p>}
-        <div className="mt-6 flex justify-end gap-2">
+        <div className="mt-6 flex flex-wrap justify-end gap-2">
           <button type="button" onClick={onClose} className="rounded-lg border border-white/15 px-4 py-2 text-sm">{t.common.cancel}</button>
           <button type="button" onClick={resize} disabled={!group} className="rounded-lg bg-accent-strong px-4 py-2 text-sm font-semibold text-accent-fg hover:bg-accent-strong/90 disabled:opacity-50">{c.applySize}</button>
         </div>

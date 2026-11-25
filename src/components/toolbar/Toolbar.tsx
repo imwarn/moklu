@@ -236,7 +236,7 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
       {/* Left section — no overflow-x-auto so floating popovers are never clipped and no scrollbar appears */}
       <div
         data-testid="toolbar-left"
-        className="flex min-w-0 flex-1 items-center gap-1.5 min-[1536px]:gap-2"
+        className="flex min-w-0 flex-1 items-center gap-1 sm:gap-1.5 min-[1536px]:gap-2"
       >
         {/* Back to Quick Tools hub */}
         <a
@@ -277,7 +277,7 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
               if (e.key === 'Enter') commitName()
               if (e.key === 'Escape') cancelName()
             }}
-            className="w-36 shrink-0 rounded-[5px] border border-accent/60 bg-white/[0.07] px-2 py-[3px] text-xs text-[#e8e8f0] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
+            className="w-28 min-w-0 shrink sm:w-36 sm:shrink-0 rounded-[5px] border border-accent/60 bg-white/[0.07] px-2 py-[3px] text-xs text-[#e8e8f0] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
           />
         ) : (
           <button
@@ -308,10 +308,10 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
           onClick={() => setQuickOpen(true)}
           title={t.toolbar.quickDesignTitle}
           aria-label={t.toolbar.quickDesignAria}
-          className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-accent/50 bg-accent-soft px-2 py-1.5 text-xs font-semibold text-accent-text transition-colors hover:bg-accent/20 min-[640px]:px-2.5 min-[1536px]:px-3"
+          className="inline-flex min-w-0 shrink items-center gap-1.5 whitespace-nowrap rounded-lg border border-accent/50 bg-accent-soft px-2 py-1.5 text-xs font-semibold text-accent-text transition-colors hover:bg-accent/20 min-[640px]:shrink-0 min-[640px]:px-2.5 min-[1536px]:px-3"
         >
-          <SparklesIcon size={13} />
-          <span>{t.toolbar.quickDesign}</span>
+          <SparklesIcon size={13} className="shrink-0" />
+          <span className="truncate">{t.toolbar.quickDesign}</span>
         </button>
 
         {/* Canvas Size (inline >= 640px; inside More menu on mobile < 640px) */}
@@ -440,7 +440,7 @@ export function Toolbar({ mode, onSetMode, homeHref = '/', onNavigateHome }: Too
           className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-white/15 px-2 py-1.5 text-xs text-white transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50 min-[640px]:px-2.5 min-[1536px]:px-3"
         >
           {isQuickExporting ? <LoaderIcon size={13} /> : <DownloadIcon size={13} />}
-          <span>PNG</span>
+          <span className="max-[379px]:hidden">PNG</span>
         </button>
 
         {/* Compact Studio UI Language Switcher */}

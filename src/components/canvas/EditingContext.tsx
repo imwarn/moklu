@@ -559,7 +559,7 @@ export function EditingContextBar() {
               {t.context.actions} ▾
             </button>
             {actionsOpen && (
-              <div className="absolute right-0 top-full z-50 mt-1.5 w-72 overflow-hidden rounded-lg border border-[rgba(255,255,255,0.12)] bg-[#1c1c26] shadow-2xl">
+              <div className="absolute right-0 top-full z-50 mt-1.5 w-72 max-w-[calc(100vw-1rem)] overflow-hidden rounded-lg border border-[rgba(255,255,255,0.12)] bg-[#1c1c26] shadow-2xl">
                 {isFormatScoped && <>
                   <div className="border-b border-[rgba(255,255,255,0.08)] px-3 py-2">
                     <p className="text-[9px] font-semibold uppercase tracking-[0.15em] text-[#fbbf24]">{formatLabel} {t.context.formatActionsSuffix}</p>

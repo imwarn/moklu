@@ -40,8 +40,8 @@ export function BulkTranslateBar({
   const canRunBulk = !isBulkRunning && bulkEligibleCount > 0
 
   return (
-    <section className="border-b border-white/6 bg-[#111118]/70 px-8 py-3 backdrop-blur-xl shrink-0">
-      <div className="flex items-center gap-4 flex-wrap">
+    <section className="border-b border-white/6 bg-[#111118]/70 px-4 py-3 sm:px-8 backdrop-blur-xl shrink-0">
+      <div className="flex items-center gap-2.5 sm:gap-4 flex-wrap">
         <div className="flex items-center gap-2">
           <span className="text-xs text-[#6b6b7a]">{tl.bulkTranslateLabel}</span>
           <span className="text-xs text-accent-text">

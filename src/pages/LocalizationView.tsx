@@ -525,10 +525,10 @@ export function LocalizationView({ onBack, embedded = false, onPreview }: Locali
     }).length * nonDefaultLocales.length
   }, [allRows, nonDefaultLocales, overwriteExisting])
 
-  const gridTemplateColumns = `300px ${locales.map(() => '260px').join(' ')}`
+  const gridTemplateColumns = `clamp(180px, 52vw, 300px) ${locales.map(() => '260px').join(' ')}`
 
   return (
-    <div className={`relative overflow-hidden bg-surface text-zinc-100 ${embedded ? 'h-full w-full' : 'h-screen w-screen'}`}>
+    <div className={`relative overflow-hidden bg-surface text-zinc-100 ${embedded ? 'h-full w-full' : 'h-[100dvh] w-full'}`}>
       {/* AI Settings modal — reachable from no-key states without leaving the view */}
       <ApiKeysModal open={aiSettingsOpen} onClose={() => setAiSettingsOpen(false)} />
       <KeylessTranslateModal
@@ -592,8 +592,8 @@ export function LocalizationView({ onBack, embedded = false, onPreview }: Locali
         />
 
         {/* ── Table ── */}
-        <div className="flex flex-1 overflow-hidden">
-          <main className="flex-1 overflow-auto px-8 py-7">
+        <div className="relative flex min-h-0 flex-1 overflow-hidden">
+          <main className="min-w-0 flex-1 overflow-auto px-3 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-7">
             <div className="space-y-6 pb-12">
               {groups.map(({ slideGroup, rows }) => (
                 <SlideGroupSection
@@ -642,7 +642,7 @@ export function LocalizationView({ onBack, embedded = false, onPreview }: Locali
           {editingTextCell && (
             <aside
               data-locale-toolbar-panel
-              className="w-72 shrink-0 overflow-y-auto border-l border-border bg-panel px-4 py-4"
+              className="absolute inset-x-0 bottom-0 z-20 max-h-[45dvh] shrink-0 overflow-y-auto border-t border-border bg-panel px-4 py-4 shadow-2xl md:static md:max-h-none md:w-72 md:border-l md:border-t-0 md:shadow-none"
             >
               <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted">
                 {lm.textStyling}

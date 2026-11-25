@@ -38,7 +38,7 @@ export function ContentSyncModal({ open, onClose }: ContentSyncModalProps) {
   const updates = plan?.entries.filter((entry) => entry.status === 'updated') ?? []
 
   if (candidates.length === 0) {
-    return <ModalShell open={open} onClose={onClose} title={cs.title} maxWidth="max-w-md" bodyClassName="px-5 py-5" footerClassName="flex justify-end border-t border-[rgba(255,255,255,0.06)] px-5 py-4" footer={<button type="button" onClick={onClose} className="rounded-lg px-3 py-2 text-xs text-[#8f90a3] hover:bg-[rgba(255,255,255,0.06)] hover:text-white">{t.common.close}</button>}>
+    return <ModalShell open={open} onClose={onClose} title={cs.title} maxWidth="max-w-md" bodyClassName="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5" footerClassName="flex flex-wrap justify-end border-t border-[rgba(255,255,255,0.06)] px-4 py-3.5 sm:px-5 sm:py-4 shrink-0" footer={<button type="button" onClick={onClose} className="rounded-lg px-3 py-2 text-xs text-[#8f90a3] hover:bg-[rgba(255,255,255,0.06)] hover:text-white">{t.common.close}</button>}>
       <p className="text-sm leading-6 text-[#b7b7c5]">{cs.noOtherFamilies}</p>
     </ModalShell>
   }
@@ -49,7 +49,7 @@ export function ContentSyncModal({ open, onClose }: ContentSyncModalProps) {
     onClose()
   }
 
-  return <ModalShell open={open} onClose={onClose} title={cs.title} maxWidth="max-w-md" bodyClassName="px-5 py-5" footerClassName="flex justify-end gap-2 border-t border-[rgba(255,255,255,0.06)] px-5 py-4" footer={<><button type="button" onClick={onClose} className="rounded-lg px-3 py-2 text-xs text-[#8f90a3] hover:bg-[rgba(255,255,255,0.06)] hover:text-white">{t.common.cancel}</button><button type="button" onClick={handleConfirm} disabled={!plan || plan.updatedCount === 0} className="rounded-lg bg-accent-strong px-3 py-2 text-xs font-medium text-accent-fg hover:bg-accent-strong/90 disabled:cursor-not-allowed disabled:opacity-50">{cs.confirm}</button></>}>
+  return <ModalShell open={open} onClose={onClose} title={cs.title} maxWidth="max-w-md" bodyClassName="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5" footerClassName="flex flex-wrap justify-end gap-2 border-t border-[rgba(255,255,255,0.06)] px-4 py-3.5 sm:px-5 sm:py-4 shrink-0" footer={<><button type="button" onClick={onClose} className="rounded-lg px-3 py-2 text-xs text-[#8f90a3] hover:bg-[rgba(255,255,255,0.06)] hover:text-white">{t.common.cancel}</button><button type="button" onClick={handleConfirm} disabled={!plan || plan.updatedCount === 0} className="rounded-lg bg-accent-strong px-3 py-2 text-xs font-medium text-accent-fg hover:bg-accent-strong/90 disabled:cursor-not-allowed disabled:opacity-50">{cs.confirm}</button></>}>
     {candidates.length === 1 && selectedFamily && (
       <p className="text-sm leading-6 text-[#b7b7c5]">
         {splitMessageTemplate(cs.fromFamilyLead).map((part, idx) => (

@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on vite (defineConfig, loadEnv, Plugin), @vitejs/plugin-react, @tailwindcss/vite, node:path, node:child_process, and node:module; reads GITHUB_PAGES and optional VITE_CF_BEACON_TOKEN env vars
- * [OUTPUT]: exports Vite build configuration with @ alias (using import.meta.dirname), git/version defines, conditional Cloudflare Web Analytics beacon injection, and client-only Rolldown codeSplitting isolating React, Konva, and DnD vendor chunks
+ * [INPUT]: depends on vite (defineConfig, loadEnv, Plugin), @vitejs/plugin-react, @tailwindcss/vite, node:path, node:child_process, and node:module; reads GITHUB_PAGES, SOURCE_COMMIT/COOLIFY_GIT_COMMIT_SHA/GITHUB_SHA/COMMIT_REF, and optional VITE_CF_BEACON_TOKEN env vars
+ * [OUTPUT]: exports Vite build configuration with @ alias (using import.meta.dirname), git/version defines (with CI/Coolify env SHA fallback), conditional Cloudflare Web Analytics beacon injection, and client-only Rolldown codeSplitting isolating React, Konva, and DnD vendor chunks
  * [POS]: root Vite bundler configuration powering dev, production client builds, and temporary SSR prerender builds
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -18,6 +18,13 @@ const require = createRequire(import.meta.url)
 const pkg = require('./package.json') as { version: string }
 
 function getGitHash(): string {
+  const envCommit = (
+    process.env.SOURCE_COMMIT ||
+    process.env.COOLIFY_GIT_COMMIT_SHA ||
+    process.env.GITHUB_SHA ||
+    process.env.COMMIT_REF
+  )?.trim()
+  if (envCommit) return envCommit.slice(0, 7)
   try {
     return execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim()
   } catch {

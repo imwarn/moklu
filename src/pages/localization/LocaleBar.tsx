@@ -52,7 +52,7 @@ export function LocaleBar({
   const tl = t.modals.localization
 
   return (
-    <section className="border-b border-white/8 bg-[#18181f]/86 px-8 py-4 backdrop-blur-xl shrink-0">
+    <section className="border-b border-white/8 bg-[#18181f]/86 px-4 py-3 sm:px-8 sm:py-4 backdrop-blur-xl shrink-0">
       <div className="flex flex-wrap items-start gap-3">
         <div className="pt-2 text-xs font-medium uppercase tracking-[0.22em] text-[#6b6b7a] shrink-0">{tl.languagesLabel}</div>
         <div className="flex flex-1 flex-wrap gap-2 items-center">
@@ -123,14 +123,14 @@ export function LocaleBar({
             </button>
           </div>
 
-          <div className="ml-auto flex shrink-0 items-center gap-2">
+          <div className="ml-auto flex flex-wrap shrink-0 items-center gap-2">
             {/* Preview the selected language (opens the shared preview modal) */}
             {onPreview && (
               <button
                 type="button"
                 onClick={() => onPreview(activeLocale)}
                 title={formatMessage(tl.previewLanguageTitle, { language: getLanguageName(activeLocale) })}
-                className="rounded-full border border-accent/40 bg-accent-soft px-4 py-2 text-sm font-medium text-accent-text transition hover:border-accent/70 hover:bg-accent/20 hover:text-white"
+                className="rounded-full border border-accent/40 bg-accent-soft px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm font-medium text-accent-text transition hover:border-accent/70 hover:bg-accent/20 hover:text-white"
               >
                 {tl.previewButton}
               </button>
@@ -138,7 +138,7 @@ export function LocaleBar({
             <button
               type="button"
               onClick={onBack}
-              className="rounded-full border border-white/10 bg-white/4 px-5 py-2 text-sm font-medium text-[#d7d7e3] transition hover:border-accent/50 hover:bg-accent/10 hover:text-white"
+              className="rounded-full border border-white/10 bg-white/4 px-3.5 py-1.5 text-xs sm:px-5 sm:py-2 sm:text-sm font-medium text-[#d7d7e3] transition hover:border-accent/50 hover:bg-accent/10 hover:text-white"
             >
               {tl.backToEditor}
             </button>

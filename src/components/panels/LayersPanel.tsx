@@ -310,7 +310,7 @@ export function LayersPanel() {
 
   return (
     <aside
-      className="h-full w-52 shrink-0 flex flex-col overflow-hidden min-[1440px]:w-56"
+      className="h-full w-52 max-w-[calc(100vw-2.5rem)] shrink-0 flex flex-col overflow-hidden lg:max-w-none min-[1440px]:w-56"
       style={{ background: panelBg, borderRight: `1px solid ${borderColor}` }}
     >
       {/* Insert toolbar */}

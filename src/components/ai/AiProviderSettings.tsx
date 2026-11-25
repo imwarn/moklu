@@ -153,10 +153,10 @@ export function AiProviderSettings() {
   }, [activeKey, customBaseUrl, hasActiveKey, modelLoadNonce, modelSignature, provider, ta.unknownError])
 
   return (
-    <div>
+    <div className="@container min-w-0">
       <div className="mb-4">
         <label className={labelCls}>{ta.providerLabel}</label>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+        <div className="grid grid-cols-1 @[300px]:grid-cols-2 md:grid-cols-4 gap-2">
           {AI_PROVIDERS.map((item) => (
             <button
               key={item.id}
@@ -165,14 +165,14 @@ export function AiProviderSettings() {
                 setProvider(item.id)
                 setModelSearch('')
               }}
-              className={`rounded-lg border px-2 py-2 text-xs transition-colors text-left ${
+              className={`min-w-0 rounded-lg border px-2.5 py-2 text-xs transition-colors text-left ${
                 provider === item.id
                   ? 'border-accent bg-accent-soft text-accent-text'
                   : 'border-[rgba(255,255,255,0.1)] text-muted hover:text-[#e8e8f0] hover:bg-[rgba(255,255,255,0.06)]'
               }`}
             >
-              <span className="block font-medium">{providerShortLabel(item)}</span>
-              <span className="block mt-1 text-[10px] opacity-70 leading-tight">{providerDescription(item)}</span>
+              <span className="block min-w-0 break-words font-medium">{providerShortLabel(item)}</span>
+              <span className="block min-w-0 break-words mt-1 text-[10px] opacity-70 leading-tight">{providerDescription(item)}</span>
             </button>
           ))}
         </div>
@@ -206,7 +206,7 @@ export function AiProviderSettings() {
           autoComplete="off"
         />
         {activeProvider.keyUrl && (
-          <p className="mt-1 text-[11px] text-[#4a4a5a] leading-relaxed">
+          <p className="mt-1 text-[11px] text-[#4a4a5a] leading-relaxed break-words">
             {splitMessageTemplate(ta.getKeyFrom).map((part, idx) => (
               <Fragment key={idx}>
                 {part.type === 'token' && part.key === 'link' ? (
@@ -254,7 +254,7 @@ export function AiProviderSettings() {
       </div>
 
       <div className="mb-4 rounded-xl border border-[rgba(255,255,255,0.08)] p-3 bg-[rgba(255,255,255,0.02)]">
-        <div className="flex items-center justify-between gap-3 mb-2">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
           <label className={labelCls + ' !mb-0'}>{ta.modelLabel}</label>
           <span className="text-[10px] text-[#6b6b7a]">{modelStatus}</span>
         </div>
@@ -311,8 +311,8 @@ export function AiProviderSettings() {
                           : 'text-[#b8b8c8] hover:bg-[rgba(255,255,255,0.05)]'
                       }`}
                     >
-                      <span className="block text-xs font-medium">{model.name}</span>
-                      <span className="block text-[11px] font-mono text-[#6b6b7a]">{model.id}</span>
+                      <span className="block text-xs font-medium break-words">{model.name}</span>
+                      <span className="block text-[11px] font-mono text-[#6b6b7a] break-all">{model.id}</span>
                       {model.description && <span className="block text-[10px] text-[#4a4a5a] line-clamp-2 mt-0.5">{model.description}</span>}
                     </button>
                   )) : (
