@@ -1,12 +1,12 @@
 /**
- * [INPUT]: depends on vitest, jszip, ./compressEngine, ./transformEngine, ./idCardEngine, and ./testHelpers
- * [OUTPUT]: unit tests verifying batch compression savings, target-KB binary-search compression and auto-downscaling, resize/crop/pad geometry, A4 ID-1 card scaling, watermarks, and ZIP output
+ * [INPUT]: depends on vitest, jszip, ./compressEngine, ./transformEngine, ./idCardEngine, ./webpEncoder, and ./testHelpers
+ * [OUTPUT]: unit tests verifying batch compression savings, Safari WASM WebP and JPEG fallback encoding, target-KB binary-search compression and auto-downscaling, resize/crop/pad geometry, A4 ID-1 card scaling, watermarks, and ZIP output
  * [POS]: unit test suite for compressEngine.ts, transformEngine.ts, and idCardEngine.ts
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
 import JSZip from 'jszip'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { compressImage, compressImages, computeCompressedDimensions } from './compressEngine'
 import {
   A4_DIMENSIONS,
@@ -21,8 +21,14 @@ import {
   computeResizeGeometry,
   transformImages,
 } from './transformEngine'
+import { resetWebpWasmEncoderCache, setWebpWasmEncoderOverride } from './webpEncoder'
 
 describe('compressEngine', () => {
+  afterEach(() => {
+    resetWebpWasmEncoderCache()
+    vi.restoreAllMocks()
+  })
+
   it('downscales only when exceeding maxWidth/maxHeight and never upscales', () => {
     const down = computeCompressedDimensions({ width: 4000, height: 2000 }, 1600, 1200)
     expect(down.width).toBe(1600)
@@ -140,7 +146,62 @@ describe('compressEngine', () => {
     expect(floored.targetBytesMet).toBe(false)
   })
 
-  it('syncs result format and .jpg extension when WebKit canvas falls back from image/webp to image/jpeg', async () => {
+  it('encodes real image/webp via WASM and preserves alpha when WebKit canvas has getImageData', async () => {
+    const wasmSpy = vi.fn(async (_img, opts: { quality: number }) => {
+      const bytes = Math.round(350_000 * (opts.quality / 100))
+      return new Uint8Array(bytes).buffer
+    })
+    setWebpWasmEncoderOverride(wasmSpy)
+
+    const { createCanvas: baseFactory, canvases } = createRecordingCanvasFactory()
+    const safariWithPixelsFactory = (width: number, height: number) => {
+      const base = baseFactory(width, height)
+      const baseCtx = base.getContext('2d')!
+      const ctxWithPixels = Object.assign(baseCtx, {
+        getImageData: (_sx: number, _sy: number, sw: number, sh: number) => ({
+          width: sw,
+          height: sh,
+          data: new Uint8ClampedArray(sw * sh * 4),
+        }),
+      })
+      return {
+        ...base,
+        getContext: (id: '2d') => (id === '2d' ? ctxWithPixels : null),
+        convertToBlob: undefined,
+        toBlob(cb: (blob: Blob | null) => void, type = 'image/png') {
+          if (type === 'image/webp') {
+            cb(new Blob([new Uint8Array(9_870_000)], { type: 'image/png' }))
+            return
+          }
+          cb(new Blob([new Uint8Array(410_000)], { type: 'image/jpeg' }))
+        },
+      }
+    }
+
+    const item = makeMockImageItem({
+      id: 'heic-wasm',
+      name: 'IMG_7220.HEIC',
+      width: 64,
+      height: 48,
+      originalBytes: 2_050_000,
+    })
+
+    const res = await compressImage(item, {
+      format: 'image/webp',
+      quality: 0.82,
+      createCanvas: safariWithPixelsFactory,
+    })
+
+    expect(wasmSpy).toHaveBeenCalledTimes(1)
+    expect(res.format).toBe('image/webp')
+    expect(res.filename).toBe('IMG_7220.webp')
+    expect(res.outputBytes).toBe(287_000)
+    expect(res.savedRatio).toBeGreaterThan(0.85)
+    // Alpha transparency is preserved for WebP (no forced #ffffff backdrop fill).
+    expect(canvases[0].fillRects).toHaveLength(0)
+  })
+
+  it('syncs result format and .jpg extension when WebKit canvas lacks getImageData and falls back to image/jpeg', async () => {
     const { createCanvas: baseFactory } = createRecordingCanvasFactory()
     const safariFactory = (width: number, height: number) => {
       const base = baseFactory(width, height)

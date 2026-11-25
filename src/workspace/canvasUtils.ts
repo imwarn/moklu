@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on nanoid, getMockupSvg from @/assets/mockups/registry, getPhoneSpec from @/assets/mockups/specs, BRAND from @/theme/brand, decodeHeicToBlob/isHeicFile/readExifSummary from @/tools, QUICK_THEMES from @/utils/quickDesign, getQuickPreviewGeometry and makeSvgImageDataUrl from @/utils/quickPreview, trackFunnelEvent from @/utils/telemetry, applyRedactionsToCanvas from ./redact, demoAssets, and workspace types from ./types
- * [OUTPUT]: exports low-level canvas primitives, isSupportedImageFile, ReadImageInputOptions, readFileAsImageInput (with local HEIC decode and EXIF extraction), triggerBlobDownload, copyImageToClipboard, isClipboardImageSupported, formatBytes, renderMockupCanvasToPng (with redactions), and re-exports demoAssets helpers
+ * [INPUT]: depends on nanoid, getMockupSvg from @/assets/mockups/registry, getPhoneSpec from @/assets/mockups/specs, BRAND from @/theme/brand, canEncodeCanvasFormat/decodeHeicToBlob/encodeWebpWithWasm/isHeicFile/readExifSummary from @/tools, QUICK_THEMES from @/utils/quickDesign, getQuickPreviewGeometry and makeSvgImageDataUrl from @/utils/quickPreview, trackFunnelEvent from @/utils/telemetry, applyRedactionsToCanvas from ./redact, demoAssets, and workspace types from ./types
+ * [OUTPUT]: exports low-level canvas primitives, isSupportedImageFile, ReadImageInputOptions, readFileAsImageInput (with local HEIC decode and EXIF extraction), finalizeCanvasOutput (with lazy WASM WebP fallback before JPEG fallback), triggerBlobDownload, copyImageToClipboard, isClipboardImageSupported, formatBytes, renderMockupCanvasToPng (with redactions), and re-exports demoAssets helpers
  * [POS]: memory-safe browser image I/O, HEIC/EXIF preprocessing, clipboard export, and offscreen mockup PNG renderer for src/workspace
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -9,7 +9,9 @@ import { getMockupSvg } from '@/assets/mockups/registry'
 import { getPhoneSpec } from '@/assets/mockups/specs'
 import { BRAND } from '@/theme/brand'
 import {
+  canEncodeCanvasFormat,
   decodeHeicToBlob,
+  encodeWebpWithWasm,
   isHeicFile,
   readExifSummary,
   type DecodeHeicStage,
@@ -116,17 +118,66 @@ function encodeHtmlCanvasOnce(
   })
 }
 
+async function tryEncodeHtmlCanvasWebpWithWasm(
+  canvas: HTMLCanvasElement,
+  effectiveQuality: number | undefined,
+): Promise<Blob | null> {
+  if (canvas.width <= 0 || canvas.height <= 0) return null
+  try {
+    const ctx = canvas.getContext('2d')
+    if (!ctx || typeof ctx.getImageData !== 'function') return null
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+    const blob = await encodeWebpWithWasm(imageData, { quality: effectiveQuality })
+    return blob.size > 0 && blob.type === 'image/webp' ? blob : null
+  } catch {
+    return null
+  }
+}
+
+async function encodeHtmlCanvasJpegFallback(
+  canvas: HTMLCanvasElement,
+  effectiveQuality: number | undefined,
+): Promise<Blob> {
+  if (typeof document !== 'undefined' && typeof document.createElement === 'function') {
+    try {
+      const flat = document.createElement('canvas')
+      flat.width = canvas.width
+      flat.height = canvas.height
+      const flatCtx = flat.getContext('2d')
+      if (flatCtx) {
+        flatCtx.fillStyle = '#ffffff'
+        flatCtx.fillRect(0, 0, flat.width, flat.height)
+        flatCtx.drawImage(canvas, 0, 0)
+        return encodeHtmlCanvasOnce(flat, 'image/jpeg', effectiveQuality)
+      }
+    } catch {
+      // Fall through to encoding the original canvas directly.
+    }
+  }
+  return encodeHtmlCanvasOnce(canvas, 'image/jpeg', effectiveQuality)
+}
+
 async function canvasToBlob(
   canvas: HTMLCanvasElement,
   format: WorkspaceImageFormat,
   quality: number,
 ): Promise<Blob> {
   const effectiveQuality = format === 'image/png' ? undefined : Math.max(0.05, Math.min(1, quality))
-  const blob = await encodeHtmlCanvasOnce(canvas, format, effectiveQuality)
-  if (format === 'image/webp' && blob.type === 'image/png') {
-    return encodeHtmlCanvasOnce(canvas, 'image/jpeg', effectiveQuality)
+  if (format === 'image/webp') {
+    if (!canEncodeCanvasFormat('image/webp')) {
+      const wasmBlob = await tryEncodeHtmlCanvasWebpWithWasm(canvas, effectiveQuality)
+      if (wasmBlob) return wasmBlob
+      return encodeHtmlCanvasJpegFallback(canvas, effectiveQuality)
+    }
+    const blob = await encodeHtmlCanvasOnce(canvas, format, effectiveQuality)
+    if (blob.type !== 'image/png') {
+      return blob
+    }
+    const wasmBlob = await tryEncodeHtmlCanvasWebpWithWasm(canvas, effectiveQuality)
+    if (wasmBlob) return wasmBlob
+    return encodeHtmlCanvasJpegFallback(canvas, effectiveQuality)
   }
-  return blob
+  return encodeHtmlCanvasOnce(canvas, format, effectiveQuality)
 }
 
 export async function finalizeCanvasOutput(

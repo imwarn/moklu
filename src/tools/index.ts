@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on ./types, ./canvasHelpers, ./pdfHelper, ./stitchOverlap, ./heicDecoder, ./exifReader, ./mergeEngine, ./splitEngine, ./compressEngine, ./transformEngine, and ./idCardEngine
- * [OUTPUT]: re-exports all client-side image processing engines, HEIC decoder, EXIF inspector, overlap detector & seam override resolver, single-/multi-page PDF builders, helpers, constants, and TypeScript interfaces
+ * [INPUT]: depends on ./types, ./canvasHelpers, ./pdfHelper, ./stitchOverlap, ./heicDecoder, ./webpEncoder, ./exifReader, ./mergeEngine, ./splitEngine, ./compressEngine, ./transformEngine, and ./idCardEngine
+ * [OUTPUT]: re-exports all client-side image processing engines, HEIC decoder, lazy WASM WebP encoder, EXIF inspector, overlap detector & seam override resolver, single-/multi-page PDF builders, helpers, constants, and TypeScript interfaces
  * [POS]: sole public barrel entry point of src/tools; imported by workspace tools and integration adapters
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -111,6 +111,14 @@ export {
   type HeicNativeDecoder,
   type HeicWasmDecoder,
 } from './heicDecoder'
+
+export {
+  encodeWebpWithWasm,
+  resetWebpWasmEncoderCache,
+  setWebpWasmEncoderOverride,
+  type EncodeWebpWasmOptions,
+  type WebpWasmEncoder,
+} from './webpEncoder'
 
 export {
   parseExifFromBuffer,
