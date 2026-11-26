@@ -480,23 +480,23 @@ export function AnnotateQuickTool({
       <div className={`flex flex-col justify-between gap-5 rounded-2xl border p-4 sm:p-5 lg:col-span-5 ${tokens.card}`}>
         <div className="space-y-4">
           <div className={`rounded-xl border p-3.5 ${tokens.cardMuted}`}>
-            <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex min-h-7 flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <span className={`text-xs font-semibold ${tokens.text}`}>{s.annotate.title}</span>
                 <span
                   data-testid="annotate-layers-count"
-                  className={`rounded-md px-2 py-0.5 text-[11px] font-semibold tabular-nums ${tokens.accentChip}`}
+                  className={`inline-flex h-6 items-center rounded-md px-2 text-[11px] font-semibold tabular-nums ${tokens.accentChip}`}
                 >
                   {displayLayers.length} {s.annotate.layersCount}
                 </span>
               </div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex min-h-7 items-center gap-1.5">
                 {selectedId && (
                   <button
                     type="button"
                     data-testid="annotate-delete-selected"
                     onClick={handleDeleteSelected}
-                    className={`min-h-7 rounded-lg border px-2.5 py-1 text-[11px] font-semibold transition-colors ${tokens.focusRing} ${tokens.dangerGhost}`}
+                    className={`inline-flex h-7 items-center rounded-lg border px-2.5 text-[11px] font-semibold transition-colors ${tokens.focusRing} ${tokens.dangerGhost}`}
                   >
                     {s.annotate.deleteLayer}
                   </button>
@@ -506,7 +506,7 @@ export function AnnotateQuickTool({
                     type="button"
                     data-testid="annotate-clear-all"
                     onClick={handleClearAllLayers}
-                    className={`min-h-7 rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-colors ${tokens.focusRing} ${tokens.pillIdle}`}
+                    className={`inline-flex h-7 items-center rounded-lg border px-2.5 text-[11px] font-medium transition-colors ${tokens.focusRing} ${tokens.pillIdle}`}
                   >
                     {s.annotate.clearAll}
                   </button>

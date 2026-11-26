@@ -281,11 +281,11 @@ export function AnnotateModal({
           onCommitLayers={commitLayers}
         />
 
-        <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-[11px]">
+        <div className="flex min-h-7 flex-wrap items-center justify-between gap-2 px-1 text-[11px]">
           <span className={tokens.textSubtle}>{s.annotate.shortcutsHint}</span>
-          <div className="flex items-center gap-2">
+          <div className="flex min-h-7 items-center gap-2">
             {displayLayers.length > 0 && (
-              <span className={`rounded-md px-1.5 py-0.5 font-semibold tabular-nums ${tokens.accentChip}`}>
+              <span className={`inline-flex h-6 items-center rounded-md px-2 font-semibold tabular-nums ${tokens.accentChip}`}>
                 {displayLayers.length} {s.annotate.layersCount}
               </span>
             )}
@@ -294,7 +294,7 @@ export function AnnotateModal({
                 type="button"
                 data-testid="annotate-modal-delete"
                 onClick={handleDeleteSelected}
-                className={`min-h-7 rounded-md border px-2 py-0.5 text-[11px] font-semibold transition-colors ${tokens.focusRing} ${tokens.dangerGhost}`}
+                className={`inline-flex h-7 items-center rounded-md border px-2.5 text-[11px] font-semibold transition-colors ${tokens.focusRing} ${tokens.dangerGhost}`}
               >
                 {s.annotate.deleteLayer}
               </button>
