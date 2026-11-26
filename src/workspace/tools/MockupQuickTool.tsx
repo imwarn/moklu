@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on react, getMockupCategory from @/assets/mockups/registry, DEFAULT_BROWSER_CHROME and isBrowserModel from @/assets/mockups/browser, QuickDesignPreview from @/components/panels/QuickDesignPreview, isHeicFile from @/tools, QUICK_MOCKUP_CATEGORIES/QUICK_MOCKUPS/QUICK_SIZES/QUICK_THEMES/getQuickMockupsByCategory from @/utils/quickDesign, trackFunnelEvent from @/utils/telemetry, canvasUtils from ../canvasUtils, draftStorage from ../draftStorage, ExifPrivacyBanner from ../ExifPrivacyBanner, i18n from ../i18n, renderRedactedImageDataUrl from ../redact, RedactOverlay/RedactToolbar from ../RedactOverlay, themeTokens from ../themeTokens, UI primitives from ../uiPrimitives, useToolDraft from ../useToolDraft, and workspace types from ../types
- * [OUTPUT]: exports MockupQuickTool component with 13-device 2-level selector, independent Browser Light/Dark chrome toggle, 3-second Blur/Pixelate/Spotlight redaction micro-toolbar, EXIF privacy banner, HEIC decoding progress, clipboard Copy loop, and non-destructive Studio handoff
+ * [INPUT]: depends on react, getMockupCategory from @/assets/mockups/registry, DEFAULT_BROWSER_CHROME and isBrowserModel from @/assets/mockups/browser, QuickDesignPreview from @/components/panels/QuickDesignPreview, isHeicFile from @/tools, QUICK_MOCKUP_CATEGORIES/QUICK_MOCKUPS/QUICK_SIZES/QUICK_THEMES/getQuickMockupsByCategory from @/utils/quickDesign, trackFunnelEvent from @/utils/telemetry, AnnotateModal from ../AnnotateModal, canvasUtils from ../canvasUtils, draftStorage from ../draftStorage, ExifPrivacyBanner from ../ExifPrivacyBanner, i18n from ../i18n, renderRedactedImageDataUrl from ../redact, RedactOverlay/RedactToolbar from ../RedactOverlay, themeTokens from ../themeTokens, UI primitives from ../uiPrimitives, useToolDraft from ../useToolDraft, and workspace types from ../types
+ * [OUTPUT]: exports MockupQuickTool component with 13-device 2-level selector, independent Browser Light/Dark chrome toggle, 3-second Blur/Pixelate/Spotlight redaction micro-toolbar, inline AnnotateModal trigger, EXIF privacy banner, HEIC decoding progress, clipboard Copy loop, and non-destructive Studio handoff
  * [POS]: primary mockup tool panel inside src/workspace/tools; reuses QuickDesignPreview and quickDesign constants
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -23,6 +23,7 @@ import {
   type QuickTheme,
 } from '@/utils/quickDesign'
 import { trackFunnelEvent } from '@/utils/telemetry'
+import { AnnotateModal } from '../AnnotateModal'
 import {
   createDemoImageInput,
   readFileAsImageInput,
@@ -159,6 +160,7 @@ export function MockupQuickTool({
   const [heicDecoding, setHeicDecoding] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
   const [isCopying, setIsCopying] = useState(false)
+  const [annotateOpen, setAnnotateOpen] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
 
   // Redact & Spotlight state (kept separate from raw screenshot.dataUrl for non-destructive handoff).
@@ -446,13 +448,28 @@ export function MockupQuickTool({
                 {customWidth} × {customHeight}
               </span>
             </div>
-            <button
-              type="button"
-              onClick={handleLoadDemo}
-              className={`min-h-8 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${tokens.focusRing} ${tokens.buttonSecondary}`}
-            >
-              {s.common.tryDemo}
-            </button>
+            <div className="flex items-center gap-1.5">
+              {screenshot && (
+                <button
+                  type="button"
+                  data-testid="mockup-annotate-btn"
+                  onClick={() => setAnnotateOpen(true)}
+                  className={`inline-flex min-h-8 items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${tokens.focusRing} ${tokens.buttonSecondary}`}
+                >
+                  <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+                    <path d="M11 2.8a1.5 1.5 0 0 1 2.1 2.1l-6.2 6.2-2.7.7.7-2.7L11 2.8Z" strokeLinejoin="round" />
+                  </svg>
+                  <span>{s.annotate.inlineButton}</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleLoadDemo}
+                className={`min-h-8 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${tokens.focusRing} ${tokens.buttonSecondary}`}
+              >
+                {s.common.tryDemo}
+              </button>
+            </div>
           </div>
 
           {/* 3-Second Redact / Pixelate / Spotlight Micro-Toolbar */}
@@ -769,6 +786,15 @@ export function MockupQuickTool({
           </div>
         </div>
       </div>
+      {annotateOpen && screenshot && (
+        <AnnotateModal
+          image={screenshot}
+          locale={locale}
+          theme={theme}
+          onClose={() => setAnnotateOpen(false)}
+          onSave={(baked) => { setScreenshot(baked); setAnnotateOpen(false) }}
+        />
+      )}
     </div>
   )
 }

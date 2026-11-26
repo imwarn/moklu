@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on node:fs, node:path, vitest, react, react-dom/server, jszip, QuickDesignPreview, QuickWorkspace, batchHelpers, mergeHandoff, DraftStatusBar, ResizePreviewStage, CompressPreviewModal, getWorkspaceStrings, getWorkspaceThemeTokens, canvasUtils, and workspace types
- * [OUTPUT]: Vitest suite validating all 6 Quick Workspace tools, 4 locales (with zero em-dash enforcement), light/dark Neutral Zinc + Signal Orange tokens, roving tabIndex, label bindings, busy overlay, QuickDesignPreview scaleFactor, MergeQuickTool controls/overlap-removal/PDF preset, buildMergeStudioHandoff multi-layer & sourceRect cropping, DraftStatusBar, preset propagation, multi-image Resize filmstrip UX, Compress preview modal, demo generators, and dynamic ZIP packing
+ * [INPUT]: depends on node:fs, node:path, vitest, react, react-dom/server, jszip, QuickDesignPreview, QuickWorkspace, AnnotateModal, AnnotateOverlay, batchHelpers, mergeHandoff, DraftStatusBar, ResizePreviewStage, CompressPreviewModal, getWorkspaceStrings, getWorkspaceThemeTokens, canvasUtils, and workspace types
+ * [OUTPUT]: Vitest suite validating all 7 Quick Workspace tools (incl. AnnotateQuickTool, AnnotateToolbar, AnnotateCanvas, AnnotateModal, and inline Annotate triggers), 4 locales (with zero em-dash enforcement), light/dark Neutral Zinc + Signal Orange tokens, roving tabIndex, label bindings, busy overlay, QuickDesignPreview scaleFactor, MergeQuickTool controls/overlap-removal/PDF preset, buildMergeStudioHandoff multi-layer & sourceRect cropping, DraftStatusBar, preset propagation, multi-image Resize filmstrip UX, Compress preview modal, demo generators, and dynamic ZIP packing
  * [POS]: automated verification suite for src/workspace
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -12,6 +12,9 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
 import { QuickDesignPreview } from '@/components/panels/QuickDesignPreview'
 import {
+  AnnotateCanvas,
+  AnnotateModal,
+  AnnotateToolbar,
   QuickWorkspace,
   buildBatchStudioHandoff,
   buildMergeStudioHandoff,
@@ -41,7 +44,7 @@ import { isSupportedImageFile } from './canvasUtils'
 import { ExifPrivacyBanner } from './ExifPrivacyBanner'
 import { DraftStatusBar, DropZone } from './uiPrimitives'
 
-const ALL_TOOLS: WorkspaceToolId[] = ['mockup', 'merge', 'split', 'compress', 'resize', 'id-card']
+const ALL_TOOLS: WorkspaceToolId[] = ['mockup', 'merge', 'split', 'compress', 'resize', 'annotate', 'id-card']
 const ALL_LOCALES: WorkspaceLocale[] = ['en', 'zh', 'ja', 'ko']
 
 interface InspectableElementProps {
@@ -74,18 +77,12 @@ function makeMockOutput(name: string, width: number, height: number, sizeBytes: 
 }
 
 describe('QuickWorkspace', () => {
-  it('renders all 6 tools cleanly in both light and dark themes', () => {
+  it('renders all 7 tools cleanly in both light and dark themes', () => {
     const onOpenInStudio = vi.fn()
     for (const theme of ['light', 'dark'] as const) {
       for (const tool of ALL_TOOLS) {
         const html = renderToStaticMarkup(
-          <QuickWorkspace
-            preset={{ tool }}
-            locale="en"
-            theme={theme}
-            onOpenInStudio={onOpenInStudio}
-            onOpenProModal={vi.fn()}
-          />,
+          <QuickWorkspace preset={{ tool }} locale="en" theme={theme} onOpenInStudio={onOpenInStudio} onOpenProModal={vi.fn()} />,
         )
         expect(html).toContain(`data-theme="${theme}"`)
         expect(html).toContain(`data-active-tool="${tool}"`)
@@ -97,38 +94,14 @@ describe('QuickWorkspace', () => {
 
   it('renders localized UI copy across EN, ZH, JA, and KO', () => {
     const expectedStudioLabel: Record<WorkspaceLocale, string> = {
-      en: 'Open in Studio ↗',
-      zh: '在 Studio 画布精修 ↗',
-      ja: 'Studio で詳細編集 ↗',
-      ko: 'Studio에서 정밀 편집 ↗',
+      en: 'Open in Studio ↗', zh: '在 Studio 画布精修 ↗', ja: 'Studio で詳細編集 ↗', ko: 'Studio에서 정밀 편집 ↗',
     }
     const expectedWatermark: Record<WorkspaceLocale, string> = {
-      en: 'FOR VERIFICATION ONLY',
-      zh: '仅供办理业务使用 他用无效',
-      ja: '本人確認専用・他用無効',
-      ko: '본인 확인 전용 · 타 용도 사용 금지',
+      en: 'FOR VERIFICATION ONLY', zh: '仅供办理业务使用 他用无效', ja: '本人確認専用・他用無効', ko: '본인 확인 전용 · 타 용도 사용 금지',
     }
-
     for (const locale of ALL_LOCALES) {
-      const mockupHtml = renderToStaticMarkup(
-        <QuickWorkspace
-          preset={{ tool: 'mockup' }}
-          locale={locale}
-          theme="light"
-          onOpenInStudio={vi.fn()}
-        />,
-      )
-      expect(mockupHtml).toContain(expectedStudioLabel[locale])
-
-      const idCardHtml = renderToStaticMarkup(
-        <QuickWorkspace
-          preset={{ tool: 'id-card' }}
-          locale={locale}
-          theme="light"
-          onOpenInStudio={vi.fn()}
-        />,
-      )
-      expect(idCardHtml).toContain(expectedWatermark[locale])
+      expect(renderToStaticMarkup(<QuickWorkspace preset={{ tool: 'mockup' }} locale={locale} theme="light" onOpenInStudio={vi.fn()} />)).toContain(expectedStudioLabel[locale])
+      expect(renderToStaticMarkup(<QuickWorkspace preset={{ tool: 'id-card' }} locale={locale} theme="light" onOpenInStudio={vi.fn()} />)).toContain(expectedWatermark[locale])
     }
   })
 
@@ -140,6 +113,8 @@ describe('QuickWorkspace', () => {
       { preset: { tool: 'compress', targetFormat: 'image/jpeg' }, expectSnippet: 'aria-checked="true"' },
       { preset: { tool: 'resize', resizeMode: 'pad' }, expectSnippet: 'Border Size' },
       { preset: { tool: 'resize', resizeMode: 'resize' }, expectSnippet: 'Scale (%)' },
+      { preset: { tool: 'annotate', annotateTool: 'brush' }, expectSnippet: 'data-testid="annotate-tool-brush" aria-label="Brush" aria-pressed="true"' },
+      { preset: { tool: 'annotate', annotateTool: 'rect' }, expectSnippet: 'data-testid="annotate-tool-rect" aria-label="Rectangle" aria-pressed="true"' },
     ]
 
     for (const { preset, expectSnippet } of presets) {
@@ -588,7 +563,33 @@ describe('workspace i18n and utilities', () => {
       expect(dict.common.copyImage.trim().length).toBeGreaterThan(0)
       expect(dict.common.downloadPdf.trim().length).toBeGreaterThan(0)
       expect(dict.common.customColor.trim().length).toBeGreaterThan(0)
+      for (const annotateLabel of Object.values(dict.annotate)) {
+        expect(annotateLabel.trim().length).toBeGreaterThan(0)
+      }
     }
+  })
+
+  it('renders AnnotateQuickTool, AnnotateModal, 8-handle selection, adaptive font slider, and inline triggers', () => {
+    const demo = createDemoImageInput('saas', 'demo.svg')
+    const annotateHtml = renderToStaticMarkup(<QuickWorkspace preset={{ tool: 'annotate', annotateTool: 'brush' }} locale="zh" theme="dark" onOpenInStudio={vi.fn()} />)
+    expect(annotateHtml).toContain('role="toolbar"')
+    expect(annotateHtml).toContain('data-testid="annotate-tool-brush"')
+    expect(annotateHtml).toContain('data-testid="annotate-undo-btn" aria-label="撤销" aria-disabled="true"')
+    expect(annotateHtml).toContain('data-testid="annotate-copy-image"')
+    const modalHtml = renderToStaticMarkup(<AnnotateModal image={demo} locale="zh" theme="light" onClose={vi.fn()} onSave={vi.fn()} />)
+    expect(modalHtml).toContain('role="dialog"')
+    expect(modalHtml).toContain('aria-modal="true"')
+    expect(modalHtml).toContain('data-testid="annotate-close-btn"')
+    expect(modalHtml).toContain('data-testid="annotate-save-btn"')
+    const textLayer = { id: 't1', type: 'text' as const, color: '#ffffff', strokeWidth: 0.012, x: 0.2, y: 0.2, width: 0.3, height: 0.12, text: 'Hello', fontSize: 0.06 }
+    const rectLayer = { id: 'r1', type: 'rect' as const, color: '#ff0000', strokeWidth: 0.012, x: 0.1, y: 0.1, width: 0.4, height: 0.3 }
+    const canvasHtml = renderToStaticMarkup(<AnnotateCanvas image={demo} theme="light" locale="en" activeTool="select" color="#ff0000" strokeWidth={0.012} fontSize={0.055} layers={[rectLayer, textLayer]} selectedId="t1" editingTextId={null} onSelect={vi.fn()} onEditingTextIdChange={vi.fn()} onCommitLayers={vi.fn()} />)
+    expect(canvasHtml).toContain('data-testid="annotate-selection-box"')
+    for (const h of ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']) expect(canvasHtml).toContain(`data-testid="annotate-handle-${h}"`)
+    const textBarHtml = renderToStaticMarkup(<AnnotateToolbar theme="light" locale="en" activeTool="select" color="#ff0000" strokeWidth={0.012} fontSize={0.055} selectedLayer={textLayer} canUndo canRedo={false} onToolChange={vi.fn()} onColorChange={vi.fn()} onSizePreview={vi.fn()} onSizeCommit={vi.fn()} onUndo={vi.fn()} onRedo={vi.fn()} />)
+    expect(textBarHtml).toContain('aria-label="Font Size"')
+    expect(renderToStaticMarkup(<QuickWorkspace preset={{ tool: 'mockup' }} locale="en" theme="light" onOpenInStudio={vi.fn()} />)).toContain('data-testid="mockup-annotate-btn"')
+    expect(renderToStaticMarkup(<ResizePreviewStage theme="light" locale="en" outputs={[]} selectedIndex={0} hasSourceImages onSelectIndex={vi.fn()} onDownloadAt={vi.fn()} onRemoveAt={vi.fn()} onClearAll={vi.fn()} onLoadDemo={vi.fn()} onFiles={vi.fn()} onAnnotateCurrent={vi.fn()} />)).toContain('data-testid="resize-annotate-btn"')
   })
 
   it('renders MergeQuickTool upgraded controls: 2-6 grid columns, contain fit, custom color picker, border, clipboard copy, and PDF preset', () => {

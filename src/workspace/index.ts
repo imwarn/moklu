@@ -1,10 +1,19 @@
 /**
- * [INPUT]: depends on QuickWorkspace, batchHelpers, mergeHandoff, draftStorage, useToolDraft, types, i18n, themeTokens, canvasUtils, demoAssets, and defaultEngines within src/workspace
- * [OUTPUT]: barrel re-exports for QuickWorkspace, DIP contracts, i18n dictionary, multi-layer merge handoff, IndexedDB draft storage, demo generators, and default engines
+ * [INPUT]: depends on QuickWorkspace, AnnotateModal, AnnotateOverlay, batchHelpers, mergeHandoff, draftStorage, useToolDraft, types, i18n, themeTokens, canvasUtils, demoAssets, and defaultEngines within src/workspace
+ * [OUTPUT]: barrel re-exports for QuickWorkspace, AnnotateModal, AnnotateToolbar, AnnotateCanvas, DIP contracts, i18n dictionary, multi-layer merge handoff, IndexedDB draft storage, demo generators, and default engines
  * [POS]: public API entry point of src/workspace consumed by ToolLandingPage and engineAdapter
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 export { QuickWorkspace } from './QuickWorkspace'
+export { AnnotateModal, type AnnotateModalProps } from './AnnotateModal'
+export {
+  AnnotateCanvas,
+  AnnotateToolbar,
+  useAnnotateShortcuts,
+  type AnnotateCanvasProps,
+  type AnnotateToolbarProps,
+  type UseAnnotateShortcutsOptions,
+} from './AnnotateOverlay'
 export {
   buildBatchStudioHandoff,
   clampBatchIndex,

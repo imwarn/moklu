@@ -55,6 +55,8 @@ describe('GEO deliverables: llms.txt, native details FAQ, Quick Facts, trust pag
     expect(llms).toContain('https://moklu.app/remove-exif/')
     expect(llms).toContain('https://moklu.app/compress-image-to-200kb/')
     expect(llms).toContain('https://moklu.app/redact-screenshot/')
+    expect(llms).toContain('https://moklu.app/annotate-image/')
+    expect(llms).toContain('https://moklu.app/draw-on-image/')
     expect(llms).toContain('https://moklu.app/about/')
     expect(llms).toContain('https://moklu.app/zh/privacy/')
     expect(llms).toContain('https://moklu.app/ja/terms/')
@@ -165,6 +167,7 @@ describe('GEO deliverables: llms.txt, native details FAQ, Quick Facts, trust pag
     expect(getHtmlLang('zh')).toBe('zh-CN')
     expect(getHreflangCode('zh')).toBe('zh-Hans')
     expect(resolveApplicationCategory('mockup')).toBe('DesignApplication')
+    expect(resolveApplicationCategory('annotate')).toBe('DesignApplication')
     expect(resolveApplicationCategory('merge')).toBe('MultimediaApplication')
     expect(resolveApplicationCategory('compress')).toBe('MultimediaApplication')
     expect(resolveApplicationCategory('id-card')).toBe('UtilitiesApplication')
@@ -212,6 +215,34 @@ describe('GEO deliverables: llms.txt, native details FAQ, Quick Facts, trust pag
       expect(route.preset.mergeDirection).toBe('vertical')
       expect(route.preset.mergeFormat).toBe('application/pdf')
       expect(route.preset.pdfMode).toBe('multipage')
+    }
+  })
+
+  it('provides 4-locale Quick Facts and zero em-dashes for annotate-image and draw-on-image', () => {
+    for (const locale of LOCALE_CODES) {
+      const annotateRoute = resolvePathname(
+        locale === 'en' ? '/annotate-image' : `/${locale}/annotate-image`,
+      )
+      const drawRoute = resolvePathname(
+        locale === 'en' ? '/draw-on-image' : `/${locale}/draw-on-image`,
+      )
+      expect(annotateRoute.tool).toBe('annotate')
+      expect(annotateRoute.preset.annotateTool).toBe('rect')
+      expect(drawRoute.tool).toBe('annotate')
+      expect(drawRoute.preset.annotateTool).toBe('brush')
+
+      const quickFacts = getToolQuickFacts(locale, annotateRoute)
+      expect(quickFacts.facts.length).toBeGreaterThanOrEqual(5)
+      expect(quickFacts.boundaries.length).toBeGreaterThanOrEqual(2)
+      for (const value of [
+        quickFacts.heading,
+        quickFacts.subheading,
+        quickFacts.boundariesHeading,
+        ...quickFacts.facts.flatMap((f) => [f.label, f.value]),
+        ...quickFacts.boundaries,
+      ]) {
+        expect(value, `Annotate QuickFacts (${locale}) contains em-dash: ${value}`).not.toContain('—')
+      }
     }
   })
 

@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on GrowthRouteSlug and RouteCopy types from ../types.ts
- * [OUTPUT]: exports JA_GROWTH_ROUTES containing Japanese SEO copy for the 7 high-intent growth slugs (ipad-mockup, watch-mockup, stitch-screenshots, heic-to-jpg, remove-exif, compress-image-to-200kb, redact-screenshot)
+ * [OUTPUT]: exports JA_GROWTH_ROUTES containing Japanese SEO copy for the 9 high-intent growth slugs (ipad-mockup, watch-mockup, stitch-screenshots, heic-to-jpg, remove-exif, compress-image-to-200kb, redact-screenshot, annotate-image, draw-on-image)
  * [POS]: growth route-copy chunk for ja within src/seo/locales, merged into JA_LOCALE by ./ja.ts to keep every file <= 800 lines
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -397,6 +397,122 @@ export const JA_GROWTH_ROUTES: Record<GrowthRouteSlug, RouteCopy> = {
       {
         question: 'Moklu Studio へ引き継いだ後もマスキング領域の位置を調整できますか？',
         answer: 'はい。元のスクリーンショットを非破壊で保持したままマスキングレイヤーを引き継ぐため、範囲の微調整や矢印・テキストの追加が可能です。',
+      },
+    ],
+  },
+  'annotate-image': {
+    navLabel: '画像に注釈を追加',
+    title: '画像・スクショに無料で注釈・矢印・枠線を追加（ローカル）| Moklu',
+    metaDescription:
+      'スクリーンショットや写真に矩形枠・矢印・テキスト・手書きペンをブラウザ内でローカル追加。8 ハンドル伸縮、50 段階の元に戻す/やり直す、元解像度書き出し、送信ゼロ。',
+    badge: '矩形・矢印・テキスト・ペン',
+    h1: '画像・スクリーンショットにローカルで注釈を追加',
+    subtitle:
+      '不具合報告、操作マニュアル、UI レビュー用にベクター矩形枠・矢印・ダブルクリック編集テキスト・手書きペンを即座に配置。8 ハンドルで自在にサイズ調整でき、元解像度のままサーバー送信ゼロで書き出せます。',
+    steps: [
+      {
+        title: '注釈を入れたい画像を貼り付けまたはドロップ',
+        description: '画面キャプチャ直後に Cmd/Ctrl+V で貼り付けるか、PNG・JPEG・WebP・AVIF・HEIC ファイルをブラウザへドロップします。',
+      },
+      {
+        title: '矩形・矢印・テキスト・ペンで要点をマーク',
+        description: '選択 (V)・ペン (B)・矩形 (R)・矢印 (A)・テキスト (T) を切り替え、色と線幅を指定し、8 つの青いハンドルで位置や大きさを調整します。',
+      },
+      {
+        title: '元解像度で保存、またはチャットへ即コピー',
+        description: '透かしなしの PNG / WebP / JPEG で保存するか、ワンクリックでクリップボードにコピーして Slack や Notion へ貼り付けます。',
+      },
+    ],
+    highlights: [
+      {
+        title: '8 ハンドルで自在に変形できるベクターレイヤー',
+        description: '描いた矩形・矢印・テキスト・ペン線はその場で再選択でき、移動・拡大縮小・色変更・個別削除を何度でもやり直せます。',
+      },
+      {
+        title: '軽快なショートカットと 50 段階の元に戻す/やり直す',
+        description: 'V/B/R/A/T キーによる素早い切替、テキストのダブルクリック直接編集、Delete 削除、Cmd/Ctrl+Z で資料作成を高速化します。',
+      },
+      {
+        title: '社内スクショも外部送信ゼロで安全に注釈',
+        description: '管理画面や開発中 UI の注釈作業はすべてブラウザメモリ内で完結し、ローカル IndexedDB への下書き自動保存も備えています。',
+      },
+    ],
+    faqs: [
+      {
+        question: 'Moklu の画像注釈ツールにはどのような描画機能がありますか？',
+        answer: '8 ハンドル選択ツール、滑らかなベジェ手書きペン、角丸矩形枠、視認性の高い矢印、コントラスト縁取り付きのダブルクリック編集テキストを備えています。',
+      },
+      {
+        question: '一度描いた矢印や矩形の位置・サイズを後から直せますか？',
+        answer: 'はい。選択モード (V) で任意の注釈をクリックすれば、ドラッグ移動・8 ハンドルでの拡大縮小・色や太さの変更・Delete キーによる個別削除が可能です。',
+      },
+      {
+        question: '注釈を追加すると元のスクリーンショットの解像度は下がりますか？',
+        answer: '下がりません。注釈は正規化ベクター座標で保持され、保存時に元画像と同じフル解像度の HTML5 Canvas 上へ鮮明に合成されます。',
+      },
+      {
+        question: 'モックアップ・リサイズ・画像結合の画面からも直接注釈できますか？',
+        answer: 'はい。各ツールのプレビュー欄にある「注釈」ボタンから同じベクター注釈モーダルを開き、保存するとそのまま作業中の画像へ反映されます。',
+      },
+      {
+        question: '注釈を加えた画像データはサーバーへアップロードされますか？',
+        answer: '一切アップロードされません。読み込み、ベクター描画、ローカル下書き保存、書き出しまで 100% ブラウザ内で完結します。',
+      },
+    ],
+  },
+  'draw-on-image': {
+    navLabel: '画像に手書き・落書き',
+    title: '画像・写真にブラウザで無料手書き＆ペン書き込み | Moklu',
+    metaDescription:
+      '写真やスクリーンショットに滑らかなベジェペンで丸囲み・下線・手書きメモを即座に描画。8 色パレット、線幅調整、1 ストロークごとの移動・削除、完全ローカル処理。',
+    badge: '滑らかベクターペン・送信ゼロ',
+    h1: '画像や写真に直接手書き・フリーハンド描画',
+    subtitle:
+      '開いてすぐ滑らかな手書きペンモードで丸囲み・下線・ラフなフィードバックを書き込み可能。描いた線もベクターとして後から移動・縮小・取り消しができ、完全ローカルで動作します。',
+    steps: [
+      {
+        title: '写真を選ぶかスクショを貼り付け',
+        description: '端末の PNG・JPEG・WebP・HEIC 画像をドロップするか、Cmd/Ctrl+V でクリップボードから直接貼り付けます。',
+      },
+      {
+        title: '滑らかベクターペンで自由に書き込み',
+        description: '初期状態のペンツールですぐ描画開始。8 色の高コントラストカラーと線幅を切り替え、必要に応じて矢印や文字も追加できます。',
+      },
+      {
+        title: 'クリップボードコピーまたはフル解像度保存',
+        description: '描き終えたらワンクリックでチャットへコピーするか、透かしなしの PNG / WebP / JPEG として保存します。',
+      },
+    ],
+    highlights: [
+      {
+        title: '2 次ベジェ曲線による滑らかなストローク補正',
+        description: 'マウスやトラックパッドの手書き線も自動間引きと曲線補間により、ギザつきを抑えた見やすい丸囲みや下線に整えます。',
+      },
+      {
+        title: '手書きの線も後から移動・リサイズ可能',
+        description: '通常のペイントと異なり、各ストロークが独立ベクターレイヤーとして残るため、位置ずれ修正や個別削除が簡単です。',
+      },
+      {
+        title: 'マウス・タッチ・スタイラスに統一対応',
+        description: '描画中のスクロール誤動作を防いだ Pointer Events 実装により、PC でもスマホ・タブレットでも軽快に手書きできます。',
+      },
+    ],
+    faqs: [
+      {
+        question: '「画像に手書き・落書き」と「画像に注釈を追加」の違いは何ですか？',
+        answer: '「画像に手書き・落書き」はすぐ描けるペンモードで起動し、「画像に注釈を追加」は資料作成向けの矩形モードで起動します。どちらも全 5 種の注釈ツールを利用できます。',
+      },
+      {
+        question: '描き損じた 1 本の線だけ消したり戻したりできますか？',
+        answer: 'はい。Cmd/Ctrl+Z で最大 50 段階の元に戻す/やり直すができるほか、選択 (V) で特定のストロークだけ選んで Delete で消去できます。',
+      },
+      {
+        question: '高解像度画像へ手書きしても書き出し時にぼやけませんか？',
+        answer: 'ぼやけません。すべてのストロークは解像度非依存のベクター座標で管理され、書き出し時に元画像のフル解像度でアンチエイリアス描画されます。',
+      },
+      {
+        question: 'スマホやタブレットで指やスタイラスを使って画像に書き込めますか？',
+        answer: 'はい。タッチ操作とスタイラス入力に対応しており、描画中はキャンバス上の誤スクロールを防止して滑らかに書き込めます。',
       },
     ],
   },

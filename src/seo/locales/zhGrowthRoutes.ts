@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on GrowthRouteSlug and RouteCopy types from ../types.ts
- * [OUTPUT]: exports ZH_GROWTH_ROUTES containing Simplified Chinese SEO copy for the 7 high-intent growth slugs (ipad-mockup, watch-mockup, stitch-screenshots, heic-to-jpg, remove-exif, compress-image-to-200kb, redact-screenshot)
+ * [OUTPUT]: exports ZH_GROWTH_ROUTES containing Simplified Chinese SEO copy for the 9 high-intent growth slugs (ipad-mockup, watch-mockup, stitch-screenshots, heic-to-jpg, remove-exif, compress-image-to-200kb, redact-screenshot, annotate-image, draw-on-image)
  * [POS]: growth route-copy chunk for zh within src/seo/locales, merged into ZH_LOCALE by ./zh.ts to keep every file <= 800 lines
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -397,6 +397,122 @@ export const ZH_GROWTH_ROUTES: Record<GrowthRouteSlug, RouteCopy> = {
       {
         question: '打完码一键转入 Moklu Studio 后还能微调打码位置吗？',
         answer: '可以。移交 Studio 时会无损保留底层原图与独立打码图层，方便你继续微调框选范围并添加箭头和文字注释。',
+      },
+    ],
+  },
+  'annotate-image': {
+    navLabel: '图片标注',
+    title: '在线图片标注与截图标注工具（矩形/箭头/文字/画笔 · 纯本地）| Moklu',
+    metaDescription:
+      '免费纯本地在线图片标注工具：为截图和照片添加矩形框、指示箭头、文字注释与平滑画笔，支持 8 控制点自由缩放图层、撤销重做、原图导出与一键复制，零上传无水印。',
+    badge: '矩形 · 箭头 · 文字 · 画笔',
+    h1: '纯本地在线图片标注与截图标注工具',
+    subtitle:
+      '写操作文档、提 Bug 单或审校界面时，直接在浏览器内为图片叠加矢量矩形、指示箭头、可双击编辑文字与画笔标注。每个图层都支持 8 控制点缩放与自由拖拽，原图分辨率无损导出且零上传。',
+    steps: [
+      {
+        title: '粘贴截图或拖入需要标注的图片',
+        description: '截屏后直接按 Cmd/Ctrl+V 粘贴，或拖入本地 PNG、JPEG、WebP、AVIF、HEIC 图片，全部文件仅留在本地浏览器。',
+      },
+      {
+        title: '叠加矩形框、箭头、文字或画笔标记',
+        description: '快捷键一键切换选择 (V)、画笔 (B)、矩形 (R)、箭头 (A) 与文字 (T)，挑选配色和线宽，并用蓝色 8 控制点精准调整每个图层位置与尺寸。',
+      },
+      {
+        title: '无损下载原图或一键复制发给同事',
+        description: '导出高清无水印 PNG / WebP / JPEG，或一键复制到剪贴板直接粘贴进微信、飞书、Slack 与文档。',
+      },
+    ],
+    highlights: [
+      {
+        title: '全矢量图层与 8 控制点精细缩放',
+        description: '画完的矩形、箭头、文字和画笔都不会立刻压死在底图上，随时可以选中拖拽移动、拉伸改大小、换颜色或单独删除。',
+      },
+      {
+        title: '效率快捷键与 50 步撤销重做',
+        description: '支持 V/B/R/A/T 秒切工具、双击文字原地编辑、Delete 删图层与 Cmd/Ctrl+Z 连续撤销重做，标注教程图行云流水。',
+      },
+      {
+        title: '内部截图纯本地标注零泄密',
+        description: '后台数据、未上线需求图与设计评审截图全程留在设备内存，自动保存本地 IndexedDB 草稿，绝不上传服务器。',
+      },
+    ],
+    faqs: [
+      {
+        question: 'Moklu 图片标注工具支持哪些标注样式？',
+        answer: '内置选择与 8 控制点缩放工具、贝塞尔平滑自由画笔、圆角矩形框、高辨识度指示箭头，以及带对比度描边、支持双击修改的文字标注。',
+      },
+      {
+        question: '画完箭头或矩形框后还能移动位置和调整大小吗？',
+        answer: '可以。切换到选择工具 (V) 点击任意标注图层，即可拖动位置、通过四周 8 个蓝色控制点缩放变形、更改颜色与线宽，或按 Delete 单独删除。',
+      },
+      {
+        question: '给截图加完标注后导出会压缩原图清晰度吗？',
+        answer: '不会。所有标注以归一化矢量坐标保存，导出时直接在原始图片完整分辨率的 HTML5 Canvas 上精准绘制，导出 PNG 保持原图锐度。',
+      },
+      {
+        question: '在套壳样机、改尺寸或拼图工具里可以直接顺手标注吗？',
+        answer: '可以。样机套壳、缩放裁剪与拼图预览区均内置了“标注”按钮，点击即可弹出同样的矢量标注浮层，保存后立即回写到当前图片。',
+      },
+      {
+        question: '标注后的企业内部截图会上传到云端服务器吗？',
+        answer: '绝对不会。图片解码、矢量图层渲染、IndexedDB 本地草稿以及最终合成导出全部 100% 在本机浏览器内存中运行。',
+      },
+    ],
+  },
+  'draw-on-image': {
+    navLabel: '图片涂鸦画笔',
+    title: '在线在图片上画画与涂鸦标记（平滑画笔 · 纯本地免费）| Moklu',
+    metaDescription:
+      '直接在浏览器里用平滑矢量画笔在照片或截图上圈重点、划下划线、手绘涂鸦与加箭头文字，支持 8 种高亮配色、粗细调节与单笔撤销删除，零上传无水印。',
+    badge: '平滑矢量画笔 · 本地涂鸦',
+    h1: '在线在图片上画画、圈重点与手绘标记',
+    subtitle:
+      '打开即进入平滑画笔模式，在照片或截图上随手圈出重点、划出下划线或手绘批注。每条笔迹均为可移动可缩放的矢量图层，纯本地处理无需下载软件。',
+    steps: [
+      {
+        title: '导入照片或粘贴剪贴板截图',
+        description: '拖入手机照片、文档截图或直接按 Cmd/Ctrl+V 粘贴，无需上传等待即可立即开始涂鸦。',
+      },
+      {
+        title: '用平滑画笔随手圈画与批注',
+        description: '默认开启画笔模式，自由挑选 8 种高对比色与线宽，也可随时切到矩形、箭头或文字补充说明。',
+      },
+      {
+        title: '一键复制到聊天窗口或保存高清图',
+        description: '画完直接复制到剪贴板粘贴进微信/飞书，或按原图分辨率保存无水印 PNG / WebP / JPEG。',
+      },
+    ],
+    highlights: [
+      {
+        title: '二次贝塞尔曲线自动顺滑笔迹',
+        description: '内置抽稀与贝塞尔曲线平滑算法，即使只用鼠标或触控板圈重点，线条依然流畅顺滑不锯齿。',
+      },
+      {
+        title: '连手绘笔迹也能选中移动与缩放',
+        description: '区别于一笔定死的位图画板，每一笔手绘线条都是独立矢量对象，画歪了可直接选中挪位、缩放或单条删除。',
+      },
+      {
+        title: '电脑鼠标与手机触控笔同样顺手',
+        description: '采用统一 Pointer Events 并在绘制时锁定页面滚动，手机端手指涂鸦与平板手写笔批注一样跟手。',
+      },
+    ],
+    faqs: [
+      {
+        question: '“图片涂鸦画笔”和“图片标注”两个页面有什么区别？',
+        answer: '“图片涂鸦画笔”默认选中画笔工具，打开就能立刻圈画涂鸦；“图片标注”默认选中矩形框，更适合结构化文档和 Bug 截图。两个页面都包含全部 5 种标注工具。',
+      },
+      {
+        question: '画错一笔可以只删那一笔而不清空整张图吗？',
+        answer: '可以。按 Cmd/Ctrl+Z 支持多达 50 步撤销重做，也可以按 V 切到选择模式点击任意单条笔迹，按 Delete 精准删除那一笔。',
+      },
+      {
+        question: '在高分辨率截图上涂鸦导出后会变模糊或有锯齿吗？',
+        answer: '不会。笔迹以分辨率无关的矢量坐标记录，保存或复制时会按照底图原始高清尺寸重新抗锯齿渲染。',
+      },
+      {
+        question: '手机浏览器上可以用手指直接在照片上涂鸦圈重点吗？',
+        answer: '支持。画布已针对触控和手写笔优化，手指拖动涂鸦时不会误触发页面上下滚动，纯本地离线也能顺畅使用。',
       },
     ],
   },

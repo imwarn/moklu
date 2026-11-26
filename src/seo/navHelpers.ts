@@ -14,6 +14,7 @@ export const NAV_TOOL_ORDER: readonly ToolId[] = [
   'split',
   'compress',
   'resize',
+  'annotate',
   'id-card',
 ] as const
 
@@ -56,6 +57,8 @@ export const FOOTER_LINK_GROUPS: {
     'add-border-to-photo',
   ],
   documentsStudio: [
+    'annotate-image',
+    'draw-on-image',
     'id-card-watermark',
     'studio',
     '',

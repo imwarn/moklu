@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on WorkspaceStrings from ../i18n
- * [OUTPUT]: exports JA Japanese UI strings for QuickWorkspace and its 6 tool panels
+ * [OUTPUT]: exports JA Japanese UI strings for QuickWorkspace and its 7 tool panels
  * [POS]: Japanese locale dictionary in src/workspace/locales
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -13,6 +13,7 @@ export const JA: WorkspaceStrings = {
     split: { label: '分割・カルーセル', short: '分割', description: 'シームレスカルーセルや3×3グリッドに分割' },
     compress: { label: '圧縮・形式変換', short: '圧縮', description: 'PNG / JPEG / WebP をローカルで一括軽量化' },
     resize: { label: 'リサイズ・余白', short: 'リサイズ', description: '拡大縮小・トリミング・SNS向け余白フレーム追加' },
+    annotate: { label: '画像注釈・書き込み', short: '注釈', description: 'ペン・枠線・矢印・テキストでローカル注釈' },
     'id-card': { label: '本人確認書類透かし', short: '書類透かし', description: 'A4表裏レイアウト＋不正利用防止透かしをオフライン生成' },
   },
   common: {
@@ -223,6 +224,32 @@ export const JA: WorkspaceStrings = {
     batchReady: '件処理済み',
     batchStripLabel: '処理済み画像一覧',
     transformError: '画像の変換に失敗しました。',
+  },
+  annotate: {
+    title: '注釈',
+    closeLabel: '注釈',
+    saveLabel: '保存',
+    inlineButton: '注釈',
+    toolbarLabel: '注釈ツールバー',
+    toolSelect: '選択',
+    toolBrush: 'ペン',
+    toolRect: '矩形',
+    toolArrow: '矢印',
+    toolText: 'テキスト',
+    colorLabel: '色',
+    strokeWidthLabel: '線の太さ',
+    fontSizeLabel: '文字サイズ',
+    undo: '元に戻す',
+    redo: 'やり直す',
+    deleteLayer: '選択を削除',
+    clearAll: '全消去',
+    layersCount: '件の注釈',
+    defaultText: 'テキスト',
+    editTextHint: 'ダブルクリックで文字を編集',
+    emptyHint: 'ペン・矩形・矢印・テキストを選び、画像上をドラッグして描画',
+    shortcutsHint: 'V 選択 · B ペン · R 矩形 · A 矢印 · T 文字 · Del 削除',
+    replaceImage: '画像を変更',
+    savedToast: '注釈を画像に保存しました',
   },
   idCard: {
     privacyTitle: '100% オフライン処理・アップロード一切なし',

@@ -1,12 +1,13 @@
 /**
- * [INPUT]: depends on react, isHeicFile from @/tools, trackFunnelEvent from @/utils/telemetry, batchHelpers from ../batchHelpers, canvasUtils from ../canvasUtils, draftStorage from ../draftStorage, ExifPrivacyBanner from ../ExifPrivacyBanner, useToolDraft from ../useToolDraft, strings from ../i18n, themeTokens from ../themeTokens, UI primitives from ../uiPrimitives, useDebouncedValue from ../useDebouncedValue, and WorkspaceToolPanelProps from ../types
- * [OUTPUT]: exports ResizePreviewStage and ResizeQuickTool for multi-image Resize (px or scale %), Crop, and non-crop Border & Pad workflows with filmstrip preview switcher, HEIC decoding progress, EXIF privacy banner, clipboard Copy Image loop, debounced transforms, local IndexedDB draft auto-save, error-handled ZIP export, and full-batch Studio handoff
+ * [INPUT]: depends on react, isHeicFile from @/tools, trackFunnelEvent from @/utils/telemetry, AnnotateModal from ../AnnotateModal, batchHelpers from ../batchHelpers, canvasUtils from ../canvasUtils, draftStorage from ../draftStorage, ExifPrivacyBanner from ../ExifPrivacyBanner, useToolDraft from ../useToolDraft, strings from ../i18n, themeTokens from ../themeTokens, UI primitives from ../uiPrimitives, useDebouncedValue from ../useDebouncedValue, and WorkspaceToolPanelProps from ../types
+ * [OUTPUT]: exports ResizePreviewStage and ResizeQuickTool for multi-image Resize (px or scale %), Crop, and non-crop Border & Pad workflows with filmstrip preview switcher, inline AnnotateModal trigger, HEIC decoding progress, EXIF privacy banner, clipboard Copy Image loop, debounced transforms, local IndexedDB draft auto-save, error-handled ZIP export, and full-batch Studio handoff
  * [POS]: resize, crop, and border-pad panel inside src/workspace/tools; delegates rendering to injected engines.transform
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 import { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import { isHeicFile } from '@/tools'
 import { trackFunnelEvent } from '@/utils/telemetry'
+import { AnnotateModal } from '../AnnotateModal'
 import { buildBatchStudioHandoff, clampBatchIndex, removeBatchEntry, stepBatchIndex } from '../batchHelpers'
 import { createDemoImageInput, formatBytes, readFileAsImageInput, triggerBlobDownload } from '../canvasUtils'
 import { deserializeDraftImages, type WorkspaceToolDraft } from '../draftStorage'
@@ -73,6 +74,7 @@ export interface ResizePreviewStageProps {
   onClearAll: () => void
   onLoadDemo: () => void
   onFiles: (files: File[]) => void
+  onAnnotateCurrent?: () => void
 }
 
 export function ResizePreviewStage({
@@ -89,6 +91,7 @@ export function ResizePreviewStage({
   onClearAll,
   onLoadDemo,
   onFiles,
+  onAnnotateCurrent,
 }: ResizePreviewStageProps) {
   const s = getWorkspaceStrings(locale)
   const tokens = getWorkspaceThemeTokens(theme)
@@ -136,6 +139,19 @@ export function ResizePreviewStage({
         </div>
 
         <div className="flex items-center gap-2">
+          {hasSourceImages && onAnnotateCurrent && (
+            <button
+              type="button"
+              data-testid="resize-annotate-btn"
+              onClick={onAnnotateCurrent}
+              className={`inline-flex min-h-8 items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${tokens.focusRing} ${tokens.buttonSecondary}`}
+            >
+              <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+                <path d="M11 2.8a1.5 1.5 0 0 1 2.1 2.1l-6.2 6.2-2.7.7.7-2.7L11 2.8Z" strokeLinejoin="round" />
+              </svg>
+              <span>{s.annotate.inlineButton}</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={onLoadDemo}
@@ -301,6 +317,7 @@ export function ResizeQuickTool({
   const [heicDecoding, setHeicDecoding] = useState(false)
   const [processing, setProcessing] = useState(false)
   const [zipping, setZipping] = useState(false)
+  const [annotateOpen, setAnnotateOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const draftSettings = useMemo<ResizeDraftSettings>(
@@ -571,6 +588,7 @@ export function ResizeQuickTool({
           onClearAll={handleClearAll}
           onLoadDemo={handleLoadDemo}
           onFiles={handleFiles}
+          onAnnotateCurrent={() => setAnnotateOpen(true)}
         />
         <ExifPrivacyBanner theme={theme} locale={locale} images={images} />
         {hasDraft && (
@@ -751,6 +769,19 @@ export function ResizeQuickTool({
           </div>
         </div>
       </div>
+      {annotateOpen && activeSource && (
+        <AnnotateModal
+          image={activeSource}
+          locale={locale}
+          theme={theme}
+          onClose={() => setAnnotateOpen(false)}
+          onSave={(baked) => {
+            const targetIdx = clampBatchIndex(selectedIndex, images.length)
+            setImages((prev) => prev.map((img, i) => (i === targetIdx ? baked : img)))
+            setAnnotateOpen(false)
+          }}
+        />
+      )}
     </div>
   )
 }

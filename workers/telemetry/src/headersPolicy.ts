@@ -1,5 +1,5 @@
 /**
- * [INPUT]: none (zero-dependency edge HTTP header, 120-route SSG matcher, explicit /en redirector, static-asset HTML-fallback detector, HTML navigation & 4-locale 404.html resolver, CDN-Cache-Control, and crawl-hygiene contract mirrored with public/_headers and src/seo/routes.ts; verified in index.test.ts)
+ * [INPUT]: none (zero-dependency edge HTTP header, 128-route SSG matcher, explicit /en redirector, static-asset HTML-fallback detector, HTML navigation & 4-locale 404.html resolver, CDN-Cache-Control, and crawl-hygiene contract mirrored with public/_headers and src/seo/routes.ts; verified in index.test.ts)
  * [OUTPUT]: exports EdgeLocaleCode, EDGE_SECURITY_HEADERS, isStaticNonHtmlAssetPath, isUnexpectedHtmlAssetFallback, isHtmlDocumentNavigation, resolveEdgeNotFoundLocale, resolveOriginNotFoundHtmlPath, resolveExplicitEnRedirectPath, isKnownSsgHtmlPath, isUnknownNonAssetPath, resolveEdgeCacheControl, resolveEdgeCdnCacheControl, resolveEdgeCacheTtlSeconds, and applyMokluEdgeHeaders
  * [POS]: single edge response-header, redirect, content-negotiated 404, and cache-policy module of workers/telemetry/src; attaches CSP, COOP, bfcache-safe Cache-Control, CDN-Cache-Control, static-asset soft-200 guards, and localized 404 HTML resolution onto Coolify origin responses
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
@@ -34,7 +34,7 @@ const SHORT_TTL_EXACT_PATHS = new Set([
 ])
 
 const LOCALIZED_PREFIXES = new Set(['zh', 'ja', 'ko'])
-// Mirrors the 29 non-root slugs in src/seo/routes.ts (plus root '' across 4 locales = 120 SSG routes).
+// Mirrors the 31 non-root slugs in src/seo/routes.ts (plus root '' across 4 locales = 128 SSG routes).
 const KNOWN_ROUTE_SLUGS = new Set([
   'studio',
   'browser-mockup',
@@ -44,6 +44,8 @@ const KNOWN_ROUTE_SLUGS = new Set([
   'device-mockup',
   'app-store-screenshots',
   'redact-screenshot',
+  'annotate-image',
+  'draw-on-image',
   'merge-images',
   'combine-photos-side-by-side',
   'stitch-images-vertically',

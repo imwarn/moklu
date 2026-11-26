@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on GrowthRouteSlug and RouteCopy types from ../types.ts
- * [OUTPUT]: exports EN_GROWTH_ROUTES containing English SEO copy for the 7 high-intent growth slugs (ipad-mockup, watch-mockup, stitch-screenshots, heic-to-jpg, remove-exif, compress-image-to-200kb, redact-screenshot)
+ * [OUTPUT]: exports EN_GROWTH_ROUTES containing English SEO copy for the 9 high-intent growth slugs (ipad-mockup, watch-mockup, stitch-screenshots, heic-to-jpg, remove-exif, compress-image-to-200kb, redact-screenshot, annotate-image, draw-on-image)
  * [POS]: growth route-copy chunk for en within src/seo/locales, merged into EN_LOCALE by ./en.ts to keep every file <= 800 lines
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -397,6 +397,122 @@ export const EN_GROWTH_ROUTES: Record<GrowthRouteSlug, RouteCopy> = {
       {
         question: 'Can I keep editing my redaction boxes after sending the image to Moklu Studio?',
         answer: 'Yes. Handing off to Moklu Studio preserves your base screenshot non-destructively underneath redaction layers so you can reposition regions or add arrows and labels.',
+      },
+    ],
+  },
+  'annotate-image': {
+    navLabel: 'Annotate Image',
+    title: 'Annotate Images & Screenshots Online Free (100% Local) | Moklu',
+    metaDescription:
+      'Add crisp rectangles, arrows, callout text, and freehand brush marks to screenshots and photos in your browser. 8-handle layer resizing, undo/redo, zero uploads.',
+    badge: 'Rectangles · Arrows · Text · Brush',
+    h1: 'Annotate Images & Screenshots Locally in Your Browser',
+    subtitle:
+      'Mark up bug reports, product docs, and UI feedback with vector rectangles, arrows, editable text labels, and freehand strokes. Resize any layer with 8 handles, undo freely, and export at full original resolution with zero server uploads.',
+    steps: [
+      {
+        title: 'Paste or drop the image you want to annotate',
+        description: 'Press Cmd/Ctrl+V right after capturing a screen or drop PNG, JPEG, WebP, AVIF, or HEIC images directly onto the local canvas.',
+      },
+      {
+        title: 'Add rectangles, arrows, text, or freehand marks',
+        description: 'Switch between Select (V), Brush (B), Rectangle (R), Arrow (A), and Text (T), pick accent colors and stroke widths, and resize any box via its 8 blue handles.',
+      },
+      {
+        title: 'Download full-res PNG/WebP/JPEG or copy to chat',
+        description: 'Export crisp flattened markup with zero watermarks, copy directly to Slack or Notion with one click, or open in Studio for multi-slide layouts.',
+      },
+    ],
+    highlights: [
+      {
+        title: 'Editable Vector Layers with 8-Handle Resizing',
+        description: 'Every rectangle, arrow, text callout, and brush stroke stays selectable so you can move, resize, recolor, or delete layers before exporting.',
+      },
+      {
+        title: 'Fast Keyboard Shortcuts & 50-Step Undo/Redo',
+        description: 'Tap V, B, R, A, or T to jump between tools, double-click text to edit inline, and use Cmd/Ctrl+Z or Delete to refine QA screenshots in seconds.',
+      },
+      {
+        title: 'Zero Uploads for Confidential Screenshots',
+        description: 'Internal dashboards, design reviews, and unreleased product UI stay strictly inside browser RAM with automatic local IndexedDB draft saving.',
+      },
+    ],
+    faqs: [
+      {
+        question: 'What markup tools are included in the Moklu image annotator?',
+        answer: 'You get a Select/Move/Resize tool with 8 bounding handles, smoothed freehand Brush, rounded Rectangle callouts, directional Arrows, and double-click editable Text labels with contrast outlines.',
+      },
+      {
+        question: 'Can I reposition or resize an arrow or rectangle after drawing it?',
+        answer: 'Yes. Switch to Select (V) and click any vector layer to drag it across the image, resize it from any of the 8 corner or edge handles, adjust its color or stroke width, or remove it with Delete.',
+      },
+      {
+        question: 'Does annotating an image reduce its original resolution?',
+        answer: 'No. Annotations are stored in normalized vector coordinates and composited onto a full-resolution HTML5 Canvas during export so screenshots stay razor-sharp.',
+      },
+      {
+        question: 'Can I annotate screenshots directly inside Moklu Mockup, Resize, or Merge tools?',
+        answer: 'Yes. Those panels include an inline Annotate button that opens the same vector markup toolbar in a modal and bakes your changes straight back into the active image.',
+      },
+      {
+        question: 'Are my annotated screenshots uploaded to any cloud server?',
+        answer: 'Never. Image decoding, vector drawing, local draft autosave, and final PNG/WebP/JPEG compositing run 100% inside your browser.',
+      },
+    ],
+  },
+  'draw-on-image': {
+    navLabel: 'Draw on Image',
+    title: 'Draw on Image Online Free (Smooth Brush & Markup) | Moklu',
+    metaDescription:
+      'Sketch, circle details, underline text, and doodle directly on photos or screenshots in your browser. Smooth quadratic Bezier brush, 8 colors, undo/redo, zero uploads.',
+    badge: 'Smooth Vector Brush · Zero Uploads',
+    h1: 'Draw & Sketch Directly on Any Image Online',
+    subtitle:
+      'Circle key details, underline feedback, or sketch quick visual notes over photos and screenshots using a smooth vector brush, crisp shapes, and editable text, 100% locally with zero signups or watermarks.',
+    steps: [
+      {
+        title: 'Drop a photo or paste a screenshot',
+        description: 'Open any PNG, JPEG, WebP, or HEIC photo from your device or paste directly from your clipboard with Cmd/Ctrl+V.',
+      },
+      {
+        title: 'Sketch freely with the smoothed vector brush',
+        description: 'Start drawing immediately in Brush mode, choose from 8 high-contrast colors, tune stroke thickness, or add arrows and text notes.',
+      },
+      {
+        title: 'Copy to clipboard or save full-resolution image',
+        description: 'Copy your marked-up photo straight into chat apps or download lossless PNG, WebP, or JPEG with zero Moklu watermarks.',
+      },
+    ],
+    highlights: [
+      {
+        title: 'Silky Quadratic Bezier Stroke Smoothing',
+        description: 'Mouse and trackpad sketches are thinned and smoothed into clean vector curves so hand-drawn circles and underlines look intentional rather than jagged.',
+      },
+      {
+        title: 'Move & Scale Even Freehand Drawings',
+        description: 'Unlike flat raster paint tools, every brush stroke stays a live vector layer you can pick up, resize proportionally, undo, or clear individually.',
+      },
+      {
+        title: 'Instant Offline Drawing on Any Device',
+        description: 'Works smoothly with mouse, trackpad, touch, or stylus directly in your browser tab without installing apps or uploading personal photos.',
+      },
+    ],
+    faqs: [
+      {
+        question: 'How is Draw on Image different from Annotate Image?',
+        answer: 'Draw on Image opens directly in freehand Brush mode so you can start sketching, circling, and underlining immediately, while Annotate Image starts in Rectangle callout mode for structured UI documentation. Both include the full set of markup tools.',
+      },
+      {
+        question: 'Can I undo or erase a single brush stroke without starting over?',
+        answer: 'Yes. Press Cmd/Ctrl+Z for 50-step Undo/Redo, or switch to Select (V) to click any individual stroke and press Delete to remove only that line.',
+      },
+      {
+        question: 'Will hand-drawn strokes look blurry on high-DPI screenshots?',
+        answer: 'No. Brush strokes are stored as resolution-independent normalized vectors and rendered onto the original full-resolution canvas when you save or copy.',
+      },
+      {
+        question: 'Can I draw on a photo using touch or a stylus on my phone or tablet?',
+        answer: 'Yes. The drawing canvas uses unified Pointer Events with touch scrolling locked while sketching, so finger and stylus strokes track smoothly on mobile and tablet browsers.',
       },
     ],
   },

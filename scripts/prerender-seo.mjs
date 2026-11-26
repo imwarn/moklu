@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on node:child_process, node:fs/promises, node:path, node:url, vite (build); depends on ALL_ROUTES, getSiteUrl, and resolvePathname from ../src/seo/routes.ts; depends on getRouteRelativeHtmlPath, renderRouteHtml, generateSitemapXml, generateRobotsTxt, and generateLlmsTxt from ../src/seo/ssg.ts; builds temporary SSR bundle from ../src/seo/ssrEntry.ts
- * [OUTPUT]: exports getRouteOutputPath, resolveRouteLastmodMap, and prerenderSeoDist; runs as post-build CLI writing 120 static localized index.html pages plus 4 localized 404 pages (dist/404.html, dist/zh/404.html, dist/ja/404.html, dist/ko/404.html) with full React-rendered markup, git-derived lastmod sitemap.xml, robots.txt, and llms.txt into dist/
+ * [OUTPUT]: exports getRouteOutputPath, resolveRouteLastmodMap, and prerenderSeoDist; runs as post-build CLI writing 128 static localized index.html pages plus 4 localized 404 pages (dist/404.html, dist/zh/404.html, dist/ja/404.html, dist/ko/404.html) with full React-rendered markup, git-derived lastmod sitemap.xml, robots.txt, and llms.txt into dist/
  * [POS]: post-build Node ESM SSG runner in scripts/, invoked after `vite build` to materialize zero-FOUC static HTML via react-dom/server renderToString
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -29,6 +29,8 @@ const GROWTH_ROUTE_SLUGS = new Set([
   'remove-exif',
   'compress-image-to-200kb',
   'redact-screenshot',
+  'annotate-image',
+  'draw-on-image',
 ])
 
 const SECONDARY_TOOL_SLUGS = new Set([

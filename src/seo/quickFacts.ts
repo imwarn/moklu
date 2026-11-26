@@ -40,7 +40,7 @@ const QUICK_FACTS_BY_LOCALE: Record<
         facts: [
           { label: 'Processing', value: '100% browser-local HTML5 Canvas & local WASM (zero uploads)' },
           { label: 'Pricing', value: 'Free core tools, zero forced watermarks' },
-          { label: 'Core tools', value: 'Mockup & Redact, Merge & Multi-Page PDF, Split, Compress/HEIC/EXIF, Resize, ID Watermark + Studio' },
+          { label: 'Core tools', value: 'Mockup & Redact, Merge & Multi-Page PDF, Split, Compress/HEIC/EXIF, Resize, Annotate, ID Watermark + Studio' },
           { label: 'Input formats', value: 'PNG, JPEG, WebP, HEIC/HEIF, AVIF, GIF, SVG (drop, select, or Cmd/Ctrl+V paste)' },
           { label: 'Output formats', value: 'PNG, WebP, JPEG, Multi-Page A4 & Single-Page PDF 1.4, and ZIP batches' },
           { label: 'Safety ceiling', value: 'Up to 8192px / 64MP with automatic proportional scaling notice' },
@@ -121,6 +121,20 @@ const QUICK_FACTS_BY_LOCALE: Record<
           'Border & Pad preserves 100% of the uncropped frame inside the chosen aspect ratio.',
         ],
       },
+      annotate: {
+        facts: [
+          { label: 'Processing', value: '100% browser-local SVG vector editor + HTML5 Canvas compositor (zero uploads)' },
+          { label: 'Markup tools', value: 'Freehand Brush (Bezier smoothed), Rectangle, Arrow, and editable Text layers' },
+          { label: 'Layer controls', value: '8-handle selection box resizing, drag move, color presets, stroke/font sizing, 50-step Undo/Redo' },
+          { label: 'Inline mode', value: 'Also opens directly inside Mockup, Resize, and Merge preview stages via 1-click Annotate' },
+          { label: 'Outputs', value: 'Full-resolution PNG, WebP, or JPEG download, Copy to Clipboard, and Studio handoff' },
+          { label: 'Drafts & pricing', value: 'Local IndexedDB draft autosave, free unlimited exports, zero watermarks' },
+        ],
+        boundaries: [
+          'Annotations stay editable as vector layers inside Quick Workspace and local IndexedDB drafts; downloaded PNG/WebP/JPEG files flatten markup cleanly onto full-resolution pixels.',
+          'All brush smoothing, layer hit-testing, and full-res canvas compositing run strictly in browser RAM with zero server uploads.',
+        ],
+      },
       'id-card': {
         facts: [
           { label: 'Processing', value: '100% offline HTML5 Canvas enforced by strict CSP' },
@@ -146,7 +160,7 @@ const QUICK_FACTS_BY_LOCALE: Record<
         facts: [
           { label: '处理方式', value: '100% 浏览器本地 HTML5 Canvas 与本地 WASM（零上传）' },
           { label: '费用与水印', value: '核心工具免费，标准导出零水印' },
-          { label: '包含工具', value: '样机套壳/打码、在线图片拼接/多页 PDF、切图、压缩/HEIC/EXIF、缩放加白边、证件水印 + Studio' },
+          { label: '包含工具', value: '样机套壳/打码、在线图片拼接/多页 PDF、切图、压缩/HEIC/EXIF、缩放加白边、图片标注、证件水印 + Studio' },
           { label: '输入支持', value: 'PNG / JPEG / WebP / HEIC / HEIF / AVIF / GIF / SVG（拖拽、选图或 Cmd/Ctrl+V）' },
           { label: '导出格式', value: 'PNG、WebP、JPEG、多页 A4 / 单页 PDF 1.4 与批量 ZIP' },
           { label: '安全上限', value: '画布上限 8192px / 64MP，超限自动等比缩放并提示' },
@@ -227,6 +241,20 @@ const QUICK_FACTS_BY_LOCALE: Record<
           '加白边留白模式 100% 保留完整原画面，不会裁切构图边缘。',
         ],
       },
+      annotate: {
+        facts: [
+          { label: '处理方式', value: '100% 浏览器本地矢量 SVG 编辑与 HTML5 Canvas 原图合成（零上传）' },
+          { label: '标注工具', value: '平滑贝塞尔画笔、矩形框、指示箭头与可双击编辑的文字图层' },
+          { label: '图层编辑', value: '8 控制点自由缩放拉伸、拖拽移动、8 色快捷色盘、线宽/字号调节与 50 步撤销重做' },
+          { label: '内联联动', value: '同时内置在样机套壳、缩放裁剪与拼图预览栏中，一键弹窗原地标注保存' },
+          { label: '导出与复制', value: '原图分辨率 PNG / WebP / JPEG 下载、一键复制到剪贴板与转入 Studio' },
+          { label: '草稿与费用', value: '本地 IndexedDB 草稿自动保存，免费无限次导出且无水印' },
+        ],
+        boundaries: [
+          '快捷工作台与本地 IndexedDB 草稿中所有标注均保持矢量可二次编辑；导出 PNG/WebP/JPEG 时会在原图完整分辨率上无损合成为单张图片。',
+          '画笔平滑、选中命中检测与高清合成全部在本地浏览器内存中完成，不上传任何图片或标注内容。',
+        ],
+      },
       'id-card': {
         facts: [
           { label: '处理方式', value: '100% 离线 HTML5 Canvas + 严格 CSP 策略防护' },
@@ -252,7 +280,7 @@ const QUICK_FACTS_BY_LOCALE: Record<
         facts: [
           { label: '処理方式', value: '100% ブラウザ内 HTML5 Canvas ＆ ローカル WASM（サーバー送信ゼロ）' },
           { label: '料金・透かし', value: '基本ツール無料、強制透かしなし' },
-          { label: '主要ツール', value: 'モックアップ＆ぼかし・画像結合/複数ページ PDF・分割・圧縮/HEIC/EXIF・リサイズ・身分証透かし + Studio' },
+          { label: '主要ツール', value: 'モックアップ＆ぼかし・画像結合/複数ページ PDF・分割・圧縮/HEIC/EXIF・リサイズ・画像注釈・身分証透かし + Studio' },
           { label: '入力形式', value: 'PNG / JPEG / WebP / HEIC / HEIF / AVIF / GIF / SVG（ドロップ・選択・Cmd/Ctrl+V）' },
           { label: '出力形式', value: 'PNG、WebP、JPEG、複数ページ A4 / 単ページ PDF 1.4、一括 ZIP' },
           { label: '安全上限', value: '最大 8192px / 64MP（超過時は自動等比縮小と通知を表示）' },
@@ -333,6 +361,20 @@ const QUICK_FACTS_BY_LOCALE: Record<
           '白枠・パディングモードでは元写真を一切切り抜かずに目的比率へ収めます。',
         ],
       },
+      annotate: {
+        facts: [
+          { label: '処理方式', value: '100% ブラウザ内ベクター SVG 編集 ＋ HTML5 Canvas 高解像度合成（送信ゼロ）' },
+          { label: '注釈ツール', value: '滑らかなベジェ手書きペン、矩形枠、矢印、ダブルクリック編集対応テキスト' },
+          { label: 'レイヤー操作', value: '8 ハンドル拡大縮小、ドラッグ移動、カラーパレット、線幅・文字サイズ調整、50 段階の元に戻す/やり直す' },
+          { label: 'ツール内連携', value: 'モックアップ・リサイズ・画像結合のプレビューからもワンクリックで注釈モーダルを起動可能' },
+          { label: '書き出し', value: '元解像度 PNG / WebP / JPEG 保存、クリップボードコピー、Studio 引き継ぎ' },
+          { label: '下書き・料金', value: 'ローカル IndexedDB 下書き自動保存、無料・透かしなし' },
+        ],
+        boundaries: [
+          'ワークスペース内およびローカル IndexedDB 下書きでは注釈レイヤーを再編集可能なベクター状態で保持し、PNG/WebP/JPEG 書き出し時に元解像度で鮮明に合成します。',
+          'すべての描画・当たり判定・合成は端末ブラウザのメモリ内で完結し、外部サーバーへの送信は一切ありません。',
+        ],
+      },
       'id-card': {
         facts: [
           { label: '処理方式', value: '厳格な CSP 保護下の完全オフライン HTML5 Canvas' },
@@ -358,7 +400,7 @@ const QUICK_FACTS_BY_LOCALE: Record<
         facts: [
           { label: '처리 방식', value: '100% 브라우저 로컬 HTML5 Canvas 및 로컬 WASM (업로드 제로)' },
           { label: '요금 및 워터마크', value: '핵심 도구 무료, 기본 내보내기 워터마크 없음' },
-          { label: '지원 도구', value: '목업/모자이크, 온라인 이미지 합치기/다중 페이지 PDF, 분할, 압축/HEIC/EXIF, 리사이즈, 신분증 워터마크 + Studio' },
+          { label: '지원 도구', value: '목업/모자이크, 온라인 이미지 합치기/다중 페이지 PDF, 분할, 압축/HEIC/EXIF, 리사이즈, 이미지 주석, 신분증 워터마크 + Studio' },
           { label: '입력 형식', value: 'PNG, JPEG, WebP, HEIC/HEIF, AVIF, GIF, SVG (드롭, 선택, Cmd/Ctrl+V)' },
           { label: '출력 형식', value: 'PNG, WebP, JPEG, 다중 페이지 A4 / 단일 페이지 PDF 1.4, 일괄 ZIP' },
           { label: '안전 한도', value: '최대 8192px / 64MP (초과 시 자동 비례 축소 및 안내 표시)' },
@@ -437,6 +479,20 @@ const QUICK_FACTS_BY_LOCALE: Record<
         boundaries: [
           '원본보다 크게 확대할 때는 브라우저 표준 보간을 사용하며 AI 업스케일링은 포함하지 않습니다.',
           '흰 테두리·패딩 모드는 원본 사진의 어떤 부분도 자르지 않고 비율을 맞춥니다.',
+        ],
+      },
+      annotate: {
+        facts: [
+          { label: '처리 방식', value: '100% 브라우저 로컬 벡터 SVG 편집 + HTML5 Canvas 고해상도 합성 (업로드 제로)' },
+          { label: '주석 도구', value: '부드러운 베지어 자유 브러시, 사각형, 화살표, 더블클릭 인라인 편집 텍스트' },
+          { label: '레이어 제어', value: '8개 핸들 크기 조절, 드래그 이동, 8색 팔레트, 선 굵기/글자 크기 조절, 50단계 실행 취소·다시 실행' },
+          { label: '인라인 연동', value: '목업·리사이즈·이미지 합치기 미리보기에서도 원클릭 주석 모달로 즉시 표시 가능' },
+          { label: '내보내기', value: '원본 해상도 PNG / WebP / JPEG 다운로드, 클립보드 복사, Moklu Studio 연동' },
+          { label: '초안 및 요금', value: '로컬 IndexedDB 초안 자동 저장, 무료 무제한, 워터마크 없음' },
+        ],
+        boundaries: [
+          '퀵 워크스페이스와 브라우저 IndexedDB 초안에서는 주석이 벡터 레이어로 유지되어 언제든 수정할 수 있으며, PNG/WebP/JPEG 저장 시 원본 해상도에 선명하게 합성됩니다.',
+          '모든 브러시 보정, 선택 판정, 캔버스 합성은 기기 브라우저 메모리에서만 실행되며 서버로 업로드되지 않습니다.',
         ],
       },
       'id-card': {

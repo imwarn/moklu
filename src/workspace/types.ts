@@ -6,7 +6,7 @@
  */
 import type { ResolvedTheme } from '@/theme/themeStore'
 
-export type WorkspaceToolId = 'mockup' | 'merge' | 'split' | 'compress' | 'resize' | 'id-card'
+export type WorkspaceToolId = 'mockup' | 'merge' | 'split' | 'compress' | 'resize' | 'annotate' | 'id-card'
 
 export type WorkspaceLocale = 'en' | 'zh' | 'ja' | 'ko'
 
@@ -26,6 +26,7 @@ export interface WorkspacePreset {
   splitMode?: 'carousel' | 'grid'
   targetFormat?: WorkspaceImageFormat
   resizeMode?: 'resize' | 'crop' | 'pad'
+  annotateTool?: 'select' | 'brush' | 'rect' | 'arrow' | 'text'
   removeOverlap?: boolean
   pdfMode?: 'multipage' | 'single'
   targetSizeKb?: number

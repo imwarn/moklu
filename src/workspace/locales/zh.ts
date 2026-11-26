@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on WorkspaceStrings from ../i18n
- * [OUTPUT]: exports ZH Simplified Chinese UI strings for QuickWorkspace and its 6 tool panels
+ * [OUTPUT]: exports ZH Simplified Chinese UI strings for QuickWorkspace and its 7 tool panels
  * [POS]: Simplified Chinese locale dictionary in src/workspace/locales
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -13,6 +13,7 @@ export const ZH: WorkspaceStrings = {
     split: { label: '轮播与九宫格切图', short: '切图', description: '小红书/IG无缝轮播与3×3九宫格' },
     compress: { label: '本地压缩转换', short: '压缩', description: '批量离线压缩 PNG/JPEG/WebP' },
     resize: { label: '缩放裁剪留白', short: '尺寸', description: '无损缩放、比例裁剪与防裁留白边框' },
+    annotate: { label: '图片标注', short: '标注', description: '画笔、矩形、箭头与文字矢量标注' },
     'id-card': { label: '身份证件水印', short: '证件水印', description: 'A4 正反面排版 + 防盗用安全水印' },
   },
   common: {
@@ -223,6 +224,32 @@ export const ZH: WorkspaceStrings = {
     batchReady: '张已处理',
     batchStripLabel: '已处理图片列表',
     transformError: '尺寸处理失败，请重试。',
+  },
+  annotate: {
+    title: '标注',
+    closeLabel: '标注',
+    saveLabel: '保存',
+    inlineButton: '标注',
+    toolbarLabel: '标注工具栏',
+    toolSelect: '选择',
+    toolBrush: '画笔',
+    toolRect: '矩形',
+    toolArrow: '箭头',
+    toolText: '文字',
+    colorLabel: '颜色',
+    strokeWidthLabel: '粗细',
+    fontSizeLabel: '字号',
+    undo: '撤销',
+    redo: '重做',
+    deleteLayer: '删除选中',
+    clearAll: '清空标注',
+    layersCount: '层标注',
+    defaultText: '文本',
+    editTextHint: '双击文字即可编辑，按 Enter 换行',
+    emptyHint: '选择画笔、矩形、箭头或文字，在画布上拖拽绘制',
+    shortcutsHint: 'V 选择 · B 画笔 · R 矩形 · A 箭头 · T 文字 · Delete 删除',
+    replaceImage: '更换图片',
+    savedToast: '标注已保存到当前图片',
   },
   idCard: {
     privacyTitle: '100% 浏览器本地离线处理 · 绝不上传',

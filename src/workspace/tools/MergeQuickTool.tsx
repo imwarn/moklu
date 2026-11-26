@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on react, @dnd-kit/core, @dnd-kit/sortable, isHeicFile/decodeHeicToBlob/readExifSummary from @/tools, trackFunnelEvent from @/utils/telemetry, SortableMergeThumb from ./SortableMergeThumb, OverlapTunerModal and SeamOverlapPills from ./OverlapTunerModal, p1ToolsLocale from ../locales/p1ToolsLocale, canvasUtils, draftStorage, i18n, mergeHandoff, themeTokens, uiPrimitives, useDebouncedValue, useToolDraft, and workspace types
- * [OUTPUT]: exports MergeQuickTool component supporting horizontal/vertical/grid stitching, smart long-screenshot overlap auto-activation & 50% ghost-overlay seam fine-tuner, dual-mode Multi-Page A4 vs Single-Page Long PDF export, HEIC/EXIF local ingestion, Cmd/Ctrl+Shift+C clipboard copy confirmation, telemetry, draft persistence, and multi-layer Studio handoff
+ * [INPUT]: depends on react, @dnd-kit/core, @dnd-kit/sortable, isHeicFile/decodeHeicToBlob/readExifSummary from @/tools, trackFunnelEvent from @/utils/telemetry, AnnotateModal from ../AnnotateModal, SortableMergeThumb from ./SortableMergeThumb, OverlapTunerModal and SeamOverlapPills from ./OverlapTunerModal, p1ToolsLocale from ../locales/p1ToolsLocale, canvasUtils, draftStorage, i18n, mergeHandoff, themeTokens, uiPrimitives, useDebouncedValue, useToolDraft, and workspace types
+ * [OUTPUT]: exports MergeQuickTool component supporting horizontal/vertical/grid stitching, smart long-screenshot overlap auto-activation & 50% ghost-overlay seam fine-tuner, inline AnnotateModal trigger, dual-mode Multi-Page A4 vs Single-Page Long PDF export, HEIC/EXIF local ingestion, Cmd/Ctrl+Shift+C clipboard copy confirmation, telemetry, draft persistence, and multi-layer Studio handoff
  * [POS]: merge, long-screenshot stitcher, and PDF builder tool panel inside src/workspace/tools; delegates rendering to injected engines.merge and seam fine-tuning to OverlapTunerModal
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -9,6 +9,7 @@ import { SortableContext, arrayMove, horizontalListSortingStrategy } from '@dnd-
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { decodeHeicToBlob, isHeicFile, readExifSummary } from '@/tools'
 import { trackFunnelEvent } from '@/utils/telemetry'
+import { AnnotateModal } from '../AnnotateModal'
 import {
   copyImageToClipboard, createDemoImageInput, formatBytes, readFileAsImageInput,
   stripExtension, triggerBlobDownload,
@@ -145,6 +146,7 @@ export function MergeQuickTool({ preset, locale, theme, engines, onOpenInStudio 
   const [decodingHeic, setDecodingHeic] = useState(false)
   const [handingOff, setHandingOff] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [annotateOpen, setAnnotateOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const copyTimerRef = useRef<number | null>(null)
@@ -419,6 +421,19 @@ export function MergeQuickTool({ preset, locale, theme, engines, onOpenInStudio 
               )}
             </div>
             <div className="flex items-center gap-2">
+              {activeResult && !isMultipagePdf && (
+                <button
+                  type="button"
+                  data-testid="merge-annotate-btn"
+                  onClick={() => setAnnotateOpen(true)}
+                  className={`inline-flex min-h-8 items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${tokens.focusRing} ${tokens.buttonSecondary}`}
+                >
+                  <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+                    <path d="M11 2.8a1.5 1.5 0 0 1 2.1 2.1l-6.2 6.2-2.7.7.7-2.7L11 2.8Z" strokeLinejoin="round" />
+                  </svg>
+                  <span>{s.annotate.inlineButton}</span>
+                </button>
+              )}
               <button type="button" onClick={handleLoadDemo} className={`min-h-8 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${tokens.focusRing} ${tokens.buttonSecondary}`}>
                 {s.merge.loadDemoSet}
               </button>
@@ -715,6 +730,34 @@ export function MergeQuickTool({ preset, locale, theme, engines, onOpenInStudio 
           onConfirm={(idx, px) => setSeamOverlapOverrides((prev) => ({ ...prev, [idx]: px }))}
           onResetAuto={(idx) => setSeamOverlapOverrides((prev) => { const next = { ...prev }; delete next[idx]; return next })}
           onClose={() => setTuningSeamIndex(null)}
+        />
+      )}
+      {annotateOpen && activeResult && !isMultipagePdf && (
+        <AnnotateModal
+          image={{
+            id: 'merge-result',
+            name: activeResult.filename,
+            width: activeResult.width,
+            height: activeResult.height,
+            dataUrl: activeResult.dataUrl,
+            sizeBytes: activeResult.sizeBytes,
+            mimeType: activeResult.mimeType,
+          }}
+          locale={locale}
+          theme={theme}
+          onClose={() => setAnnotateOpen(false)}
+          onSave={(baked) => {
+            setResult({
+              blob: baked.file ?? activeResult.blob,
+              dataUrl: baked.dataUrl,
+              width: baked.width,
+              height: baked.height,
+              filename: `${stripExtension(activeResult.filename) || 'moklu-merged'}-annotated.png`,
+              sizeBytes: baked.sizeBytes,
+              mimeType: baked.mimeType ?? 'image/png',
+            })
+            setAnnotateOpen(false)
+          }}
         />
       )}
     </div>

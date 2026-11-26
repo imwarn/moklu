@@ -11,7 +11,7 @@ export type HtmlLangCode = 'en' | 'zh-CN' | 'ja' | 'ko'
 
 export type HreflangCode = 'en' | 'zh-Hans' | 'ja' | 'ko' | 'x-default'
 
-export type ToolId = 'mockup' | 'merge' | 'split' | 'compress' | 'resize' | 'id-card'
+export type ToolId = 'mockup' | 'merge' | 'split' | 'compress' | 'resize' | 'annotate' | 'id-card'
 
 export type RouteCategory = 'hub' | 'studio' | 'info' | ToolId
 
@@ -44,6 +44,8 @@ export type RouteSlug =
   | 'resize-image'
   | 'crop-image'
   | 'add-border-to-photo'
+  | 'annotate-image'
+  | 'draw-on-image'
   | 'id-card-watermark'
   | InfoPageSlug
 
@@ -70,6 +72,8 @@ export type GrowthRouteSlug = Extract<
   | 'remove-exif'
   | 'compress-image-to-200kb'
   | 'redact-screenshot'
+  | 'annotate-image'
+  | 'draw-on-image'
 >
 
 export interface RoutePreset {
@@ -86,6 +90,7 @@ export interface RoutePreset {
   inspectExif?: boolean
   enableRedact?: boolean
   resizeMode?: 'resize' | 'crop' | 'pad'
+  annotateTool?: 'select' | 'brush' | 'rect' | 'arrow' | 'text'
 }
 
 export interface RouteDefinition {

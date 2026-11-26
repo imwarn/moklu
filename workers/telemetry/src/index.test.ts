@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on node:fs/promises, vitest, ../../../src/seo/routes, ./headersPolicy, and ./index
- * [OUTPUT]: unit tests verifying byte-for-byte parity with public/_headers, 120-route SSG alignment with src/seo/routes.ts, HTML document navigation & 4-locale 404.html content negotiation (browser HTML 404 vs subresource 404 text/plain, never cached in moklu-edge-v3), canonical 301 /en redirects, unknown-route localized 404.html + X-Robots-Tag crawl hygiene, cf.cacheEverything origin fetch options, CDN-Cache-Control, COOP, /_telemetry/health, D1 rollup upsert (including not_found_view), and security guards
+ * [OUTPUT]: unit tests verifying byte-for-byte parity with public/_headers, 128-route SSG alignment with src/seo/routes.ts, HTML document navigation & 4-locale 404.html content negotiation (browser HTML 404 vs subresource 404 text/plain, never cached in moklu-edge-v3), canonical 301 /en redirects, unknown-route localized 404.html + X-Robots-Tag crawl hygiene, cf.cacheEverything origin fetch options, CDN-Cache-Control, COOP, /_telemetry/health, D1 rollup upsert (including not_found_view), and security guards
  * [POS]: deterministic Vitest suite for workers/telemetry/src
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -109,8 +109,8 @@ describe('moklu-telemetry edge worker, cache policy & CSP header parity', () => 
     expect(resolveEdgeCdnCacheControl('/', 500)).toBeNull()
   })
 
-  it('recognizes all 120 localized SSG routes from src/seo/routes.ts with or without trailing slash', () => {
-    expect(ALL_ROUTES).toHaveLength(120)
+  it('recognizes all 128 localized SSG routes from src/seo/routes.ts with or without trailing slash', () => {
+    expect(ALL_ROUTES).toHaveLength(128)
 
     for (const route of ALL_ROUTES) {
       const withSlash = route.path

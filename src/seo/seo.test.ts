@@ -57,13 +57,13 @@ import {
 const execFileAsync = promisify(execFile)
 
 describe('SEO route registry and pathname resolution', () => {
-  it('defines all 30 route slugs and 120 localized static routes', () => {
-    expect(ROUTE_SLUGS).toHaveLength(30)
-    expect(ROUTE_DEFINITIONS).toHaveLength(30)
-    expect(ALL_ROUTES).toHaveLength(120)
+  it('defines all 32 route slugs and 128 localized static routes', () => {
+    expect(ROUTE_SLUGS).toHaveLength(32)
+    expect(ROUTE_DEFINITIONS).toHaveLength(32)
+    expect(ALL_ROUTES).toHaveLength(128)
 
     const uniquePaths = new Set(ALL_ROUTES.map((r) => r.path))
-    expect(uniquePaths.size).toBe(120)
+    expect(uniquePaths.size).toBe(128)
   })
 
   it('builds root paths for English and trailing-slash paths for all subroutes', () => {
@@ -106,6 +106,9 @@ describe('SEO route registry and pathname resolution', () => {
       ['/resize-image', { locale: 'en', slug: 'resize-image', tool: 'resize', check: (r) => expect(r.preset.resizeMode).toBe('resize') }],
       ['/crop-image', { locale: 'en', slug: 'crop-image', tool: 'resize', check: (r) => expect(r.preset.resizeMode).toBe('crop') }],
       ['/add-border-to-photo', { locale: 'en', slug: 'add-border-to-photo', tool: 'resize', check: (r) => expect(r.preset.resizeMode).toBe('pad') }],
+      ['/annotate-image', { locale: 'en', slug: 'annotate-image', tool: 'annotate', check: (r) => expect(r.preset.annotateTool).toBe('rect') }],
+      ['/draw-on-image', { locale: 'en', slug: 'draw-on-image', tool: 'annotate', check: (r) => expect(r.preset.annotateTool).toBe('brush') }],
+      ['/zh/annotate-image', { locale: 'zh', slug: 'annotate-image', tool: 'annotate', check: (r) => expect(r.preset.annotateTool).toBe('rect') }],
       ['/zh/id-card-watermark', { locale: 'zh', slug: 'id-card-watermark', tool: 'id-card', check: (r) => expect(r.isFallback).toBe(false) }],
     ]
 
@@ -202,6 +205,8 @@ describe('SEO route registry and pathname resolution', () => {
       'remove-exif',
       'compress-image-to-200kb',
       'redact-screenshot',
+      'annotate-image',
+      'draw-on-image',
     ] as const) {
       const growthLinks = getHreflangLinks(growthSlug, 'https://moklu.app')
       expect(growthLinks).toHaveLength(5)
@@ -693,7 +698,7 @@ describe('SEO UI chrome SSR rendering', () => {
     expect(proSections).toContain('border-success/40')
   })
 
-  it('renders 4-locale NotFoundContent with 6 primary tool links, zero QuickWorkspace, and zero em-dashes', () => {
+  it('renders 4-locale NotFoundContent with 7 primary tool links, zero QuickWorkspace, and zero em-dashes', () => {
     const noop = () => {}
     for (const locale of LOCALE_CODES) {
       const route = resolvePathname(locale === 'en' ? '/non-existent-page' : `/${locale}/non-existent-page`)
@@ -839,7 +844,7 @@ describe('Build-time SSG prerenderer, sitemap.xml, robots.txt, and CSP safety', 
     expect(rerendered.match(/data-testid="tool-landing-page"/g)?.length).toBe(1)
   })
 
-  it('executes scripts/prerender-seo.mjs via Node ESM and writes all 120 static HTML files, sitemap.xml, robots.txt, and llms.txt', async () => {
+  it('executes scripts/prerender-seo.mjs via Node ESM and writes all 128 static HTML files, sitemap.xml, robots.txt, and llms.txt', async () => {
     const tmpDir = await mkdtemp(path.join(os.tmpdir(), 'moklu-ssg-test-'))
     try {
       await writeFile(path.join(tmpDir, 'index.html'), SAMPLE_DIST_TEMPLATE, 'utf8')
@@ -866,8 +871,8 @@ describe('Build-time SSG prerenderer, sitemap.xml, robots.txt, and CSP safety', 
 
       expect(report.ok).toBe(true)
       expect(report.siteUrl).toBe('https://moklu.app')
-      expect(report.routesWritten).toBe(120)
-      expect(report.sitemapUrls).toBe(120)
+      expect(report.routesWritten).toBe(128)
+      expect(report.sitemapUrls).toBe(128)
       expect(report.notFoundPaths).toHaveLength(4)
 
       // Spot-check key static route paths
@@ -878,13 +883,17 @@ describe('Build-time SSG prerenderer, sitemap.xml, robots.txt, and CSP safety', 
         { route: resolvePathname('/heic-to-jpg'), expectedRel: path.join('heic-to-jpg', 'index.html'), expectedLang: 'en' },
         { route: resolvePathname('/compress-image-to-200kb'), expectedRel: path.join('compress-image-to-200kb', 'index.html'), expectedLang: 'en' },
         { route: resolvePathname('/redact-screenshot'), expectedRel: path.join('redact-screenshot', 'index.html'), expectedLang: 'en' },
+        { route: resolvePathname('/annotate-image'), expectedRel: path.join('annotate-image', 'index.html'), expectedLang: 'en' },
+        { route: resolvePathname('/draw-on-image'), expectedRel: path.join('draw-on-image', 'index.html'), expectedLang: 'en' },
         { route: resolvePathname('/studio'), expectedRel: path.join('studio', 'index.html'), expectedLang: 'en' },
         { route: resolvePathname('/zh'), expectedRel: path.join('zh', 'index.html'), expectedLang: 'zh-CN' },
         { route: resolvePathname('/zh/stitch-screenshots'), expectedRel: path.join('zh', 'stitch-screenshots', 'index.html'), expectedLang: 'zh-CN' },
         { route: resolvePathname('/zh/remove-exif'), expectedRel: path.join('zh', 'remove-exif', 'index.html'), expectedLang: 'zh-CN' },
+        { route: resolvePathname('/zh/annotate-image'), expectedRel: path.join('zh', 'annotate-image', 'index.html'), expectedLang: 'zh-CN' },
         { route: resolvePathname('/zh/id-card-watermark'), expectedRel: path.join('zh', 'id-card-watermark', 'index.html'), expectedLang: 'zh-CN' },
         { route: resolvePathname('/zh/privacy'), expectedRel: path.join('zh', 'privacy', 'index.html'), expectedLang: 'zh-CN' },
         { route: resolvePathname('/ja/ipad-mockup'), expectedRel: path.join('ja', 'ipad-mockup', 'index.html'), expectedLang: 'ja' },
+        { route: resolvePathname('/ja/draw-on-image'), expectedRel: path.join('ja', 'draw-on-image', 'index.html'), expectedLang: 'ja' },
         { route: resolvePathname('/ko/watch-mockup'), expectedRel: path.join('ko', 'watch-mockup', 'index.html'), expectedLang: 'ko' },
         { route: resolvePathname('/ko/browser-mockup'), expectedRel: path.join('ko', 'browser-mockup', 'index.html'), expectedLang: 'ko' },
       ]
@@ -909,7 +918,7 @@ describe('Build-time SSG prerenderer, sitemap.xml, robots.txt, and CSP safety', 
 
       const sitemap = await readFile(path.join(tmpDir, 'sitemap.xml'), 'utf8')
       expect(sitemap).toBe(generateSitemapXml('https://moklu.app', '2026-11-23'))
-      expect(sitemap.match(/<url>/g)?.length).toBe(120)
+      expect(sitemap.match(/<url>/g)?.length).toBe(128)
       expect(sitemap).not.toContain('/404')
       expect(sitemap).not.toContain('<changefreq>')
       expect(sitemap).not.toContain('<priority>')
@@ -951,6 +960,9 @@ describe('Build-time SSG prerenderer, sitemap.xml, robots.txt, and CSP safety', 
       expect(sitemap).toContain('<loc>https://moklu.app/heic-to-jpg/</loc>')
       expect(sitemap).toContain('<loc>https://moklu.app/zh/stitch-screenshots/</loc>')
       expect(sitemap).toContain('<loc>https://moklu.app/ko/remove-exif/</loc>')
+      expect(sitemap).toContain('<loc>https://moklu.app/annotate-image/</loc>')
+      expect(sitemap).toContain('<loc>https://moklu.app/draw-on-image/</loc>')
+      expect(sitemap).toContain('<loc>https://moklu.app/zh/annotate-image/</loc>')
       for (const match of sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)) {
         expect(match[1].endsWith('/'), `sitemap loc ${match[1]} must end with /`).toBe(true)
       }
@@ -978,7 +990,7 @@ describe('Build-time SSG prerenderer, sitemap.xml, robots.txt, and CSP safety', 
         `import { resolveRouteLastmodMap } from ${JSON.stringify(path.resolve('scripts/prerender-seo.mjs'))}; console.log(JSON.stringify(Object.fromEntries(resolveRouteLastmodMap())));`,
       ])
       const gitLastmodRecord = JSON.parse(gitLastmodJson) as Record<string, string>
-      expect(Object.keys(gitLastmodRecord)).toHaveLength(120)
+      expect(Object.keys(gitLastmodRecord)).toHaveLength(128)
       for (const dateValue of Object.values(gitLastmodRecord)) {
         expect(dateValue).toMatch(/^\d{4}-\d{2}-\d{2}$/)
       }

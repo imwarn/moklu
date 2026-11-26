@@ -207,6 +207,32 @@ export interface WorkspaceStrings {
     batchStripLabel: string
     transformError: string
   }
+  annotate: {
+    title: string
+    closeLabel: string
+    saveLabel: string
+    inlineButton: string
+    toolbarLabel: string
+    toolSelect: string
+    toolBrush: string
+    toolRect: string
+    toolArrow: string
+    toolText: string
+    colorLabel: string
+    strokeWidthLabel: string
+    fontSizeLabel: string
+    undo: string
+    redo: string
+    deleteLayer: string
+    clearAll: string
+    layersCount: string
+    defaultText: string
+    editTextHint: string
+    emptyHint: string
+    shortcutsHint: string
+    replaceImage: string
+    savedToast: string
+  }
   idCard: {
     privacyTitle: string
     privacyDesc: string

@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on react, useThemeStore from @/theme/themeStore, saveToolDraft and serializeDraftImages from ./draftStorage, getWorkspaceStrings from ./i18n, getWorkspaceThemeTokens from ./themeTokens, PrivacyBadge from ./uiPrimitives, on-demand dynamic imports of the 6 tool panels in ./tools/*, ./defaultEngines, and ./canvasUtils, and types from ./types
- * [OUTPUT]: exports QuickWorkspace component and tool preloader helpers (hasWorkspaceTool, preloadWorkspaceTool, preloadAllWorkspaceTools) rendering the above-the-fold 6-tool instant workspace with on-demand panel code-splitting, hover/focus chunk prefetching, global paste pulse highlight, multi-image paste switch-to-Merge banner, keyboard-navigable tablist, locale-preserving panel state, Light/Dark theming, 4-locale UI, and Studio handoff
+ * [INPUT]: depends on react, useThemeStore from @/theme/themeStore, saveToolDraft and serializeDraftImages from ./draftStorage, getWorkspaceStrings from ./i18n, getWorkspaceThemeTokens from ./themeTokens, PrivacyBadge from ./uiPrimitives, on-demand dynamic imports of the 7 tool panels in ./tools/*, ./defaultEngines, and ./canvasUtils, and types from ./types
+ * [OUTPUT]: exports QuickWorkspace component and tool preloader helpers (hasWorkspaceTool, preloadWorkspaceTool, preloadAllWorkspaceTools) rendering the above-the-fold 7-tool instant workspace with on-demand panel code-splitting, hover/focus chunk prefetching, global paste pulse highlight, multi-image paste switch-to-Merge banner, keyboard-navigable tablist, locale-preserving panel state, Light/Dark theming, 4-locale UI, and Studio handoff
  * [POS]: top-level UI entry point of src/workspace; mounted by ToolLandingPage and testable standalone via injected WorkspaceEngines
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -28,8 +28,8 @@ import type {
 } from './types'
 import { PrivacyBadge } from './uiPrimitives'
 
-const TOOL_ORDER: WorkspaceToolId[] = ['mockup', 'merge', 'split', 'compress', 'resize', 'id-card']
-const SINGLE_IMAGE_TOOLS = new Set<WorkspaceToolId>(['mockup', 'split', 'id-card'])
+const TOOL_ORDER: WorkspaceToolId[] = ['mockup', 'merge', 'split', 'compress', 'resize', 'annotate', 'id-card']
+const SINGLE_IMAGE_TOOLS = new Set<WorkspaceToolId>(['mockup', 'split', 'annotate', 'id-card'])
 const SUPPORTED_IMAGE_EXT_RE = /\.(?:png|jpe?g|webp|gif|bmp|avif|svg|heic|heif)$/i
 
 const DEFAULT_PRESET: WorkspacePreset = { tool: 'mockup' }
@@ -56,6 +56,8 @@ function importToolComponent(toolId: WorkspaceToolId): Promise<WorkspaceToolComp
       return import('./tools/CompressQuickTool').then((m) => m.CompressQuickTool)
     case 'resize':
       return import('./tools/ResizeQuickTool').then((m) => m.ResizeQuickTool)
+    case 'annotate':
+      return import('./tools/AnnotateQuickTool').then((m) => m.AnnotateQuickTool)
     case 'id-card':
       return import('./tools/IdCardQuickTool').then((m) => m.IdCardQuickTool)
   }
@@ -162,6 +164,13 @@ function ToolIcon({ tool }: { tool: WorkspaceToolId }): ReactNode {
       return (
         <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
           <path d="M4 9V4h5M16 11v5h-5M4 4l5 5M16 16l-5-5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      )
+    case 'annotate':
+      return (
+        <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+          <path d="M13.5 3.5a2 2 0 0 1 2.8 2.8l-7.8 7.8-3.6.9.9-3.6 7.7-7.9Z" strokeLinejoin="round" />
+          <path d="M4 17h12" strokeLinecap="round" />
         </svg>
       )
     case 'id-card':
@@ -383,6 +392,7 @@ export function QuickWorkspace({
     preset.inspectExif ? '1' : '0',
     preset.enableRedact ? '1' : '0',
     preset.resizeMode ?? '',
+    preset.annotateTool ?? '',
     activeTool === 'merge' ? String(mergeHydrateNonce) : '',
   ].join(':')
 
@@ -469,7 +479,7 @@ export function QuickWorkspace({
                 }}
                 onClick={() => selectTool(toolId)}
                 onKeyDown={(e) => handleTabKeyDown(e, idx)}
-                className={`inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-[color,background-color,box-shadow] ${tokens.focusRing} ${
+                className={`inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl px-2.5 py-2 text-xs font-semibold transition-[color,background-color,box-shadow] sm:px-3 ${tokens.focusRing} ${
                   selected ? tokens.tabActive : tokens.tabIdle
                 }`}
               >

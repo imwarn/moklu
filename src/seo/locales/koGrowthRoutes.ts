@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on GrowthRouteSlug and RouteCopy types from ../types.ts
- * [OUTPUT]: exports KO_GROWTH_ROUTES containing Korean SEO copy for the 7 high-intent growth slugs (ipad-mockup, watch-mockup, stitch-screenshots, heic-to-jpg, remove-exif, compress-image-to-200kb, redact-screenshot)
+ * [OUTPUT]: exports KO_GROWTH_ROUTES containing Korean SEO copy for the 9 high-intent growth slugs (ipad-mockup, watch-mockup, stitch-screenshots, heic-to-jpg, remove-exif, compress-image-to-200kb, redact-screenshot, annotate-image, draw-on-image)
  * [POS]: growth route-copy chunk for ko within src/seo/locales, merged into KO_LOCALE by ./ko.ts to keep every file <= 800 lines
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -397,6 +397,122 @@ export const KO_GROWTH_ROUTES: Record<GrowthRouteSlug, RouteCopy> = {
       {
         question: 'Moklu Studio로 넘긴 뒤에도 가리기 영역 위치를 다시 수정할 수 있나요?',
         answer: '네. Studio로 전달할 때 원본 스크린샷을 비파괴 상태로 유지하고 마스킹 레이어를 분리해 전달하므로 위치 수정과 화살표·텍스트 추가가 자유롭습니다.',
+      },
+    ],
+  },
+  'annotate-image': {
+    navLabel: '이미지 주석 달기',
+    title: '이미지 · 스크린샷 주석 및 화살표 표시 무료 (100% 로컬) | Moklu',
+    metaDescription:
+      '스크린샷과 사진에 사각형, 화살표, 텍스트 설명, 자유 브러시 주석을 브라우저에서 바로 추가하세요. 8개 핸들 크기 조절, 실행 취소·다시 실행, 원본 해상도 저장, 업로드 제로.',
+    badge: '사각형 · 화살표 · 텍스트 · 브러시',
+    h1: '브라우저에서 로컬로 이미지·스크린샷 주석 달기',
+    subtitle:
+      '버그 리포트, 제품 가이드, UI 피드백 이미지에 벡터 사각형·화살표·더블클릭 편집 텍스트·자유 브러시를 빠르게 얹으세요. 8개 핸들로 레이어를 자유롭게 조절하고 서버 업로드 없이 원본 화질로 저장합니다.',
+    steps: [
+      {
+        title: '주석을 달 스크린샷 붙여넣기 또는 드롭',
+        description: '화면 캡처 직후 Cmd/Ctrl+V로 붙여넣거나 PNG, JPEG, WebP, AVIF, HEIC 이미지를 로컬 캔버스에 끌어다 놓으세요.',
+      },
+      {
+        title: '사각형, 화살표, 텍스트, 브러시로 핵심 표시',
+        description: '선택(V)·브러시(B)·사각형(R)·화살표(A)·텍스트(T)를 오가며 색상과 선 굵기를 고르고 8개 파란 핸들로 위치를 미세 조정합니다.',
+      },
+      {
+        title: '원본 해상도 저장 또는 채팅창 바로 복사',
+        description: '워터마크 없는 PNG / WebP / JPEG로 내려받거나 원클릭 복사로 Slack, Notion, 메신저에 즉시 붙여넣으세요.',
+      },
+    ],
+    highlights: [
+      {
+        title: '8개 핸들로 조절하는 벡터 레이어 편집',
+        description: '그린 사각형, 화살표, 텍스트, 브러시 선이 이미지에 고정되지 않아 언제든 선택해 이동, 크기 조절, 색상 변경, 개별 삭제할 수 있습니다.',
+      },
+      {
+        title: '빠른 단축키와 50단계 실행 취소·다시 실행',
+        description: 'V/B/R/A/T 도구 전환, 텍스트 더블클릭 인라인 편집, Delete 삭제, Cmd/Ctrl+Z로 QA 캡처와 문서 이미지를 몇 초 만에 완성합니다.',
+      },
+      {
+        title: '사내 기밀 캡처도 서버 전송 제로',
+        description: '내부 대시보드와 미공개 UI 화면이 기기 브라우저 메모리 밖으로 나가지 않으며 로컬 IndexedDB 초안 자동 저장을 지원합니다.',
+      },
+    ],
+    faqs: [
+      {
+        question: 'Moklu 이미지 주석 도구에는 어떤 표시 기능이 들어 있나요?',
+        answer: '8개 핸들 선택 도구, 부드러운 베지어 자유 브러시, 둥근 사각형 강조 박스, 방향 화살표, 대비 외곽선이 적용된 더블클릭 편집 텍스트를 모두 제공합니다.',
+      },
+      {
+        question: '화살표나 사각형을 그린 뒤에도 위치와 크기를 바꿀 수 있나요?',
+        answer: '네. 선택 모드(V)에서 원하는 주석 레이어를 클릭하면 드래그 이동, 8개 모서리·변 핸들 크기 조절, 색상·선 굵기 변경, Delete 개별 삭제가 모두 가능합니다.',
+      },
+      {
+        question: '주석을 추가해 저장하면 원본 스크린샷 해상도가 낮아지나요?',
+        answer: '아니요. 주석은 정규화 벡터 좌표로 유지되며 내보내기 시 원본 이미지의 전체 해상도 HTML5 Canvas 위에 선명하게 합성됩니다.',
+      },
+      {
+        question: '목업, 리사이즈, 이미지 합치기 작업 중에도 바로 주석을 달 수 있나요?',
+        answer: '네. 각 도구의 미리보기 상단에 있는 주석 버튼을 누르면 동일한 벡터 주석 모달이 열리고 저장 시 현재 이미지에 바로 반영됩니다.',
+      },
+      {
+        question: '주석을 추가한 스크린샷이 클라우드 서버에 저장되나요?',
+        answer: '절대 저장되지 않습니다. 파일 디코딩, 벡터 편집, IndexedDB 초안 저장, 최종 이미지 합성이 100% 브라우저 내부에서만 실행됩니다.',
+      },
+    ],
+  },
+  'draw-on-image': {
+    navLabel: '이미지 위에 그리기',
+    title: '이미지 · 사진 위에 무료 브러시 그리기 (로컬 펜 마크업) | Moklu',
+    metaDescription:
+      '사진과 스크린샷 위에 부드러운 벡터 브러시로 동그라미, 밑줄, 자유 스케치를 바로 그려 넣으세요. 8색 프리셋, 선 굵기 조절, 개별 획 이동·삭제, 서버 업로드 제로.',
+    badge: '부드러운 벡터 브러시 · 업로드 제로',
+    h1: '사진과 이미지 위에 바로 브러시 그리기 & 스케치',
+    subtitle:
+      '열자마자 자유 브러시 모드로 시작해 사진이나 캡처 위에 핵심 동그라미, 밑줄, 간단한 피드백 메모를 부드럽게 그려 넣으세요. 모든 획이 벡터 레이어로 유지되며 앱 설치 없이 로컬에서 실행됩니다.',
+    steps: [
+      {
+        title: '사진을 열거나 스크린샷을 붙여넣기',
+        description: '기기에서 PNG, JPEG, WebP, HEIC 사진을 선택하거나 Cmd/Ctrl+V로 클립보드 캡처를 바로 붙여넣으세요.',
+      },
+      {
+        title: '부드러운 벡터 브러시로 자유롭게 표시',
+        description: '기본 브러시 모드에서 8가지 고대비 색상과 굵기를 골라 바로 그리고, 필요하면 화살표·사각형·텍스트를 함께 추가합니다.',
+      },
+      {
+        title: '클립보드 복사 또는 원본 화질 저장',
+        description: '표시를 마친 이미지를 메신저에 바로 복사해 붙여넣거나 워터마크 없는 원본 해상도 PNG / WebP / JPEG로 저장하세요.',
+      },
+    ],
+    highlights: [
+      {
+        title: '2차 베지어 곡선 기반 매끄러운 브러시 보정',
+        description: '마우스나 트랙패드로 빠르게 그려도 점 간소화와 베지어 보간이 거친 각을 부드럽게 다듬어 깔끔한 동그라미와 밑줄을 만들어 줍니다.',
+      },
+      {
+        title: '자유 손그림 획도 선택해 이동 및 크기 조절',
+        description: '일반 비트맵 그림판과 달리 각 브러시 획이 독립 벡터 레이어로 남아 있어 위치를 옮기거나 비율에 맞춰 확대·축소하고 개별 삭제할 수 있습니다.',
+      },
+      {
+        title: '마우스·터치·스타일러스 모두 매끄러운 로컬 드로잉',
+        description: '통합 Pointer Events와 그리기 중 스크롤 잠금 처리로 데스크톱은 물론 모바일·태블릿 브라우저에서도 쾌적하게 그릴 수 있습니다.',
+      },
+    ],
+    faqs: [
+      {
+        question: '이미지 위에 그리기와 이미지 주석 달기의 차이는 무엇인가요?',
+        answer: '이미지 위에 그리기는 자유 브러시 모드로 바로 시작해 빠른 동그라미·밑줄 스케치에 최적화되어 있고, 이미지 주석 달기는 문서·QA용 사각형 모드로 시작합니다. 두 페이지 모두 5가지 주석 도구를 전부 지원합니다.',
+      },
+      {
+        question: '잘못 그린 브러시 선 하나만 골라서 지울 수 있나요?',
+        answer: '네. Cmd/Ctrl+Z로 최대 50단계 실행 취소를 할 수 있고, 선택(V)으로 원하는 획 하나만 클릭한 뒤 Delete 키로 해당 선만 깔끔하게 지울 수 있습니다.',
+      },
+      {
+        question: '고해상도 스크린샷에 손으로 그리면 저장할 때 흐릿해지나요?',
+        answer: '아니요. 브러시 경로가 해상도 독립 벡터로 저장되어 내보내기나 복사 시 원본 이미지의 전체 해상도에 맞춰 안티앨리어싱으로 선명하게 렌더링됩니다.',
+      },
+      {
+        question: '스마트폰이나 태블릿에서 손가락이나 스타일러스로 그릴 수 있나요?',
+        answer: '네. 터치와 스타일러스 입력을 모두 지원하며 캔버스 위에서 그릴 때 화면 스크롤이 잠겨 흔들림 없이 표시할 수 있습니다.',
       },
     ],
   },

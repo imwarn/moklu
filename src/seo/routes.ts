@@ -1,7 +1,7 @@
 /**
  * [INPUT]: depends on RouteDefinition, RouteSlug, LocaleCode, HtmlLangCode, HreflangCode, ResolvedRoute, HreflangLink, and ToolId types from ./types.ts
  * [OUTPUT]: exports LOCALE_CODES, DEFAULT_LOCALE, DEFAULT_SITE_URL, ROUTE_SLUGS, ROUTE_DEFINITIONS, ALL_ROUTES, TOOL_ROUTE_DEFINITIONS, INFO_ROUTE_DEFINITIONS, PRIMARY_TOOL_SLUGS, getHtmlLang, getHreflangCode, getSiteUrl, isLocaleCode, isRouteSlug, getRouteDefinition, buildLocalizedPath, buildCanonicalUrl, getHreflangLinks, resolvePathname, and getRelatedRoutes
- * [POS]: single source of truth for all 30 intent/info slugs (120 trailing-slash localized URLs), BCP-47 lang/hreflang tags (`zh-CN`/`zh-Hans`), URL normalization, preset mapping, and internal link graphs across client routing and build-time SSG
+ * [POS]: single source of truth for all 32 intent/info slugs (128 trailing-slash localized URLs), BCP-47 lang/hreflang tags (`zh-CN`/`zh-Hans`), URL normalization, preset mapping, and internal link graphs across client routing and build-time SSG
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
@@ -50,6 +50,7 @@ export const PRIMARY_TOOL_SLUGS: Record<ToolId, RouteSlug> = {
   split: 'carousel-splitter',
   compress: 'compress-image',
   resize: 'resize-image',
+  annotate: 'annotate-image',
   'id-card': 'id-card-watermark',
 }
 
@@ -280,6 +281,23 @@ export const ROUTE_DEFINITIONS: readonly RouteDefinition[] = [
     priority: 0.9,
     preset: { tool: 'resize', resizeMode: 'pad' },
     relatedSlugs: ['resize-image', 'crop-image', 'photo-collage-grid', 'browser-mockup', 'carousel-splitter', 'studio'],
+  },
+  // Annotate / Markup family
+  {
+    slug: 'annotate-image',
+    category: 'annotate',
+    isStudio: false,
+    priority: 0.95,
+    preset: { tool: 'annotate', annotateTool: 'rect' },
+    relatedSlugs: ['draw-on-image', 'redact-screenshot', 'browser-mockup', 'merge-images', 'resize-image', 'studio'],
+  },
+  {
+    slug: 'draw-on-image',
+    category: 'annotate',
+    isStudio: false,
+    priority: 0.92,
+    preset: { tool: 'annotate', annotateTool: 'brush' },
+    relatedSlugs: ['annotate-image', 'redact-screenshot', 'browser-mockup', 'crop-image', 'remove-exif', 'studio'],
   },
   // ID Card / Document family
   {

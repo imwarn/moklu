@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on ./types, ./canvasHelpers, ./pdfHelper, ./stitchOverlap, ./heicDecoder, ./webpEncoder, ./exifReader, ./mergeEngine, ./splitEngine, ./compressEngine, ./transformEngine, and ./idCardEngine
- * [OUTPUT]: re-exports all client-side image processing engines, HEIC decoder, lazy WASM WebP encoder, EXIF inspector, overlap detector & seam override resolver, single-/multi-page PDF builders, helpers, constants, and TypeScript interfaces
+ * [INPUT]: depends on ./types, ./canvasHelpers, ./pdfHelper, ./stitchOverlap, ./heicDecoder, ./webpEncoder, ./exifReader, ./mergeEngine, ./splitEngine, ./compressEngine, ./transformEngine, ./idCardEngine, and ./annotateEngine
+ * [OUTPUT]: re-exports all client-side image processing engines, vector annotation engine, HEIC decoder, lazy WASM WebP encoder, EXIF inspector, overlap detector & seam override resolver, single-/multi-page PDF builders, helpers, constants, and TypeScript interfaces
  * [POS]: sole public barrel entry point of src/tools; imported by workspace tools and integration adapters
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -181,3 +181,39 @@ export {
   composeIdCardSheet,
   computeIdCardSheetLayout,
 } from './idCardEngine'
+
+export {
+  ANNOTATION_PRESET_COLORS,
+  DEFAULT_ANNOTATION_COLOR,
+  DEFAULT_ANNOTATION_FONT_SIZE,
+  DEFAULT_ANNOTATION_STROKE_WIDTH,
+  buildSmoothSvgPath,
+  canRedoAnnotation,
+  canUndoAnnotation,
+  computeResizedBounds,
+  createAnnotationHistory,
+  getAnnotationBounds,
+  hitTestAnnotationLayers,
+  moveAnnotationLayer,
+  pushAnnotationHistory,
+  redoAnnotationHistory,
+  renderAnnotatedImageToBlob,
+  renderAnnotationsToCanvas,
+  resizeAnnotationLayer,
+  simplifyBrushPoints,
+  undoAnnotationHistory,
+  type AnnotationBounds,
+  type AnnotationCanvasContext,
+  type AnnotationHistoryState,
+  type AnnotationLayer,
+  type AnnotationPoint,
+  type AnnotationResizeHandle,
+  type AnnotationToolMode,
+  type ArrowAnnotationLayer,
+  type BaseAnnotationLayer,
+  type BrushAnnotationLayer,
+  type RectAnnotationLayer,
+  type RenderAnnotatedImageOptions,
+  type RenderAnnotatedImageResult,
+  type TextAnnotationLayer,
+} from './annotateEngine'

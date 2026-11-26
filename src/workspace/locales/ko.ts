@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on WorkspaceStrings from ../i18n
- * [OUTPUT]: exports KO Korean UI strings for QuickWorkspace and its 6 tool panels
+ * [OUTPUT]: exports KO Korean UI strings for QuickWorkspace and its 7 tool panels
  * [POS]: Korean locale dictionary in src/workspace/locales
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -13,6 +13,7 @@ export const KO: WorkspaceStrings = {
     split: { label: '캐러셀·그리드 분할', short: '분할', description: '파노라마 슬라이드 및 3×3 피드 분할' },
     compress: { label: '압축·포맷 변환', short: '압축', description: 'PNG / JPEG / WebP 로컬 일괄 용량 축소' },
     resize: { label: '리사이즈·여백', short: '리사이즈', description: '크기 조정, 자르기, 크롭 없는 SNS 여백 추가' },
+    annotate: { label: '이미지 주석·그리기', short: '주석', description: '브러시·사각형·화살표·텍스트 로컬 벡터 주석' },
     'id-card': { label: '신분증 워터마크', short: '신분증', description: 'A4 앞뒷면 배치 + 도용 방지 보안 워터마크' },
   },
   common: {
@@ -223,6 +224,32 @@ export const KO: WorkspaceStrings = {
     batchReady: '장 처리 완료',
     batchStripLabel: '처리된 이미지 목록',
     transformError: '이미지 변환에 실패했습니다.',
+  },
+  annotate: {
+    title: '주석',
+    closeLabel: '주석',
+    saveLabel: '저장',
+    inlineButton: '주석',
+    toolbarLabel: '주석 도구 모음',
+    toolSelect: '선택',
+    toolBrush: '브러시',
+    toolRect: '사각형',
+    toolArrow: '화살표',
+    toolText: '텍스트',
+    colorLabel: '색상',
+    strokeWidthLabel: '선 굵기',
+    fontSizeLabel: '글자 크기',
+    undo: '실행 취소',
+    redo: '다시 실행',
+    deleteLayer: '선택 삭제',
+    clearAll: '전체 지우기',
+    layersCount: '개 레이어',
+    defaultText: '텍스트',
+    editTextHint: '텍스트를 더블클릭해 편집하세요',
+    emptyHint: '브러시, 사각형, 화살표, 텍스트를 선택해 캔버스에 드래그하세요',
+    shortcutsHint: 'V 선택 · B 브러시 · R 사각형 · A 화살표 · T 텍스트 · Del 삭제',
+    replaceImage: '이미지 교체',
+    savedToast: '주석이 이미지에 저장되었습니다',
   },
   idCard: {
     privacyTitle: '100% 오프라인 브라우저 처리 · 서버 전송 없음',

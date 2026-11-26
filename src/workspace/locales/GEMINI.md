@@ -1,7 +1,7 @@
 # workspace/locales/
 > L2 | Parent: ../GEMINI.md
 
-Four-language UI string dictionaries for `QuickWorkspace` and its 6 tool panels (`en`, `zh`, `ja`, `ko`).
+Four-language UI string dictionaries for `QuickWorkspace` and its 7 tool panels (`en`, `zh`, `ja`, `ko`), including vector `annotate` labels.
 
 ## Member list
 - `en.ts`: English `WorkspaceStrings` dictionary.

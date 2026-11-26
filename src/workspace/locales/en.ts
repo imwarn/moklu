@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on WorkspaceStrings from ../i18n
- * [OUTPUT]: exports EN English UI strings for QuickWorkspace and its 6 tool panels
+ * [OUTPUT]: exports EN English UI strings for QuickWorkspace and its 7 tool panels
  * [POS]: English locale dictionary in src/workspace/locales
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -13,6 +13,7 @@ export const EN: WorkspaceStrings = {
     split: { label: 'Carousel & Grid Split', short: 'Split', description: 'Slice panoramas and 3×3 social grids' },
     compress: { label: 'Compress & Convert', short: 'Compress', description: 'Shrink PNG, JPEG & WebP offline in batch' },
     resize: { label: 'Resize, Crop & Pad', short: 'Resize', description: 'Resize, crop, or add social borders without cropping' },
+    annotate: { label: 'Annotate & Markup', short: 'Annotate', description: 'Draw freehand brush, rectangles, arrows & text locally' },
     'id-card': { label: 'ID Card Watermark', short: 'ID Card', description: 'Compose A4 front+back sheet with anti-fraud watermark' },
   },
   common: {
@@ -223,6 +224,32 @@ export const EN: WorkspaceStrings = {
     batchReady: 'processed',
     batchStripLabel: 'Processed images',
     transformError: 'Transform failed.',
+  },
+  annotate: {
+    title: 'Annotate',
+    closeLabel: 'Annotate',
+    saveLabel: 'Save',
+    inlineButton: 'Annotate',
+    toolbarLabel: 'Annotation tools',
+    toolSelect: 'Select',
+    toolBrush: 'Brush',
+    toolRect: 'Rectangle',
+    toolArrow: 'Arrow',
+    toolText: 'Text',
+    colorLabel: 'Color',
+    strokeWidthLabel: 'Stroke Width',
+    fontSizeLabel: 'Font Size',
+    undo: 'Undo',
+    redo: 'Redo',
+    deleteLayer: 'Delete',
+    clearAll: 'Clear All',
+    layersCount: 'layers',
+    defaultText: 'Text',
+    editTextHint: 'Double-click text to edit',
+    emptyHint: 'Pick Brush, Rectangle, Arrow, or Text and drag on the canvas',
+    shortcutsHint: 'V Select · B Brush · R Rect · A Arrow · T Text · Del Delete',
+    replaceImage: 'Replace Image',
+    savedToast: 'Annotations saved to image',
   },
   idCard: {
     privacyTitle: '100% Offline Browser Processing · Never Uploaded',

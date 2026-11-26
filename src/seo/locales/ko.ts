@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on LocaleBundle type from ../types.ts; depends on KO_TOOL_ROUTES from ./koTools.ts, KO_GROWTH_ROUTES from ./koGrowthRoutes.ts, and INFO_PAGE_ROUTES from ./infoRoutes.ts
- * [OUTPUT]: exports KO_LOCALE complete Korean UI labels and 30 intent/info route copy entries
+ * [OUTPUT]: exports KO_LOCALE complete Korean UI labels and 32 intent/info route copy entries
  * [POS]: Korean (`/ko/...`) language pack within src/seo/locales, loaded by src/seo/i18n.ts
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -38,6 +38,7 @@ export const KO_LOCALE: LocaleBundle = {
       split: '분할',
       compress: '압축·변환',
       resize: '리사이즈',
+      annotate: '주석·그리기',
       'id-card': '신분증 워터마크',
     },
     dropzoneTitle: '이미지를 드롭하거나 Ctrl/Cmd+V로 붙여넣기',

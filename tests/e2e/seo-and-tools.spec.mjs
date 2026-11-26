@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on @playwright/test, node:fs/promises, node:http, and node:path
- * [OUTPUT]: Playwright E2E test suite verifying zero-splash Quick Workspace, all core image tools (Mockup, Merge, Split, Compress, ID Card), 1-click Studio handoff, 4-locale SEO routes, SSG dist artifacts, and JS-disabled / hard-reload zero-FOUC parity
+ * [OUTPUT]: Playwright E2E test suite verifying zero-splash Quick Workspace, all core image tools (Mockup, Merge, Split, Compress, Resize, Annotate, ID Card), inline AnnotateModal, 1-click Studio handoff, 4-locale SEO routes, SSG dist artifacts, and JS-disabled / hard-reload zero-FOUC parity
  * [POS]: E2E verification spec in tests/e2e alongside export.browser.spec.mjs
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -220,7 +220,7 @@ test('4-locale SEO routes sync lang, canonical, hreflang, JSON-LD, and tool pres
   }
 })
 
-test('Pre-rendered SSG HTML, sitemap.xml, and llms.txt contain all 92 routes with full React UI and zero inline executable scripts', async ({ browserName }) => {
+test('Pre-rendered SSG HTML, sitemap.xml, and llms.txt contain all 128 routes with full React UI and zero inline executable scripts', async ({ browserName }) => {
   test.skip(browserName !== 'chromium', 'Filesystem SSG artifact check runs once on Chromium')
   const distDir = path.resolve('dist')
   try {
@@ -232,10 +232,13 @@ test('Pre-rendered SSG HTML, sitemap.xml, and llms.txt contain all 92 routes wit
 
   const sitemap = await readFile(path.join(distDir, 'sitemap.xml'), 'utf8')
   const urlMatches = sitemap.match(/<url>/g) ?? []
-  expect(urlMatches.length).toBe(92)
+  expect(urlMatches.length).toBe(128)
   expect(sitemap).toContain('https://moklu.app/zh/id-card-watermark/')
   expect(sitemap).toContain('https://moklu.app/ja/merge-images/')
   expect(sitemap).toContain('https://moklu.app/ko/browser-mockup/')
+  expect(sitemap).toContain('https://moklu.app/annotate-image/')
+  expect(sitemap).toContain('https://moklu.app/zh/annotate-image/')
+  expect(sitemap).toContain('https://moklu.app/draw-on-image/')
   expect(sitemap).toContain('https://moklu.app/merge-photos-to-pdf/')
   expect(sitemap).toContain('https://moklu.app/zh/privacy/')
 
@@ -246,9 +249,13 @@ test('Pre-rendered SSG HTML, sitemap.xml, and llms.txt contain all 92 routes wit
   expect(llms.startsWith('# Moklu')).toBe(true)
   expect(llms).not.toMatch(/<!doctype html|<html/i)
   expect(llms).toContain('在线图片拼接')
+  expect(llms).toContain('128 localized SSG URLs')
+  expect(llms).toContain('https://moklu.app/annotate-image/')
 
   const landingPages = [
     path.join(distDir, 'index.html'),
+    path.join(distDir, 'annotate-image', 'index.html'),
+    path.join(distDir, 'zh', 'annotate-image', 'index.html'),
     path.join(distDir, 'zh', 'id-card-watermark', 'index.html'),
     path.join(distDir, 'ja', 'merge-images', 'index.html'),
     path.join(distDir, 'ko', 'browser-mockup', 'index.html'),
@@ -480,4 +487,176 @@ test('Built /zh/studio avoids eager modal micro-chunks on load and isolates lazy
   } finally {
     await server.close()
   }
+})
+
+test('AnnotateQuickTool (/annotate-image/ & /zh/annotate-image/) supports brush, rect, arrow, text, 8-handle selection, Undo/Redo, and text-safe Delete', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Vector annotation interaction suite runs once on Chromium')
+  await page.setViewportSize({ width: 1440, height: 900 })
+
+  const consoleErrors = []
+  const pageErrors = []
+  page.on('console', (msg) => {
+    if (msg.type() === 'error') consoleErrors.push(msg.text())
+  })
+  page.on('pageerror', (err) => pageErrors.push(String(err)))
+
+  // 1. Verify /zh/annotate-image/ loads cleanly with zero errors and no toolbar overflow
+  await page.goto('/zh/annotate-image/')
+  await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN')
+  const zhWorkspace = page.getByTestId('quick-workspace')
+  await expect(zhWorkspace).toHaveAttribute('data-active-tool', 'annotate')
+  await expect(zhWorkspace.getByTestId('annotate-toolbar')).toBeVisible()
+  await expect(zhWorkspace.getByTestId('annotate-canvas-surface')).toBeVisible()
+
+  // 2. Verify /annotate-image/ full interactive vector workflow
+  await page.goto('/annotate-image/')
+  const workspace = page.getByTestId('quick-workspace')
+  await expect(workspace).toHaveAttribute('data-active-tool', 'annotate')
+
+  const toolbar = workspace.getByTestId('annotate-toolbar')
+  const surface = workspace.getByTestId('annotate-canvas-surface')
+  await expect(toolbar).toBeVisible()
+  await expect(surface).toBeVisible()
+
+  // Toolbar fits cleanly inside its container with zero horizontal clipping
+  const toolbarOverflow = await toolbar.evaluate((el) => el.scrollWidth - el.clientWidth)
+  expect(toolbarOverflow).toBeLessThanOrEqual(2)
+
+  const box = await surface.boundingBox()
+  expect(box).not.toBeNull()
+
+  const pt = (rx, ry) => ({ x: box.x + box.width * rx, y: box.y + box.height * ry })
+  const layersCount = workspace.getByTestId('annotate-layers-count')
+  const svgLayers = workspace.locator('[data-testid="annotate-svg-overlay"] [data-testid^="annotate-layer-"]')
+
+  // Draw Brush stroke (and verify color swatch popover opens above canvas stage & is clickable)
+  await workspace.getByTestId('annotate-tool-brush').click()
+  await workspace.getByTestId('annotate-color-trigger').click()
+  await expect(workspace.getByTestId('annotate-color-popover')).toBeVisible()
+  await workspace.getByTestId('annotate-swatch-ffcc00').click()
+  await expect(workspace.getByTestId('annotate-color-popover')).toHaveCount(0)
+  const b1 = pt(0.12, 0.22)
+  const b2 = pt(0.24, 0.16)
+  const b3 = pt(0.36, 0.28)
+  await page.mouse.move(b1.x, b1.y)
+  await page.mouse.down()
+  await page.mouse.move(b2.x, b2.y, { steps: 5 })
+  await page.mouse.move(b3.x, b3.y, { steps: 5 })
+  await page.mouse.up()
+  await expect(svgLayers).toHaveCount(1)
+  await expect(layersCount).toContainText('1')
+
+  // Draw Rounded Rectangle (auto-selects and renders 8-handle selection box)
+  await workspace.getByTestId('annotate-tool-rect').click()
+  const r1 = pt(0.45, 0.2)
+  const r2 = pt(0.76, 0.5)
+  await page.mouse.move(r1.x, r1.y)
+  await page.mouse.down()
+  await page.mouse.move(r2.x, r2.y, { steps: 6 })
+  await page.mouse.up()
+  await expect(svgLayers).toHaveCount(2)
+  await expect(workspace.getByTestId('annotate-selection-box')).toBeVisible()
+  for (const h of ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']) {
+    await expect(workspace.getByTestId(`annotate-handle-${h}`)).toBeVisible()
+  }
+
+  // Draw Arrow
+  await workspace.getByTestId('annotate-tool-arrow').click()
+  const a1 = pt(0.16, 0.72)
+  const a2 = pt(0.42, 0.48)
+  await page.mouse.move(a1.x, a1.y)
+  await page.mouse.down()
+  await page.mouse.move(a2.x, a2.y, { steps: 6 })
+  await page.mouse.up()
+  await expect(svgLayers).toHaveCount(3)
+
+  // Add Text layer and verify Backspace/Delete inside inline textarea does NOT delete the layer
+  await workspace.getByTestId('annotate-tool-text').click()
+  const tPos = pt(0.55, 0.76)
+  await page.mouse.click(tPos.x, tPos.y)
+  const inlineTextarea = workspace.getByTestId('annotate-inline-textarea')
+  await expect(inlineTextarea).toBeVisible()
+  await inlineTextarea.fill('Key callout!')
+  await page.keyboard.press('Backspace')
+  await page.keyboard.press('Delete')
+  await expect(inlineTextarea).toBeVisible()
+  await expect(layersCount).toContainText('4')
+  await page.keyboard.press('Escape')
+  await expect(inlineTextarea).toHaveCount(0)
+  await expect(svgLayers).toHaveCount(4)
+
+  // Pressing Delete outside inline text editing removes the selected text layer (4 -> 3)
+  await expect(workspace.getByTestId('annotate-selection-box')).toBeVisible()
+  await page.keyboard.press('Delete')
+  await expect(svgLayers).toHaveCount(3)
+  await expect(layersCount).toContainText('3')
+
+  // Undo restores deleted layer (3 -> 4), second Undo removes text edit / layer, Redo restores
+  const undoBtn = workspace.getByTestId('annotate-undo-btn')
+  const redoBtn = workspace.getByTestId('annotate-redo-btn')
+  await undoBtn.click()
+  await expect(svgLayers).toHaveCount(4)
+  await redoBtn.click()
+  await expect(svgLayers).toHaveCount(3)
+
+  expect(consoleErrors).toEqual([])
+  expect(pageErrors).toEqual([])
+})
+
+test('Inline AnnotateModal in /browser-mockup/ draws rectangle, saves baked screenshot, and closes cleanly', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Inline AnnotateModal workflow runs once on Chromium')
+  await page.setViewportSize({ width: 1440, height: 900 })
+
+  const consoleErrors = []
+  const pageErrors = []
+  page.on('console', (msg) => {
+    if (msg.type() === 'error') consoleErrors.push(msg.text())
+  })
+  page.on('pageerror', (err) => pageErrors.push(String(err)))
+
+  await page.goto('/browser-mockup/')
+  const workspace = page.getByTestId('quick-workspace')
+  await expect(workspace).toHaveAttribute('data-active-tool', 'mockup')
+
+  const svgScreenshotImage = workspace.locator('svg[role="img"] image').first()
+  await expect(svgScreenshotImage).toBeAttached()
+  const beforeHref = await svgScreenshotImage.getAttribute('href')
+  expect(beforeHref).toBeTruthy()
+
+  await workspace.getByTestId('mockup-annotate-btn').click()
+  const modal = page.getByTestId('annotate-modal')
+  await expect(modal).toBeVisible()
+  await expect(page.getByTestId('annotate-close-btn')).toBeVisible()
+  await expect(page.getByTestId('annotate-save-btn')).toBeVisible()
+
+  // Verify color swatch popover is clickable above the modal canvas stage too
+  await page.getByTestId('annotate-color-trigger').click()
+  await page.getByTestId('annotate-swatch-ff0000').click()
+
+  const surface = modal.getByTestId('annotate-canvas-surface')
+  await expect(surface).toBeVisible()
+  const box = await surface.boundingBox()
+  expect(box).not.toBeNull()
+
+  // Default tool in modal is rect; draw a visible callout rectangle
+  await page.mouse.move(box.x + box.width * 0.2, box.y + box.height * 0.25)
+  await page.mouse.down()
+  await page.mouse.move(box.x + box.width * 0.65, box.y + box.height * 0.62, { steps: 6 })
+  await page.mouse.up()
+  await expect(modal.locator('[data-testid="annotate-svg-overlay"] [data-testid^="annotate-layer-"]')).toHaveCount(1)
+  await expect(modal.getByTestId('annotate-selection-box')).toBeVisible()
+
+  // Click Save and verify modal closes cleanly and mockup screenshot updates to baked PNG
+  await page.getByTestId('annotate-save-btn').click()
+  await expect(modal).toHaveCount(0)
+
+  await expect(async () => {
+    const afterHref = await svgScreenshotImage.getAttribute('href')
+    expect(afterHref).toBeTruthy()
+    expect(afterHref).toMatch(/^data:image\/png;base64,/)
+    expect(afterHref).not.toBe(beforeHref)
+  }).toPass({ timeout: 10_000 })
+
+  expect(consoleErrors).toEqual([])
+  expect(pageErrors).toEqual([])
 })
