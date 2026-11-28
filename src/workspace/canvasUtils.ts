@@ -34,7 +34,13 @@ import type {
   WorkspaceRedactionRegion,
 } from './types'
 
-export { createDemoImageInput, createDemoScreenshotDataUrl, type DemoVariant } from './demoAssets'
+export {
+  createDemoImageInput,
+  createDemoPortraitDataUrl,
+  createDemoPortraitInput,
+  createDemoScreenshotDataUrl,
+  type DemoVariant,
+} from './demoAssets'
 
 const MAX_CANVAS_EDGE = 8192
 const MAX_CANVAS_PIXELS = 67_108_864

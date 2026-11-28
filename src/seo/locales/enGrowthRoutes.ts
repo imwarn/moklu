@@ -1,13 +1,15 @@
 /**
- * [INPUT]: depends on GrowthRouteSlug and RouteCopy types from ../types.ts
- * [OUTPUT]: exports EN_GROWTH_ROUTES containing English SEO copy for the 9 high-intent growth slugs (ipad-mockup, watch-mockup, stitch-screenshots, heic-to-jpg, remove-exif, compress-image-to-200kb, redact-screenshot, annotate-image, draw-on-image)
+ * [INPUT]: depends on GrowthRouteSlug and RouteCopy types from ../types.ts; depends on EN_ID_PHOTO_ROUTES from ./enIdPhotoRoutes.ts
+ * [OUTPUT]: exports EN_GROWTH_ROUTES containing English SEO copy for the 12 high-intent growth slugs (ipad-mockup, watch-mockup, stitch-screenshots, heic-to-jpg, remove-exif, compress-image-to-200kb, redact-screenshot, annotate-image, draw-on-image, passport-photo-maker, id-photo-background-changer, id-photo-print-sheet)
  * [POS]: growth route-copy chunk for en within src/seo/locales, merged into EN_LOCALE by ./en.ts to keep every file <= 800 lines
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
 import type { GrowthRouteSlug, RouteCopy } from '../types.ts'
+import { EN_ID_PHOTO_ROUTES } from './enIdPhotoRoutes.ts'
 
 export const EN_GROWTH_ROUTES: Record<GrowthRouteSlug, RouteCopy> = {
+  ...EN_ID_PHOTO_ROUTES,
   'ipad-mockup': {
     navLabel: 'iPad Mockup',
     title: 'Free iPad Pro 13 Mockup Generator Online (Local) | Moklu',

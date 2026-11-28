@@ -140,6 +140,18 @@ const assetCache = cacheFor('/assets/*') ?? cacheFor('/*')
 if (!assetCache || !/immutable/.test(assetCache)) {
   failures.push(`/assets/* must be immutable, got: ${assetCache ?? '(none)'}`)
 }
+const modelCache = cacheFor('/models/*')
+if (!modelCache || !/\bmax-age=31536000\b/.test(modelCache) || !/immutable/.test(modelCache)) {
+  failures.push(`/models/* must declare Cache-Control: public, max-age=31536000, immutable, got: ${modelCache ?? '(none)'}`)
+}
+const modelCdnCache = headerFor('/models/*', 'CDN-Cache-Control')
+if (!modelCdnCache || !/\bmax-age=31536000\b/.test(modelCdnCache) || !/immutable/.test(modelCdnCache)) {
+  failures.push(`/models/* must declare CDN-Cache-Control: public, max-age=31536000, immutable, got: ${modelCdnCache ?? '(none)'}`)
+}
+const modelNosniff = headerFor('/models/*', 'X-Content-Type-Options')
+if (modelNosniff !== 'nosniff') {
+  failures.push(`/models/* must set X-Content-Type-Options: nosniff, got: ${modelNosniff ?? '(none)'}`)
+}
 for (const staticPath of ['/theme-init.js', '/sitemap.xml', '/robots.txt', '/llms.txt']) {
   const staticCache = cacheFor(staticPath)
   if (!staticCache || !/\bmax-age=3600\b/.test(staticCache)) {

@@ -1,13 +1,15 @@
 /**
- * [INPUT]: depends on GrowthRouteSlug and RouteCopy types from ../types.ts
- * [OUTPUT]: exports JA_GROWTH_ROUTES containing Japanese SEO copy for the 9 high-intent growth slugs (ipad-mockup, watch-mockup, stitch-screenshots, heic-to-jpg, remove-exif, compress-image-to-200kb, redact-screenshot, annotate-image, draw-on-image)
+ * [INPUT]: depends on GrowthRouteSlug and RouteCopy types from ../types.ts; depends on JA_ID_PHOTO_ROUTES from ./jaIdPhotoRoutes.ts
+ * [OUTPUT]: exports JA_GROWTH_ROUTES containing Japanese SEO copy for the 12 high-intent growth slugs (ipad-mockup, watch-mockup, stitch-screenshots, heic-to-jpg, remove-exif, compress-image-to-200kb, redact-screenshot, annotate-image, draw-on-image, passport-photo-maker, id-photo-background-changer, id-photo-print-sheet)
  * [POS]: growth route-copy chunk for ja within src/seo/locales, merged into JA_LOCALE by ./ja.ts to keep every file <= 800 lines
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
 import type { GrowthRouteSlug, RouteCopy } from '../types.ts'
+import { JA_ID_PHOTO_ROUTES } from './jaIdPhotoRoutes.ts'
 
 export const JA_GROWTH_ROUTES: Record<GrowthRouteSlug, RouteCopy> = {
+  ...JA_ID_PHOTO_ROUTES,
   'ipad-mockup': {
     navLabel: 'iPad モックアップ',
     title: '無料 iPad Pro 13 タブレットモックアップ生成（ローカル）| Moklu',

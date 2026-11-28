@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on react (createElement), react-dom/server (renderToString), ToolLandingPage from @/pages/ToolLandingPage, renderStudioSkeleton from ./ssg.ts, and ResolvedRoute from ./types.ts
- * [OUTPUT]: exports renderRouteMarkup(route) returning full Tailwind-styled React HTML for all 116 landing/info routes, fallback 404 pages (dist/404.html), and a dark Studio skeleton for the 4 studio routes
+ * [OUTPUT]: exports renderRouteMarkup(route) returning full Tailwind-styled React HTML for all 136 landing/info routes, fallback 404 pages (dist/404.html), and a dark Studio skeleton for the 4 studio routes
  * [POS]: build-time SSR entry point within src/seo, temporarily bundled by scripts/prerender-seo.mjs to materialize zero-FOUC static HTML
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */

@@ -137,7 +137,7 @@ export interface RouteStructuredData {
 }
 
 export function resolveApplicationCategory(category: RouteCategory): ApplicationCategory {
-  if (category === 'id-card') return 'UtilitiesApplication'
+  if (category === 'id-card' || category === 'id-photo') return 'UtilitiesApplication'
   if (
     category === 'merge' ||
     category === 'split' ||

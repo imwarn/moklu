@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on ./types, ./canvasHelpers, ./pdfHelper, ./stitchOverlap, ./heicDecoder, ./webpEncoder, ./exifReader, ./mergeEngine, ./splitEngine, ./compressEngine, ./transformEngine, ./idCardEngine, and ./annotateEngine
- * [OUTPUT]: re-exports all client-side image processing engines, vector annotation engine, HEIC decoder, lazy WASM WebP encoder, EXIF inspector, overlap detector & seam override resolver, single-/multi-page PDF builders, helpers, constants, and TypeScript interfaces
+ * [INPUT]: depends on ./types, ./canvasHelpers, ./pdfHelper, ./stitchOverlap, ./heicDecoder, ./webpEncoder, ./exifReader, ./mergeEngine, ./splitEngine, ./compressEngine, ./transformEngine, ./idCardEngine, ./annotateEngine, ./idPhotoSpecs, ./portraitMatting, and ./idPhotoEngine
+ * [OUTPUT]: re-exports all client-side image processing engines, ID photo & portrait matting engine, vector annotation engine, HEIC decoder, lazy WASM WebP encoder, EXIF inspector, overlap detector & seam override resolver, single-/multi-page PDF builders, helpers, constants, and TypeScript interfaces
  * [POS]: sole public barrel entry point of src/tools; imported by workspace tools and integration adapters
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -19,6 +19,7 @@ export type {
   CompressResultItem,
   Dimensions,
   EngineRuntimeOptions,
+  ExtractPortraitMatteOptions,
   GradientStop,
   GridCellAspect,
   IdCardDpi,
@@ -29,6 +30,16 @@ export type {
   IdCardWatermarkMode,
   IdCardWatermarkOptions,
   IdCardWatermarkPlacement,
+  IdPhotoBackgroundPreset,
+  IdPhotoMattingMode,
+  IdPhotoOutputFormat,
+  IdPhotoPrintSheetLayout,
+  IdPhotoPrintSheetOptions,
+  IdPhotoPrintSheetResult,
+  IdPhotoRenderResult,
+  IdPhotoSheetFormat,
+  IdPhotoSheetPaper,
+  IdPhotoSpecPreset,
   ImageDataLike,
   ImageDrawable,
   ImageFormat,
@@ -53,7 +64,10 @@ export type {
   NormalizedCropRect,
   ObjectFitMode,
   PairOverlapMatch,
+  PortraitFramingHints,
+  PortraitMatteData,
   Rect,
+  RefineAndCompositeIdPhotoOptions,
   RgbaRaster,
   RowProfile,
   SplitMode,
@@ -217,3 +231,31 @@ export {
   type RenderAnnotatedImageResult,
   type TextAnnotationLayer,
 } from './annotateEngine'
+
+export {
+  ID_PHOTO_BACKGROUNDS,
+  ID_PHOTO_SPECS,
+  findIdPhotoSpec,
+  getOrderedIdPhotoSpecs,
+  mmToPixels,
+} from './idPhotoSpecs'
+
+export {
+  computePureBackdropAlpha,
+  decontaminatePixelRgb,
+  detectPortraitFramingFromAlpha,
+  estimateOuterBackgroundRgb,
+  extractPortraitMatte,
+  guidedFilterAlpha,
+  resetPortraitMattingCache,
+  setPortraitMattingOverride,
+  type PortraitMattingInferenceFn,
+} from './portraitMatting'
+
+export {
+  composeIdPhotoPrintSheet,
+  composeIdPhotoTrioZip,
+  computeIdPhotoCropSourceRect,
+  computeIdPhotoSheetLayout,
+  renderIdPhoto,
+} from './idPhotoEngine'

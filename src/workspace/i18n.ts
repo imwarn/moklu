@@ -4,6 +4,7 @@
  * [POS]: self-contained code-split 4-language UI dictionary registry for src/workspace; enables standalone compilation without src/seo
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
+import type { IdPhotoLocaleStrings } from './locales/idPhotoLocale'
 import type { WorkspaceLocale, WorkspaceQuickTheme, WorkspaceToolId } from './types'
 
 export interface WorkspaceStrings {
@@ -261,6 +262,7 @@ export interface WorkspaceStrings {
     backDecodeError: string
     renderError: string
   }
+  idPhoto: IdPhotoLocaleStrings
 }
 
 const ALL_WORKSPACE_LOCALES: readonly WorkspaceLocale[] = ['en', 'zh', 'ja', 'ko']

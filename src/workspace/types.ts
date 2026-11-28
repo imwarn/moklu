@@ -1,12 +1,12 @@
 /**
  * [INPUT]: depends on ResolvedTheme from @/theme/themeStore
- * [OUTPUT]: exports dependency-inverted workspace contracts (WorkspaceToolId, WorkspacePreset, WorkspaceLocale, WorkspaceEngines, WorkspaceRect, WorkspaceMergeSeamInfo, WorkspaceMergePlacement, WorkspaceMergeLayout, WorkspaceMergeOutput, WorkspaceExifSummary, WorkspaceRedactionRegion, WorkspaceQuickTheme, WorkspaceScreenshotFit, WorkspaceBrowserChromeOptions, StudioHandoffLayer, StudioHandoffPayload, QuickWorkspaceProps, WorkspaceToolPanelProps)
+ * [OUTPUT]: exports dependency-inverted workspace contracts (WorkspaceToolId, WorkspacePreset, WorkspaceLocale, WorkspaceEngines, WorkspaceRect, WorkspaceMergeSeamInfo, WorkspaceMergePlacement, WorkspaceMergeLayout, WorkspaceMergeOutput, WorkspaceExifSummary, WorkspaceRedactionRegion, WorkspaceQuickTheme, WorkspaceScreenshotFit, WorkspaceBrowserChromeOptions, WorkspaceIdPhotoMatteHandle, WorkspaceIdPhotoRenderOptions, WorkspaceIdPhotoRenderOutput, WorkspaceIdPhotoTrioResult, WorkspaceIdPhotoSheetOptions, WorkspaceIdPhotoSheetOutput, StudioHandoffLayer, StudioHandoffPayload, QuickWorkspaceProps, WorkspaceToolPanelProps)
  * [POS]: contract layer of src/workspace; isolates all UI panels from concrete image processing engines in src/tools and routing in src/seo
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 import type { ResolvedTheme } from '@/theme/themeStore'
 
-export type WorkspaceToolId = 'mockup' | 'merge' | 'split' | 'compress' | 'resize' | 'annotate' | 'id-card'
+export type WorkspaceToolId = 'mockup' | 'merge' | 'split' | 'compress' | 'resize' | 'annotate' | 'id-photo' | 'id-card'
 
 export type WorkspaceLocale = 'en' | 'zh' | 'ja' | 'ko'
 
@@ -32,6 +32,9 @@ export interface WorkspacePreset {
   targetSizeKb?: number
   inspectExif?: boolean
   enableRedact?: boolean
+  idPhotoPreset?: string
+  idPhotoTab?: 'single' | 'trio' | 'sheet'
+  idPhotoBg?: string
 }
 
 export interface WorkspaceRedactionRegion {
@@ -265,6 +268,85 @@ export interface WorkspaceIdCardOptions {
   watermarkMode: 'tiled' | 'across-card'
 }
 
+export type WorkspaceIdPhotoMattingMode = 'ai' | 'pure-backdrop'
+export type WorkspaceIdPhotoTab = 'single' | 'trio' | 'sheet'
+export type WorkspaceIdPhotoFormat = 'image/jpeg' | 'image/png'
+export type WorkspaceIdPhotoSheetPaper = '4r-6inch' | 'a4'
+export type WorkspaceIdPhotoSheetFormat = 'image/png' | 'application/pdf'
+export type WorkspaceIdPhotoMattingStage = 'downloading' | 'inferring' | 'refining'
+
+export interface WorkspaceIdPhotoFraming {
+  centerX: number
+  centerY: number
+  zoom: number
+  headTopRatio: number
+  headHeightRatio: number
+}
+
+/**
+ * Opaque portrait matte handle returned by engines.idPhotoMatte and consumed by
+ * engines.idPhotoRender / idPhotoTrioZip so UI panels stay DIP-clean and testable.
+ */
+export interface WorkspaceIdPhotoMatteHandle {
+  readonly width: number
+  readonly height: number
+  readonly modeUsed: WorkspaceIdPhotoMattingMode
+  readonly framing: WorkspaceIdPhotoFraming
+  readonly _payload: unknown
+}
+
+export interface WorkspaceIdPhotoMatteOptions {
+  mode?: WorkspaceIdPhotoMattingMode
+  onProgress?: (stage: WorkspaceIdPhotoMattingStage, progress: number) => void
+}
+
+export interface WorkspaceIdPhotoRenderOptions {
+  widthPx: number
+  heightPx: number
+  background: string
+  crop?: {
+    centerX: number
+    centerY: number
+    zoom: number
+  }
+  edgeShift?: number
+  edgeFeather?: number
+  decontaminate?: number
+  format?: WorkspaceIdPhotoFormat
+  quality?: number
+  targetSizeKb?: number
+  includeForegroundPng?: boolean
+  filenameStem?: string
+}
+
+export interface WorkspaceIdPhotoRenderOutput extends WorkspaceBlobOutput {
+  targetBytesMet?: boolean
+  appliedQuality?: number
+  foregroundDataUrl?: string
+}
+
+export interface WorkspaceIdPhotoTrioResult {
+  zipBlob: Blob
+  items: WorkspaceIdPhotoRenderOutput[]
+}
+
+export interface WorkspaceIdPhotoSheetOptions {
+  photoDataUrl: string
+  photoWidthPx: number
+  photoHeightPx: number
+  paper: WorkspaceIdPhotoSheetPaper
+  dpi?: 300
+  cropMarks?: boolean
+  format?: WorkspaceIdPhotoSheetFormat
+  filenameStem?: string
+}
+
+export interface WorkspaceIdPhotoSheetOutput extends WorkspaceBlobOutput {
+  count: number
+  columns: number
+  rows: number
+}
+
 export interface WorkspaceEngines {
   merge: (images: WorkspaceImageInput[], options: WorkspaceMergeOptions) => Promise<WorkspaceMergeOutput>
   split: (image: WorkspaceImageInput, options: WorkspaceSplitOptions) => Promise<WorkspaceSplitResult>
@@ -275,6 +357,22 @@ export interface WorkspaceEngines {
     back: WorkspaceImageInput | null,
     options: WorkspaceIdCardOptions,
   ) => Promise<WorkspaceBlobOutput>
+  idPhotoMatte: (
+    image: WorkspaceImageInput,
+    options?: WorkspaceIdPhotoMatteOptions,
+  ) => Promise<WorkspaceIdPhotoMatteHandle>
+  idPhotoRender: (
+    matte: WorkspaceIdPhotoMatteHandle,
+    options: WorkspaceIdPhotoRenderOptions,
+  ) => Promise<WorkspaceIdPhotoRenderOutput>
+  idPhotoTrioZip: (
+    matte: WorkspaceIdPhotoMatteHandle,
+    options: Omit<WorkspaceIdPhotoRenderOptions, 'background'>,
+    colors?: ReadonlyArray<{ name: string; hex: string }>,
+  ) => Promise<WorkspaceIdPhotoTrioResult>
+  idPhotoSheet: (
+    options: WorkspaceIdPhotoSheetOptions,
+  ) => Promise<WorkspaceIdPhotoSheetOutput>
   packZip: (files: Array<{ filename: string; blob: Blob }>) => Promise<Blob>
 }
 

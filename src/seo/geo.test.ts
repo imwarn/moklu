@@ -57,10 +57,15 @@ describe('GEO deliverables: llms.txt, native details FAQ, Quick Facts, trust pag
     expect(llms).toContain('https://moklu.app/redact-screenshot/')
     expect(llms).toContain('https://moklu.app/annotate-image/')
     expect(llms).toContain('https://moklu.app/draw-on-image/')
+    expect(llms).toContain('https://moklu.app/passport-photo-maker/')
+    expect(llms).toContain('https://moklu.app/id-photo-background-changer/')
+    expect(llms).toContain('https://moklu.app/id-photo-print-sheet/')
     expect(llms).toContain('https://moklu.app/about/')
     expect(llms).toContain('https://moklu.app/zh/privacy/')
     expect(llms).toContain('https://moklu.app/ja/terms/')
     expect(llms).toContain(MOKLU_GITHUB_URL)
+    expect(llms).toContain('MODNet FP16')
+    expect(llms).toContain('300 DPI')
     expect(llms).toContain('overlap removal')
     expect(llms).toContain('multi-layer handoff')
     expect(llms).toContain('IndexedDB')
@@ -170,6 +175,7 @@ describe('GEO deliverables: llms.txt, native details FAQ, Quick Facts, trust pag
     expect(resolveApplicationCategory('annotate')).toBe('DesignApplication')
     expect(resolveApplicationCategory('merge')).toBe('MultimediaApplication')
     expect(resolveApplicationCategory('compress')).toBe('MultimediaApplication')
+    expect(resolveApplicationCategory('id-photo')).toBe('UtilitiesApplication')
     expect(resolveApplicationCategory('id-card')).toBe('UtilitiesApplication')
 
     const zhMergeRoute = resolvePathname('/zh/merge-images')
@@ -242,6 +248,45 @@ describe('GEO deliverables: llms.txt, native details FAQ, Quick Facts, trust pag
         ...quickFacts.boundaries,
       ]) {
         expect(value, `Annotate QuickFacts (${locale}) contains em-dash: ${value}`).not.toContain('—')
+      }
+    }
+  })
+
+  it('provides 4-locale Quick Facts, UtilitiesApplication schema, and zero em-dashes for all 3 ID Photo routes', () => {
+    for (const locale of LOCALE_CODES) {
+      const makerRoute = resolvePathname(
+        locale === 'en' ? '/passport-photo-maker' : `/${locale}/passport-photo-maker`,
+      )
+      const bgRoute = resolvePathname(
+        locale === 'en' ? '/id-photo-background-changer' : `/${locale}/id-photo-background-changer`,
+      )
+      const sheetRoute = resolvePathname(
+        locale === 'en' ? '/id-photo-print-sheet' : `/${locale}/id-photo-print-sheet`,
+      )
+
+      expect(makerRoute.tool).toBe('id-photo')
+      expect(makerRoute.preset.idPhotoTab).toBe('single')
+      expect(bgRoute.tool).toBe('id-photo')
+      expect(bgRoute.preset.idPhotoTab).toBe('trio')
+      expect(sheetRoute.tool).toBe('id-photo')
+      expect(sheetRoute.preset.idPhotoTab).toBe('sheet')
+
+      const schemas = buildRouteSchemas(makerRoute, 'https://moklu.app')
+      expect(schemas.webApplication.applicationCategory).toBe('UtilitiesApplication')
+      expect(schemas.faqPage.mainEntity.length).toBeGreaterThanOrEqual(4)
+
+      const quickFacts = getToolQuickFacts(locale, makerRoute)
+      expect(quickFacts.facts.length).toBeGreaterThanOrEqual(5)
+      expect(quickFacts.boundaries.length).toBeGreaterThanOrEqual(2)
+      expect(quickFacts.facts.map((f) => f.value).join(' ')).toContain('MODNet FP16')
+      for (const value of [
+        quickFacts.heading,
+        quickFacts.subheading,
+        quickFacts.boundariesHeading,
+        ...quickFacts.facts.flatMap((f) => [f.label, f.value]),
+        ...quickFacts.boundaries,
+      ]) {
+        expect(value, `ID Photo QuickFacts (${locale}) contains em-dash: ${value}`).not.toContain('—')
       }
     }
   })

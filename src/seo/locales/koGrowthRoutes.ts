@@ -1,13 +1,15 @@
 /**
- * [INPUT]: depends on GrowthRouteSlug and RouteCopy types from ../types.ts
- * [OUTPUT]: exports KO_GROWTH_ROUTES containing Korean SEO copy for the 9 high-intent growth slugs (ipad-mockup, watch-mockup, stitch-screenshots, heic-to-jpg, remove-exif, compress-image-to-200kb, redact-screenshot, annotate-image, draw-on-image)
+ * [INPUT]: depends on GrowthRouteSlug and RouteCopy types from ../types.ts; depends on KO_ID_PHOTO_ROUTES from ./koIdPhotoRoutes.ts
+ * [OUTPUT]: exports KO_GROWTH_ROUTES containing Korean SEO copy for the 12 high-intent growth slugs (ipad-mockup, watch-mockup, stitch-screenshots, heic-to-jpg, remove-exif, compress-image-to-200kb, redact-screenshot, annotate-image, draw-on-image, passport-photo-maker, id-photo-background-changer, id-photo-print-sheet)
  * [POS]: growth route-copy chunk for ko within src/seo/locales, merged into KO_LOCALE by ./ko.ts to keep every file <= 800 lines
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
 import type { GrowthRouteSlug, RouteCopy } from '../types.ts'
+import { KO_ID_PHOTO_ROUTES } from './koIdPhotoRoutes.ts'
 
 export const KO_GROWTH_ROUTES: Record<GrowthRouteSlug, RouteCopy> = {
+  ...KO_ID_PHOTO_ROUTES,
   'ipad-mockup': {
     navLabel: 'iPad 목업',
     title: '무료 iPad Pro 13 태블릿 목업 생성기 (100% 로컬) | Moklu',

@@ -1,7 +1,7 @@
 /**
- * [INPUT]: none (zero-dependency edge HTTP header, 128-route SSG matcher, explicit /en redirector, static-asset HTML-fallback detector, HTML navigation & 4-locale 404.html resolver, CDN-Cache-Control, and crawl-hygiene contract mirrored with public/_headers and src/seo/routes.ts; verified in index.test.ts)
+ * [INPUT]: none (zero-dependency edge HTTP header, 140-route SSG matcher, explicit /en redirector, static-asset HTML-fallback detector, HTML navigation & 4-locale 404.html resolver, CDN-Cache-Control, and crawl-hygiene contract mirrored with public/_headers and src/seo/routes.ts; verified in index.test.ts)
  * [OUTPUT]: exports EdgeLocaleCode, EDGE_SECURITY_HEADERS, isStaticNonHtmlAssetPath, isUnexpectedHtmlAssetFallback, isHtmlDocumentNavigation, resolveEdgeNotFoundLocale, resolveOriginNotFoundHtmlPath, resolveExplicitEnRedirectPath, isKnownSsgHtmlPath, isUnknownNonAssetPath, resolveEdgeCacheControl, resolveEdgeCdnCacheControl, resolveEdgeCacheTtlSeconds, and applyMokluEdgeHeaders
- * [POS]: single edge response-header, redirect, content-negotiated 404, and cache-policy module of workers/telemetry/src; attaches CSP, COOP, bfcache-safe Cache-Control, CDN-Cache-Control, static-asset soft-200 guards, and localized 404 HTML resolution onto Coolify origin responses
+ * [POS]: single edge response-header, redirect, content-negotiated 404, and cache-policy module of workers/telemetry/src; attaches CSP, COOP, bfcache-safe Cache-Control, immutable /assets/* & /models/* caching, CDN-Cache-Control, static-asset soft-200 guards, and localized 404 HTML resolution onto Coolify origin responses
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
@@ -34,7 +34,7 @@ const SHORT_TTL_EXACT_PATHS = new Set([
 ])
 
 const LOCALIZED_PREFIXES = new Set(['zh', 'ja', 'ko'])
-// Mirrors the 31 non-root slugs in src/seo/routes.ts (plus root '' across 4 locales = 128 SSG routes).
+// Mirrors the 34 non-root slugs in src/seo/routes.ts (plus root '' across 4 locales = 140 SSG routes).
 const KNOWN_ROUTE_SLUGS = new Set([
   'studio',
   'browser-mockup',
@@ -63,6 +63,9 @@ const KNOWN_ROUTE_SLUGS = new Set([
   'resize-image',
   'crop-image',
   'add-border-to-photo',
+  'passport-photo-maker',
+  'id-photo-background-changer',
+  'id-photo-print-sheet',
   'id-card-watermark',
   'about',
   'privacy',
@@ -70,7 +73,7 @@ const KNOWN_ROUTE_SLUGS = new Set([
 ])
 
 const STATIC_NON_HTML_EXTENSION_RE =
-  /\.(?:js|mjs|cjs|css|map|wasm|woff|woff2|ttf|otf|png|jpg|jpeg|webp|avif|gif|svg|ico|json|xml|txt|webmanifest|pdf|zip)$/i
+  /\.(?:js|mjs|cjs|css|map|wasm|onnx|woff|woff2|ttf|otf|png|jpg|jpeg|webp|avif|gif|svg|ico|json|xml|txt|webmanifest|pdf|zip)$/i
 const HTML_CONTENT_TYPE_RE = /^\s*text\/html\b/i
 const HTML_ACCEPT_RE = /\btext\/html\b/i
 const EXPLICIT_EN_SLUG_RE = /^\/en\/([^/]+)\/?$/
@@ -80,12 +83,16 @@ function isNoStorePath(pathname: string): boolean {
   return NO_STORE_PATHS.has(pathname) || pathname === '/_telemetry' || pathname.startsWith('/_telemetry/')
 }
 
+function isImmutableAssetPath(pathname: string): boolean {
+  return pathname.startsWith('/assets/') || pathname.startsWith('/models/')
+}
+
 function isShortTtlStaticPath(pathname: string): boolean {
   return SHORT_TTL_EXACT_PATHS.has(pathname) || pathname.startsWith('/templates/')
 }
 
 function isKnownStaticAssetPath(pathname: string): boolean {
-  return pathname.startsWith('/assets/') || isShortTtlStaticPath(pathname) || pathname === INDEXNOW_KEY_PATH
+  return isImmutableAssetPath(pathname) || isShortTtlStaticPath(pathname) || pathname === INDEXNOW_KEY_PATH
 }
 
 export function isStaticNonHtmlAssetPath(pathname: string): boolean {
@@ -233,7 +240,7 @@ export function resolveEdgeCacheControl(pathname: string, status: number): strin
   if (pathname === INDEXNOW_KEY_PATH) {
     return status === 200 ? 'public, max-age=86400' : 'public, no-cache'
   }
-  if (pathname.startsWith('/assets/')) {
+  if (isImmutableAssetPath(pathname)) {
     return status === 200 ? 'public, max-age=31536000, immutable' : 'public, no-cache'
   }
   if (isShortTtlStaticPath(pathname)) {
@@ -249,7 +256,7 @@ export function resolveEdgeCdnCacheControl(pathname: string, status: number): st
   if (status !== 200 || isNoStorePath(pathname)) {
     return null
   }
-  if (pathname.startsWith('/assets/')) {
+  if (isImmutableAssetPath(pathname)) {
     return 'public, max-age=31536000, immutable'
   }
   if (pathname === INDEXNOW_KEY_PATH) {
@@ -268,7 +275,7 @@ export function resolveEdgeCacheTtlSeconds(pathname: string): number | null {
   if (isNoStorePath(pathname)) {
     return null
   }
-  if (pathname.startsWith('/assets/')) {
+  if (isImmutableAssetPath(pathname)) {
     return 31536000
   }
   if (pathname === INDEXNOW_KEY_PATH) {

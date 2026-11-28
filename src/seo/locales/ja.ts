@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on LocaleBundle type from ../types.ts; depends on JA_TOOL_ROUTES from ./jaTools.ts, JA_GROWTH_ROUTES from ./jaGrowthRoutes.ts, and INFO_PAGE_ROUTES from ./infoRoutes.ts
- * [OUTPUT]: exports JA_LOCALE complete Japanese UI labels and 32 intent/info route copy entries
+ * [OUTPUT]: exports JA_LOCALE complete Japanese UI labels and 35 intent/info route copy entries
  * [POS]: Japanese (`/ja/...`) language pack within src/seo/locales, loaded by src/seo/i18n.ts
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -39,6 +39,7 @@ export const JA_LOCALE: LocaleBundle = {
       compress: '圧縮・変換',
       resize: 'リサイズ',
       annotate: '画像注釈',
+      'id-photo': '証明写真',
       'id-card': '身分証透かし',
     },
     dropzoneTitle: '画像をドロップ、または Ctrl/Cmd+V で貼り付け',

@@ -14,6 +14,7 @@ export type {
   InfoPageSlug,
   RouteSlug,
   SecondaryToolSlug,
+  IdPhotoRouteSlug,
   GrowthRouteSlug,
   RoutePreset,
   RouteDefinition,

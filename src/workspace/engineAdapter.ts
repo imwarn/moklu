@@ -1,7 +1,7 @@
 /**
- * [INPUT]: depends on type contracts from @/tools/types and ./types, plus on-demand dynamic imports of @/tools/canvasHelpers, @/tools/mergeEngine, @/tools/splitEngine, @/tools/compressEngine, @/tools/transformEngine, and @/tools/idCardEngine
- * [OUTPUT]: exports parseBackgroundFill, formatSuffixedFilename, and createToolsWorkspaceEngines lazily adapting src/tools pure canvas engines (including seam overrides, multipage PDF, target-KB compression, and EXIF/original metadata passthrough) to the WorkspaceEngines DIP contract with guaranteed LoadedImageItem disposal
- * [POS]: concrete lazy integration adapter inside src/workspace; keeps pure canvas engines out of initial landing JS while bridging UI panels in src/workspace/tools to src/tools
+ * [INPUT]: depends on type contracts from @/tools/types and ./types, plus on-demand dynamic imports of @/tools/canvasHelpers, @/tools/mergeEngine, @/tools/splitEngine, @/tools/compressEngine, @/tools/transformEngine, @/tools/idCardEngine, @/tools/portraitMatting, and @/tools/idPhotoEngine
+ * [OUTPUT]: exports parseBackgroundFill, formatSuffixedFilename, and createToolsWorkspaceEngines lazily adapting src/tools pure canvas and portrait matting engines (including seam overrides, multipage PDF, target-KB compression, ID photo matting/trio/sheets, and EXIF/original metadata passthrough) to the WorkspaceEngines DIP contract with guaranteed LoadedImageItem disposal
+ * [POS]: concrete lazy integration adapter inside src/workspace; keeps pure canvas and ONNX matting engines out of initial landing JS while bridging UI panels in src/workspace/tools to src/tools
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 import type {
@@ -10,6 +10,7 @@ import type {
   GradientStop,
   ImageFormat,
   LoadedImageItem,
+  PortraitMatteData,
 } from '@/tools/types'
 import type {
   WorkspaceAspectPreset,
@@ -18,6 +19,13 @@ import type {
   WorkspaceCompressOptions,
   WorkspaceEngines,
   WorkspaceIdCardOptions,
+  WorkspaceIdPhotoMatteHandle,
+  WorkspaceIdPhotoMatteOptions,
+  WorkspaceIdPhotoRenderOptions,
+  WorkspaceIdPhotoRenderOutput,
+  WorkspaceIdPhotoSheetOptions,
+  WorkspaceIdPhotoSheetOutput,
+  WorkspaceIdPhotoTrioResult,
   WorkspaceImageFormat,
   WorkspaceImageInput,
   WorkspaceMergeLayout,
@@ -450,6 +458,89 @@ export function createToolsWorkspaceEngines(): WorkspaceEngines {
         })
 
         return toBlobOutput(result.blob, result.width, result.height, result.filename, result.format)
+      })
+    },
+
+    async idPhotoMatte(
+      image: WorkspaceImageInput,
+      options?: WorkspaceIdPhotoMatteOptions,
+    ): Promise<WorkspaceIdPhotoMatteHandle> {
+      const extractPortraitMatte =
+        import.meta.env.MODE === 'test'
+          ? (await import('@/tools')).extractPortraitMatte
+          : (await import('@/tools/portraitMatting')).extractPortraitMatte
+
+      return withLoadedImages([image], async ([loaded]) => {
+        const matte = await extractPortraitMatte(loaded, { mode: options?.mode, onProgress: options?.onProgress })
+        return { width: matte.width, height: matte.height, modeUsed: matte.modeUsed, framing: { ...matte.framing }, _payload: matte }
+      })
+    },
+
+    async idPhotoRender(
+      matte: WorkspaceIdPhotoMatteHandle,
+      options: WorkspaceIdPhotoRenderOptions,
+    ): Promise<WorkspaceIdPhotoRenderOutput> {
+      const renderIdPhoto =
+        import.meta.env.MODE === 'test'
+          ? (await import('@/tools')).renderIdPhoto
+          : (await import('@/tools/idPhotoEngine')).renderIdPhoto
+
+      const result = await renderIdPhoto({
+        ...options,
+        matte: matte._payload as PortraitMatteData,
+        background: parseBackgroundFill(options.background),
+      })
+      const base = await toBlobOutput(result.blob, result.width, result.height, result.filename, result.format)
+      const foregroundDataUrl = result.foregroundPngBlob ? await blobToDataUrl(result.foregroundPngBlob) : undefined
+      return {
+        ...base,
+        ...(result.targetBytesMet !== undefined ? { targetBytesMet: result.targetBytesMet } : {}),
+        ...(result.appliedQuality !== undefined ? { appliedQuality: result.appliedQuality } : {}),
+        ...(foregroundDataUrl ? { foregroundDataUrl } : {}),
+      }
+    },
+
+    async idPhotoTrioZip(
+      matte: WorkspaceIdPhotoMatteHandle,
+      options: Omit<WorkspaceIdPhotoRenderOptions, 'background'>,
+      colors?: ReadonlyArray<{ name: string; hex: string }>,
+    ): Promise<WorkspaceIdPhotoTrioResult> {
+      const composeIdPhotoTrioZip =
+        import.meta.env.MODE === 'test'
+          ? (await import('@/tools')).composeIdPhotoTrioZip
+          : (await import('@/tools/idPhotoEngine')).composeIdPhotoTrioZip
+
+      const result = await composeIdPhotoTrioZip({ ...options, matte: matte._payload as PortraitMatteData }, colors)
+      const items = await Promise.all(
+        result.items.map(async (item) => ({
+          ...(await toBlobOutput(item.blob, item.width, item.height, item.filename, item.format)),
+          ...(item.targetBytesMet !== undefined ? { targetBytesMet: item.targetBytesMet } : {}),
+          ...(item.appliedQuality !== undefined ? { appliedQuality: item.appliedQuality } : {}),
+        })),
+      )
+      return { zipBlob: result.zipBlob, items }
+    },
+
+    async idPhotoSheet(options: WorkspaceIdPhotoSheetOptions): Promise<WorkspaceIdPhotoSheetOutput> {
+      const composeIdPhotoPrintSheet =
+        import.meta.env.MODE === 'test'
+          ? (await import('@/tools')).composeIdPhotoPrintSheet
+          : (await import('@/tools/idPhotoEngine')).composeIdPhotoPrintSheet
+
+      const sheetInput: WorkspaceImageInput = {
+        id: 'id-photo-sheet-source',
+        name: `${options.filenameStem || 'id-photo'}.png`,
+        width: options.photoWidthPx,
+        height: options.photoHeightPx,
+        dataUrl: options.photoDataUrl,
+        sizeBytes: options.photoDataUrl.length,
+        mimeType: 'image/png',
+      }
+
+      return withLoadedImages([sheetInput], async ([loaded]) => {
+        const result = await composeIdPhotoPrintSheet({ ...options, photoDrawable: loaded.source, dpi: options.dpi ?? 300 })
+        const base = await toBlobOutput(result.blob, result.width, result.height, result.filename, result.format)
+        return { ...base, count: result.count, columns: result.columns, rows: result.rows }
       })
     },
 

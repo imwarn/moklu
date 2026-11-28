@@ -14,6 +14,10 @@ const mockTools = vi.hoisted(() => ({
   mergeImages: vi.fn(),
   splitImage: vi.fn(),
   composeIdCardSheet: vi.fn(),
+  extractPortraitMatte: vi.fn(),
+  renderIdPhoto: vi.fn(),
+  composeIdPhotoTrioZip: vi.fn(),
+  composeIdPhotoPrintSheet: vi.fn(),
   packBlobsToZip: vi.fn(),
 }))
 
@@ -28,6 +32,10 @@ vi.mock('@/tools', async () => {
     mergeImages: mockTools.mergeImages,
     splitImage: mockTools.splitImage,
     composeIdCardSheet: mockTools.composeIdCardSheet,
+    extractPortraitMatte: mockTools.extractPortraitMatte,
+    renderIdPhoto: mockTools.renderIdPhoto,
+    composeIdPhotoTrioZip: mockTools.composeIdPhotoTrioZip,
+    composeIdPhotoPrintSheet: mockTools.composeIdPhotoPrintSheet,
     packBlobsToZip: mockTools.packBlobsToZip,
   }
 })
@@ -427,5 +435,96 @@ describe('createToolsWorkspaceEngines', () => {
     expect(items[0].filename).toBe('IMG_7220-compressed.jpg')
     expect(items[0].mimeType).toBe('image/jpeg')
     expect(items[0].originalBytes).toBe(2_150_000)
+  })
+
+  it('adapts idPhotoMatte, idPhotoRender, idPhotoTrioZip, and idPhotoSheet with disposal and gradient parsing', async () => {
+    const fakeMattePayload = {
+      width: 720,
+      height: 960,
+      sourceRgba: new Uint8ClampedArray(4),
+      guidedAlpha: new Float32Array(1),
+      estimatedBgRgb: [244, 246, 250] as const,
+      modeUsed: 'ai' as const,
+      framing: { centerX: 0.5, centerY: 0.42, zoom: 1.05, headTopRatio: 0.1, headHeightRatio: 0.6 },
+    }
+    mockTools.extractPortraitMatte.mockResolvedValue(fakeMattePayload)
+    mockTools.renderIdPhoto.mockResolvedValue({
+      blob: new Blob(['id-jpg'], { type: 'image/jpeg' }),
+      width: 295,
+      height: 413,
+      format: 'image/jpeg',
+      filename: 'portrait-cn-1inch.jpg',
+      outputBytes: 22_400,
+      targetBytesMet: true,
+      appliedQuality: 0.84,
+      foregroundPngBlob: new Blob(['fg-png'], { type: 'image/png' }),
+    })
+    mockTools.composeIdPhotoTrioZip.mockResolvedValue({
+      zipBlob: new Blob(['zip-bytes'], { type: 'application/zip' }),
+      items: [
+        {
+          blob: new Blob(['white'], { type: 'image/jpeg' }),
+          width: 295,
+          height: 413,
+          format: 'image/jpeg',
+          filename: 'portrait-white.jpg',
+          outputBytes: 21_000,
+        },
+      ],
+    })
+    mockTools.composeIdPhotoPrintSheet.mockResolvedValue({
+      blob: new Blob(['sheet-png'], { type: 'image/png' }),
+      width: 1800,
+      height: 1200,
+      count: 8,
+      columns: 4,
+      rows: 2,
+      format: 'image/png',
+      filename: 'portrait-sheet-4r-6inch.png',
+    })
+
+    const engines = createToolsWorkspaceEngines()
+    const onProgress = vi.fn()
+    const handle = await engines.idPhotoMatte(SAMPLE_INPUT, { mode: 'ai', onProgress })
+    expect(handle.width).toBe(720)
+    expect(handle.framing.centerY).toBe(0.42)
+    expect(mockTools.extractPortraitMatte).toHaveBeenCalledTimes(1)
+    expect(mockTools.disposeImageItems).toHaveBeenCalledTimes(1)
+
+    const rendered = await engines.idPhotoRender(handle, {
+      widthPx: 295,
+      heightPx: 413,
+      background: 'linear-gradient(180deg, #dbeafe 0%, #eff6ff 100%)',
+      targetSizeKb: 30,
+      includeForegroundPng: true,
+    })
+    expect(mockTools.renderIdPhoto.mock.calls[0][0].background).toEqual({
+      type: 'linear',
+      angle: 180,
+      stops: [
+        { color: '#dbeafe', offset: 0 },
+        { color: '#eff6ff', offset: 1 },
+      ],
+    })
+    expect(rendered.targetBytesMet).toBe(true)
+    expect(rendered.appliedQuality).toBe(0.84)
+    expect(rendered.foregroundDataUrl).toContain('data:image/png;base64,')
+
+    const trio = await engines.idPhotoTrioZip(handle, { widthPx: 295, heightPx: 413 })
+    expect(trio.zipBlob.type).toBe('application/zip')
+    expect(trio.items).toHaveLength(1)
+
+    const sheet = await engines.idPhotoSheet({
+      photoDataUrl: rendered.dataUrl,
+      photoWidthPx: 295,
+      photoHeightPx: 413,
+      paper: '4r-6inch',
+      cropMarks: true,
+      format: 'image/png',
+    })
+    expect(sheet.count).toBe(8)
+    expect(sheet.columns).toBe(4)
+    expect(sheet.rows).toBe(2)
+    expect(mockTools.disposeImageItems).toHaveBeenCalledTimes(2)
   })
 })

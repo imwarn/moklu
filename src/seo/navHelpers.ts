@@ -15,6 +15,7 @@ export const NAV_TOOL_ORDER: readonly ToolId[] = [
   'compress',
   'resize',
   'annotate',
+  'id-photo',
   'id-card',
 ] as const
 
@@ -59,6 +60,9 @@ export const FOOTER_LINK_GROUPS: {
   documentsStudio: [
     'annotate-image',
     'draw-on-image',
+    'passport-photo-maker',
+    'id-photo-background-changer',
+    'id-photo-print-sheet',
     'id-card-watermark',
     'studio',
     '',

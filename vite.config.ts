@@ -161,6 +161,9 @@ export default defineConfig(({ mode, isSsrBuild }) => {
         '@': path.resolve(import.meta.dirname, './src'),
       },
     },
+    optimizeDeps: {
+      exclude: ['onnxruntime-web'],
+    },
     build: {
       chunkSizeWarningLimit: 800,
       ...(isSsrBuild

@@ -100,9 +100,9 @@ export function SiteHeader({
       >
         {ui.skipToContent}
       </a>
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-2 px-3 sm:gap-3 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-2 px-3 sm:gap-3 sm:px-6 lg:px-5 xl:px-8">
         {/* Brand */}
-        <div className="flex min-w-0 items-center gap-4 sm:gap-6">
+        <div className="flex min-w-0 items-center gap-3 sm:gap-4 lg:gap-3 xl:gap-6">
           <a
             href={homeHref}
             aria-label={ui.brandName}
@@ -133,7 +133,7 @@ export function SiteHeader({
           {/* Primary desktop tool navigation */}
           <nav
             aria-label={ui.primaryNavAria}
-            className="hidden items-center gap-1 lg:flex"
+            className="hidden items-center gap-0.5 xl:gap-1 lg:flex"
           >
             {NAV_TOOL_ORDER.map((toolId) => {
               const targetSlug = PRIMARY_TOOL_SLUGS[toolId]
@@ -146,7 +146,7 @@ export function SiteHeader({
                   href={href}
                   aria-current={route.slug === targetSlug ? 'page' : undefined}
                   onClick={(event) => handleSpaLinkClick(event, href, onNavigate)}
-                  className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                  className={`whitespace-nowrap rounded-lg px-2 py-1.5 text-[13px] font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent xl:px-3 xl:text-sm ${
                     isActive
                       ? 'bg-accent-soft text-accent-text'
                       : isDark

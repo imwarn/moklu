@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on LocaleBundle type from ../types.ts; depends on EN_TOOL_ROUTES from ./enTools.ts, EN_GROWTH_ROUTES from ./enGrowthRoutes.ts, and INFO_PAGE_ROUTES from ./infoRoutes.ts
- * [OUTPUT]: exports EN_LOCALE complete English UI labels and 32 intent/info route copy entries
+ * [OUTPUT]: exports EN_LOCALE complete English UI labels and 35 intent/info route copy entries
  * [POS]: default (root `/`) English language pack within src/seo/locales, loaded by src/seo/i18n.ts
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -39,6 +39,7 @@ export const EN_LOCALE: LocaleBundle = {
       compress: 'Compress',
       resize: 'Resize',
       annotate: 'Annotate',
+      'id-photo': 'ID Photo',
       'id-card': 'ID Card',
     },
     dropzoneTitle: 'Drop images here or paste from clipboard',

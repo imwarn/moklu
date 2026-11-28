@@ -24,8 +24,12 @@ const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.txt': 'text/plain; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
+  '.mjs': 'text/javascript; charset=utf-8',
+  '.wasm': 'application/wasm',
+  '.onnx': 'application/octet-stream',
   '.css': 'text/css; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
+  '.xml': 'application/xml; charset=utf-8',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
@@ -191,7 +195,8 @@ const server = createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`)
   const pathname = url.pathname
   const isHead = (req.method ?? 'GET').toUpperCase() === 'HEAD'
-  const isStaticAsset = Boolean(extname(pathname)) || pathname.startsWith('/assets/')
+  const isStaticAsset =
+    Boolean(extname(pathname)) || pathname.startsWith('/assets/') || pathname.startsWith('/models/')
 
   // Unknown document routes serve localized dist/{,zh/,ja/,ko/}404.html (falling back
   // to dist/404.html -> dist/index.html) with real HTTP 404 + no-store + Vary +

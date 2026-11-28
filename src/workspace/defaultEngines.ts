@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on dynamic jszip import, applySeamOverlapOverrides, createMultiPagePdfFromJpegs, and createSinglePagePdfFromJpeg from @/tools, canvas helpers from ./canvasUtils, and workspace engine types from ./types
- * [OUTPUT]: exports createDefaultWorkspaceEngines providing standalone browser-native merge (PNG/JPEG/WebP/single-or-multipage PDF, seam overrides, rotation, borders, cross-axis alignment), split, compress (quality slider & target-KB binary search with auto-downscale and EXIF/original passthrough), transform, idCard, and on-demand packZip implementations
+ * [INPUT]: depends on dynamic jszip import, applySeamOverlapOverrides, createMultiPagePdfFromJpegs, and createSinglePagePdfFromJpeg from @/tools, canvas helpers from ./canvasUtils, ID photo fallbacks from ./defaultIdPhotoEngine, and workspace engine types from ./types
+ * [OUTPUT]: exports createDefaultWorkspaceEngines providing standalone browser-native merge (PNG/JPEG/WebP/single-or-multipage PDF, seam overrides, rotation, borders, cross-axis alignment), split, compress (quality slider & target-KB binary search with auto-downscale and EXIF/original passthrough), transform, idCard, idPhoto (matte/render/trioZip/sheet), and on-demand packZip implementations
  * [POS]: default DIP fallback implementation for QuickWorkspace when concrete src/tools engines are not injected
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -10,6 +10,12 @@ import {
   createSinglePagePdfFromJpeg,
   type MultiPagePdfPageInput,
 } from '@/tools'
+import {
+  idPhotoMatteFallback,
+  idPhotoRenderFallback,
+  idPhotoSheetFallback,
+  idPhotoTrioZipFallback,
+} from './defaultIdPhotoEngine'
 import {
   clampDimensions,
   drawFittedImage,
@@ -762,6 +768,10 @@ export function createDefaultWorkspaceEngines(): WorkspaceEngines {
     compress: compressFallback,
     transform: transformFallback,
     idCard: idCardFallback,
+    idPhotoMatte: idPhotoMatteFallback,
+    idPhotoRender: idPhotoRenderFallback,
+    idPhotoTrioZip: idPhotoTrioZipFallback,
+    idPhotoSheet: idPhotoSheetFallback,
     packZip: packZipFallback,
   }
 }

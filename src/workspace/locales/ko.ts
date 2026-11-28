@@ -1,10 +1,11 @@
 /**
- * [INPUT]: depends on WorkspaceStrings from ../i18n
- * [OUTPUT]: exports KO Korean UI strings for QuickWorkspace and its 7 tool panels
+ * [INPUT]: depends on WorkspaceStrings from ../i18n and ID_PHOTO_LOCALE_KO from ./idPhotoLocale
+ * [OUTPUT]: exports KO Korean UI strings for QuickWorkspace and its 8 tool panels
  * [POS]: Korean locale dictionary in src/workspace/locales
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 import type { WorkspaceStrings } from '../i18n'
+import { ID_PHOTO_LOCALE_KO } from './idPhotoLocale'
 
 export const KO: WorkspaceStrings = {
   tabs: {
@@ -14,6 +15,7 @@ export const KO: WorkspaceStrings = {
     compress: { label: '압축·포맷 변환', short: '압축', description: 'PNG / JPEG / WebP 로컬 일괄 용량 축소' },
     resize: { label: '리사이즈·여백', short: '리사이즈', description: '크기 조정, 자르기, 크롭 없는 SNS 여백 추가' },
     annotate: { label: '이미지 주석·그리기', short: '주석', description: '브러시·사각형·화살표·텍스트 로컬 벡터 주석' },
+    'id-photo': { label: '증명사진·여권사진', short: '증명사진', description: '로컬 AI 배경 변경, 여권/반명함 규격 및 인화 배열 생성' },
     'id-card': { label: '신분증 워터마크', short: '신분증', description: 'A4 앞뒷면 배치 + 도용 방지 보안 워터마크' },
   },
   common: {
@@ -279,4 +281,5 @@ export const KO: WorkspaceStrings = {
     backDecodeError: '뒷면 이미지를 불러올 수 없습니다.',
     renderError: 'A4 시트 렌더링에 실패했습니다.',
   },
+  idPhoto: ID_PHOTO_LOCALE_KO,
 }

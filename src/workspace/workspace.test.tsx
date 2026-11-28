@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on node:fs, node:path, vitest, react, react-dom/server, jszip, QuickDesignPreview, QuickWorkspace, AnnotateModal, AnnotateOverlay, batchHelpers, mergeHandoff, DraftStatusBar, ResizePreviewStage, CompressPreviewModal, getWorkspaceStrings, getWorkspaceThemeTokens, canvasUtils, and workspace types
- * [OUTPUT]: Vitest suite validating all 7 Quick Workspace tools (incl. AnnotateQuickTool, AnnotateToolbar, AnnotateCanvas, AnnotateModal, and inline Annotate triggers), 4 locales (with zero em-dash enforcement), light/dark Neutral Zinc + Signal Orange tokens, roving tabIndex, label bindings, busy overlay, QuickDesignPreview scaleFactor, MergeQuickTool controls/overlap-removal/PDF preset, buildMergeStudioHandoff multi-layer & sourceRect cropping, DraftStatusBar, preset propagation, multi-image Resize filmstrip UX, Compress preview modal, demo generators, and dynamic ZIP packing
+ * [OUTPUT]: Vitest suite validating all 8 Quick Workspace tools (incl. IdPhotoQuickTool, AnnotateQuickTool, AnnotateToolbar, AnnotateCanvas, AnnotateModal, and inline Annotate triggers), 4 locales (with zero em-dash enforcement), light/dark Neutral Zinc + Signal Orange tokens, roving tabIndex, label bindings, busy overlay, QuickDesignPreview scaleFactor, MergeQuickTool controls/overlap-removal/PDF preset, buildMergeStudioHandoff multi-layer & sourceRect cropping, DraftStatusBar, preset propagation, multi-image Resize filmstrip UX, Compress preview modal, demo generators, and dynamic ZIP packing
  * [POS]: automated verification suite for src/workspace
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -44,7 +44,7 @@ import { isSupportedImageFile } from './canvasUtils'
 import { ExifPrivacyBanner } from './ExifPrivacyBanner'
 import { DraftStatusBar, DropZone } from './uiPrimitives'
 
-const ALL_TOOLS: WorkspaceToolId[] = ['mockup', 'merge', 'split', 'compress', 'resize', 'annotate', 'id-card']
+const ALL_TOOLS: WorkspaceToolId[] = ['mockup', 'merge', 'split', 'compress', 'resize', 'annotate', 'id-photo', 'id-card']
 const ALL_LOCALES: WorkspaceLocale[] = ['en', 'zh', 'ja', 'ko']
 
 interface InspectableElementProps {
@@ -77,7 +77,7 @@ function makeMockOutput(name: string, width: number, height: number, sizeBytes: 
 }
 
 describe('QuickWorkspace', () => {
-  it('renders all 7 tools cleanly in both light and dark themes', () => {
+  it('renders all 8 tools cleanly in both light and dark themes', () => {
     const onOpenInStudio = vi.fn()
     for (const theme of ['light', 'dark'] as const) {
       for (const tool of ALL_TOOLS) {
@@ -115,6 +115,8 @@ describe('QuickWorkspace', () => {
       { preset: { tool: 'resize', resizeMode: 'resize' }, expectSnippet: 'Scale (%)' },
       { preset: { tool: 'annotate', annotateTool: 'brush' }, expectSnippet: 'data-testid="annotate-tool-brush" aria-label="Brush" aria-pressed="true"' },
       { preset: { tool: 'annotate', annotateTool: 'rect' }, expectSnippet: 'data-testid="annotate-tool-rect" aria-label="Rectangle" aria-pressed="true"' },
+      { preset: { tool: 'id-photo', idPhotoTab: 'trio' }, expectSnippet: 'data-testid="id-photo-tab-trio" aria-selected="true"' },
+      { preset: { tool: 'id-photo', idPhotoTab: 'sheet' }, expectSnippet: 'data-testid="id-photo-tab-sheet" aria-selected="true"' },
     ]
 
     for (const { preset, expectSnippet } of presets) {
@@ -202,6 +204,9 @@ describe('QuickWorkspace', () => {
     expect(
       renderToStaticMarkup(<QuickWorkspace preset={{ tool: 'resize' }} locale="en" theme="light" onOpenInStudio={vi.fn()} />),
     ).toContain('data-testid="resize-copy-image"')
+    expect(
+      renderToStaticMarkup(<QuickWorkspace preset={{ tool: 'id-photo' }} locale="en" theme="light" onOpenInStudio={vi.fn()} />),
+    ).toContain('data-testid="id-photo-copy-image"')
     expect(
       renderToStaticMarkup(<QuickWorkspace preset={{ tool: 'id-card' }} locale="en" theme="light" onOpenInStudio={vi.fn()} />),
     ).toContain('data-testid="id-card-copy-image"')

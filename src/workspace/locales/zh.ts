@@ -1,10 +1,11 @@
 /**
- * [INPUT]: depends on WorkspaceStrings from ../i18n
- * [OUTPUT]: exports ZH Simplified Chinese UI strings for QuickWorkspace and its 7 tool panels
+ * [INPUT]: depends on WorkspaceStrings from ../i18n and ID_PHOTO_LOCALE_ZH from ./idPhotoLocale
+ * [OUTPUT]: exports ZH Simplified Chinese UI strings for QuickWorkspace and its 8 tool panels
  * [POS]: Simplified Chinese locale dictionary in src/workspace/locales
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 import type { WorkspaceStrings } from '../i18n'
+import { ID_PHOTO_LOCALE_ZH } from './idPhotoLocale'
 
 export const ZH: WorkspaceStrings = {
   tabs: {
@@ -14,6 +15,7 @@ export const ZH: WorkspaceStrings = {
     compress: { label: '本地压缩转换', short: '压缩', description: '批量离线压缩 PNG/JPEG/WebP' },
     resize: { label: '缩放裁剪留白', short: '尺寸', description: '无损缩放、比例裁剪与防裁留白边框' },
     annotate: { label: '图片标注', short: '标注', description: '画笔、矩形、箭头与文字矢量标注' },
+    'id-photo': { label: '证件照制作', short: '证件照', description: '本地发丝精抠换底色、尺寸达标与六寸冲印排版' },
     'id-card': { label: '身份证件水印', short: '证件水印', description: 'A4 正反面排版 + 防盗用安全水印' },
   },
   common: {
@@ -279,4 +281,5 @@ export const ZH: WorkspaceStrings = {
     backDecodeError: '无法解析反面证件照片。',
     renderError: 'A4 证件排版渲染失败。',
   },
+  idPhoto: ID_PHOTO_LOCALE_ZH,
 }

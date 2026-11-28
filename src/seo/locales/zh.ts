@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on LocaleBundle type from ../types.ts; depends on ZH_TOOL_ROUTES from ./zhTools.ts, ZH_GROWTH_ROUTES from ./zhGrowthRoutes.ts, and INFO_PAGE_ROUTES from ./infoRoutes.ts
- * [OUTPUT]: exports ZH_LOCALE complete Simplified Chinese UI labels and 32 intent/info route copy entries
+ * [OUTPUT]: exports ZH_LOCALE complete Simplified Chinese UI labels and 35 intent/info route copy entries
  * [POS]: Simplified Chinese (`/zh/...`) language pack within src/seo/locales, loaded by src/seo/i18n.ts
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -39,6 +39,7 @@ export const ZH_LOCALE: LocaleBundle = {
       compress: '压缩转换',
       resize: '缩放裁剪',
       annotate: '图片标注',
+      'id-photo': '证件照',
       'id-card': '证件水印',
     },
     dropzoneTitle: '拖拽图片到此处，或直接 Ctrl/Cmd+V 粘贴',

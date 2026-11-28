@@ -1,7 +1,7 @@
 /**
  * [INPUT]: depends on RouteDefinition, RouteSlug, LocaleCode, HtmlLangCode, HreflangCode, ResolvedRoute, HreflangLink, and ToolId types from ./types.ts
  * [OUTPUT]: exports LOCALE_CODES, DEFAULT_LOCALE, DEFAULT_SITE_URL, ROUTE_SLUGS, ROUTE_DEFINITIONS, ALL_ROUTES, TOOL_ROUTE_DEFINITIONS, INFO_ROUTE_DEFINITIONS, PRIMARY_TOOL_SLUGS, getHtmlLang, getHreflangCode, getSiteUrl, isLocaleCode, isRouteSlug, getRouteDefinition, buildLocalizedPath, buildCanonicalUrl, getHreflangLinks, resolvePathname, and getRelatedRoutes
- * [POS]: single source of truth for all 32 intent/info slugs (128 trailing-slash localized URLs), BCP-47 lang/hreflang tags (`zh-CN`/`zh-Hans`), URL normalization, preset mapping, and internal link graphs across client routing and build-time SSG
+ * [POS]: single source of truth for all 35 intent/info slugs (140 trailing-slash localized URLs), BCP-47 lang/hreflang tags (`zh-CN`/`zh-Hans`), URL normalization, preset mapping, and internal link graphs across client routing and build-time SSG
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
@@ -51,6 +51,7 @@ export const PRIMARY_TOOL_SLUGS: Record<ToolId, RouteSlug> = {
   compress: 'compress-image',
   resize: 'resize-image',
   annotate: 'annotate-image',
+  'id-photo': 'passport-photo-maker',
   'id-card': 'id-card-watermark',
 }
 
@@ -63,10 +64,10 @@ export const ROUTE_DEFINITIONS: readonly RouteDefinition[] = [
     preset: { tool: 'mockup', mockupModel: 'browser-chrome', canvasSize: 'wide' },
     relatedSlugs: [
       'browser-mockup',
-      'iphone-mockup',
       'merge-images',
       'carousel-splitter',
       'compress-image',
+      'passport-photo-maker',
       'id-card-watermark',
     ],
   },
@@ -223,7 +224,7 @@ export const ROUTE_DEFINITIONS: readonly RouteDefinition[] = [
     isStudio: false,
     priority: 0.92,
     preset: { tool: 'compress', targetFormat: 'image/webp', targetSizeKb: 200 },
-    relatedSlugs: ['compress-image', 'heic-to-jpg', 'remove-exif', 'resize-image', 'png-to-webp', 'id-card-watermark'],
+    relatedSlugs: ['passport-photo-maker', 'compress-image', 'heic-to-jpg', 'remove-exif', 'resize-image', 'id-card-watermark'],
   },
   {
     slug: 'heic-to-jpg',
@@ -299,6 +300,31 @@ export const ROUTE_DEFINITIONS: readonly RouteDefinition[] = [
     preset: { tool: 'annotate', annotateTool: 'brush' },
     relatedSlugs: ['annotate-image', 'redact-screenshot', 'browser-mockup', 'crop-image', 'remove-exif', 'studio'],
   },
+  // ID Photo family
+  {
+    slug: 'passport-photo-maker',
+    category: 'id-photo',
+    isStudio: false,
+    priority: 0.95,
+    preset: { tool: 'id-photo', idPhotoTab: 'single' },
+    relatedSlugs: ['id-photo-background-changer', 'id-photo-print-sheet', 'compress-image-to-200kb', 'id-card-watermark', 'remove-exif', 'crop-image'],
+  },
+  {
+    slug: 'id-photo-background-changer',
+    category: 'id-photo',
+    isStudio: false,
+    priority: 0.94,
+    preset: { tool: 'id-photo', idPhotoTab: 'trio' },
+    relatedSlugs: ['passport-photo-maker', 'id-photo-print-sheet', 'compress-image-to-200kb', 'remove-exif', 'id-card-watermark', 'resize-image'],
+  },
+  {
+    slug: 'id-photo-print-sheet',
+    category: 'id-photo',
+    isStudio: false,
+    priority: 0.92,
+    preset: { tool: 'id-photo', idPhotoTab: 'sheet' },
+    relatedSlugs: ['passport-photo-maker', 'id-photo-background-changer', 'id-card-watermark', 'merge-photos-to-pdf', 'compress-image-to-200kb', 'crop-image'],
+  },
   // ID Card / Document family
   {
     slug: 'id-card-watermark',
@@ -306,7 +332,7 @@ export const ROUTE_DEFINITIONS: readonly RouteDefinition[] = [
     isStudio: false,
     priority: 0.95,
     preset: { tool: 'id-card' },
-    relatedSlugs: ['remove-exif', 'redact-screenshot', 'merge-photos-to-pdf', 'compress-image-to-200kb', 'crop-image', 'resize-image'],
+    relatedSlugs: ['passport-photo-maker', 'remove-exif', 'redact-screenshot', 'merge-photos-to-pdf', 'compress-image-to-200kb', 'crop-image'],
   },
   // Trust & architecture info pages (E-E-A-T)
   {

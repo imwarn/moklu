@@ -1,13 +1,15 @@
 /**
- * [INPUT]: depends on GrowthRouteSlug and RouteCopy types from ../types.ts
- * [OUTPUT]: exports ZH_GROWTH_ROUTES containing Simplified Chinese SEO copy for the 9 high-intent growth slugs (ipad-mockup, watch-mockup, stitch-screenshots, heic-to-jpg, remove-exif, compress-image-to-200kb, redact-screenshot, annotate-image, draw-on-image)
+ * [INPUT]: depends on GrowthRouteSlug and RouteCopy types from ../types.ts; depends on ZH_ID_PHOTO_ROUTES from ./zhIdPhotoRoutes.ts
+ * [OUTPUT]: exports ZH_GROWTH_ROUTES containing Simplified Chinese SEO copy for the 12 high-intent growth slugs (ipad-mockup, watch-mockup, stitch-screenshots, heic-to-jpg, remove-exif, compress-image-to-200kb, redact-screenshot, annotate-image, draw-on-image, passport-photo-maker, id-photo-background-changer, id-photo-print-sheet)
  * [POS]: growth route-copy chunk for zh within src/seo/locales, merged into ZH_LOCALE by ./zh.ts to keep every file <= 800 lines
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
 import type { GrowthRouteSlug, RouteCopy } from '../types.ts'
+import { ZH_ID_PHOTO_ROUTES } from './zhIdPhotoRoutes.ts'
 
 export const ZH_GROWTH_ROUTES: Record<GrowthRouteSlug, RouteCopy> = {
+  ...ZH_ID_PHOTO_ROUTES,
   'ipad-mockup': {
     navLabel: 'iPad 平板样机',
     title: '免费 iPad Pro 13 平板截图套壳生成器（纯本地）| Moklu',

@@ -15,6 +15,9 @@ const ZIP_SIGNATURE = Buffer.from([0x50, 0x4b, 0x03, 0x04])
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
+  '.mjs': 'text/javascript; charset=utf-8',
+  '.wasm': 'application/wasm',
+  '.onnx': 'application/octet-stream',
   '.css': 'text/css; charset=utf-8',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
@@ -220,7 +223,7 @@ test('4-locale SEO routes sync lang, canonical, hreflang, JSON-LD, and tool pres
   }
 })
 
-test('Pre-rendered SSG HTML, sitemap.xml, and llms.txt contain all 128 routes with full React UI and zero inline executable scripts', async ({ browserName }) => {
+test('Pre-rendered SSG HTML, sitemap.xml, and llms.txt contain all 140 routes with full React UI and zero inline executable scripts', async ({ browserName }) => {
   test.skip(browserName !== 'chromium', 'Filesystem SSG artifact check runs once on Chromium')
   const distDir = path.resolve('dist')
   try {
@@ -232,7 +235,11 @@ test('Pre-rendered SSG HTML, sitemap.xml, and llms.txt contain all 128 routes wi
 
   const sitemap = await readFile(path.join(distDir, 'sitemap.xml'), 'utf8')
   const urlMatches = sitemap.match(/<url>/g) ?? []
-  expect(urlMatches.length).toBe(128)
+  expect(urlMatches.length).toBe(140)
+  expect(sitemap).toContain('https://moklu.app/passport-photo-maker/')
+  expect(sitemap).toContain('https://moklu.app/zh/passport-photo-maker/')
+  expect(sitemap).toContain('https://moklu.app/zh/id-photo-background-changer/')
+  expect(sitemap).toContain('https://moklu.app/zh/id-photo-print-sheet/')
   expect(sitemap).toContain('https://moklu.app/zh/id-card-watermark/')
   expect(sitemap).toContain('https://moklu.app/ja/merge-images/')
   expect(sitemap).toContain('https://moklu.app/ko/browser-mockup/')
@@ -249,11 +256,14 @@ test('Pre-rendered SSG HTML, sitemap.xml, and llms.txt contain all 128 routes wi
   expect(llms.startsWith('# Moklu')).toBe(true)
   expect(llms).not.toMatch(/<!doctype html|<html/i)
   expect(llms).toContain('在线图片拼接')
-  expect(llms).toContain('128 localized SSG URLs')
+  expect(llms).toContain('140 localized SSG URLs')
+  expect(llms).toContain('https://moklu.app/passport-photo-maker/')
   expect(llms).toContain('https://moklu.app/annotate-image/')
 
   const landingPages = [
     path.join(distDir, 'index.html'),
+    path.join(distDir, 'passport-photo-maker', 'index.html'),
+    path.join(distDir, 'zh', 'passport-photo-maker', 'index.html'),
     path.join(distDir, 'annotate-image', 'index.html'),
     path.join(distDir, 'zh', 'annotate-image', 'index.html'),
     path.join(distDir, 'zh', 'id-card-watermark', 'index.html'),

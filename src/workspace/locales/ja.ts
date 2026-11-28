@@ -1,10 +1,11 @@
 /**
- * [INPUT]: depends on WorkspaceStrings from ../i18n
- * [OUTPUT]: exports JA Japanese UI strings for QuickWorkspace and its 7 tool panels
+ * [INPUT]: depends on WorkspaceStrings from ../i18n and ID_PHOTO_LOCALE_JA from ./idPhotoLocale
+ * [OUTPUT]: exports JA Japanese UI strings for QuickWorkspace and its 8 tool panels
  * [POS]: Japanese locale dictionary in src/workspace/locales
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 import type { WorkspaceStrings } from '../i18n'
+import { ID_PHOTO_LOCALE_JA } from './idPhotoLocale'
 
 export const JA: WorkspaceStrings = {
   tabs: {
@@ -14,6 +15,7 @@ export const JA: WorkspaceStrings = {
     compress: { label: '圧縮・形式変換', short: '圧縮', description: 'PNG / JPEG / WebP をローカルで一括軽量化' },
     resize: { label: 'リサイズ・余白', short: 'リサイズ', description: '拡大縮小・トリミング・SNS向け余白フレーム追加' },
     annotate: { label: '画像注釈・書き込み', short: '注釈', description: 'ペン・枠線・矢印・テキストでローカル注釈' },
+    'id-photo': { label: '証明写真・履歴書', short: '証明写真', description: 'ローカルAI背景変更・履歴書/マイナンバーサイズ・印刷レイアウト' },
     'id-card': { label: '本人確認書類透かし', short: '書類透かし', description: 'A4表裏レイアウト＋不正利用防止透かしをオフライン生成' },
   },
   common: {
@@ -279,4 +281,5 @@ export const JA: WorkspaceStrings = {
     backDecodeError: '裏面の画像を読み込めませんでした。',
     renderError: 'A4 シートの生成に失敗しました。',
   },
+  idPhoto: ID_PHOTO_LOCALE_JA,
 }

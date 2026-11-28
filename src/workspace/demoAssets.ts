@@ -1,7 +1,7 @@
 /**
  * [INPUT]: depends on nanoid, BRAND_DARK and BRAND_LIGHT from @/theme/brand, makeSvgImageDataUrl from @/utils/quickPreview, and WorkspaceImageInput from ./types
- * [OUTPUT]: exports DemoVariant, createDemoScreenshotDataUrl, and createDemoImageInput for instant zero-network demo previews
- * [POS]: deterministic SVG specimen generator for src/workspace; enables 0-second previews across Mockup, Merge, Split, Compress, Resize, and ID Card tools
+ * [OUTPUT]: exports DemoVariant, createDemoScreenshotDataUrl, createDemoImageInput, createDemoPortraitDataUrl, and createDemoPortraitInput for instant zero-network demo previews
+ * [POS]: deterministic SVG specimen generator for src/workspace; enables 0-second previews across Mockup, Merge, Split, Compress, Resize, ID Photo, and ID Card tools
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 import { nanoid } from 'nanoid'
@@ -166,6 +166,74 @@ export function createDemoImageInput(variant: DemoVariant, name: string): Worksp
     name,
     width: dims[variant].w,
     height: dims[variant].h,
+    dataUrl,
+    sizeBytes: dataUrl.length,
+    mimeType: 'image/svg+xml',
+    isDemo: true,
+  }
+}
+
+/**
+ * Generates a deterministic 720x960 studio portrait SVG over a soft off-white backdrop
+ * (#F4F6FA) so users can test background swaps, 3-color grids, and print sheets offline.
+ */
+export function createDemoPortraitDataUrl(): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="720" height="960" viewBox="0 0 720 960">
+    <rect width="720" height="960" fill="#F4F6FA"/>
+    <g id="shoulders">
+      <path d="M96 960 C112 752 204 662 360 662 C516 662 608 752 624 960 Z" fill="#1E293B"/>
+      <path d="M262 674 L360 854 L458 674 L424 654 L360 722 L296 654 Z" fill="#FFFFFF"/>
+      <path d="M294 656 L354 780 L310 796 L252 686 Z" fill="#F1F5F9"/>
+      <path d="M426 656 L366 780 L410 796 L468 686 Z" fill="#F1F5F9"/>
+      <path d="M342 742 L378 742 L386 960 L334 960 Z" fill="#334155"/>
+      <path d="M336 720 L384 720 L374 756 L346 756 Z" fill="#475569"/>
+      <path d="M226 694 L306 960 L248 960 L182 724 Z" fill="#0F172A" opacity="0.35"/>
+      <path d="M494 694 L414 960 L472 960 L538 724 Z" fill="#0F172A" opacity="0.35"/>
+    </g>
+    <g id="neck">
+      <path d="M306 544 L414 544 L422 692 Q360 732 298 692 Z" fill="#E8B99B"/>
+      <path d="M312 560 Q360 612 408 560 L408 614 Q360 644 312 614 Z" fill="#D49E7E" opacity="0.55"/>
+    </g>
+    <g id="ears">
+      <ellipse cx="216" cy="402" rx="22" ry="44" fill="#EBBF9F"/>
+      <ellipse cx="218" cy="404" rx="10" ry="24" fill="#D5A082" opacity="0.65"/>
+      <ellipse cx="504" cy="402" rx="22" ry="44" fill="#EBBF9F"/>
+      <ellipse cx="502" cy="404" rx="10" ry="24" fill="#D5A082" opacity="0.65"/>
+    </g>
+    <g id="hair-back">
+      <path d="M194 378 C184 236 248 134 360 134 C472 134 536 236 526 378 C518 320 494 274 470 250 L250 250 C226 274 202 320 194 378 Z" fill="#1E2430"/>
+    </g>
+    <g id="head">
+      <path d="M222 366 C222 252 276 190 360 190 C444 190 498 252 498 366 C498 486 436 584 360 584 C284 584 222 486 222 366 Z" fill="#F3CBB0"/>
+      <path d="M222 386 C228 492 288 576 360 576 C432 576 492 492 498 386 C496 502 434 590 360 590 C286 590 224 502 222 386 Z" fill="#DFAA8B" opacity="0.35"/>
+    </g>
+    <g id="hair-front">
+      <path d="M214 358 C210 242 264 148 364 146 C462 144 514 236 506 358 C496 314 484 268 456 246 C428 224 388 214 342 224 C300 232 274 258 258 286 C236 296 224 328 214 358 Z" fill="#1E2430"/>
+      <path d="M286 168 C338 152 414 162 464 202 C416 184 346 182 286 206 Z" fill="#334155" opacity="0.45"/>
+    </g>
+    <g id="face-features">
+      <path d="M266 346 Q298 334 328 344" fill="none" stroke="#27272A" stroke-width="8" stroke-linecap="round"/>
+      <path d="M392 344 Q422 334 454 346" fill="none" stroke="#27272A" stroke-width="8" stroke-linecap="round"/>
+      <ellipse cx="300" cy="382" rx="16" ry="11" fill="#FFFFFF"/>
+      <circle cx="301" cy="382" r="8" fill="#1E293B"/>
+      <circle cx="304" cy="379" r="2.5" fill="#FFFFFF"/>
+      <ellipse cx="420" cy="382" rx="16" ry="11" fill="#FFFFFF"/>
+      <circle cx="419" cy="382" r="8" fill="#1E293B"/>
+      <circle cx="422" cy="379" r="2.5" fill="#FFFFFF"/>
+      <path d="M360 388 L354 446 Q360 456 372 448" fill="none" stroke="#C89375" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M324 494 Q360 512 396 494" fill="none" stroke="#B67662" stroke-width="6" stroke-linecap="round"/>
+    </g>
+  </svg>`
+  return makeSvgImageDataUrl(svg)
+}
+
+export function createDemoPortraitInput(name = 'demo-portrait.svg'): WorkspaceImageInput {
+  const dataUrl = createDemoPortraitDataUrl()
+  return {
+    id: nanoid(10),
+    name,
+    width: 720,
+    height: 960,
     dataUrl,
     sizeBytes: dataUrl.length,
     mimeType: 'image/svg+xml',

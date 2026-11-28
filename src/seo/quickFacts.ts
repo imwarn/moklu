@@ -40,7 +40,7 @@ const QUICK_FACTS_BY_LOCALE: Record<
         facts: [
           { label: 'Processing', value: '100% browser-local HTML5 Canvas & local WASM (zero uploads)' },
           { label: 'Pricing', value: 'Free core tools, zero forced watermarks' },
-          { label: 'Core tools', value: 'Mockup & Redact, Merge & Multi-Page PDF, Split, Compress/HEIC/EXIF, Resize, Annotate, ID Watermark + Studio' },
+          { label: 'Core tools', value: 'Mockup & Redact, Merge & Multi-Page PDF, Split, Compress/HEIC/EXIF, Resize, Annotate, ID Photo, ID Watermark + Studio' },
           { label: 'Input formats', value: 'PNG, JPEG, WebP, HEIC/HEIF, AVIF, GIF, SVG (drop, select, or Cmd/Ctrl+V paste)' },
           { label: 'Output formats', value: 'PNG, WebP, JPEG, Multi-Page A4 & Single-Page PDF 1.4, and ZIP batches' },
           { label: 'Safety ceiling', value: 'Up to 8192px / 64MP with automatic proportional scaling notice' },
@@ -135,6 +135,20 @@ const QUICK_FACTS_BY_LOCALE: Record<
           'All brush smoothing, layer hit-testing, and full-res canvas compositing run strictly in browser RAM with zero server uploads.',
         ],
       },
+      'id-photo': {
+        facts: [
+          { label: 'Processing', value: '100% browser-local MODNet FP16 portrait matting + Guided Filter & foreground color decontamination (zero server uploads)' },
+          { label: 'Sizes', value: '1-inch (25×35mm / 295×413px), 2-inch (35×49mm / 413×579px), US 2×2 in (600×600px), Schengen/JP/KR 35×45mm & 30×40mm + custom mm/px' },
+          { label: 'Backgrounds', value: 'White, Civil Blue, Red, Gray, subtle resume gradient + 1-click White/Blue/Red Trio ZIP' },
+          { label: 'Exam KB cap & Print', value: 'Binary-search <=30KB/50KB/100KB/200KB JPG + 300 DPI 6-inch (4R) & A4 print sheets (PNG/PDF)' },
+          { label: 'Pricing & Privacy', value: 'Free core exports, zero watermarks, works offline after first local model cache' },
+          { label: 'Compliance', value: 'Preserves authentic facial geometry, skin texture, and real clothing for official review' },
+        ],
+        boundaries: [
+          'Preserves authentic facial features and clothing for official government, visa, passport, and exam compliance; does NOT apply AI face reshaping or synthetic suit swapping.',
+          'First AI portrait cutout caches the local 12.4 MB MODNet FP16 model in your browser with zero image uploads; pure-backdrop mode also runs immediately with zero model download.',
+        ],
+      },
       'id-card': {
         facts: [
           { label: 'Processing', value: '100% offline HTML5 Canvas enforced by strict CSP' },
@@ -160,7 +174,7 @@ const QUICK_FACTS_BY_LOCALE: Record<
         facts: [
           { label: '处理方式', value: '100% 浏览器本地 HTML5 Canvas 与本地 WASM（零上传）' },
           { label: '费用与水印', value: '核心工具免费，标准导出零水印' },
-          { label: '包含工具', value: '样机套壳/打码、在线图片拼接/多页 PDF、切图、压缩/HEIC/EXIF、缩放加白边、图片标注、证件水印 + Studio' },
+          { label: '包含工具', value: '样机套壳/打码、在线图片拼接/多页 PDF、切图、压缩/HEIC/EXIF、缩放加白边、图片标注、证件照、证件水印 + Studio' },
           { label: '输入支持', value: 'PNG / JPEG / WebP / HEIC / HEIF / AVIF / GIF / SVG（拖拽、选图或 Cmd/Ctrl+V）' },
           { label: '导出格式', value: 'PNG、WebP、JPEG、多页 A4 / 单页 PDF 1.4 与批量 ZIP' },
           { label: '安全上限', value: '画布上限 8192px / 64MP，超限自动等比缩放并提示' },
@@ -255,6 +269,20 @@ const QUICK_FACTS_BY_LOCALE: Record<
           '画笔平滑、选中命中检测与高清合成全部在本地浏览器内存中完成，不上传任何图片或标注内容。',
         ],
       },
+      'id-photo': {
+        facts: [
+          { label: '处理方式', value: '100% 浏览器本地 MODNet FP16 人像抠图 + 导向滤波与前景色去污染（零上传）' },
+          { label: '支持尺寸', value: '一寸（25×35mm / 295×413px）、二寸（35×49mm / 413×579px）、美签 2×2 英寸（600×600px）、申根/日韩 35×45mm 与 30×40mm 及自定义 mm/px' },
+          { label: '底色与打包', value: '标准白底、政务蓝底、证件红底、高级灰、简历淡渐变，支持一键白/蓝/红三底色 ZIP 打包' },
+          { label: '报名控体积与冲印', value: '二分精准压至 ≤30KB / 50KB / 100KB / 200KB JPG，内置 300 DPI 六寸（4R）与 A4 冲印排版（PNG / PDF）' },
+          { label: '费用与离线', value: '核心制作免费无水印，首次本地缓存模型后断网也可离线制作' },
+          { label: '合规原则', value: '严格保留真实五官轮廓与原始着装，满足公考、护照与签证官方审核标准' },
+        ],
+        boundaries: [
+          '为确保通过政府证件、护照签证及考试报名系统的人脸比对审核，本工具坚持保留真实面部特征与着装，不提供 AI 换脸美颜磨皮或虚假 AI 换装。',
+          '首次 AI 抠图会在浏览器本地缓存 12.4 MB 的 MODNet FP16 模型（照片像素零上传）；纯色背景照片亦可直接使用零模型快速换底模式。',
+        ],
+      },
       'id-card': {
         facts: [
           { label: '处理方式', value: '100% 离线 HTML5 Canvas + 严格 CSP 策略防护' },
@@ -280,7 +308,7 @@ const QUICK_FACTS_BY_LOCALE: Record<
         facts: [
           { label: '処理方式', value: '100% ブラウザ内 HTML5 Canvas ＆ ローカル WASM（サーバー送信ゼロ）' },
           { label: '料金・透かし', value: '基本ツール無料、強制透かしなし' },
-          { label: '主要ツール', value: 'モックアップ＆ぼかし・画像結合/複数ページ PDF・分割・圧縮/HEIC/EXIF・リサイズ・画像注釈・身分証透かし + Studio' },
+          { label: '主要ツール', value: 'モックアップ＆ぼかし・画像結合/複数ページ PDF・分割・圧縮/HEIC/EXIF・リサイズ・画像注釈・証明写真・身分証透かし + Studio' },
           { label: '入力形式', value: 'PNG / JPEG / WebP / HEIC / HEIF / AVIF / GIF / SVG（ドロップ・選択・Cmd/Ctrl+V）' },
           { label: '出力形式', value: 'PNG、WebP、JPEG、複数ページ A4 / 単ページ PDF 1.4、一括 ZIP' },
           { label: '安全上限', value: '最大 8192px / 64MP（超過時は自動等比縮小と通知を表示）' },
@@ -375,6 +403,20 @@ const QUICK_FACTS_BY_LOCALE: Record<
           'すべての描画・当たり判定・合成は端末ブラウザのメモリ内で完結し、外部サーバーへの送信は一切ありません。',
         ],
       },
+      'id-photo': {
+        facts: [
+          { label: '処理方式', value: '100% ブラウザ内 MODNet FP16 人物切り抜き ＋ ガイデッドフィルタ＆前景デコンタミネーション（送信ゼロ）' },
+          { label: '対応サイズ', value: '履歴書 30×40mm、マイナンバー・パスポート 35×45mm、1寸（25×35mm）・2寸（35×49mm）、米国ビザ 2×2 in（600×600px）＋自由 mm/px' },
+          { label: '背景色・一括出力', value: '白・水色/公的ブルー・赤・グレー・履歴書用淡グラデーション ＋ 白/青/赤 3色トリオ ZIP 一括保存' },
+          { label: '容量上限と印刷シート', value: '二分探索で 30KB / 50KB / 100KB / 200KB 以下に JPG 圧縮 ＋ 300 DPI L判/4R（6インチ）＆ A4 印刷シート（PNG / PDF）' },
+          { label: '料金・オフライン', value: '基本書き出し無料・透かしなし、初回モデルキャッシュ後はオフライン動作対応' },
+          { label: '公式申請準拠', value: '本人の顔立ちや服装を忠実に保ち、パスポート・マイナンバー・受験申請の審査基準に準拠' },
+        ],
+        boundaries: [
+          'パスポート・マイナンバーカード・ビザ・資格試験の本人確認審査に準拠するため、AI による顔の輪郭変形や合成スーツ着せ替え機能は意図的に搭載していません。',
+          '初回の AI 人物切り抜き時に約 12.4 MB の MODNet FP16 モデルをブラウザ内キャッシュへ保存します（写真データの外部送信はゼロ）。無地背景の写真はモデル読込なしの高速モードも利用できます。',
+        ],
+      },
       'id-card': {
         facts: [
           { label: '処理方式', value: '厳格な CSP 保護下の完全オフライン HTML5 Canvas' },
@@ -400,7 +442,7 @@ const QUICK_FACTS_BY_LOCALE: Record<
         facts: [
           { label: '처리 방식', value: '100% 브라우저 로컬 HTML5 Canvas 및 로컬 WASM (업로드 제로)' },
           { label: '요금 및 워터마크', value: '핵심 도구 무료, 기본 내보내기 워터마크 없음' },
-          { label: '지원 도구', value: '목업/모자이크, 온라인 이미지 합치기/다중 페이지 PDF, 분할, 압축/HEIC/EXIF, 리사이즈, 이미지 주석, 신분증 워터마크 + Studio' },
+          { label: '지원 도구', value: '목업/모자이크, 온라인 이미지 합치기/다중 페이지 PDF, 분할, 압축/HEIC/EXIF, 리사이즈, 이미지 주석, 증명사진, 신분증 워터마크 + Studio' },
           { label: '입력 형식', value: 'PNG, JPEG, WebP, HEIC/HEIF, AVIF, GIF, SVG (드롭, 선택, Cmd/Ctrl+V)' },
           { label: '출력 형식', value: 'PNG, WebP, JPEG, 다중 페이지 A4 / 단일 페이지 PDF 1.4, 일괄 ZIP' },
           { label: '안전 한도', value: '최대 8192px / 64MP (초과 시 자동 비례 축소 및 안내 표시)' },
@@ -493,6 +535,20 @@ const QUICK_FACTS_BY_LOCALE: Record<
         boundaries: [
           '퀵 워크스페이스와 브라우저 IndexedDB 초안에서는 주석이 벡터 레이어로 유지되어 언제든 수정할 수 있으며, PNG/WebP/JPEG 저장 시 원본 해상도에 선명하게 합성됩니다.',
           '모든 브러시 보정, 선택 판정, 캔버스 합성은 기기 브라우저 메모리에서만 실행되며 서버로 업로드되지 않습니다.',
+        ],
+      },
+      'id-photo': {
+        facts: [
+          { label: '처리 방식', value: '100% 브라우저 로컬 MODNet FP16 인물 누끼 + 가이디드 필터 및 전경 색번짐 보정 (서버 업로드 제로)' },
+          { label: '지원 규격', value: '여권·주민등록증 35×45mm, 반명함·이력서 30×40mm, 1인치(25×35mm)·2인치(35×49mm), 미국 비자 2×2 in(600×600px) + 사용자 지정 mm/px' },
+          { label: '배경 및 일괄 저장', value: '흰색, 공공 블루, 빨강, 그레이, 이력서용 은은한 그라데이션 + 흰색/파랑/빨강 3색 트리오 ZIP 원클릭 저장' },
+          { label: '용량 제한 및 인화지', value: '이진 탐색으로 30KB / 50KB / 100KB / 200KB 이하 JPG 맞춤 압축 + 300 DPI 4R(4×6인치) 및 A4 인화 시트(PNG / PDF)' },
+          { label: '요금 및 오프라인', value: '핵심 내보내기 무료·워터마크 없음, 최초 모델 캐시 후 오프라인에서도 실행' },
+          { label: '공식 심사 준수', value: '실제 얼굴 윤곽과 복장을 그대로 유지해 여권·비자·공채·자격증 심사 기준에 부합' },
+        ],
+        boundaries: [
+          '여권, 비자, 국가시험 및 공채 원서의 본인 확인 심사를 통과할 수 있도록 AI 얼굴 성형·과도한 보정이나 합성 정장 갈아입히기 기능은 제공하지 않습니다.',
+          '첫 AI 인물 분리 시 12.4 MB MODNet FP16 모델이 브라우저 로컬 캐시에 저장되며 사진 픽셀은 절대 서버로 전송되지 않습니다. 단색 배경 사진은 모델 다운로드 없는 즉시 모드도 지원합니다.',
         ],
       },
       'id-card': {

@@ -1,6 +1,6 @@
 /**
- * [INPUT]: depends on react, useThemeStore from @/theme/themeStore, saveToolDraft and serializeDraftImages from ./draftStorage, getWorkspaceStrings from ./i18n, getWorkspaceThemeTokens from ./themeTokens, PrivacyBadge from ./uiPrimitives, on-demand dynamic imports of the 7 tool panels in ./tools/*, ./defaultEngines, and ./canvasUtils, and types from ./types
- * [OUTPUT]: exports QuickWorkspace component and tool preloader helpers (hasWorkspaceTool, preloadWorkspaceTool, preloadAllWorkspaceTools) rendering the above-the-fold 7-tool instant workspace with on-demand panel code-splitting, hover/focus chunk prefetching, global paste pulse highlight, multi-image paste switch-to-Merge banner, keyboard-navigable tablist, locale-preserving panel state, Light/Dark theming, 4-locale UI, and Studio handoff
+ * [INPUT]: depends on react, useThemeStore from @/theme/themeStore, saveToolDraft and serializeDraftImages from ./draftStorage, getWorkspaceStrings from ./i18n, getWorkspaceThemeTokens from ./themeTokens, PrivacyBadge from ./uiPrimitives, on-demand dynamic imports of the 8 tool panels in ./tools/*, ./defaultEngines, and ./canvasUtils, and types from ./types
+ * [OUTPUT]: exports QuickWorkspace component and tool preloader helpers (hasWorkspaceTool, preloadWorkspaceTool, preloadAllWorkspaceTools) rendering the above-the-fold 8-tool instant workspace with on-demand panel code-splitting, hover/focus chunk prefetching, global paste pulse highlight, multi-image paste switch-to-Merge banner, keyboard-navigable tablist, locale-preserving panel state, Light/Dark theming, 4-locale UI, and Studio handoff
  * [POS]: top-level UI entry point of src/workspace; mounted by ToolLandingPage and testable standalone via injected WorkspaceEngines
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -28,8 +28,8 @@ import type {
 } from './types'
 import { PrivacyBadge } from './uiPrimitives'
 
-const TOOL_ORDER: WorkspaceToolId[] = ['mockup', 'merge', 'split', 'compress', 'resize', 'annotate', 'id-card']
-const SINGLE_IMAGE_TOOLS = new Set<WorkspaceToolId>(['mockup', 'split', 'annotate', 'id-card'])
+const TOOL_ORDER: WorkspaceToolId[] = ['mockup', 'merge', 'split', 'compress', 'resize', 'annotate', 'id-photo', 'id-card']
+const SINGLE_IMAGE_TOOLS = new Set<WorkspaceToolId>(['mockup', 'split', 'annotate', 'id-photo', 'id-card'])
 const SUPPORTED_IMAGE_EXT_RE = /\.(?:png|jpe?g|webp|gif|bmp|avif|svg|heic|heif)$/i
 
 const DEFAULT_PRESET: WorkspacePreset = { tool: 'mockup' }
@@ -58,6 +58,8 @@ function importToolComponent(toolId: WorkspaceToolId): Promise<WorkspaceToolComp
       return import('./tools/ResizeQuickTool').then((m) => m.ResizeQuickTool)
     case 'annotate':
       return import('./tools/AnnotateQuickTool').then((m) => m.AnnotateQuickTool)
+    case 'id-photo':
+      return import('./tools/IdPhotoQuickTool').then((m) => m.IdPhotoQuickTool)
     case 'id-card':
       return import('./tools/IdCardQuickTool').then((m) => m.IdCardQuickTool)
   }
@@ -126,6 +128,11 @@ function createLazyDefaultWorkspaceEngines(): WorkspaceEngines {
     compress: async (images, options) => (await loadDefaultWorkspaceEngines()).compress(images, options),
     transform: async (images, options) => (await loadDefaultWorkspaceEngines()).transform(images, options),
     idCard: async (front, back, options) => (await loadDefaultWorkspaceEngines()).idCard(front, back, options),
+    idPhotoMatte: async (image, options) => (await loadDefaultWorkspaceEngines()).idPhotoMatte(image, options),
+    idPhotoRender: async (matte, options) => (await loadDefaultWorkspaceEngines()).idPhotoRender(matte, options),
+    idPhotoTrioZip: async (matte, options, colors) =>
+      (await loadDefaultWorkspaceEngines()).idPhotoTrioZip(matte, options, colors),
+    idPhotoSheet: async (options) => (await loadDefaultWorkspaceEngines()).idPhotoSheet(options),
     packZip: async (files) => (await loadDefaultWorkspaceEngines()).packZip(files),
   }
 }
@@ -171,6 +178,14 @@ function ToolIcon({ tool }: { tool: WorkspaceToolId }): ReactNode {
         <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
           <path d="M13.5 3.5a2 2 0 0 1 2.8 2.8l-7.8 7.8-3.6.9.9-3.6 7.7-7.9Z" strokeLinejoin="round" />
           <path d="M4 17h12" strokeLinecap="round" />
+        </svg>
+      )
+    case 'id-photo':
+      return (
+        <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+          <rect x="4" y="2.5" width="12" height="15" rx="2" />
+          <circle cx="10" cy="8.2" r="2.2" />
+          <path d="M6.4 14.8c.7-1.7 2-2.5 3.6-2.5s2.9.8 3.6 2.5" strokeLinecap="round" />
         </svg>
       )
     case 'id-card':
@@ -239,6 +254,10 @@ export function QuickWorkspace({
       engines.compress &&
       engines.transform &&
       engines.idCard &&
+      engines.idPhotoMatte &&
+      engines.idPhotoRender &&
+      engines.idPhotoTrioZip &&
+      engines.idPhotoSheet &&
       engines.packZip
     ) {
       return engines as WorkspaceEngines
@@ -250,6 +269,10 @@ export function QuickWorkspace({
       compress: engines?.compress ?? defaults.compress,
       transform: engines?.transform ?? defaults.transform,
       idCard: engines?.idCard ?? defaults.idCard,
+      idPhotoMatte: engines?.idPhotoMatte ?? defaults.idPhotoMatte,
+      idPhotoRender: engines?.idPhotoRender ?? defaults.idPhotoRender,
+      idPhotoTrioZip: engines?.idPhotoTrioZip ?? defaults.idPhotoTrioZip,
+      idPhotoSheet: engines?.idPhotoSheet ?? defaults.idPhotoSheet,
       packZip: engines?.packZip ?? defaults.packZip,
     }
   }, [engines])
@@ -393,6 +416,9 @@ export function QuickWorkspace({
     preset.enableRedact ? '1' : '0',
     preset.resizeMode ?? '',
     preset.annotateTool ?? '',
+    preset.idPhotoPreset ?? '',
+    preset.idPhotoTab ?? '',
+    preset.idPhotoBg ?? '',
     activeTool === 'merge' ? String(mergeHydrateNonce) : '',
   ].join(':')
 

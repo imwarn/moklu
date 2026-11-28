@@ -1,7 +1,7 @@
 /**
  * [INPUT]: depends on node:fs/promises, vitest, ../../../src/seo/routes, ./headersPolicy, and ./index
- * [OUTPUT]: unit tests verifying byte-for-byte parity with public/_headers, 128-route SSG alignment with src/seo/routes.ts, HTML document navigation & 4-locale 404.html content negotiation (browser HTML 404 vs subresource 404 text/plain, never cached in moklu-edge-v3), canonical 301 /en redirects, unknown-route localized 404.html + X-Robots-Tag crawl hygiene, cf.cacheEverything origin fetch options, CDN-Cache-Control, COOP, /_telemetry/health, D1 rollup upsert (including not_found_view), and security guards
- * [POS]: deterministic Vitest suite for workers/telemetry/src
+ * [OUTPUT]: unit tests verifying byte-for-byte parity with public/_headers, 140-route SSG alignment with src/seo/routes.ts, immutable /models/* (.onnx) caching and HTML-fallback poisoning guards, HTML document navigation & 4-locale 404.html content negotiation (browser HTML 404 vs subresource 404 text/plain, never cached in moklu-edge-v3), canonical 301 /en redirects, cf.cacheEverything origin fetch options, CDN-Cache-Control, and COOP
+ * [POS]: deterministic edge caching and header-policy Vitest suite inside workers/telemetry/src alongside telemetryAnd404.test.ts
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
@@ -22,7 +22,7 @@ import {
   resolveExplicitEnRedirectPath,
   resolveOriginNotFoundHtmlPath,
 } from './headersPolicy'
-import worker, { sanitizeEdgeDimension } from './index'
+import worker from './index'
 
 function parsePublicHeadersFile(content: string): Record<string, Record<string, string>> {
   const blocks: Record<string, Record<string, string>> = {}
@@ -80,6 +80,7 @@ describe('moklu-telemetry edge worker, cache policy & CSP header parity', () => 
       ['/healthz/', '/healthz/'],
       ['/healthz/index.html', '/healthz/index.html'],
       ['/assets/index-abc.js', '/assets/*'],
+      ['/models/modnet-fp16.onnx', '/models/*'],
       ['/fb6946466b9027e3bbb1506815e0f52e.txt', '/fb6946466b9027e3bbb1506815e0f52e.txt'],
       ['/logo.svg', '/logo.svg'],
       ['/logo-light.svg', '/logo-light.svg'],
@@ -103,14 +104,17 @@ describe('moklu-telemetry edge worker, cache policy & CSP header parity', () => 
     }
 
     expect(blocks['/theme-init.js']['X-Content-Type-Options']).toBe('nosniff')
+    expect(blocks['/models/*']['X-Content-Type-Options']).toBe('nosniff')
     expect(resolveEdgeCacheControl('/assets/missing.js', 404)).toBe('no-store')
     expect(resolveEdgeCdnCacheControl('/assets/missing.js', 404)).toBeNull()
+    expect(resolveEdgeCacheControl('/models/missing.onnx', 404)).toBe('no-store')
+    expect(resolveEdgeCdnCacheControl('/models/missing.onnx', 404)).toBeNull()
     expect(resolveEdgeCacheControl('/', 500)).toBe('no-store')
     expect(resolveEdgeCdnCacheControl('/', 500)).toBeNull()
   })
 
-  it('recognizes all 128 localized SSG routes from src/seo/routes.ts with or without trailing slash', () => {
-    expect(ALL_ROUTES).toHaveLength(128)
+  it('recognizes all 140 localized SSG routes from src/seo/routes.ts with or without trailing slash', () => {
+    expect(ALL_ROUTES).toHaveLength(140)
 
     for (const route of ALL_ROUTES) {
       const withSlash = route.path
@@ -132,6 +136,7 @@ describe('moklu-telemetry edge worker, cache policy & CSP header parity', () => 
     expect(isUnknownNonAssetPath('/zh//merge-images/')).toBe(true)
     expect(isUnknownNonAssetPath('/ja/non-existent-tool')).toBe(true)
     expect(isUnknownNonAssetPath('/assets/index-abc.js')).toBe(false)
+    expect(isUnknownNonAssetPath('/models/modnet-fp16.onnx')).toBe(false)
     expect(isUnknownNonAssetPath('/theme-init.js')).toBe(false)
     expect(isUnknownNonAssetPath('/healthz.txt')).toBe(false)
     expect(isUnknownNonAssetPath('/missing.js')).toBe(false)
@@ -139,6 +144,9 @@ describe('moklu-telemetry edge worker, cache policy & CSP header parity', () => 
     // Static non-HTML asset path detection and HTML fallback poisoning detection
     expect(isStaticNonHtmlAssetPath('/assets/missing.js')).toBe(true)
     expect(isStaticNonHtmlAssetPath('/assets/no-ext')).toBe(true)
+    expect(isStaticNonHtmlAssetPath('/models/modnet-fp16.onnx')).toBe(true)
+    expect(isStaticNonHtmlAssetPath('/models/no-ext')).toBe(true)
+    expect(isStaticNonHtmlAssetPath('/custom/model.ONNX')).toBe(true)
     expect(isStaticNonHtmlAssetPath('/templates/social.json')).toBe(true)
     expect(isStaticNonHtmlAssetPath('/foo/bar.WASM')).toBe(true)
     expect(isStaticNonHtmlAssetPath('/foo/bar.webp')).toBe(true)
@@ -150,6 +158,8 @@ describe('moklu-telemetry edge worker, cache policy & CSP header parity', () => 
 
     expect(isUnexpectedHtmlAssetFallback('/assets/missing.js', 'text/html; charset=utf-8')).toBe(true)
     expect(isUnexpectedHtmlAssetFallback('/assets/missing.js', '  TEXT/HTML ')).toBe(true)
+    expect(isUnexpectedHtmlAssetFallback('/models/modnet-fp16.onnx', 'text/html; charset=utf-8')).toBe(true)
+    expect(isUnexpectedHtmlAssetFallback('/models/modnet-fp16.onnx', 'application/octet-stream')).toBe(false)
     expect(isUnexpectedHtmlAssetFallback('/assets/index-abc.js', 'application/javascript')).toBe(false)
     expect(isUnexpectedHtmlAssetFallback('/studio/', 'text/html; charset=utf-8')).toBe(false)
     expect(isUnexpectedHtmlAssetFallback('/healthz/index.html', 'text/html; charset=utf-8')).toBe(false)
@@ -159,6 +169,9 @@ describe('moklu-telemetry edge worker, cache policy & CSP header parity', () => 
     expect(resolveExplicitEnRedirectPath('/en/')).toBe('/')
     expect(resolveExplicitEnRedirectPath('/en/merge-images')).toBe('/merge-images/')
     expect(resolveExplicitEnRedirectPath('/en/merge-images/')).toBe('/merge-images/')
+    expect(resolveExplicitEnRedirectPath('/en/passport-photo-maker')).toBe('/passport-photo-maker/')
+    expect(resolveExplicitEnRedirectPath('/en/id-photo-background-changer/')).toBe('/id-photo-background-changer/')
+    expect(resolveExplicitEnRedirectPath('/en/id-photo-print-sheet')).toBe('/id-photo-print-sheet/')
     expect(resolveExplicitEnRedirectPath('/en/studio')).toBe('/studio/')
     expect(resolveExplicitEnRedirectPath('/en/non-existent')).toBeNull()
     expect(resolveExplicitEnRedirectPath('/en/tools/merge-images/')).toBeNull()
@@ -438,6 +451,19 @@ describe('moklu-telemetry edge worker, cache policy & CSP header parity', () => 
       expect(fakeCache.put).not.toHaveBeenCalled()
 
       // Non-/assets/ static extension returning 200 text/html -> 404 text/plain for subresource, 404 HTML for navigation
+      const missingModelSubresource = await worker.fetch(
+        new Request('https://moklu.app/models/missing.onnx', {
+          headers: { 'Sec-Fetch-Dest': 'empty', Accept: '*/*' },
+        }),
+        {},
+      )
+      expect(missingModelSubresource.status).toBe(404)
+      expect(missingModelSubresource.headers.get('content-type')).toBe('text/plain; charset=utf-8')
+      expect(missingModelSubresource.headers.get('cache-control')).toBe('no-store')
+      expect(missingModelSubresource.headers.get('cdn-cache-control')).toBeNull()
+      expect(missingModelSubresource.headers.get('x-robots-tag')).toBe('noindex, nofollow')
+      expect(fakeCache.put).not.toHaveBeenCalled()
+
       const rootMissingJs = await worker.fetch(new Request('https://moklu.app/missing.js'), {})
       expect(rootMissingJs.status).toBe(404)
       expect(rootMissingJs.headers.get('content-type')).toBe('text/plain; charset=utf-8')
@@ -541,14 +567,14 @@ describe('moklu-telemetry edge worker, cache policy & CSP header parity', () => 
     expect(new URL((fetchSpy.mock.calls[0][0] as Request).url).pathname).toBe('/404.html')
   })
 
-  it('passes path-matched cf.cacheEverything TTLs for /assets/*, /theme-init.js, /sitemap.xml, and IndexNow key', async () => {
+  it('passes path-matched cf.cacheEverything TTLs for /assets/*, /models/*, /theme-init.js, /sitemap.xml, and IndexNow key', async () => {
     const fetchSpy = vi
       .spyOn(globalThis, 'fetch')
       .mockImplementation(
         async () =>
           new Response('ok', {
             status: 200,
-            headers: { 'Content-Type': 'application/javascript; charset=utf-8' },
+            headers: { 'Content-Type': 'application/octet-stream' },
           }),
       )
 
@@ -560,6 +586,12 @@ describe('moklu-telemetry edge worker, cache policy & CSP header parity', () => 
     }> = [
       {
         path: '/assets/index-abc123.js',
+        ttl: 31536000,
+        cacheControl: 'public, max-age=31536000, immutable',
+        cdnCacheControl: 'public, max-age=31536000, immutable',
+      },
+      {
+        path: '/models/modnet-fp16.onnx',
         ttl: 31536000,
         cacheControl: 'public, max-age=31536000, immutable',
         cdnCacheControl: 'public, max-age=31536000, immutable',
@@ -597,247 +629,5 @@ describe('moklu-telemetry edge worker, cache policy & CSP header parity', () => 
         },
       })
     }
-  })
-
-  it('serves localized 404.html with real HTTP 404, X-Robots-Tag: noindex, follow, no-store, and no edge caching on unknown non-asset routes', async () => {
-    const fakeCache = {
-      match: vi.fn(async () => undefined),
-      put: vi.fn(async () => undefined),
-    }
-    vi.stubGlobal('caches', { open: vi.fn(async () => fakeCache) })
-
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
-      const targetUrl = typeof input === 'string' ? input : (input as Request).url
-      const pathname = new URL(targetUrl).pathname
-      if (pathname === '/healthz.txt') {
-        return new Response('ok\n', {
-          status: 200,
-          headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-        })
-      }
-      if (pathname === '/ja/404.html') {
-        return new Response('<!doctype html><html lang="ja"><body>ページが見つかりません 404</body></html>', {
-          status: 200,
-          headers: { 'Content-Type': 'text/html; charset=utf-8' },
-        })
-      }
-      if (pathname === '/zh/404.html') {
-        return new Response('<!doctype html><html lang="zh-CN"><body>找不到页面 404</body></html>', {
-          status: 200,
-          headers: { 'Content-Type': 'text/html; charset=utf-8' },
-        })
-      }
-      return new Response('<!doctype html><html lang="en"><body>Moklu 404 Shell</body></html>', {
-        status: 200,
-        headers: {
-          'Content-Type': 'text/html; charset=utf-8',
-          'CDN-Cache-Control': 'public, s-maxage=999',
-        },
-      })
-    })
-
-    try {
-      const unknownCases: Array<{ url: string; expectedOriginPath: string; expectedBody: string }> = [
-        {
-          url: 'https://moklu.app/ja/missing-tool',
-          expectedOriginPath: '/ja/404.html',
-          expectedBody: 'ページが見つかりません 404',
-        },
-        {
-          url: 'https://moklu.app/zh/unknown',
-          expectedOriginPath: '/zh/404.html',
-          expectedBody: '找不到页面 404',
-        },
-        {
-          url: 'https://moklu.app/studio/unknown-check',
-          expectedOriginPath: '/404.html',
-          expectedBody: 'Moklu 404 Shell',
-        },
-        {
-          url: 'https://moklu.app/404.html',
-          expectedOriginPath: '/404.html',
-          expectedBody: 'Moklu 404 Shell',
-        },
-      ]
-
-      for (const testCase of unknownCases) {
-        const beforeCalls = fetchSpy.mock.calls.length
-        const unknownRes = await worker.fetch(new Request(testCase.url), {})
-        expect(unknownRes.status).toBe(404)
-        expect(unknownRes.headers.get('content-type')).toBe('text/html; charset=utf-8')
-        expect(unknownRes.headers.get('x-robots-tag')).toBe('noindex, follow')
-        expect(unknownRes.headers.get('cache-control')).toBe('no-store')
-        expect(unknownRes.headers.get('cdn-cache-control')).toBeNull()
-        expect(unknownRes.headers.get('vary')).toBe(
-          'Accept, Accept-Language, Sec-Fetch-Dest, Sec-Fetch-Mode',
-        )
-        expect(unknownRes.headers.get('cross-origin-opener-policy')).toBe('same-origin-allow-popups')
-        expect(await unknownRes.text()).toContain(testCase.expectedBody)
-        expect(new URL((fetchSpy.mock.calls[beforeCalls][0] as Request).url).pathname).toBe(
-          testCase.expectedOriginPath,
-        )
-        expect(fetchSpy.mock.calls[beforeCalls][1]).toEqual({
-          cf: { cacheEverything: true, cacheTtl: 60 },
-        })
-      }
-
-      const headUnknown = await worker.fetch(
-        new Request('https://moklu.app/studio/unknown-check', { method: 'HEAD' }),
-        {},
-      )
-      expect(headUnknown.status).toBe(404)
-      expect(headUnknown.headers.get('x-robots-tag')).toBe('noindex, follow')
-      expect(headUnknown.headers.get('cache-control')).toBe('no-store')
-      expect(await headUnknown.text()).toBe('')
-      expect(fakeCache.put).not.toHaveBeenCalled()
-
-      const healthRes = await worker.fetch(new Request('https://moklu.app/healthz.txt'), {})
-      expect(healthRes.status).toBe(200)
-      expect(healthRes.headers.get('cache-control')).toBe('no-store')
-      expect(healthRes.headers.get('cdn-cache-control')).toBeNull()
-      expect(healthRes.headers.get('x-robots-tag')).toBeNull()
-      expect(await healthRes.text()).toBe('ok\n')
-
-      const postRes = await worker.fetch(new Request('https://moklu.app/', { method: 'POST' }), {})
-      expect(postRes.status).toBe(200)
-      expect(fetchSpy.mock.calls[fetchSpy.mock.calls.length - 1]).toHaveLength(1)
-    } finally {
-      vi.unstubAllGlobals()
-    }
-  })
-
-  it('responds 200 JSON with no-store, COOP, and CSP on GET /_telemetry/health', async () => {
-    const res = await worker.fetch(new Request('https://moklu.app/_telemetry/health'), {})
-    expect(res.status).toBe(200)
-    expect(res.headers.get('cache-control')).toBe('no-store')
-    expect(res.headers.get('cross-origin-opener-policy')).toBe('same-origin-allow-popups')
-    expect(res.headers.get('content-security-policy')).toContain("default-src 'self'")
-    expect(await res.json()).toEqual({
-      ok: true,
-      service: 'moklu-telemetry',
-      storage: 'd1:moklu-funnel',
-    })
-  })
-
-  it('accepts valid same-origin POST /_telemetry and upserts daily D1 aggregate via waitUntil', async () => {
-    const run = vi.fn(async () => ({}))
-    const bind = vi.fn((...args: unknown[]) => {
-      void args
-      return { run }
-    })
-    const prepare = vi.fn(() => ({ bind }))
-    const waitUntil = vi.fn((p: Promise<unknown>) => {
-      void p
-    })
-
-    const req = Object.assign(
-      new Request('https://moklu.app/_telemetry', {
-        method: 'POST',
-        headers: {
-          Origin: 'https://moklu.app',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: 'format_rejected',
-          timestamp: 1700000000000,
-          props: {
-            tool: 'compress',
-            slug: 'heic-to-jpg',
-            locale: 'zh',
-            mime: 'image/vnd.adobe.photoshop',
-            ext: 'psd',
-            count: 2,
-            filename: 'secret-client-contract.psd',
-          },
-        }),
-      }),
-      { cf: { country: 'CN' } },
-    )
-
-    const res = await worker.fetch(req, { DB: { prepare } }, { waitUntil })
-    expect(res.status).toBe(204)
-    expect(prepare).toHaveBeenCalledTimes(1)
-    expect(bind).toHaveBeenCalledTimes(1)
-    const boundArgs = bind.mock.calls[0]
-    expect(boundArgs.slice(1, 9)).toEqual([
-      'format_rejected',
-      'compress',
-      'heic-to-jpg',
-      'zh',
-      'image/vnd.adobe.photosho',
-      'psd',
-      'CN',
-      2,
-    ])
-    expect(waitUntil).toHaveBeenCalledTimes(1)
-
-    const notFoundReq = Object.assign(
-      new Request('https://moklu.app/_telemetry', {
-        method: 'POST',
-        headers: {
-          Origin: 'https://moklu.app',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: 'not_found_view',
-          timestamp: 1700000000001,
-          props: {
-            tool: 'not-found',
-            slug: 'assets/non-existent-probe.js',
-            locale: 'zh',
-            ext: 'js',
-          },
-        }),
-      }),
-      { cf: { country: 'JP' } },
-    )
-
-    const notFoundRes = await worker.fetch(notFoundReq, { DB: { prepare } }, { waitUntil })
-    expect(notFoundRes.status).toBe(204)
-    expect(bind).toHaveBeenCalledTimes(2)
-    expect(bind.mock.calls[1].slice(1, 9)).toEqual([
-      'not_found_view',
-      'not-found',
-      'assets/non-existent-probe.js',
-      'zh',
-      '',
-      'js',
-      'JP',
-      0,
-    ])
-  })
-
-  it('rejects missing/evil Origin, invalid methods, unknown events, and oversized bodies', async () => {
-    const noOrigin = new Request('https://moklu.app/_telemetry', {
-      method: 'POST',
-      body: JSON.stringify({ name: 'tool_view', props: { tool: 'mockup' } }),
-    })
-    expect((await worker.fetch(noOrigin, {})).status).toBe(403)
-
-    const evilOrigin = new Request('https://moklu.app/_telemetry', {
-      method: 'POST',
-      headers: { Origin: 'https://evil.example.com' },
-      body: JSON.stringify({ name: 'tool_view', props: { tool: 'mockup' } }),
-    })
-    expect((await worker.fetch(evilOrigin, {})).status).toBe(403)
-
-    expect((await worker.fetch(new Request('https://moklu.app/_telemetry'), {})).status).toBe(405)
-
-    const unknownEvent = new Request('https://moklu.app/_telemetry', {
-      method: 'POST',
-      headers: { Origin: 'https://moklu.app' },
-      body: JSON.stringify({ name: 'exfiltrate', props: {} }),
-    })
-    expect((await worker.fetch(unknownEvent, {})).status).toBe(400)
-
-    const huge = new Request('https://moklu.app/_telemetry', {
-      method: 'POST',
-      headers: { Origin: 'https://moklu.app' },
-      body: JSON.stringify({ name: 'tool_view', props: { pad: 'x'.repeat(3000) } }),
-    })
-    expect((await worker.fetch(huge, {})).status).toBe(413)
-
-    expect(sanitizeEdgeDimension('https://moklu.app/secret', 32, 'fallback')).toBe('fallback')
-    expect(sanitizeEdgeDimension('/Users/alice/id.jpg', 32, 'fallback')).toBe('fallback')
   })
 })

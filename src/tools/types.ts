@@ -1,7 +1,7 @@
 /**
- * [INPUT]: depends on browser DOM CanvasImageSource, Blob, and File built-in types
- * [OUTPUT]: exports all shared option, layout, runtime, vertical overlap analysis, and result interfaces for src/tools engines
- * [POS]: foundational type contract of src/tools; imported by canvasHelpers, stitchOverlap, and all five processing engines
+ * [INPUT]: depends on browser DOM CanvasImageSource, Blob, and File built-in types and ./idPhotoTypes
+ * [OUTPUT]: exports all shared option, layout, runtime, vertical overlap analysis, ID photo/matting, and result interfaces for src/tools engines
+ * [POS]: foundational type contract of src/tools; imported by canvasHelpers, stitchOverlap, portraitMatting, idPhotoEngine, and all processing engines
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
@@ -103,6 +103,8 @@ export interface CanvasContextLike {
   ): void
   fillText(text: string, x: number, y: number, maxWidth?: number): void
   getImageData?(sx: number, sy: number, sw: number, sh: number): ImageDataLike
+  putImageData?(imageData: ImageDataLike, dx: number, dy: number): void
+  createImageData?(sw: number, sh: number): ImageDataLike
 }
 
 export interface CanvasLike {
@@ -560,3 +562,20 @@ export interface IdCardSheetResult {
   filename: string
   layout: IdCardSheetLayout
 }
+
+export type {
+  ExtractPortraitMatteOptions,
+  IdPhotoBackgroundPreset,
+  IdPhotoMattingMode,
+  IdPhotoOutputFormat,
+  IdPhotoPrintSheetLayout,
+  IdPhotoPrintSheetOptions,
+  IdPhotoPrintSheetResult,
+  IdPhotoRenderResult,
+  IdPhotoSheetFormat,
+  IdPhotoSheetPaper,
+  IdPhotoSpecPreset,
+  PortraitFramingHints,
+  PortraitMatteData,
+  RefineAndCompositeIdPhotoOptions,
+} from './idPhotoTypes'

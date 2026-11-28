@@ -1,6 +1,6 @@
 /**
  * [INPUT]: none (leaf domain contract for the SEO, i18n, and SSG subsystem)
- * [OUTPUT]: exports LocaleCode, HtmlLangCode, HreflangCode, ToolId, RouteCategory, InfoPageSlug, RouteSlug, SecondaryToolSlug, GrowthRouteSlug, RoutePreset, RouteDefinition, ResolvedRoute, HreflangLink, RouteCopy, UiLabels, and LocaleBundle types
+ * [OUTPUT]: exports LocaleCode, HtmlLangCode, HreflangCode, ToolId, RouteCategory, InfoPageSlug, RouteSlug, SecondaryToolSlug, IdPhotoRouteSlug, GrowthRouteSlug, RoutePreset, RouteDefinition, ResolvedRoute, HreflangLink, RouteCopy, UiLabels, and LocaleBundle types
  * [POS]: foundational type contract within src/seo, imported by routes.ts, locales/*.ts, i18n.ts, schema.ts, useSeoHead.ts, UI chrome, and prerender-seo.mjs
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -11,7 +11,7 @@ export type HtmlLangCode = 'en' | 'zh-CN' | 'ja' | 'ko'
 
 export type HreflangCode = 'en' | 'zh-Hans' | 'ja' | 'ko' | 'x-default'
 
-export type ToolId = 'mockup' | 'merge' | 'split' | 'compress' | 'resize' | 'annotate' | 'id-card'
+export type ToolId = 'mockup' | 'merge' | 'split' | 'compress' | 'resize' | 'annotate' | 'id-photo' | 'id-card'
 
 export type RouteCategory = 'hub' | 'studio' | 'info' | ToolId
 
@@ -46,6 +46,9 @@ export type RouteSlug =
   | 'add-border-to-photo'
   | 'annotate-image'
   | 'draw-on-image'
+  | 'passport-photo-maker'
+  | 'id-photo-background-changer'
+  | 'id-photo-print-sheet'
   | 'id-card-watermark'
   | InfoPageSlug
 
@@ -63,6 +66,13 @@ export type SecondaryToolSlug = Extract<
   | 'id-card-watermark'
 >
 
+export type IdPhotoRouteSlug = Extract<
+  RouteSlug,
+  | 'passport-photo-maker'
+  | 'id-photo-background-changer'
+  | 'id-photo-print-sheet'
+>
+
 export type GrowthRouteSlug = Extract<
   RouteSlug,
   | 'ipad-mockup'
@@ -74,6 +84,7 @@ export type GrowthRouteSlug = Extract<
   | 'redact-screenshot'
   | 'annotate-image'
   | 'draw-on-image'
+  | IdPhotoRouteSlug
 >
 
 export interface RoutePreset {
@@ -91,6 +102,9 @@ export interface RoutePreset {
   enableRedact?: boolean
   resizeMode?: 'resize' | 'crop' | 'pad'
   annotateTool?: 'select' | 'brush' | 'rect' | 'arrow' | 'text'
+  idPhotoPreset?: string
+  idPhotoTab?: 'single' | 'trio' | 'sheet'
+  idPhotoBg?: string
 }
 
 export interface RouteDefinition {

@@ -64,8 +64,28 @@ export interface RecordedCanvas {
   strokeCount: number
   strokes: RecordedStrokeCall[]
   shadowFills: number
+  pixels?: Uint8ClampedArray
   encodedFormat?: string
   encodedQuality?: number
+}
+
+function parseHexColor(color: string): [number, number, number] | null {
+  const hex = color.trim().replace(/^#/, '')
+  if (/^[0-9a-fA-F]{6}$/.test(hex)) {
+    return [
+      parseInt(hex.slice(0, 2), 16),
+      parseInt(hex.slice(2, 4), 16),
+      parseInt(hex.slice(4, 6), 16),
+    ]
+  }
+  if (/^[0-9a-fA-F]{3}$/.test(hex)) {
+    return [
+      parseInt(hex[0] + hex[0], 16),
+      parseInt(hex[1] + hex[1], 16),
+      parseInt(hex[2] + hex[2], 16),
+    ]
+  }
+  return null
 }
 
 interface TransformState {
@@ -83,6 +103,7 @@ interface TransformState {
 
 export function createRecordingCanvasFactory(options?: {
   blobSizeFor?: (format: string, quality?: number, width?: number, height?: number) => number
+  pixelBacked?: boolean
 }): {
   createCanvas: CanvasFactory
   canvases: RecordedCanvas[]
@@ -90,6 +111,7 @@ export function createRecordingCanvasFactory(options?: {
   const canvases: RecordedCanvas[] = []
 
   const createCanvas: CanvasFactory = (width, height): CanvasLike => {
+    const pixelBuffer = options?.pixelBacked ? new Uint8ClampedArray(width * height * 4) : undefined
     const record: RecordedCanvas = {
       width,
       height,
@@ -101,6 +123,7 @@ export function createRecordingCanvasFactory(options?: {
       strokeCount: 0,
       strokes: [],
       shadowFills: 0,
+      pixels: pixelBuffer,
     }
     canvases.push(record)
 
@@ -187,6 +210,24 @@ export function createRecordingCanvasFactory(options?: {
       clearRect() {},
       fillRect(x, y, w, h) {
         record.fillRects.push({ x, y, w, h, fillStyle: state.fillStyle })
+        if (pixelBuffer && typeof state.fillStyle === 'string') {
+          const rgb = parseHexColor(state.fillStyle)
+          if (rgb) {
+            const x0 = Math.max(0, Math.floor(x))
+            const y0 = Math.max(0, Math.floor(y))
+            const x1 = Math.min(width, Math.ceil(x + w))
+            const y1 = Math.min(height, Math.ceil(y + h))
+            for (let py = y0; py < y1; py += 1) {
+              for (let px = x0; px < x1; px += 1) {
+                const idx = (py * width + px) * 4
+                pixelBuffer[idx] = rgb[0]
+                pixelBuffer[idx + 1] = rgb[1]
+                pixelBuffer[idx + 2] = rgb[2]
+                pixelBuffer[idx + 3] = 255
+              }
+            }
+          }
+        }
       },
       strokeRect() {
         record.strokeCount += 1
@@ -246,6 +287,47 @@ export function createRecordingCanvasFactory(options?: {
           translation: { x: state.tx, y: state.ty },
         })
       },
+      ...(pixelBuffer
+        ? {
+            createImageData(sw: number, sh: number) {
+              return { width: sw, height: sh, data: new Uint8ClampedArray(sw * sh * 4) }
+            },
+            getImageData(sx: number, sy: number, sw: number, sh: number) {
+              const out = new Uint8ClampedArray(sw * sh * 4)
+              for (let row = 0; row < sh; row += 1) {
+                const srcY = sy + row
+                if (srcY < 0 || srcY >= height) continue
+                for (let col = 0; col < sw; col += 1) {
+                  const srcX = sx + col
+                  if (srcX < 0 || srcX >= width) continue
+                  const srcIdx = (srcY * width + srcX) * 4
+                  const dstIdx = (row * sw + col) * 4
+                  out[dstIdx] = pixelBuffer[srcIdx]
+                  out[dstIdx + 1] = pixelBuffer[srcIdx + 1]
+                  out[dstIdx + 2] = pixelBuffer[srcIdx + 2]
+                  out[dstIdx + 3] = pixelBuffer[srcIdx + 3]
+                }
+              }
+              return { width: sw, height: sh, data: out }
+            },
+            putImageData(imageData, dx: number, dy: number) {
+              for (let row = 0; row < imageData.height; row += 1) {
+                const dstY = dy + row
+                if (dstY < 0 || dstY >= height) continue
+                for (let col = 0; col < imageData.width; col += 1) {
+                  const dstX = dx + col
+                  if (dstX < 0 || dstX >= width) continue
+                  const srcIdx = (row * imageData.width + col) * 4
+                  const dstIdx = (dstY * width + dstX) * 4
+                  pixelBuffer[dstIdx] = imageData.data[srcIdx]
+                  pixelBuffer[dstIdx + 1] = imageData.data[srcIdx + 1]
+                  pixelBuffer[dstIdx + 2] = imageData.data[srcIdx + 2]
+                  pixelBuffer[dstIdx + 3] = imageData.data[srcIdx + 3]
+                }
+              }
+            },
+          }
+        : {}),
     }
 
     return {

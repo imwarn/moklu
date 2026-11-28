@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on node:child_process, node:fs/promises, node:path, node:url, vite (build); depends on ALL_ROUTES, getSiteUrl, and resolvePathname from ../src/seo/routes.ts; depends on getRouteRelativeHtmlPath, renderRouteHtml, generateSitemapXml, generateRobotsTxt, and generateLlmsTxt from ../src/seo/ssg.ts; builds temporary SSR bundle from ../src/seo/ssrEntry.ts
- * [OUTPUT]: exports getRouteOutputPath, resolveRouteLastmodMap, and prerenderSeoDist; runs as post-build CLI writing 128 static localized index.html pages plus 4 localized 404 pages (dist/404.html, dist/zh/404.html, dist/ja/404.html, dist/ko/404.html) with full React-rendered markup, git-derived lastmod sitemap.xml, robots.txt, and llms.txt into dist/
+ * [OUTPUT]: exports getRouteOutputPath, resolveRouteLastmodMap, and prerenderSeoDist; runs as post-build CLI writing 140 static localized index.html pages plus 4 localized 404 pages (dist/404.html, dist/zh/404.html, dist/ja/404.html, dist/ko/404.html) with full React-rendered markup, git-derived lastmod sitemap.xml, robots.txt, and llms.txt into dist/
  * [POS]: post-build Node ESM SSG runner in scripts/, invoked after `vite build` to materialize zero-FOUC static HTML via react-dom/server renderToString
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -20,6 +20,12 @@ import {
 } from '../src/seo/ssg.ts'
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+
+const ID_PHOTO_ROUTE_SLUGS = new Set([
+  'passport-photo-maker',
+  'id-photo-background-changer',
+  'id-photo-print-sheet',
+])
 
 const GROWTH_ROUTE_SLUGS = new Set([
   'ipad-mockup',
@@ -49,6 +55,9 @@ const SECONDARY_TOOL_SLUGS = new Set([
 function getRouteLocaleSourceFiles(route) {
   if (route.isInfoPage) {
     return ['src/seo/locales/infoRoutes.ts', 'src/seo/locales/infoPages.ts']
+  }
+  if (ID_PHOTO_ROUTE_SLUGS.has(route.slug)) {
+    return [`src/seo/locales/${route.locale}IdPhotoRoutes.ts`]
   }
   if (GROWTH_ROUTE_SLUGS.has(route.slug)) {
     return [`src/seo/locales/${route.locale}GrowthRoutes.ts`]

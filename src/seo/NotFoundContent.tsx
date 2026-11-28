@@ -1,7 +1,7 @@
 /**
  * [INPUT]: depends on ResolvedRoute from ./types.ts; depends on PRIMARY_TOOL_SLUGS and buildLocalizedPath from ./routes.ts; depends on getRouteCopy from ./i18n.ts; depends on NAV_TOOL_ORDER and handleSpaLinkClick from ./navHelpers.ts; depends on getNotFoundCopy and NotFoundCopy from ./notFoundCopy.ts
  * [OUTPUT]: exports NotFoundContent component, NotFoundContentProps type, and re-exports getNotFoundCopy and NotFoundCopy
- * [POS]: dedicated 4-locale Light/Dark 404 Not Found view within src/seo, offering Home/Studio navigation and a 7-tool local directory grid, consumed by ToolLandingPage.tsx and build-time dist/404.html SSG
+ * [POS]: dedicated 4-locale Light/Dark 404 Not Found view within src/seo, offering Home/Studio navigation and an 8-tool local directory grid, consumed by ToolLandingPage.tsx and build-time dist/404.html SSG
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 

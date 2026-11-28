@@ -1,10 +1,11 @@
 /**
- * [INPUT]: depends on WorkspaceStrings from ../i18n
- * [OUTPUT]: exports EN English UI strings for QuickWorkspace and its 7 tool panels
+ * [INPUT]: depends on WorkspaceStrings from ../i18n and ID_PHOTO_LOCALE_EN from ./idPhotoLocale
+ * [OUTPUT]: exports EN English UI strings for QuickWorkspace and its 8 tool panels
  * [POS]: English locale dictionary in src/workspace/locales
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 import type { WorkspaceStrings } from '../i18n'
+import { ID_PHOTO_LOCALE_EN } from './idPhotoLocale'
 
 export const EN: WorkspaceStrings = {
   tabs: {
@@ -14,6 +15,7 @@ export const EN: WorkspaceStrings = {
     compress: { label: 'Compress & Convert', short: 'Compress', description: 'Shrink PNG, JPEG & WebP offline in batch' },
     resize: { label: 'Resize, Crop & Pad', short: 'Resize', description: 'Resize, crop, or add social borders without cropping' },
     annotate: { label: 'Annotate & Markup', short: 'Annotate', description: 'Draw freehand brush, rectangles, arrows & text locally' },
+    'id-photo': { label: 'ID & Passport Photo', short: 'ID Photo', description: 'Local AI portrait cutout, background swap & 300 DPI print sheets' },
     'id-card': { label: 'ID Card Watermark', short: 'ID Card', description: 'Compose A4 front+back sheet with anti-fraud watermark' },
   },
   common: {
@@ -279,4 +281,5 @@ export const EN: WorkspaceStrings = {
     backDecodeError: 'Unable to decode back ID image.',
     renderError: 'A4 sheet rendering failed.',
   },
+  idPhoto: ID_PHOTO_LOCALE_EN,
 }
