@@ -630,4 +630,39 @@ describe('moklu-telemetry edge worker, cache policy & CSP header parity', () => 
       })
     }
   })
+
+  it('self-heals when cf.cacheEverything returns a stale HIT soft-200 HTML fallback after a rolling origin deploy', async () => {
+    const { fakeCache } = createFakeCache()
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const targetUrl = typeof input === 'string' ? input : (input as Request).url
+      const parsed = new URL(targetUrl)
+      if (parsed.pathname === '/models/modnet-fp16.onnx' && parsed.searchParams.has('__moklu_recheck')) {
+        return new Response(new Uint8Array([0x08, 0x07, 0x12, 0x04]), {
+          status: 200,
+          headers: { 'Content-Type': 'application/octet-stream' },
+        })
+      }
+      return new Response('<!doctype html><html><body>Old SPA Fallback</body></html>', {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+          'CF-Cache-Status': 'HIT',
+        },
+      })
+    })
+
+    const firstRes = await worker.fetch(new Request('https://moklu.app/models/modnet-fp16.onnx'), {})
+    expect(firstRes.status).toBe(200)
+    expect(firstRes.headers.get('content-type')).toBe('application/octet-stream')
+    expect(firstRes.headers.get('cache-control')).toBe('public, max-age=31536000, immutable')
+    expect(fetchSpy).toHaveBeenCalledTimes(2)
+    expect(fakeCache.put).toHaveBeenCalledTimes(1)
+
+    // Subsequent requests serve directly from moklu-edge-v3 HIT without touching upstream fetch
+    const secondRes = await worker.fetch(new Request('https://moklu.app/models/modnet-fp16.onnx'), {})
+    expect(secondRes.status).toBe(200)
+    expect(secondRes.headers.get('cf-cache-status')).toBe('HIT')
+    expect(fetchSpy).toHaveBeenCalledTimes(2)
+  })
 })

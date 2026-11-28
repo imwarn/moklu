@@ -42,8 +42,8 @@ interface CfRequestMetadata {
 }
 
 interface CfFetchCacheOptions {
-  cacheEverything: true
-  cacheTtl: number
+  cacheEverything?: boolean
+  cacheTtl?: number
 }
 
 interface EdgeCacheStorageLike {
@@ -438,12 +438,31 @@ export default {
 
     const originRequest =
       method === 'HEAD' ? new Request(request.url, { method: 'GET' }) : request
-    const upstream = await fetch(originRequest, {
+    let upstream = await fetch(originRequest, {
       cf: {
         cacheEverything: true,
         cacheTtl: edgeCacheTtl,
       },
     } as CfRequestInit)
+
+    // Self-heal rolling-deploy subrequest cache poisoning: if Cloudflare's internal
+    // cf.cacheEverything layer cached a pre-deploy Coolify SPA soft-200 text/html
+    // fallback (CF-Cache-Status: HIT) before the new container booted, bypass that
+    // stale subrequest entry once and promote the real binary into moklu-edge-v3.
+    if (
+      isUnexpectedHtmlAssetFallback(url.pathname, upstream.headers.get('content-type')) &&
+      (upstream.headers.get('cf-cache-status') ?? '').trim().toUpperCase() === 'HIT'
+    ) {
+      void upstream.body?.cancel()
+      const sep = url.search ? '&' : '?'
+      const bypassUrl = `${url.origin}${url.pathname}${url.search}${sep}__moklu_recheck=${Date.now()}`
+      upstream = await fetch(new Request(bypassUrl, { method: 'GET' }), {
+        cf: {
+          cacheEverything: false,
+          cacheTtl: -1,
+        },
+      } as CfRequestInit)
+    }
 
     if (shouldRejectStaticAssetUpstream(url.pathname, upstream)) {
       void upstream.body?.cancel()
