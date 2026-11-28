@@ -11,6 +11,6 @@
 - `sync-cf-headers.mjs`: Zero-drift Cloudflare API deployer syncing `public/_headers` `/*` security, COOP, and CSP headers to `moklu.app`'s `http_response_headers_transform` phase ruleset.
 - `query-funnel.mjs`: Zero-secret Cloudflare D1 SQL reporter querying `moklu-funnel` (`funnel_daily`) conversion funnel, top localized slugs, rejected file extensions, and `not_found_view` 404 routes via local Wrangler CLI.
 - `push-indexnow.mjs`: Post-deploy IndexNow notifier submitting all 128 canonical URLs from `dist/sitemap.xml` authenticated by `public/fb6946466b9027e3bbb1506815e0f52e.txt`.
-- `verify-deploy.sh`: End-to-end staged deployment verification shell script.
+- `verify-deploy.sh`: End-to-end staged deployment verification shell script checking `/` + lazy `StudioPage-*.js` (`toolbar-right`, `SettingsModal-*.js` git SHA) + `IdPhotoQuickTool-*.js` build identity, CSP/security headers, module JS/WASM MIME types, `/models/modnet-fp16.onnx` immutable edge cache, and `/studio/` Playwright UI probes.
 
 [PROTOCOL]: Update this header on change, then check GEMINI.md

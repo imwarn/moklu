@@ -57,19 +57,56 @@ if [[ -n "$BUNDLE" ]]; then c_pass "bundle referenced" "$BUNDLE"
 else c_fail "bundle referenced" "no /assets/index-*.js in HTML"; fi
 
 # ── 2. Build identity ───────────────────────────────────────────────────────
-# The fix moves the PNG export into a pinned toolbar cluster; that marker only
-# exists in the fixed bundle, so it identifies which build is actually served.
-hdr "2. Build identity (is this the fixed build?)"
+# Root / serves ToolLandingPage + QuickWorkspace, while Studio lives in a lazy
+# StudioPage-*.js chunk containing toolbar-right and SettingsModal-*.js.
+hdr "2. Build identity (is this the current build?)"
+STUDIO_CHUNK=""
+WASM_CHUNK=""
 if [[ -n "$BUNDLE" ]]; then
   JS="$(curl -sS --max-time 40 "$TARGET$BUNDLE" 2>/dev/null)"
-  if grep -q 'toolbar-right' <<<"$JS"; then
+  STUDIO_CHUNK="$(grep -oE 'assets/StudioPage-[A-Za-z0-9_-]+\.js' <<<"$JS" | head -1)"
+  SJS_SOURCE="$JS"
+  if [[ -n "$STUDIO_CHUNK" ]]; then
+    STUDIO_JS="$(curl -sS --max-time 40 "$TARGET/${STUDIO_CHUNK}" 2>/dev/null)"
+    SJS_SOURCE="${JS}"$'\n'"${STUDIO_JS}"
+    if grep -q 'toolbar-right' <<<"$STUDIO_JS"; then
+      c_pass "fixed toolbar build" "$STUDIO_CHUNK contains toolbar-right"
+    else
+      c_fail "fixed toolbar build" "$STUDIO_CHUNK missing toolbar-right"
+    fi
+  elif grep -q 'toolbar-right' <<<"$JS"; then
     c_pass "fixed toolbar build" "bundle contains toolbar-right"
   else
-    c_fail "fixed toolbar build" "bundle is PRE-FIX (no toolbar-right) — fixes not deployed"
+    c_fail "fixed toolbar build" "bundle missing StudioPage chunk and toolbar-right"
   fi
+
+  ID_PHOTO_CHUNK="$(grep -oE 'assets/IdPhotoQuickTool-[A-Za-z0-9_-]+\.js' <<<"$JS" | head -1)"
+  if [[ -n "$ID_PHOTO_CHUNK" ]]; then
+    c_pass "id-photo tool chunk" "/$ID_PHOTO_CHUNK"
+  fi
+
+  PM_CHUNK="$(grep -oE 'assets/portraitMatting-[A-Za-z0-9_-]+\.js' <<<"$SJS_SOURCE" | head -1)"
+  if [[ -z "$PM_CHUNK" && -n "$ID_PHOTO_CHUNK" ]]; then
+    EA_CHUNK="$(grep -oE 'assets/engineAdapter-[A-Za-z0-9_-]+\.js' <<<"$JS" | head -1)"
+    if [[ -n "$EA_CHUNK" ]]; then
+      EA_JS="$(curl -sS --max-time 40 "$TARGET/${EA_CHUNK}" 2>/dev/null)"
+      PM_CHUNK="$(grep -oE 'assets/portraitMatting-[A-Za-z0-9_-]+\.js' <<<"$EA_JS" | head -1)"
+    fi
+  fi
+  if [[ -n "$PM_CHUNK" ]]; then
+    PM_JS="$(curl -sS --max-time 40 "$TARGET/${PM_CHUNK}" 2>/dev/null)"
+    WASM_CHUNK="$(grep -oE 'assets/ort-wasm-simd-threaded-[A-Za-z0-9_-]+\.wasm' <<<"$PM_JS" | head -1)"
+    if [[ -z "$WASM_CHUNK" ]]; then
+      WASM_WRAP="$(grep -oE 'assets/ort-wasm-simd-threaded-[A-Za-z0-9_-]+\.js' <<<"$PM_JS" | head -1)"
+      if [[ -n "$WASM_WRAP" ]]; then
+        WW_JS="$(curl -sS --max-time 40 "$TARGET/${WASM_WRAP}" 2>/dev/null)"
+        WASM_CHUNK="$(grep -oE 'assets/ort-wasm-simd-threaded-[A-Za-z0-9_-]+\.wasm' <<<"$WW_JS" | head -1)"
+      fi
+    fi
+  fi
+
   # The deployed commit hash lives in the lazily-loaded Settings chunk.
-  # Chunk references are relative ("assets/SettingsModal-*.js"), not root-absolute.
-  SETTINGS="$(grep -oE 'assets/SettingsModal-[A-Za-z0-9_-]+\.js' <<<"$JS" | head -1)"
+  SETTINGS="$(grep -oE 'assets/SettingsModal-[A-Za-z0-9_-]+\.js' <<<"$SJS_SOURCE" | head -1)"
   if [[ -n "$SETTINGS" ]]; then
     SJS="$(curl -sS --max-time 40 "$TARGET/${SETTINGS}" 2>/dev/null)"
     SHA="$(grep -oE 'Git commit hash`?,?children:`?[^`]*`' <<<"$SJS" | grep -oE '`[^`]*`$' | tr -d '`' | head -1)"
@@ -106,9 +143,9 @@ fi
 if grep -qi '^Permissions-Policy:' <<<"$HDRS"; then c_pass "Permissions-Policy" present
 else c_warn "Permissions-Policy" "missing (not release-blocking)"; fi
 
-# ── 4. Cache policy ─────────────────────────────────────────────────────────
-hdr "4. Cache policy"
-HTML_CC="$(grep -i '^cache-control:' <<<"$HDRS" | head -1 | cut -d' ' -f2-)"
+# ── 4. Cache & MIME policy ──────────────────────────────────────────────────
+hdr "4. Cache & MIME policy"
+HTML_CC="$(grep -i '^cache-control:' <<<"$HDRS" | head -1 | cut -d' ' -f2- | tr -d '\r')"
 if [[ -z "$HTML_CC" ]]; then
   c_fail "HTML Cache-Control" "absent — no directive at all"
 elif grep -qiE 'no-(cache|store)' <<<"$HTML_CC"; then
@@ -117,10 +154,27 @@ else
   c_fail "HTML Cache-Control" "present but not no-cache: $HTML_CC"
 fi
 if [[ -n "$BUNDLE" ]]; then
-  AS_CC="$(curl -sSI --max-time 20 "$TARGET$BUNDLE" 2>/dev/null | grep -i '^cache-control:' | head -1 | cut -d' ' -f2-)"
+  AS_HDRS="$(curl -sSI --max-time 20 "$TARGET$BUNDLE" 2>/dev/null)"
+  AS_CC="$(grep -i '^cache-control:' <<<"$AS_HDRS" | head -1 | cut -d' ' -f2- | tr -d '\r')"
+  AS_CT="$(grep -i '^content-type:' <<<"$AS_HDRS" | head -1 | cut -d' ' -f2- | tr -d '\r')"
   if grep -qi 'immutable' <<<"$AS_CC"; then c_pass "hashed asset cache" "$AS_CC"
   elif [[ -n "$AS_CC" ]]; then c_fail "hashed asset cache" "not immutable: $AS_CC"
   else c_fail "hashed asset cache" "absent"; fi
+  if grep -qi 'javascript' <<<"$AS_CT"; then c_pass "module script MIME" "$AS_CT"
+  else c_fail "module script MIME" "expected javascript, got ${AS_CT:-missing}"; fi
+fi
+if [[ -n "$WASM_CHUNK" ]]; then
+  WASM_CT="$(curl -sSI --max-time 20 "$TARGET/${WASM_CHUNK}" 2>/dev/null | grep -i '^content-type:' | head -1 | cut -d' ' -f2- | tr -d '\r')"
+  if grep -qi 'application/wasm' <<<"$WASM_CT"; then c_pass "WASM binary MIME" "$WASM_CT"
+  else c_fail "WASM binary MIME" "expected application/wasm, got ${WASM_CT:-missing}"; fi
+fi
+ONNX_HDRS="$(curl -sSI --max-time 20 "$TARGET/models/modnet-fp16.onnx" 2>/dev/null)"
+ONNX_CODE="$(head -1 <<<"$ONNX_HDRS" | awk '{print $2}')"
+ONNX_CC="$(grep -i '^cache-control:' <<<"$ONNX_HDRS" | head -1 | cut -d' ' -f2- | tr -d '\r')"
+if [[ "$ONNX_CODE" == "200" ]] && grep -qi 'immutable' <<<"$ONNX_CC"; then
+  c_pass "ONNX model cache" "200 · $ONNX_CC"
+elif [[ -n "$ONNX_CODE" ]]; then
+  c_warn "ONNX model cache" "HTTP $ONNX_CODE · ${ONNX_CC:-no cache-control}"
 fi
 
 # ── 5. Release-blocking defect probes ───────────────────────────────────────
@@ -137,7 +191,8 @@ else
     PROBE="$OUT_DIR/probe-$STAMP.mjs"
     cat > "$PROBE" <<'PROBE_JS'
 import { chromium } from '@playwright/test'
-const base = process.env.PROBE_TARGET
+const base = process.env.PROBE_TARGET.replace(/\/+$/, '')
+const studioUrl = `${base}/studio/`
 const b = await chromium.launch()
 const out = { probes: [] }
 const rec = (id, ok, detail) => out.probes.push({ id, ok, detail })
@@ -147,7 +202,7 @@ try {
   {
     const ctx = await b.newContext({ viewport: { width: 393, height: 852 } })
     const p = await ctx.newPage()
-    await p.goto(base, { waitUntil: 'domcontentloaded' })
+    await p.goto(studioUrl, { waitUntil: 'domcontentloaded' })
     await p.waitForSelector('.konvajs-content', { timeout: 30000 })
     await p.getByRole('button', { name: 'Add a canvas format' }).click()
     await p.waitForTimeout(500)
@@ -166,7 +221,7 @@ try {
   {
     const ctx = await b.newContext({ viewport: { width: 393, height: 852 } })
     const p = await ctx.newPage()
-    await p.goto(base, { waitUntil: 'domcontentloaded' })
+    await p.goto(studioUrl, { waitUntil: 'domcontentloaded' })
     await p.waitForSelector('.konvajs-content', { timeout: 30000 })
     const g = await p.evaluate(() => {
       const btn = document.querySelector('button[title="Export the active canvas at its original size"]')
@@ -183,7 +238,7 @@ try {
   {
     const ctx = await b.newContext({ viewport: { width: 1440, height: 900 } })
     const p = await ctx.newPage()
-    await p.goto(base, { waitUntil: 'domcontentloaded' })
+    await p.goto(studioUrl, { waitUntil: 'domcontentloaded' })
     await p.waitForSelector('.konvajs-content', { timeout: 30000 })
     const g = await p.evaluate(() => {
       const right = document.querySelector('[data-testid="toolbar-right"]')
@@ -200,7 +255,7 @@ try {
   {
     const ctx = await b.newContext({ viewport: { width: 1440, height: 900 } })
     const p = await ctx.newPage()
-    await p.goto(base, { waitUntil: 'domcontentloaded' })
+    await p.goto(studioUrl, { waitUntil: 'domcontentloaded' })
     await p.waitForSelector('.konvajs-content', { timeout: 30000 })
     for (const name of [/Templates/, /Projects/]) {
       const opener = p.getByRole('button', { name }).first()
@@ -228,7 +283,7 @@ try {
   {
     const ctx = await b.newContext({ viewport: { width: 393, height: 852 } })
     const p = await ctx.newPage()
-    await p.goto(base, { waitUntil: 'domcontentloaded' })
+    await p.goto(studioUrl, { waitUntil: 'domcontentloaded' })
     await p.waitForSelector('.konvajs-content', { timeout: 30000 })
     const g = await p.evaluate(() => {
       const c = document.querySelector('.konvajs-content').getBoundingClientRect()

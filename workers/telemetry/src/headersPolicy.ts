@@ -1,7 +1,7 @@
 /**
  * [INPUT]: none (zero-dependency edge HTTP header, 140-route SSG matcher, explicit /en redirector, static-asset HTML-fallback detector, HTML navigation & 4-locale 404.html resolver, CDN-Cache-Control, and crawl-hygiene contract mirrored with public/_headers and src/seo/routes.ts; verified in index.test.ts)
- * [OUTPUT]: exports EdgeLocaleCode, EDGE_SECURITY_HEADERS, isStaticNonHtmlAssetPath, isUnexpectedHtmlAssetFallback, isHtmlDocumentNavigation, resolveEdgeNotFoundLocale, resolveOriginNotFoundHtmlPath, resolveExplicitEnRedirectPath, isKnownSsgHtmlPath, isUnknownNonAssetPath, resolveEdgeCacheControl, resolveEdgeCdnCacheControl, resolveEdgeCacheTtlSeconds, and applyMokluEdgeHeaders
- * [POS]: single edge response-header, redirect, content-negotiated 404, and cache-policy module of workers/telemetry/src; attaches CSP, COOP, bfcache-safe Cache-Control, immutable /assets/* & /models/* caching, CDN-Cache-Control, static-asset soft-200 guards, and localized 404 HTML resolution onto Coolify origin responses
+ * [OUTPUT]: exports EdgeLocaleCode, EDGE_SECURITY_HEADERS, isStaticNonHtmlAssetPath, isUnexpectedHtmlAssetFallback, isHtmlDocumentNavigation, resolveEdgeNotFoundLocale, resolveOriginNotFoundHtmlPath, resolveExplicitEnRedirectPath, isKnownSsgHtmlPath, isUnknownNonAssetPath, resolveCanonicalStaticContentType, resolveEdgeCacheControl, resolveEdgeCdnCacheControl, resolveEdgeCacheTtlSeconds, and applyMokluEdgeHeaders
+ * [POS]: single edge response-header, redirect, content-negotiated 404, MIME normalization, and cache-policy module of workers/telemetry/src; attaches CSP, COOP, strict module/WASM Content-Type fixes, bfcache-safe Cache-Control, immutable /assets/* & /models/* caching, CDN-Cache-Control, static-asset soft-200 guards, and localized 404 HTML resolution onto Coolify origin responses
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
@@ -290,6 +290,41 @@ export function resolveEdgeCacheTtlSeconds(pathname: string): number | null {
   return null
 }
 
+export function resolveCanonicalStaticContentType(
+  pathname: string,
+  upstreamContentType: string | null,
+): string | null {
+  const cleanPath = pathname.split(/[?#]/, 1)[0].toLowerCase()
+  // Module scripts (.js/.mjs/.cjs) and WebAssembly (.wasm) enforce strict MIME
+  // checking in browsers (especially alongside X-Content-Type-Options: nosniff).
+  // Origin static servers like Caddy/Nginx frequently serve .mjs as application/octet-stream.
+  if (/\.(?:js|mjs|cjs)$/.test(cleanPath)) {
+    return 'text/javascript; charset=utf-8'
+  }
+  if (cleanPath.endsWith('.wasm')) {
+    return 'application/wasm'
+  }
+  if (cleanPath.endsWith('.onnx')) {
+    return 'application/octet-stream'
+  }
+
+  const normalizedUpstream = (upstreamContentType ?? '').trim().toLowerCase()
+  const isGenericOrMissing =
+    !normalizedUpstream || normalizedUpstream.startsWith('application/octet-stream')
+  if (!isGenericOrMissing) {
+    return null
+  }
+
+  if (cleanPath.endsWith('.css')) return 'text/css; charset=utf-8'
+  if (cleanPath.endsWith('.json') || cleanPath.endsWith('.map')) return 'application/json; charset=utf-8'
+  if (cleanPath.endsWith('.webmanifest')) return 'application/manifest+json; charset=utf-8'
+  if (cleanPath.endsWith('.svg')) return 'image/svg+xml'
+  if (cleanPath.endsWith('.woff2')) return 'font/woff2'
+  if (cleanPath.endsWith('.xml')) return 'application/xml; charset=utf-8'
+  if (cleanPath.endsWith('.txt')) return 'text/plain; charset=utf-8'
+  return null
+}
+
 export function applyMokluEdgeHeaders(upstream: Response, pathname: string): Response {
   const unknownNonAsset = isUnknownNonAssetPath(pathname)
   const shouldRewriteTo404 = unknownNonAsset && upstream.status === 200
@@ -300,6 +335,14 @@ export function applyMokluEdgeHeaders(upstream: Response, pathname: string): Res
   for (const [name, value] of Object.entries(EDGE_SECURITY_HEADERS)) {
     headers.set(name, value)
   }
+
+  if (status === 200 && !unknownNonAsset) {
+    const canonicalMime = resolveCanonicalStaticContentType(pathname, headers.get('content-type'))
+    if (canonicalMime) {
+      headers.set('Content-Type', canonicalMime)
+    }
+  }
+
   headers.set('Cache-Control', resolveEdgeCacheControl(pathname, status))
 
   const cdnCacheControl = resolveEdgeCdnCacheControl(pathname, status)

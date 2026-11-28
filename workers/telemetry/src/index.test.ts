@@ -1,6 +1,6 @@
 /**
  * [INPUT]: depends on node:fs/promises, vitest, ../../../src/seo/routes, ./headersPolicy, and ./index
- * [OUTPUT]: unit tests verifying byte-for-byte parity with public/_headers, 140-route SSG alignment with src/seo/routes.ts, immutable /models/* (.onnx) caching and HTML-fallback poisoning guards, HTML document navigation & 4-locale 404.html content negotiation (browser HTML 404 vs subresource 404 text/plain, never cached in moklu-edge-v3), canonical 301 /en redirects, cf.cacheEverything origin fetch options, CDN-Cache-Control, and COOP
+ * [OUTPUT]: unit tests verifying byte-for-byte parity with public/_headers, 140-route SSG alignment with src/seo/routes.ts, immutable /models/* (.onnx) caching and HTML-fallback poisoning guards, HTML document navigation & 4-locale 404.html content negotiation (browser HTML 404 vs subresource 404 text/plain, never cached in moklu-edge-v4), canonical 301 /en redirects, cf.cacheEverything origin fetch options, CDN-Cache-Control, and COOP
  * [POS]: deterministic edge caching and header-policy Vitest suite inside workers/telemetry/src alongside telemetryAnd404.test.ts
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
@@ -268,7 +268,7 @@ describe('moklu-telemetry edge worker, cache policy & CSP header parity', () => 
     expect((fetchSpy.mock.calls[1][0] as Request).method).toBe('GET')
   })
 
-  it('caches GET and HEAD responses in isolated caches.open(moklu-edge-v3) namespace with MISS -> HIT transition', async () => {
+  it('caches GET and HEAD responses in isolated caches.open(moklu-edge-v4) namespace with MISS -> HIT transition', async () => {
     const { fakeCache, openSpy } = createFakeCache()
 
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
@@ -286,7 +286,7 @@ describe('moklu-telemetry edge worker, cache policy & CSP header parity', () => 
       expect(first.headers.get('cdn-cache-control')).toBe(
         'public, s-maxage=60, stale-while-revalidate=86400',
       )
-      expect(openSpy).toHaveBeenCalledWith('moklu-edge-v3')
+      expect(openSpy).toHaveBeenCalledWith('moklu-edge-v4')
       expect(fetchSpy).toHaveBeenCalledTimes(1)
       expect(fakeCache.put).toHaveBeenCalledTimes(1)
 
@@ -303,7 +303,7 @@ describe('moklu-telemetry edge worker, cache policy & CSP header parity', () => 
     }
   })
 
-  it('negotiates /assets/* missing responses: subresource/curl get 404 text/plain, browser navigation gets localized 404.html, never cached in moklu-edge-v3', async () => {
+  it('negotiates /assets/* missing responses: subresource/curl get 404 text/plain, browser navigation gets localized 404.html, never cached in moklu-edge-v4', async () => {
     const { fakeCache, openSpy } = createFakeCache()
 
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
@@ -482,14 +482,14 @@ describe('moklu-telemetry edge worker, cache policy & CSP header parity', () => 
       expect(await rootMissingJsNav.text()).toContain('English 404 Page')
       expect(fakeCache.put).not.toHaveBeenCalled()
 
-      // Valid /assets/index-abc.js (application/javascript) -> 200 immutable + MISS -> HIT in moklu-edge-v3
+      // Valid /assets/index-abc.js (application/javascript) -> 200 immutable + MISS -> HIT in moklu-edge-v4
       const validFirst = await worker.fetch(new Request('https://moklu.app/assets/index-abc.js'), {})
       expect(validFirst.status).toBe(200)
       expect(validFirst.headers.get('cache-control')).toBe('public, max-age=31536000, immutable')
       expect(validFirst.headers.get('cdn-cache-control')).toBe('public, max-age=31536000, immutable')
       expect(validFirst.headers.get('cf-cache-status')).toBe('MISS')
       expect(await validFirst.text()).toBe('console.log("ok")')
-      expect(openSpy).toHaveBeenCalledWith('moklu-edge-v3')
+      expect(openSpy).toHaveBeenCalledWith('moklu-edge-v4')
       expect(fakeCache.put).toHaveBeenCalledTimes(1)
 
       const fetchCountAfterValidFirst = fetchSpy.mock.calls.length
@@ -659,10 +659,35 @@ describe('moklu-telemetry edge worker, cache policy & CSP header parity', () => 
     expect(fetchSpy).toHaveBeenCalledTimes(2)
     expect(fakeCache.put).toHaveBeenCalledTimes(1)
 
-    // Subsequent requests serve directly from moklu-edge-v3 HIT without touching upstream fetch
+    // Subsequent requests serve directly from moklu-edge-v4 HIT without touching upstream fetch
     const secondRes = await worker.fetch(new Request('https://moklu.app/models/modnet-fp16.onnx'), {})
     expect(secondRes.status).toBe(200)
     expect(secondRes.headers.get('cf-cache-status')).toBe('HIT')
     expect(fetchSpy).toHaveBeenCalledTimes(2)
+  })
+
+  it('normalizes application/octet-stream on .mjs, .js, and .wasm assets to strict browser module MIME types', async () => {
+    createFakeCache()
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+      return new Response('export default 1', {
+        status: 200,
+        headers: { 'Content-Type': 'application/octet-stream' },
+      })
+    })
+
+    const mjsRes = await worker.fetch(
+      new Request('https://moklu.app/assets/ort-wasm-simd-threaded-abc.mjs'),
+      {},
+    )
+    expect(mjsRes.status).toBe(200)
+    expect(mjsRes.headers.get('content-type')).toBe('text/javascript; charset=utf-8')
+    expect(mjsRes.headers.get('x-content-type-options')).toBe('nosniff')
+
+    const wasmRes = await worker.fetch(
+      new Request('https://moklu.app/assets/ort-wasm-simd-threaded-abc.wasm'),
+      {},
+    )
+    expect(wasmRes.status).toBe(200)
+    expect(wasmRes.headers.get('content-type')).toBe('application/wasm')
   })
 })

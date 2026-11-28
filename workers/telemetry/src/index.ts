@@ -1,7 +1,7 @@
 /**
  * [INPUT]: depends on WinterCG Fetch/Cache APIs, Cloudflare D1Database interface, and ./headersPolicy (EDGE_SECURITY_HEADERS, applyMokluEdgeHeaders, isHtmlDocumentNavigation, isStaticNonHtmlAssetPath, isUnexpectedHtmlAssetFallback, isUnknownNonAssetPath, resolveEdgeCacheTtlSeconds, resolveEdgeNotFoundLocale, resolveExplicitEnRedirectPath, resolveOriginNotFoundHtmlPath)
  * [OUTPUT]: exports D1DatabaseLike, TelemetryWorkerEnv, ExecutionContextLike, ALLOWED_FUNNEL_EVENTS, sanitizeEdgeDimension, and default Worker fetch handler
- * [POS]: edge entry point of workers/telemetry; serves moklu.app/_telemetry* zero-PII D1 funnel ingestion (including not_found_view), canonical 301 /en redirects, content-negotiated localized 404.html vs subresource 404 text/plain responses (never cached), and Coolify origin proxying with isolated Cloudflare Cache API (`caches.open('moklu-edge-v3')`) + `cf.cacheEverything`, public/_headers CSP/COOP, and CDN-Cache-Control
+ * [POS]: edge entry point of workers/telemetry; serves moklu.app/_telemetry* zero-PII D1 funnel ingestion (including not_found_view), canonical 301 /en redirects, content-negotiated localized 404.html vs subresource 404 text/plain responses (never cached), and Coolify origin proxying with isolated Cloudflare Cache API (`caches.open('moklu-edge-v4')`) + `cf.cacheEverything`, strict .mjs/.wasm MIME normalization, public/_headers CSP/COOP, and CDN-Cache-Control
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
  */
 
@@ -54,7 +54,7 @@ interface EdgeCacheStorageLike {
 type EdgeRequest = Request & { cf?: CfRequestMetadata }
 type CfRequestInit = RequestInit & { cf?: CfFetchCacheOptions }
 
-const EDGE_CACHE_NAME = 'moklu-edge-v3'
+const EDGE_CACHE_NAME = 'moklu-edge-v4'
 const HTML_CONTENT_TYPE_RE = /^\s*text\/html\b/i
 
 function buildStaticAssetNotFoundResponse(method: string): Response {

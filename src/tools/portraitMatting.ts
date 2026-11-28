@@ -1,5 +1,5 @@
 /**
- * [INPUT]: depends on canvasHelpers for offline image loading and canvas creation, ./portraitMattingMath for Guided Filter/CIELAB/decontamination/framing, lazy onnxruntime-web/wasm plus local .wasm/.mjs?url assets, and ID photo types from ./types
+ * [INPUT]: depends on canvasHelpers for offline image loading and canvas creation, ./portraitMattingMath for Guided Filter/CIELAB/decontamination/framing, lazy onnxruntime-web/wasm plus local .wasm?url binary, and ID photo types from ./types
  * [OUTPUT]: exports extractPortraitMatte, setPortraitMattingOverride, resetPortraitMattingCache, and re-exports guidedFilterAlpha, computePureBackdropAlpha, estimateOuterBackgroundRgb, decontaminatePixelRgb, and detectPortraitFramingFromAlpha
  * [POS]: 100% browser-local MODNet FP16 portrait matting runtime & Cache API loader in src/tools
  * [PROTOCOL]: Update this header on change, then check GEMINI.md
@@ -154,16 +154,17 @@ async function loadModnetSession(
   }
 
   const pending: Promise<OrtRuntimeBundle> = (async () => {
-    const [ort, wasmUrlMod, mjsUrlMod, modelBytes] = await Promise.all([
+    const [ort, wasmUrlMod, modelBytes] = await Promise.all([
       import('onnxruntime-web/wasm'),
       import('onnxruntime-web/ort-wasm-simd-threaded.wasm?url'),
-      import('onnxruntime-web/ort-wasm-simd-threaded.mjs?url'),
       fetchModelBytesWithCache(modelUrl, onProgress),
     ])
 
+    // Omit `mjs` so ort.wasm.bundle.min uses its inline Emscripten factory directly
+    // in memory instead of issuing a dynamic ES module import() to a `.mjs` URL
+    // (which static servers without `.mjs` MIME rules serve as application/octet-stream).
     ort.env.wasm.numThreads = 1
     ort.env.wasm.wasmPaths = {
-      mjs: mjsUrlMod.default,
       wasm: wasmUrlMod.default,
     }
 
